@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#123d36">
+  <title>Asset Index | Starplusenergy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">SI</div><div><strong>Starplusenergy</strong><span>Asset Index</span></div></div>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">+</span>Overview</button>
+        <button class="nav-item" data-view="assets"><span class="nav-icon">#</span>Assets <span class="nav-count" id="assetNavCount">0</span></button>
+        <button class="nav-item" data-view="loans"><span class="nav-icon">↗</span>Loans</button>
+        <button class="nav-item" data-view="directory"><span class="nav-icon">○</span>Directory</button>
+        <button class="nav-item" data-view="exchange"><span class="nav-icon">⇄</span>Excel exchange</button>
+      </nav>
+      <div class="sidebar-footer"><div class="status-dot"></div><div><strong>Offline workspace</strong><span>Data stays on this device</span></div></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow" id="todayLabel">ASSET OPERATIONS</p><h1 id="pageTitle">Good morning, James</h1></div><div class="top-actions"><button class="icon-button" id="backupButton" title="Download a local backup">↓</button><button class="avatar">JM</button></div></header>
+      <div id="appView"></div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="modal-close" id="modalClose">×</button><div id="modalContent"></div></section></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -126,7 +126,7 @@ API authorization must follow the roles and permissions defined in the SDD.
 
 Excel processing should be implemented in a dedicated application service rather than in controllers. The service must:
 
-- accept `.xlsx` files only and enforce a configured file-size limit
+- accept offline Excel-compatible `.xls`, CSV, and tab-separated files and enforce a configured file-size limit
 - validate the workbook name, required sheet, header names, data types, required values, duplicate asset codes, and reference values
 - support a dry-run validation step that does not modify the database
 - return row number, field name, error code, and human-readable message for each rejected row
@@ -140,9 +140,11 @@ Suggested endpoints are:
 - `GET /api/assets/import-template`
 - `POST /api/assets/import/validate`
 - `POST /api/assets/import/commit`
-- `GET /api/assets/export?format=xlsx`
-- `GET /api/loans/export?format=xlsx`
-- `GET /api/ownership-history/export?format=xlsx`
+- `GET /api/assets/export?format=xls`
+- `GET /api/loans/export?format=xls`
+- `GET /api/ownership-history/export?format=xls`
+
+For the standalone offline MVP, the browser implementation uses an Excel-compatible `.xls` HTML table and CSV/TSV import so it has no CDN, internet, or package download dependency. A later server deployment may replace this adapter with a native `.xlsx` library without changing the import contract.
 
 The import validation result should include an import token or equivalent server-side reference so that the commit step applies the exact validated workbook and cannot silently validate one file and commit another.
 
