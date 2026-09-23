@@ -12,8 +12,8 @@ The MVP includes:
 - Dashboard with availability, assignment, issue, and category summaries
 - Internal loan and return workflow
 - Employee, department, and location directory
-- Excel-compatible `.xls` export
-- CSV, TSV, and Excel-compatible text import by asset code
-- Local JSON backup download
+- Reference-format `.xlsx` loan-list export
+- Reference-format `.xlsx` import using the `Laptop` column as the asset number, such as `SPE-1234`
+- Excel import replaces the current local database and creates a one-click restore point
 
 For a shared multi-user deployment, replace the browser storage adapter with the API and PostgreSQL architecture described in `Technical Specification.md`.

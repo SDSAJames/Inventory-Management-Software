@@ -126,13 +126,14 @@ API authorization must follow the roles and permissions defined in the SDD.
 
 Excel processing should be implemented in a dedicated application service rather than in controllers. The service must:
 
-- accept offline Excel-compatible `.xls`, CSV, and tab-separated files and enforce a configured file-size limit
+- accept the offline reference `.xlsx` loan-list format and enforce a configured file-size limit
 - validate the workbook name, required sheet, header names, data types, required values, duplicate asset codes, and reference values
 - support a dry-run validation step that does not modify the database
 - return row number, field name, error code, and human-readable message for each rejected row
-- create or update assets by `asset_code` only after explicit confirmation
+- replace the current offline asset and loan database with the validated workbook contents
+- save a local restore point before replacement and provide a one-click revert for the most recent import
 - apply valid changes transactionally and preserve existing ownership, loan, and audit history rules
-- generate exports from authorized queries using stable column names and ISO-compatible date values
+- generate exports from authorized queries using the reference loan-list columns and Excel-compatible date values
 - protect exported workbook values from formula interpretation and exclude sensitive fields that the requesting role cannot view
 
 Suggested endpoints are:
@@ -140,11 +141,11 @@ Suggested endpoints are:
 - `GET /api/assets/import-template`
 - `POST /api/assets/import/validate`
 - `POST /api/assets/import/commit`
-- `GET /api/assets/export?format=xls`
-- `GET /api/loans/export?format=xls`
-- `GET /api/ownership-history/export?format=xls`
+- `GET /api/assets/export?format=xlsx`
+- `GET /api/loans/export?format=xlsx`
+- `GET /api/ownership-history/export?format=xlsx`
 
-For the standalone offline MVP, the browser implementation uses an Excel-compatible `.xls` HTML table and CSV/TSV import so it has no CDN, internet, or package download dependency. A later server deployment may replace this adapter with a native `.xlsx` library without changing the import contract.
+For the standalone offline MVP, the browser implementation bundles a native XLSX reader/writer adapter so it has no CDN, internet, or package download dependency. The loan-list columns are `no`, `Name`, `Knox ID`, `Rental Location`, `IP`, the loan dates, equipment columns, `others`, and `Note`; the asset number is stored in the `Laptop` column and Knox ID is retained separately.
 
 The import validation result should include an import token or equivalent server-side reference so that the commit step applies the exact validated workbook and cannot silently validate one file and commit another.
 
