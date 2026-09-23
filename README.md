@@ -1,2 +1,2 @@
 # Inventory-Management-Software
-Starplusenergy Inventory Management Software developed by James 
+Starplusenergy IT equipment Inventory Management Software developed by James 
