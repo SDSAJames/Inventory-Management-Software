@@ -72,6 +72,7 @@ The initial system does not store:
 - Search and filtering
 - Dashboard summary
 - Basic audit/history tracking
+- Excel import and export
 
 ---
 
@@ -141,6 +142,18 @@ The dashboard shall show:
 - damaged assets
 - assets by category
 
+### 6.7 Excel Import and Export
+The system shall allow authorized users to:
+- download an Excel import template containing the supported asset fields and required-field guidance
+- upload an Excel workbook to create new asset records or update existing records by unique asset code
+- validate the workbook before applying changes, including required fields, valid status values, referenced categories, locations, employees, and departments
+- receive a row-level validation summary showing successful rows, rejected rows, and actionable error messages
+- import valid rows only after the user confirms the validation results; rejected rows must not change existing data
+- export filtered asset lists, asset details, loans, and ownership history to an Excel workbook
+- export data using human-readable names while retaining asset codes and dates needed for reconciliation
+
+Excel imports and exports must follow the same role permissions, business rules, audit requirements, and history rules as the web interface. Importing an asset update must not overwrite ownership or loan history without creating the corresponding business event through the normal workflow.
+
 ---
 
 ## 7. Non-Functional Requirements
@@ -194,6 +207,14 @@ The dashboard shall show:
 4. Current owner status is cleared or reassigned.
 5. Ownership history is updated.
 
+### 8.5 Import Assets from Excel
+1. Authorized user downloads the current import template.
+2. User uploads a completed workbook.
+3. System validates the workbook structure and each row without changing data.
+4. System displays valid and rejected row counts with row-level errors.
+5. User confirms the import.
+6. System creates or updates valid asset records in a transaction and records the import in the audit history.
+
 ---
 
 ## 9. Example User Flows
@@ -239,6 +260,7 @@ The first version should include only:
 - asset status
 - ownership history
 - dashboard and search
+- Excel import and export
 
 This gives a practical working system with the minimum complexity and directly supports the business case described by the workbook.
 
@@ -253,6 +275,7 @@ The project should deliver:
 - return and status tracking
 - complete ownership history
 - reporting pages
+- Excel import template, validation, and export capability
 
 ---
 

@@ -116,8 +116,35 @@ The initial REST API should provide endpoints for:
 - returning an asset
 - retrieving ownership history
 - managing categories, employees, departments, and locations
+- downloading an Excel import template
+- validating and importing assets from an Excel workbook
+- exporting filtered assets, loans, and ownership history to an Excel workbook
 
 API authorization must follow the roles and permissions defined in the SDD.
+
+### 4.1 Excel Import and Export
+
+Excel processing should be implemented in a dedicated application service rather than in controllers. The service must:
+
+- accept `.xlsx` files only and enforce a configured file-size limit
+- validate the workbook name, required sheet, header names, data types, required values, duplicate asset codes, and reference values
+- support a dry-run validation step that does not modify the database
+- return row number, field name, error code, and human-readable message for each rejected row
+- create or update assets by `asset_code` only after explicit confirmation
+- apply valid changes transactionally and preserve existing ownership, loan, and audit history rules
+- generate exports from authorized queries using stable column names and ISO-compatible date values
+- protect exported workbook values from formula interpretation and exclude sensitive fields that the requesting role cannot view
+
+Suggested endpoints are:
+
+- `GET /api/assets/import-template`
+- `POST /api/assets/import/validate`
+- `POST /api/assets/import/commit`
+- `GET /api/assets/export?format=xlsx`
+- `GET /api/loans/export?format=xlsx`
+- `GET /api/ownership-history/export?format=xlsx`
+
+The import validation result should include an import token or equivalent server-side reference so that the commit step applies the exact validated workbook and cannot silently validate one file and commit another.
 
 ## 5. Implementation Plan
 
@@ -157,11 +184,21 @@ Develop screens for:
 - overdue loan report
 - asset status report
 - lost or damaged asset report
+- Excel export for authorized reports
 
-### Phase 6: Testing and Deployment
+### Phase 6: Excel Data Exchange
+
+- define and version the Excel import template
+- implement workbook validation and dry-run feedback
+- implement transactional import commit and import audit records
+- implement filtered Excel exports for assets, loans, and ownership history
+
+### Phase 7: Testing and Deployment
 
 - unit tests for asset logic
 - integration tests for assignment and return flows
+- import tests for valid rows, invalid references, duplicate asset codes, partial failures, and unauthorized uploads
+- export tests for filters, permissions, dates, and formula-safe cell values
 - role-based access validation
 - production deployment and training
 
@@ -172,3 +209,6 @@ Develop screens for:
 - Assignment and return operations update the asset, active loan, and history consistently.
 - Unauthorized users cannot edit asset records.
 - Status changes and ownership changes are traceable.
+- Authorized users can validate and import a compliant workbook without bypassing asset business rules.
+- Invalid import rows are rejected with row-level errors and do not modify existing records.
+- Excel exports contain only authorized, filtered data and can be opened by standard spreadsheet software.
