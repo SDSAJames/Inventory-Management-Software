@@ -50,6 +50,10 @@ export default function EditLoanForm({ loanId, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!form.knoxId.trim()) {
+      return toast('Knox ID is required');
+    }
+
     if (!validOctet(form.ipSubnet) || !validOctet(form.ipNumber)) {
       return toast('IP subnet and number must each be between 0 and 255');
     }
@@ -119,8 +123,14 @@ export default function EditLoanForm({ loanId, onClose }) {
             <input id="assigneeType" value={form.assigneeType} onChange={set('assigneeType')} />
           </div>
           <div className="field">
-            <label htmlFor="knoxId">Knox ID</label>
-            <input id="knoxId" value={form.knoxId} onChange={set('knoxId')} />
+            <label htmlFor="knoxId">Knox ID <span style={{ color: '#be665a' }}>*</span></label>
+            <input
+              id="knoxId"
+              value={form.knoxId}
+              onChange={set('knoxId')}
+              placeholder="e.g. KNOX-1234"
+              required
+            />
           </div>
 
           {/* IP address */}
@@ -166,7 +176,10 @@ export default function EditLoanForm({ loanId, onClose }) {
 
           {/* Pickup timestamp */}
           <div className="timestamp-field">
-            <label htmlFor="pickupDate">Pickup timestamp</label>
+            <label htmlFor="pickupDate">
+              Pickup timestamp
+              <span className="field-hint"> (Clear to revert to Scheduled)</span>
+            </label>
             <div className="timestamp-control">
               <input
                 id="pickupDate"
@@ -175,12 +188,26 @@ export default function EditLoanForm({ loanId, onClose }) {
                 onChange={set('pickupDate')}
               />
               <button type="button" className="timestamp-button" onClick={stampNow('pickupDate')} title="Stamp current time">◷</button>
+              {form.pickupDate && (
+                <button
+                  type="button"
+                  className="button ghost"
+                  style={{ padding: '6px 10px', fontSize: '11px', whiteSpace: 'nowrap' }}
+                  onClick={() => setForm((prev) => ({ ...prev, pickupDate: '' }))}
+                  title="Remove pickup date (revert to Scheduled)"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 
           {/* Return timestamp */}
           <div className="timestamp-field">
-            <label htmlFor="returnDate">Return timestamp</label>
+            <label htmlFor="returnDate">
+              Return timestamp
+              <span className="field-hint"> (Clear to revert to Loaned)</span>
+            </label>
             <div className="timestamp-control">
               <input
                 id="returnDate"
@@ -189,6 +216,17 @@ export default function EditLoanForm({ loanId, onClose }) {
                 onChange={set('returnDate')}
               />
               <button type="button" className="timestamp-button" onClick={stampNow('returnDate')} title="Stamp current time">◷</button>
+              {form.returnDate && (
+                <button
+                  type="button"
+                  className="button ghost"
+                  style={{ padding: '6px 10px', fontSize: '11px', whiteSpace: 'nowrap' }}
+                  onClick={() => setForm((prev) => ({ ...prev, returnDate: '' }))}
+                  title="Remove return date (revert to Loaned)"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 

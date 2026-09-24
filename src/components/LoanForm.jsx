@@ -41,7 +41,9 @@ export default function LoanForm({ onClose }) {
     e.preventDefault();
 
     const assetCode = form.assetCode.trim();
+    const knoxId = form.knoxId.trim();
     if (!assetCode) return toast('Enter an asset number');
+    if (!knoxId) return toast('Knox ID is required');
     if (!form.assignee.trim()) return toast('Enter an assignee');
     if (form.assigneeType === 'Business traveler' && !form.endDate) {
       return toast('Enter a due date for a business traveler');
@@ -146,8 +148,14 @@ export default function LoanForm({ onClose }) {
 
           {/* Knox ID */}
           <div className="field">
-            <label htmlFor="knoxId">Knox ID</label>
-            <input id="knoxId" value={form.knoxId} onChange={set('knoxId')} />
+            <label htmlFor="knoxId">Knox ID <span style={{ color: '#be665a' }}>*</span></label>
+            <input
+              id="knoxId"
+              value={form.knoxId}
+              onChange={set('knoxId')}
+              placeholder="e.g. KNOX-1234"
+              required
+            />
           </div>
 
           {/* IP address */}
