@@ -3,10 +3,10 @@ import { readableLoanDate } from '../lib/utils';
 import { statusClass } from '../lib/utils';
 
 const HEADERS = [
-  'No', 'Assignee', 'Type', 'Knox ID', 'Rental location', 'IP',
+  'No', 'Action', 'Assignee', 'Type', 'Knox ID', 'Rental location', 'IP',
   'Start date', 'Due date', 'Pickup', 'Return',
   'Laptop', 'Adapter', 'Cable', 'Dongle', 'Keyboard', 'Mouse', 'Monitor', 'Ethernet',
-  'Others', 'Note', '',
+  'Others', 'Note',
 ];
 
 export default function LoanTable({ loans, assets, editMode, onSaveLoan, onReturnLoan }) {
@@ -55,7 +55,12 @@ export default function LoanTable({ loans, assets, editMode, onSaveLoan, onRetur
         <thead>
           <tr>
             {HEADERS.map((h, i) => (
-              <th key={i}>{h}</th>
+              <th
+                key={i}
+                className={i === 0 ? 'col-no' : i === 1 ? 'col-action' : undefined}
+              >
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
@@ -69,7 +74,13 @@ export default function LoanTable({ loans, assets, editMode, onSaveLoan, onRetur
               const deq = draft.equipment || {};
               return (
                 <tr key={loan.id} className="editing-row">
-                  <td>{index + 1}</td>
+                  <td className="col-no">{index + 1}</td>
+                  <td className="col-action">
+                    <div className="edit-actions">
+                      <button className="text-button" onClick={saveEdit}>Save</button>
+                      <button className="text-button" onClick={cancelEdit}>Cancel</button>
+                    </div>
+                  </td>
                   <td><input className="inline-input" value={draft.assignee || ''} onChange={(e) => update('assignee', e.target.value)} /></td>
                   <td>
                     <select className="inline-select" value={draft.assigneeType || 'Business traveler'} onChange={(e) => update('assigneeType', e.target.value)}>
@@ -94,19 +105,26 @@ export default function LoanTable({ loans, assets, editMode, onSaveLoan, onRetur
                   <td><input className="inline-input" value={deq['Ethernet cable'] || ''} onChange={(e) => updateEq('Ethernet cable', e.target.value)} /></td>
                   <td><input className="inline-input" value={draft.others || ''} onChange={(e) => update('others', e.target.value)} /></td>
                   <td><input className="inline-input" value={draft.note || draft.purpose || ''} onChange={(e) => update('note', e.target.value)} /></td>
-                  <td>
-                    <div className="edit-actions">
-                      <button className="text-button" onClick={saveEdit}>Save</button>
-                      <button className="text-button" onClick={cancelEdit}>Cancel</button>
-                    </div>
-                  </td>
                 </tr>
               );
             }
 
             return (
               <tr key={loan.id}>
-                <td>{index + 1}</td>
+                <td className="col-no">{index + 1}</td>
+                <td className="col-action">
+                  <div className="edit-actions">
+                    {editMode && (
+                      <button className="text-button" onClick={() => startEdit(loan)} title="Edit inline">✎</button>
+                    )}
+                    {!editMode && (
+                      <button className="text-button" onClick={() => startEdit(loan)}>Edit</button>
+                    )}
+                    {(loan.status === 'Active' || loan.status === 'Overdue') && (
+                      <button className="text-button" onClick={() => onReturnLoan(loan.id)}>Return</button>
+                    )}
+                  </div>
+                </td>
                 <td>{loan.assignee || loan.borrower || ''}</td>
                 <td>{loan.assigneeType || ''}</td>
                 <td>{loan.knoxId || ''}</td>
@@ -126,19 +144,6 @@ export default function LoanTable({ loans, assets, editMode, onSaveLoan, onRetur
                 <td>{eq['Ethernet cable'] || ''}</td>
                 <td>{loan.others || ''}</td>
                 <td>{loan.note || loan.purpose || ''}</td>
-                <td>
-                  <div className="edit-actions">
-                    {editMode && (
-                      <button className="text-button" onClick={() => startEdit(loan)} title="Edit inline">✎</button>
-                    )}
-                    {!editMode && (
-                      <button className="text-button" onClick={() => startEdit(loan)}>Edit</button>
-                    )}
-                    {(loan.status === 'Active' || loan.status === 'Overdue') && (
-                      <button className="text-button" onClick={() => onReturnLoan(loan.id)}>Return</button>
-                    )}
-                  </div>
-                </td>
               </tr>
             );
           })}

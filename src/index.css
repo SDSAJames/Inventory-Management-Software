@@ -179,6 +179,47 @@ tbody tr:hover { background: #f7fbf8; }
 .loan-table { min-width: 1800px; }
 .loan-table td { white-space: normal; vertical-align: top; max-width: 180px; }
 
+.loan-table th.col-no,
+.loan-table td.col-no {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  text-align: center;
+  background: #ffffff;
+}
+.loan-table th.col-no {
+  background: var(--panel);
+  z-index: 3;
+}
+
+.loan-table th.col-action,
+.loan-table td.col-action {
+  position: sticky;
+  left: 48px;
+  z-index: 2;
+  width: 110px;
+  min-width: 110px;
+  background: #ffffff;
+  box-shadow: 3px 0 5px -2px rgba(23, 48, 44, .1);
+}
+.loan-table th.col-action {
+  background: var(--panel);
+  z-index: 3;
+}
+
+.loan-table tbody tr:hover td.col-no,
+.loan-table tbody tr:hover td.col-action {
+  background: #f7fbf8;
+}
+
+.loan-table tr.editing-row td.col-no,
+.loan-table tr.editing-row td.col-action {
+  background: #f0f7f3 !important;
+}
+
 /* ── Inline editing ───────────────────────────────────── */
 .editing-row { background: #f0f7f3 !important; }
 .editing-row td { padding: 6px 4px; }
