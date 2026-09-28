@@ -1,4 +1,4 @@
-# Asset Index Management System Software Design Document
+# SPE Asset Management System Software Design Document
 
 This document defines the business requirements, scope, workflows, and product-level design for the Asset Index Management System. Implementation architecture, database schema, and delivery sequencing are defined in [Technical Specification.md](Technical%20Specification.md).
 
