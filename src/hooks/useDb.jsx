@@ -25,6 +25,13 @@ export function DbProvider({ children }) {
     }));
   }, []);
 
+  const deleteAsset = useCallback((id) => {
+    setDb((prev) => ({
+      ...prev,
+      assets: prev.assets.filter((a) => a.id !== id),
+    }));
+  }, []);
+
   /* ── Loan operations ────────────────────────────── */
 
   const addLoan = useCallback((loanData, assetUpdates, newEmployee) => {
@@ -297,6 +304,7 @@ export function DbProvider({ children }) {
     setDb,
     addAsset,
     updateAsset,
+    deleteAsset,
     addLoan,
     updateLoan,
     pickupLoan,
@@ -311,6 +319,7 @@ export function DbProvider({ children }) {
     db,
     addAsset,
     updateAsset,
+    deleteAsset,
     addLoan,
     updateLoan,
     pickupLoan,

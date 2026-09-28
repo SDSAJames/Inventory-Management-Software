@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { STATUSES } from '../lib/constants';
 import { nextAssetCode } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
@@ -10,22 +10,33 @@ export default function AssetForm({ assetId, onClose }) {
 
   const existing = assetId ? db.assets.find((a) => a.id === assetId) : null;
 
+  const makeBlank = () => ({
+    code: nextAssetCode(db.assets.length),
+    name: '',
+    category: 'Laptop',
+    model: '',
+    serial: '',
+    status: 'Available',
+    location: db.locations[0] || '',
+    owner: '',
+    department: '',
+    condition: 'Good',
+    notes: '',
+  });
+
   const [form, setForm] = useState(() => {
     if (existing) return { ...existing };
-    return {
-      code: nextAssetCode(db.assets.length),
-      name: '',
-      category: 'Laptop',
-      model: '',
-      serial: '',
-      status: 'Available',
-      location: db.locations[0] || '',
-      owner: '',
-      department: '',
-      condition: 'Good',
-      notes: '',
-    };
+    return makeBlank();
   });
+
+  // Re-sync form when assetId changes (Modal stays mounted, so useState init only fires once)
+  useEffect(() => {
+    if (existing) {
+      setForm({ ...existing });
+    } else {
+      setForm(makeBlank());
+    }
+  }, [assetId]);
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 

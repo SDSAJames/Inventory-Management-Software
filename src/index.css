@@ -180,6 +180,20 @@ tbody tr:hover { background: #f7fbf8; }
 .directory-list li { padding: 12px 0; border-top: 1px solid #edf2ef; font-size: 12px; }
 .directory-list small { display: block; color: var(--muted); margin-top: 3px; }
 
+/* ── Asset table ──────────────────────────────────────── */
+.asset-table { width: 100%; }
+.asset-table td { vertical-align: middle; }
+.asset-table th.col-action,
+.asset-table td.col-action {
+  width: 75px;
+  min-width: 75px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+}
+.asset-table th.col-action {
+  background: var(--panel);
+}
+
 /* ── Loan table ───────────────────────────────────────── */
 .loan-table { width: 100%; }
 .loan-table.simple-loan-table { min-width: 860px; }
