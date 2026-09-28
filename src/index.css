@@ -183,15 +183,47 @@ tbody tr:hover { background: #f7fbf8; }
 /* ── Asset table ──────────────────────────────────────── */
 .asset-table { width: 100%; }
 .asset-table td { vertical-align: middle; }
-.asset-table th.col-action,
-.asset-table td.col-action {
-  width: 75px;
-  min-width: 75px;
-  padding: 10px 12px;
+.asset-table th.col-checkbox,
+.asset-table td.col-checkbox {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  padding: 10px 8px;
   border-right: 1px solid var(--line);
 }
-.asset-table th.col-action {
+.asset-table th.col-checkbox {
   background: var(--panel);
+}
+.asset-table th.col-checkbox input[type="checkbox"],
+.asset-table td.col-checkbox input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--green);
+}
+.asset-table tr.row-selected {
+  background: #edf7f1;
+}
+.asset-table tr.row-selected:hover {
+  background: #e3f2e8;
+}
+
+.bulk-delete-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.bulk-delete-list li {
+  padding: 7px 0;
+  border-top: 1px solid #edf2ef;
+  font-size: 12px;
+}
+.bulk-delete-list li:first-child {
+  border-top: none;
+}
+.bulk-delete-meta {
+  color: var(--muted);
 }
 
 /* ── Loan table ───────────────────────────────────────── */
@@ -202,8 +234,8 @@ tbody tr:hover { background: #f7fbf8; }
 /* The Action column sits on the FAR LEFT (left of Number index) */
 .loan-table th.col-action,
 .loan-table td.col-action {
-  width: 175px;
-  min-width: 175px;
+  width: 100px;
+  min-width: 100px;
   padding: 10px 12px;
   border-right: 1px solid var(--line);
 }

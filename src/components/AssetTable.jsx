@@ -1,18 +1,28 @@
 import { statusClass } from '../lib/utils';
 
-export default function AssetTable({ assets, onEditAsset, onDeleteAsset, onViewAsset }) {
+export default function AssetTable({ assets, onEditAsset, onViewAsset, selectedIds, onToggleSelect, onToggleSelectAll }) {
   if (!assets.length) {
     return <div className="empty">No assets match the current filters.</div>;
   }
 
   const handleEdit = onEditAsset || onViewAsset;
+  const allSelected = assets.length > 0 && selectedIds && assets.every((a) => selectedIds.has(a.id));
 
   return (
     <div className="table-wrap">
       <table className="asset-table">
         <thead>
           <tr>
-            <th className="col-action">Action</th>
+            {onToggleSelect && (
+              <th className="col-checkbox">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={() => onToggleSelectAll && onToggleSelectAll(assets)}
+                  title="Select all"
+                />
+              </th>
+            )}
             <th>Asset</th>
             <th>Category</th>
             <th>Status</th>
@@ -21,52 +31,44 @@ export default function AssetTable({ assets, onEditAsset, onDeleteAsset, onViewA
           </tr>
         </thead>
         <tbody>
-          {assets.map((asset) => (
-            <tr
-              key={asset.id}
-              style={{ cursor: handleEdit ? 'pointer' : undefined }}
-              onClick={(e) => {
-                if (['BUTTON', 'INPUT', 'SELECT', 'A'].includes(e.target.tagName)) return;
-                if (handleEdit) handleEdit(asset.id);
-              }}
-              title="Click to edit asset"
-            >
-              <td className="col-action">
-                <div className="action-button-group">
-                  {handleEdit && (
-                    <button
-                      className="btn-action-icon"
-                      onClick={() => handleEdit(asset.id)}
-                      title="Edit asset"
-                    >
-                      ✎
-                    </button>
-                  )}
-                  {onDeleteAsset && (
-                    <button
-                      className="btn-action-icon text-danger"
-                      onClick={() => onDeleteAsset(asset)}
-                      title="Delete asset"
-                    >
-                      🗑
-                    </button>
-                  )}
-                </div>
-              </td>
-              <td>
-                <div className="asset-name">{asset.name}</div>
-                <div className="asset-code">{asset.code}</div>
-              </td>
-              <td>{asset.category}</td>
-              <td>
-                <span className={`status ${statusClass(asset.status)}`}>
-                  {asset.status}
-                </span>
-              </td>
-              <td>{asset.location}</td>
-              <td>{asset.owner || 'Unassigned'}</td>
-            </tr>
-          ))}
+          {assets.map((asset) => {
+            const isSelected = selectedIds && selectedIds.has(asset.id);
+            return (
+              <tr
+                key={asset.id}
+                className={isSelected ? 'row-selected' : ''}
+                style={{ cursor: handleEdit ? 'pointer' : undefined }}
+                onClick={(e) => {
+                  if (['INPUT', 'SELECT', 'A'].includes(e.target.tagName)) return;
+                  if (handleEdit) handleEdit(asset.id);
+                }}
+                title="Click to edit asset"
+              >
+                {onToggleSelect && (
+                  <td className="col-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={isSelected || false}
+                      onChange={() => onToggleSelect(asset.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
+                )}
+                <td>
+                  <div className="asset-name">{asset.name}</div>
+                  <div className="asset-code">{asset.code}</div>
+                </td>
+                <td>{asset.category}</td>
+                <td>
+                  <span className={`status ${statusClass(asset.status)}`}>
+                    {asset.status}
+                  </span>
+                </td>
+                <td>{asset.location}</td>
+                <td>{asset.owner || 'Unassigned'}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

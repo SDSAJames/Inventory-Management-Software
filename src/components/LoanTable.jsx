@@ -258,30 +258,6 @@ export default function LoanTable({
                           Pickup
                         </button>
                       )}
-
-                      <button
-                        className="btn-action-icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEdit(loan);
-                        }}
-                        title={editMode ? 'Edit inline' : 'Edit row'}
-                      >
-                        ✎
-                      </button>
-
-                      {onDeleteLoan && (
-                        <button
-                          className="btn-action-icon text-danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteLoan(loan);
-                          }}
-                          title="Delete loan record"
-                        >
-                          🗑
-                        </button>
-                      )}
                     </div>
                   </td>
                   <td className="col-no">{index + 1}</td>

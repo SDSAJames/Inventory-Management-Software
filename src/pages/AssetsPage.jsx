@@ -17,7 +17,8 @@ export default function AssetsPage() {
   const [filterStatus, setFilterStatus] = useState('All statuses');
   const [editAssetId, setEditAssetId] = useState(null);
   const [showNew, setShowNew] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const filtered = useMemo(() => {
     return db.assets.filter((asset) => {
@@ -37,11 +38,41 @@ export default function AssetsPage() {
     });
   }, [db.assets, searchTerm, searchField, filterStatus]);
 
-  const handleConfirmDelete = () => {
-    if (!deleteTarget) return;
-    deleteAsset(deleteTarget.id);
-    toast(`Asset record for ${deleteTarget.name} (${deleteTarget.code}) has been deleted.`);
-    setDeleteTarget(null);
+  /* ── Selection handlers ──────────────────────── */
+
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = (assets) => {
+    const allSelected = assets.every((a) => selectedIds.has(a.id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(assets.map((a) => a.id)));
+    }
+  };
+
+  /* ── Bulk delete handlers ────────────────────── */
+
+  const selectedAssets = useMemo(() => {
+    return db.assets.filter((a) => selectedIds.has(a.id));
+  }, [db.assets, selectedIds]);
+
+  const handleConfirmBulkDelete = () => {
+    const count = selectedIds.size;
+    selectedIds.forEach((id) => deleteAsset(id));
+    toast(`${count} asset${count > 1 ? 's' : ''} deleted.`);
+    setSelectedIds(new Set());
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -51,7 +82,17 @@ export default function AssetsPage() {
           <h2>Asset register</h2>
           <p>{filtered.length} of {db.assets.length} assets shown.</p>
         </div>
-        <button className="button" onClick={() => setShowNew(true)}>+ Add asset</button>
+        <div className="view-header-actions">
+          {selectedIds.size > 0 && (
+            <button
+              className="button danger"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              🗑 Delete selected ({selectedIds.size})
+            </button>
+          )}
+          <button className="button" onClick={() => setShowNew(true)}>+ Add asset</button>
+        </div>
       </div>
 
       <section className="panel">
@@ -68,7 +109,9 @@ export default function AssetsPage() {
         <AssetTable
           assets={filtered}
           onEditAsset={setEditAssetId}
-          onDeleteAsset={setDeleteTarget}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onToggleSelectAll={handleToggleSelectAll}
         />
       </section>
 
@@ -79,55 +122,43 @@ export default function AssetsPage() {
         />
       </Modal>
 
-      {/* Deletion Confirmation Modal */}
-      <Modal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}>
-        {deleteTarget && (
-          <div className="delete-dialog">
-            <h2>Delete asset</h2>
-            <p className="modal-intro">
-              Are you sure you want to permanently delete this asset? This action cannot be undone.
-            </p>
+      {/* Bulk Deletion Confirmation Modal */}
+      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+        <div className="delete-dialog">
+          <h2>Delete {selectedAssets.length} asset{selectedAssets.length > 1 ? 's' : ''}</h2>
+          <p className="modal-intro">
+            Are you sure you want to permanently delete the selected asset{selectedAssets.length > 1 ? 's' : ''}? This action cannot be undone.
+          </p>
 
-            <div className="timestamp-dialog-card">
-              <dl>
-                <dt>Asset:</dt>
-                <dd><strong>{deleteTarget.name}</strong></dd>
-                <dt>Asset code:</dt>
-                <dd><code>{deleteTarget.code}</code></dd>
-                <dt>Category:</dt>
-                <dd>{deleteTarget.category || '—'}</dd>
-                <dt>Status:</dt>
-                <dd>{deleteTarget.status || '—'}</dd>
-                <dt>Location:</dt>
-                <dd>{deleteTarget.location || '—'}</dd>
-                {deleteTarget.owner && (
-                  <>
-                    <dt>Current holder:</dt>
-                    <dd>{deleteTarget.owner}</dd>
-                  </>
-                )}
-              </dl>
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="button ghost"
-                onClick={() => setDeleteTarget(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="button danger-btn"
-                style={{ background: '#be665a', borderColor: '#be665a', color: 'white' }}
-                onClick={handleConfirmDelete}
-              >
-                Delete permanently
-              </button>
-            </div>
+          <div className="timestamp-dialog-card">
+            <ul className="bulk-delete-list">
+              {selectedAssets.map((a) => (
+                <li key={a.id}>
+                  <strong>{a.name}</strong> <code>{a.code}</code>
+                  <span className="bulk-delete-meta"> — {a.category}, {a.status}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="button ghost"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="button danger-btn"
+              style={{ background: '#be665a', borderColor: '#be665a', color: 'white' }}
+              onClick={handleConfirmBulkDelete}
+            >
+              Delete permanently
+            </button>
+          </div>
+        </div>
       </Modal>
     </>
   );
