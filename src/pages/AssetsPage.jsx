@@ -6,6 +6,7 @@ import AssetTable from '../components/AssetTable';
 import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
 import AssetForm from '../components/AssetForm';
+import BatchEditForm from '../components/BatchEditForm';
 
 const SEARCH_FIELDS = ['All fields', 'Asset code', 'Asset name', 'Category', 'Holder', 'Location', 'Serial number'];
 
@@ -19,6 +20,7 @@ export default function AssetsPage() {
   const [showNew, setShowNew] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showBatchEdit, setShowBatchEdit] = useState(false);
 
   const filtered = useMemo(() => {
     return db.assets.filter((asset) => {
@@ -84,12 +86,20 @@ export default function AssetsPage() {
         </div>
         <div className="view-header-actions">
           {selectedIds.size > 0 && (
-            <button
-              className="button danger"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              🗑 Delete selected ({selectedIds.size})
-            </button>
+            <>
+              <button
+                className="button secondary"
+                onClick={() => setShowBatchEdit(true)}
+              >
+                ✎ Batch edit ({selectedIds.size})
+              </button>
+              <button
+                className="button danger"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                🗑 Delete ({selectedIds.size})
+              </button>
+            </>
           )}
           <button className="button" onClick={() => setShowNew(true)}>+ Add asset</button>
         </div>
@@ -119,6 +129,15 @@ export default function AssetsPage() {
         <AssetForm
           assetId={editAssetId}
           onClose={() => { setShowNew(false); setEditAssetId(null); }}
+        />
+      </Modal>
+
+      {/* Batch Edit Modal */}
+      <Modal open={showBatchEdit} onClose={() => setShowBatchEdit(false)}>
+        <BatchEditForm
+          selectedAssets={selectedAssets}
+          onClose={() => setShowBatchEdit(false)}
+          onDone={() => setSelectedIds(new Set())}
         />
       </Modal>
 

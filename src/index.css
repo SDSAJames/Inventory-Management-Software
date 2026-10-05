@@ -226,6 +226,97 @@ tbody tr:hover { background: #f7fbf8; }
   color: var(--muted);
 }
 
+/* ── Batch edit form ─────────────────────────────────── */
+.batch-selected-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 18px;
+}
+.batch-chip {
+  display: inline-block;
+  background: var(--mint);
+  color: #26614f;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.batch-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.batch-field-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  background: #fbfdfc;
+  transition: background 0.15s ease;
+}
+.batch-field-row:first-child {
+  border-radius: 6px 6px 0 0;
+}
+.batch-field-row:last-child {
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 0 6px 6px;
+}
+.batch-field-row.active {
+  background: #edf7f1;
+}
+.batch-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.batch-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--green);
+}
+.batch-field-label {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 11px;
+}
+.batch-field-input {
+  flex: 1;
+}
+.batch-field-input input,
+.batch-field-input select {
+  width: 100%;
+  border: 1px solid #9ab9ad;
+  border-radius: 5px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: white;
+  font-size: 12px;
+  transition: opacity 0.15s ease;
+}
+.batch-field-input input:disabled,
+.batch-field-input select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f5f7f6;
+}
+
+.button.secondary {
+  background: #e1eaf2;
+  color: #47647a;
+  border-color: #c5d5e3;
+}
+.button.secondary:hover {
+  background: #d0dde9;
+}
+
 /* ── Loan table ───────────────────────────────────────── */
 .loan-table { width: 100%; }
 .loan-table.simple-loan-table { min-width: 860px; }

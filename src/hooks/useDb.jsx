@@ -32,6 +32,16 @@ export function DbProvider({ children }) {
     }));
   }, []);
 
+  const batchUpdateAssets = useCallback((ids, changes) => {
+    const idSet = ids instanceof Set ? ids : new Set(ids);
+    setDb((prev) => ({
+      ...prev,
+      assets: prev.assets.map((a) =>
+        idSet.has(a.id) ? { ...a, ...changes, updated: todayIso() } : a,
+      ),
+    }));
+  }, []);
+
   /* ── Loan operations ────────────────────────────── */
 
   const addLoan = useCallback((loanData, assetUpdates, newEmployee) => {
@@ -305,6 +315,7 @@ export function DbProvider({ children }) {
     addAsset,
     updateAsset,
     deleteAsset,
+    batchUpdateAssets,
     addLoan,
     updateLoan,
     pickupLoan,
@@ -320,6 +331,7 @@ export function DbProvider({ children }) {
     addAsset,
     updateAsset,
     deleteAsset,
+    batchUpdateAssets,
     addLoan,
     updateLoan,
     pickupLoan,
