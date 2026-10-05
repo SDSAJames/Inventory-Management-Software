@@ -83,28 +83,14 @@ export default function AssetTable({
                     <button
                       type="button"
                       className="button ghost"
-                      style={{ padding: '5px 9px', fontSize: '11px', marginRight: '6px' }}
+                      style={{ padding: '5px 10px', fontSize: '11px' }}
                       onClick={(e) => {
                         e.stopPropagation();
                         onChangeOwner(asset);
                       }}
                       title="Transfer ownership"
                     >
-                      👤 Owner
-                    </button>
-                  )}
-                  {handleEdit && (
-                    <button
-                      type="button"
-                      className="button secondary"
-                      style={{ padding: '5px 9px', fontSize: '11px' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(asset.id);
-                      }}
-                      title="View details and history"
-                    >
-                      View / Edit
+                      👤 Transfer Owner
                     </button>
                   )}
                 </td>

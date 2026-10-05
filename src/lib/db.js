@@ -33,3 +33,17 @@ export function loadImportBackup() {
 export function clearImportBackup() {
   localStorage.removeItem(IMPORT_BACKUP_KEY);
 }
+
+export function loadTransferReasons() {
+  try {
+    const raw = localStorage.getItem('starplusenergy-transfer-reasons-v1');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveTransferReasons(reasons) {
+  localStorage.setItem('starplusenergy-transfer-reasons-v1', JSON.stringify(reasons));
+}
+

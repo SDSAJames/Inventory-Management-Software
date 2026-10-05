@@ -98,16 +98,43 @@ export function getAssetLoanHistory(assetCode, loans = []) {
 export function createOwnershipEntry({
   previousOwner = '',
   newOwner = '',
-  date = todayIso(),
+  date = '',
   reason = 'Reassigned',
   notes = '',
 }) {
   return {
     id: crypto.randomUUID(),
-    date: date || todayIso(),
+    date: date || new Date().toISOString().slice(0, 19).replace('T', ' '),
     previousOwner: previousOwner || 'None',
     newOwner: newOwner || 'None',
     reason: reason || 'Reassigned',
     notes: notes || '',
   };
 }
+
+/**
+ * Returns the effective ownership history for an asset.
+ * If no explicit ownership transfers were recorded yet, but the asset has a current holder (e.g. from seed, import, or registration),
+ * an initial baseline ownership entry is automatically synthesized so history is never empty or buggy.
+ */
+export function getAssetEffectiveOwnershipHistory(asset) {
+  if (!asset) return [];
+  const explicit = asset.ownershipHistory || [];
+  if (explicit.length > 0) return explicit;
+
+  if (asset.owner) {
+    return [
+      {
+        id: `initial-${asset.id || 'owner'}`,
+        date: asset.issuedDate || asset.updated || todayIso(),
+        previousOwner: 'None',
+        newOwner: asset.owner,
+        reason: 'Current Assigned Holder',
+        notes: asset.department ? `Department: ${asset.department}` : (asset.notes || 'Initial record'),
+      },
+    ];
+  }
+
+  return [];
+}
+

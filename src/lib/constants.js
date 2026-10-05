@@ -13,3 +13,15 @@ export const LOAN_HEADERS = [
 ];
 
 export const IP_PREFIX = '105.101.';
+
+export const DEFAULT_TRANSFER_REASONS = [
+  'Reassigned to new staff',
+  'New Hire onboarding',
+  'Department Transfer',
+  'Temporary Handover',
+  'Permanent Allocation',
+  'Returned to Pool',
+  'Repaired & Reassigned',
+];
+
+export const TRANSFER_REASONS_KEY = 'starplusenergy-transfer-reasons-v1';

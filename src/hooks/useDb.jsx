@@ -1,7 +1,17 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { loadDb, saveDb as persistDb, saveImportBackup, loadImportBackup, clearImportBackup, hasImportBackup as checkBackup } from '../lib/db';
+import {
+  loadDb,
+  saveDb as persistDb,
+  saveImportBackup,
+  loadImportBackup,
+  clearImportBackup,
+  hasImportBackup as checkBackup,
+  loadTransferReasons,
+  saveTransferReasons,
+} from '../lib/db';
 import { todayIso } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry } from '../lib/assetIntegrity';
+import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 
 const DbContext = createContext(null);
 
@@ -9,13 +19,55 @@ export function DbProvider({ children }) {
   const [db, setDb] = useState(() => {
     const raw = loadDb();
     if (raw && raw.assets && raw.loans) {
+      // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
+      const assetsWithHistory = raw.assets.map((a) => {
+        if ((!a.ownershipHistory || a.ownershipHistory.length === 0) && a.owner) {
+          return {
+            ...a,
+            ownershipHistory: [
+              createOwnershipEntry({
+                previousOwner: 'None',
+                newOwner: a.owner,
+                date: a.issuedDate || a.updated || todayIso(),
+                reason: 'Initial assignment',
+                notes: a.department ? `Department: ${a.department}` : (a.notes || ''),
+              }),
+            ],
+          };
+        }
+        return a;
+      });
+
       return {
         ...raw,
-        assets: reconcileAllAssets(raw.assets, raw.loans),
+        assets: reconcileAllAssets(assetsWithHistory, raw.loans),
       };
     }
     return raw;
   });
+
+  const [transferReasons, setTransferReasons] = useState(() => {
+    return loadTransferReasons() || DEFAULT_TRANSFER_REASONS;
+  });
+
+  const addTransferReason = useCallback((newReason) => {
+    const trimmed = String(newReason || '').trim();
+    if (!trimmed) return;
+    setTransferReasons((prev) => {
+      if (prev.some((r) => r.toLowerCase() === trimmed.toLowerCase())) return prev;
+      const next = [...prev, trimmed];
+      saveTransferReasons(next);
+      return next;
+    });
+  }, []);
+
+  const removeTransferReason = useCallback((reasonToRemove) => {
+    setTransferReasons((prev) => {
+      const next = prev.filter((r) => r !== reasonToRemove);
+      saveTransferReasons(next);
+      return next;
+    });
+  }, []);
 
   // Auto-persist every change to localStorage
   useEffect(() => {
@@ -482,6 +534,9 @@ export function DbProvider({ children }) {
     batchUpdateAssets,
     importAssets,
     verifyAndSyncAssets,
+    transferReasons,
+    addTransferReason,
+    removeTransferReason,
     addLoan,
     updateLoan,
     pickupLoan,
@@ -501,6 +556,9 @@ export function DbProvider({ children }) {
     batchUpdateAssets,
     importAssets,
     verifyAndSyncAssets,
+    transferReasons,
+    addTransferReason,
+    removeTransferReason,
     addLoan,
     updateLoan,
     pickupLoan,

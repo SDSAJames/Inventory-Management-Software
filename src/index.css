@@ -140,7 +140,29 @@ tbody tr:hover { background: #f7fbf8; }
 .modal { background: white; width: min(620px, 100%); max-height: 90vh; overflow-y: auto; overflow-x: hidden; border-radius: 9px; padding: 28px; position: relative; box-shadow: var(--shadow); }
 .modal h2 { font-family: Georgia, serif; font-weight: 400; margin: 0 0 6px; font-size: 25px; }
 .modal-intro { color: var(--muted); font-size: 12px; margin: 0 0 22px; }
-.modal-close { position: absolute; right: 18px; top: 16px; border: 0; background: none; font-size: 25px; color: var(--muted); cursor: pointer; }
+.modal-close {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #f7faf8;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 10;
+  transition: all .15s ease;
+}
+.modal-close:hover {
+  background: var(--mint);
+  color: var(--green-dark);
+  border-color: #9ab9ad;
+}
 .modal .form-grid > * { min-width: 0; }
 
 /* ── Equipment fields ─────────────────────────────────── */
@@ -826,6 +848,20 @@ tbody tr:hover { background: #f7fbf8; }
 /* ── Change Owner & Asset History ─────────────────────── */
 .change-owner-dialog h2 { margin: 0 0 6px; font-family: Georgia, serif; font-weight: 400; font-size: 24px; }
 .asset-detail-container { width: 100%; }
+.asset-detail-header {
+  padding-right: 48px; /* Ensure ample clearance for the circular modal-close button */
+  margin-bottom: 8px;
+}
+.asset-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.asset-title-group h2 {
+  margin: 0;
+  font-size: 24px;
+}
 .asset-history-tab { animation: import-row-in .2s ease both; }
 .asset-history-tab th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 

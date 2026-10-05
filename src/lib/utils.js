@@ -24,11 +24,18 @@ export function readableLoanDate(value) {
   return String(value).replace('T', ' ');
 }
 
-/** Current local datetime formatted for datetime-local inputs. */
+/** Current local datetime formatted for datetime-local inputs (YYYY-MM-DDTHH:mm). */
 export function nowLocalIso() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 16);
+}
+
+/** Current local datetime with seconds (YYYY-MM-DDTHH:mm:ss). */
+export function nowLocalIsoWithSeconds() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 19);
 }
 
 /** Today's date as YYYY-MM-DD. */

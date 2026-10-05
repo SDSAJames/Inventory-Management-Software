@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { STATUSES } from '../lib/constants';
 import { nextAssetCode, readableLoanDate, statusClass } from '../lib/utils';
-import { getAssetLoanHistory } from '../lib/assetIntegrity';
+import { getAssetLoanHistory, getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 
@@ -48,10 +48,10 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     return getAssetLoanHistory(existing.code, db.loans);
   }, [existing, db.loans]);
 
-  // Ownership history for this asset
+  // Effective ownership history for this asset (never empty if there is a holder)
   const ownershipHistory = useMemo(() => {
     if (!existing) return [];
-    return existing.ownershipHistory || [];
+    return getAssetEffectiveOwnershipHistory(existing);
   }, [existing]);
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -74,16 +74,18 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
   return (
     <div className="asset-detail-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-        <h2 style={{ margin: 0 }}>{existing ? `Asset: ${existing.name}` : 'Add asset'}</h2>
-        {existing && (
-          <span className={`status ${statusClass(existing.status)}`}>
-            {existing.status}
-          </span>
-        )}
+      <div className="asset-detail-header">
+        <div className="asset-title-group">
+          <h2>{existing ? `Asset: ${existing.name}` : 'Add asset'}</h2>
+          {existing && (
+            <span className={`status ${statusClass(existing.status)}`}>
+              {existing.status}
+            </span>
+          )}
+        </div>
       </div>
 
-      <p className="modal-intro" style={{ marginBottom: '14px' }}>
+      <p className="modal-intro" style={{ marginBottom: '16px' }}>
         {existing
           ? `Code: ${existing.code} • Current Holder: ${existing.owner || 'None (Unassigned)'}`
           : 'The asset remains the master record through every assignment and return.'}
