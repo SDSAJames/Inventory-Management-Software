@@ -1,11 +1,21 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { loadDb, saveDb as persistDb, saveImportBackup, loadImportBackup, clearImportBackup, hasImportBackup as checkBackup } from '../lib/db';
 import { todayIso } from '../lib/utils';
+import { reconcileAllAssets, createOwnershipEntry } from '../lib/assetIntegrity';
 
 const DbContext = createContext(null);
 
 export function DbProvider({ children }) {
-  const [db, setDb] = useState(() => loadDb());
+  const [db, setDb] = useState(() => {
+    const raw = loadDb();
+    if (raw && raw.assets && raw.loans) {
+      return {
+        ...raw,
+        assets: reconcileAllAssets(raw.assets, raw.loans),
+      };
+    }
+    return raw;
+  });
 
   // Auto-persist every change to localStorage
   useEffect(() => {
@@ -15,14 +25,88 @@ export function DbProvider({ children }) {
   /* ── Asset operations ───────────────────────────── */
 
   const addAsset = useCallback((asset) => {
-    setDb((prev) => ({ ...prev, assets: [{ id: crypto.randomUUID(), ...asset, updated: todayIso() }, ...prev.assets] }));
+    setDb((prev) => {
+      const initialHistory = asset.owner
+        ? [createOwnershipEntry({ previousOwner: 'None', newOwner: asset.owner, reason: 'Initial assignment' })]
+        : [];
+      const newAsset = {
+        id: crypto.randomUUID(),
+        ...asset,
+        ownershipHistory: asset.ownershipHistory || initialHistory,
+        updated: todayIso(),
+      };
+      return { ...prev, assets: [newAsset, ...prev.assets] };
+    });
   }, []);
 
   const updateAsset = useCallback((id, changes) => {
     setDb((prev) => ({
       ...prev,
-      assets: prev.assets.map((a) => (a.id === id ? { ...a, ...changes, updated: todayIso() } : a)),
+      assets: prev.assets.map((a) => {
+        if (a.id !== id) return a;
+        let ownershipHistory = a.ownershipHistory || [];
+        if (changes.owner !== undefined && changes.owner !== a.owner) {
+          ownershipHistory = [
+            createOwnershipEntry({
+              previousOwner: a.owner || 'None',
+              newOwner: changes.owner || 'None',
+              reason: changes.owner ? (a.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
+            }),
+            ...ownershipHistory,
+          ];
+        }
+        return {
+          ...a,
+          ...changes,
+          ownershipHistory,
+          updated: todayIso(),
+        };
+      }),
     }));
+  }, []);
+
+  /**
+   * Explicitly change the ownership of an asset and record it in the asset's ownership history.
+   */
+  const changeAssetOwner = useCallback((assetId, { newOwner, department, reason, notes, date }) => {
+    setDb((prev) => {
+      const asset = prev.assets.find((a) => a.id === assetId);
+      if (!asset) return prev;
+
+      const previousOwner = asset.owner || '';
+      const entry = createOwnershipEntry({
+        previousOwner: previousOwner || 'None',
+        newOwner: newOwner || 'None',
+        date: date || todayIso(),
+        reason: reason || (newOwner ? (previousOwner ? 'Transferred' : 'Assigned') : 'Unassigned'),
+        notes: notes || '',
+      });
+
+      const nextAssets = prev.assets.map((a) => {
+        if (a.id !== assetId) return a;
+        const newStatus = !newOwner ? 'Available' : (a.status === 'Available' ? 'Assigned' : a.status);
+        return {
+          ...a,
+          owner: newOwner || '',
+          department: department !== undefined ? department : a.department,
+          status: newStatus,
+          ownershipHistory: [entry, ...(a.ownershipHistory || [])],
+          updated: todayIso(),
+        };
+      });
+
+      // Also ensure employee directory has new employee if specified
+      let nextEmployees = prev.employees;
+      if (newOwner && !prev.employees.some((e) => e.name.toLowerCase() === newOwner.trim().toLowerCase())) {
+        nextEmployees = [...prev.employees, { name: newOwner.trim(), department: department || '', position: 'Staff' }];
+      }
+
+      return {
+        ...prev,
+        assets: nextAssets,
+        employees: nextEmployees,
+      };
+    });
   }, []);
 
   const deleteAsset = useCallback((id) => {
@@ -40,6 +124,75 @@ export function DbProvider({ children }) {
         idSet.has(a.id) ? { ...a, ...changes, updated: todayIso() } : a,
       ),
     }));
+  }, []);
+
+  /** Append assets or update existing ones if overwriteAssets is true. Saves a restore point. */
+  const importAssets = useCallback((newAssets, overwriteAssets = false) => {
+    setDb((prev) => {
+      saveImportBackup(prev);
+      const incomingMap = new Map(newAssets.map((a) => [String(a.code).trim().toLowerCase(), a]));
+      let nextAssets;
+      if (overwriteAssets) {
+        nextAssets = prev.assets.map((a) => {
+          const match = incomingMap.get(String(a.code).trim().toLowerCase());
+          if (!match) return a;
+
+          let ownershipHistory = a.ownershipHistory || [];
+          if (match.owner && match.owner !== a.owner) {
+            ownershipHistory = [
+              createOwnershipEntry({
+                previousOwner: a.owner || 'None',
+                newOwner: match.owner,
+                reason: 'Excel Import Overwrite',
+                date: match.issuedDate || todayIso(),
+              }),
+              ...ownershipHistory,
+            ];
+          }
+
+          return {
+            ...a,
+            ...match,
+            id: a.id,
+            ownershipHistory,
+            updated: todayIso(),
+          };
+        });
+        const existingCodes = new Set(prev.assets.map((a) => String(a.code).trim().toLowerCase()));
+        const fresh = newAssets.filter((a) => !existingCodes.has(String(a.code).trim().toLowerCase())).map((fa) => {
+          const initialHistory = fa.owner
+            ? [createOwnershipEntry({ previousOwner: 'None', newOwner: fa.owner, reason: 'Excel Import' })]
+            : [];
+          return {
+            ...fa,
+            ownershipHistory: fa.ownershipHistory || initialHistory,
+          };
+        });
+        nextAssets = [...fresh, ...nextAssets];
+      } else {
+        const existingCodes = new Set(prev.assets.map((a) => String(a.code).trim().toLowerCase()));
+        const fresh = newAssets.filter((a) => !existingCodes.has(String(a.code).trim().toLowerCase())).map((fa) => {
+          const initialHistory = fa.owner
+            ? [createOwnershipEntry({ previousOwner: 'None', newOwner: fa.owner, reason: 'Excel Import' })]
+            : [];
+          return {
+            ...fa,
+            ownershipHistory: fa.ownershipHistory || initialHistory,
+          };
+        });
+        if (!fresh.length) return prev;
+        nextAssets = [...fresh, ...prev.assets];
+      }
+
+      // Reconcile all assets with current loans to guarantee accurate operational status
+      nextAssets = reconcileAllAssets(nextAssets, prev.loans);
+
+      const locations = [...(prev.locations || [])];
+      newAssets.forEach((a) => {
+        if (a.location && !locations.includes(a.location)) locations.push(a.location);
+      });
+      return { ...prev, assets: nextAssets, locations };
+    });
   }, []);
 
   /* ── Loan operations ────────────────────────────── */
@@ -256,8 +409,8 @@ export function DbProvider({ children }) {
         a.code === loan.assetCode
           ? {
               ...a,
-              status: l.pickupDate ? 'On loan' : 'Available',
-              owner: l.pickupDate ? loan.assignee : '',
+              status: loan.pickupDate ? 'On loan' : 'Available',
+              owner: loan.pickupDate ? loan.assignee : '',
               updated: todayIso(),
             }
           : a,
@@ -309,13 +462,26 @@ export function DbProvider({ children }) {
     return true;
   }, []);
 
+  /**
+   * Manual verification and synchronization: reconciles all assets against latest loan states
+   */
+  const verifyAndSyncAssets = useCallback(() => {
+    setDb((prev) => {
+      const reconciled = reconcileAllAssets(prev.assets, prev.loans);
+      return { ...prev, assets: reconciled };
+    });
+  }, []);
+
   const value = useMemo(() => ({
     db,
     setDb,
     addAsset,
     updateAsset,
+    changeAssetOwner,
     deleteAsset,
     batchUpdateAssets,
+    importAssets,
+    verifyAndSyncAssets,
     addLoan,
     updateLoan,
     pickupLoan,
@@ -330,8 +496,11 @@ export function DbProvider({ children }) {
     db,
     addAsset,
     updateAsset,
+    changeAssetOwner,
     deleteAsset,
     batchUpdateAssets,
+    importAssets,
+    verifyAndSyncAssets,
     addLoan,
     updateLoan,
     pickupLoan,

@@ -797,6 +797,38 @@ tbody tr:hover { background: #f7fbf8; }
 .toast { position: fixed; bottom: 25px; right: 25px; background: var(--green-dark); color: white; padding: 13px 17px; border-radius: 5px; font-size: 12px; transform: translateY(20px); opacity: 0; transition: .2s; pointer-events: none; z-index: 10; }
 .toast.show { transform: translateY(0); opacity: 1; }
 
+/* ── Asset Excel import preview ───────────────────────── */
+.view-header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.button:disabled { opacity: .5; cursor: not-allowed; }
+.import-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.import-stat { border: 1px solid var(--line); border-radius: 7px; padding: 12px 14px; position: relative; overflow: hidden; }
+.import-stat:after { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 4px 4px 0; background: var(--green); }
+.import-stat.warn:after { background: #d1a82e; }
+.import-stat.alert:after { background: #be665a; }
+.import-stat.muted:after { background: #b9c6c2; }
+.import-stat strong { display: block; font-family: Georgia, serif; font-size: 26px; font-weight: 400; }
+.import-stat span { color: var(--muted); font-size: 11px; }
+.import-conflict-box { background: #fdfaf3; border: 1px solid #ebdcb2; border-radius: 7px; padding: 14px 16px; margin-bottom: 18px; }
+.conflict-header strong { color: #846014; font-size: 13px; display: block; margin-bottom: 4px; }
+.conflict-header p { margin: 0 0 10px; color: var(--muted); font-size: 11px; }
+.conflict-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.conflict-radio-label { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12px; }
+.conflict-radio-label input[type="radio"] { margin-top: 2px; accent-color: var(--green); }
+.conflict-radio-label span { color: var(--ink); line-height: 1.4; }
+.import-duplicates-codes { font-size: 11px; color: var(--muted); margin: 0; padding-top: 6px; border-top: 1px dashed #e2d2a4; overflow-wrap: anywhere; }
+.preview-subheading { font-size: 12px; margin-bottom: 8px; }
+.import-preview-table { max-height: 240px; overflow-y: auto; border: 1px solid var(--line); border-radius: 7px; margin-bottom: 12px; }
+.import-preview-table th { position: sticky; top: 0; background: var(--panel); padding-top: 11px; }
+.import-preview-table tbody tr { animation: import-row-in .25s ease both; }
+.import-duplicates { color: #806218; background: #fff9df; border: 1px solid #eadb99; border-radius: 5px; padding: 9px 12px; font-size: 11px; line-height: 1.5; margin: 14px 0 0; overflow-wrap: anywhere; }
+@keyframes import-row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ── Change Owner & Asset History ─────────────────────── */
+.change-owner-dialog h2 { margin: 0 0 6px; font-family: Georgia, serif; font-weight: 400; font-size: 24px; }
+.asset-detail-container { width: 100%; }
+.asset-history-tab { animation: import-row-in .2s ease both; }
+.asset-history-tab th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { width: 190px; }

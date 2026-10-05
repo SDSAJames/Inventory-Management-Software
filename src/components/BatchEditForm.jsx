@@ -20,7 +20,6 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
     owner: false,
     department: false,
     category: false,
-    condition: false,
   });
 
   // Values to apply
@@ -30,7 +29,6 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
     owner: '',
     department: '',
     category: '',
-    condition: '',
   });
 
   const toggle = (field) =>
@@ -94,12 +92,6 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
       label: 'Category',
       type: 'text',
       placeholder: 'e.g. Laptop',
-    },
-    {
-      key: 'condition',
-      label: 'Condition',
-      type: 'text',
-      placeholder: 'e.g. Good, Fair, Poor',
     },
   ];
 
