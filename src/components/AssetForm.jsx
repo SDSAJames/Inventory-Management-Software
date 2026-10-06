@@ -51,17 +51,58 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
+  const handleStatusChange = (e) => {
+    const nextStatus = e.target.value;
+    setForm((prev) => {
+      // If user chooses 'Available', holder must be cleared
+      if (nextStatus === 'Available') {
+        return { ...prev, status: 'Available', owner: '' };
+      }
+      return { ...prev, status: nextStatus };
+    });
+  };
+
+  const handleOwnerChange = (e) => {
+    const nextOwner = e.target.value;
+    setForm((prev) => {
+      const hasHolder = Boolean(nextOwner && nextOwner.trim());
+      let nextStatus = prev.status;
+      // If there is a current holder, it must be 'Assigned' status, not 'Available'
+      if (hasHolder && prev.status === 'Available') {
+        nextStatus = 'Assigned';
+      } else if (!hasHolder && prev.status === 'Assigned') {
+        nextStatus = 'Available';
+      }
+      return { ...prev, owner: nextOwner, status: nextStatus };
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.code || !form.name) {
       toast('Asset code and name are required');
       return;
     }
+
+    const hasHolder = Boolean(form.owner && form.owner.trim());
+    let validatedStatus = form.status;
+    if (hasHolder && validatedStatus === 'Available') {
+      validatedStatus = 'Assigned';
+    } else if (!hasHolder && validatedStatus === 'Assigned') {
+      validatedStatus = 'Available';
+    }
+
+    const payload = {
+      ...form,
+      owner: form.owner ? form.owner.trim() : '',
+      status: validatedStatus,
+    };
+
     if (existing) {
-      updateAsset(assetId, form);
+      updateAsset(assetId, payload);
       toast('Asset updated');
     } else {
-      addAsset(form);
+      addAsset(payload);
       toast('Asset added to the register');
     }
     onClose();
@@ -133,7 +174,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             </div>
             <div className="field">
               <label htmlFor="status">Status</label>
-              <select id="status" value={form.status} onChange={set('status')}>
+              <select id="status" value={form.status} onChange={handleStatusChange}>
                 {STATUSES.map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
@@ -157,7 +198,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                   </button>
                 )}
               </div>
-              <input id="owner" value={form.owner} onChange={set('owner')} placeholder="Holder name" />
+              <input id="owner" value={form.owner} onChange={handleOwnerChange} placeholder="Holder name" />
             </div>
             <div className="field">
               <label htmlFor="department">Department</label>

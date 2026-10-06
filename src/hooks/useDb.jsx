@@ -10,7 +10,7 @@ import {
   saveTransferReasons,
 } from '../lib/db';
 import { todayIso } from '../lib/utils';
-import { reconcileAllAssets, createOwnershipEntry } from '../lib/assetIntegrity';
+import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 
 const DbContext = createContext(null);
@@ -78,13 +78,14 @@ export function DbProvider({ children }) {
 
   const addAsset = useCallback((asset) => {
     setDb((prev) => {
-      const initialHistory = asset.owner
-        ? [createOwnershipEntry({ previousOwner: 'None', newOwner: asset.owner, reason: 'Initial assignment' })]
+      const validated = validateAssetStatus(asset);
+      const initialHistory = validated.owner
+        ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: 'Initial assignment' })]
         : [];
       const newAsset = {
         id: crypto.randomUUID(),
-        ...asset,
-        ownershipHistory: asset.ownershipHistory || initialHistory,
+        ...validated,
+        ownershipHistory: validated.ownershipHistory || initialHistory,
         updated: todayIso(),
       };
       return { ...prev, assets: [newAsset, ...prev.assets] };
@@ -107,12 +108,12 @@ export function DbProvider({ children }) {
             ...ownershipHistory,
           ];
         }
-        return {
+        return validateAssetStatus({
           ...a,
           ...changes,
           ownershipHistory,
           updated: todayIso(),
-        };
+        });
       }),
     }));
   }, []);
@@ -141,8 +142,8 @@ export function DbProvider({ children }) {
 
       const nextAssets = prev.assets.map((a) => {
         if (a.id !== assetId) return a;
-        const newStatus = !newOwner ? 'Available' : (a.status === 'Available' ? 'Assigned' : a.status);
-        return {
+        const newStatus = !newOwner ? 'Available' : 'Assigned';
+        return validateAssetStatus({
           ...a,
           owner: newOwner || '',
           department: department !== undefined ? department : a.department,
@@ -150,7 +151,7 @@ export function DbProvider({ children }) {
           status: newStatus,
           ownershipHistory: [entry, ...(a.ownershipHistory || [])],
           updated: todayIso(),
-        };
+        });
       });
 
       // Also ensure employee directory has new employee if specified
@@ -186,7 +187,7 @@ export function DbProvider({ children }) {
     setDb((prev) => ({
       ...prev,
       assets: prev.assets.map((a) =>
-        idSet.has(a.id) ? { ...a, ...changes, updated: todayIso() } : a,
+        idSet.has(a.id) ? validateAssetStatus({ ...a, ...changes, updated: todayIso() }) : a,
       ),
     }));
   }, []);

@@ -32,6 +32,11 @@ export default function AssetsPage() {
       setFilterStatus(s);
     }
   }, [searchParams]);
+
+  // Passive verification and synchronization with loan records
+  useEffect(() => {
+    verifyAndSyncAssets();
+  }, [verifyAndSyncAssets]);
   const [editAssetId, setEditAssetId] = useState(null);
   const [showNew, setShowNew] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -174,17 +179,6 @@ export default function AssetsPage() {
               </button>
             </>
           )}
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => {
-              verifyAndSyncAssets();
-              toast('Assets verified and synchronized with latest loan records.');
-            }}
-            title="Verify loans history and synchronize current asset status, holders, and locations"
-          >
-            ⚡ Verify & Sync
-          </button>
           <button id="asset-import-btn" className="button ghost" onClick={() => fileRef.current?.click()}>
             ↑ Import Excel
           </button>

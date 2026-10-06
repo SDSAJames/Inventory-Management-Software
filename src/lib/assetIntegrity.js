@@ -59,14 +59,57 @@ export function reconcileAssetWithLoans(asset, loans = []) {
 
   // If no active loan, but asset status is currently 'On loan'
   if (asset.status === 'On loan') {
+    const hasHolder = Boolean(asset.owner && String(asset.owner).trim() !== '');
     return {
       ...asset,
-      status: 'Available',
-      owner: '',
+      status: hasHolder ? 'Assigned' : 'Available',
+      owner: hasHolder ? asset.owner : '',
       updated: todayIso(),
     };
   }
 
+  // VALIDATION RULE: If there is a current holder, it must be 'Assigned' status, NOT 'Available'!
+  const hasHolder = Boolean(asset.owner && String(asset.owner).trim() !== '');
+  if (hasHolder && asset.status === 'Available') {
+    return {
+      ...asset,
+      status: 'Assigned',
+      updated: asset.updated || todayIso(),
+    };
+  }
+
+  // If status is 'Assigned' but has no holder, reconcile to 'Available'
+  if (!hasHolder && asset.status === 'Assigned') {
+    return {
+      ...asset,
+      status: 'Available',
+      updated: asset.updated || todayIso(),
+    };
+  }
+
+  return asset;
+}
+
+/**
+ * Validates and enforces consistency between asset holder and status:
+ * - If there is a current holder, status cannot be 'Available'; it must be 'Assigned' (or 'On loan' / damage state).
+ * - If status is 'Available', holder must be empty.
+ */
+export function validateAssetStatus(asset) {
+  if (!asset) return asset;
+  const hasHolder = Boolean(asset.owner && String(asset.owner).trim() !== '');
+  if (hasHolder && asset.status === 'Available') {
+    return {
+      ...asset,
+      status: 'Assigned',
+    };
+  }
+  if (!hasHolder && asset.status === 'Assigned') {
+    return {
+      ...asset,
+      status: 'Available',
+    };
+  }
   return asset;
 }
 

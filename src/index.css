@@ -256,6 +256,68 @@ tbody tr:hover { background: #f7fbf8; }
   background: #e3f2e8;
 }
 
+/* ── Current Holder Clickable Transfer Trigger ────────── */
+.holder-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #f0f7f4;
+  border: 1px solid #d2e4dd;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-dark);
+  cursor: pointer;
+  transition: all 0.16s ease-in-out;
+  text-align: left;
+  max-width: 100%;
+}
+
+.holder-badge-btn:hover {
+  background: #d8ece2;
+  border-color: var(--green);
+  color: var(--green-dark);
+  box-shadow: 0 2px 7px rgba(31, 104, 86, 0.14);
+  transform: translateY(-1px);
+}
+
+.holder-badge-btn.is-unassigned {
+  background: #fcfdfc;
+  border: 1px dashed #cedbd5;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.holder-badge-btn.is-unassigned:hover {
+  background: #f0f7f4;
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.holder-badge-btn .holder-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.holder-transfer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--green);
+  opacity: 0.7;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.holder-badge-btn:hover .holder-transfer-icon {
+  opacity: 1;
+  transform: scale(1.22);
+}
+
 .bulk-delete-list {
   list-style: none;
   padding: 0;

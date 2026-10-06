@@ -38,7 +38,6 @@ export default function AssetTable({
             <th>Location</th>
             <th>Current holder</th>
             {showUpdatedDate && <th>Modification date</th>}
-            <th style={{ textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -53,7 +52,7 @@ export default function AssetTable({
                   if (['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) return;
                   if (handleEdit) handleEdit(asset.id);
                 }}
-                title="Click to view details & history"
+                title="Click row to view details & history"
               >
                 {onToggleSelect && (
                   <td className="col-checkbox">
@@ -77,8 +76,27 @@ export default function AssetTable({
                 </td>
                 <td>{asset.location || '—'}</td>
                 <td>
-                  <strong>{asset.owner || 'Unassigned'}</strong>
-                  {asset.department && <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{asset.department}</div>}
+                  {onChangeOwner ? (
+                    <button
+                      type="button"
+                      className={`holder-badge-btn ${!asset.owner ? 'is-unassigned' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onChangeOwner(asset);
+                      }}
+                      title={asset.owner ? `Click to transfer ownership from ${asset.owner}` : `Click to assign owner to ${asset.code}`}
+                    >
+                      <span className="holder-name">{asset.owner || 'Unassigned'}</span>
+                      <span className="holder-transfer-icon" title="Transfer ownership">⇄</span>
+                    </button>
+                  ) : (
+                    <strong>{asset.owner || 'Unassigned'}</strong>
+                  )}
+                  {asset.department && (
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                      {asset.department}
+                    </div>
+                  )}
                 </td>
                 {showUpdatedDate && (
                   <td style={{ whiteSpace: 'nowrap' }}>
@@ -87,22 +105,6 @@ export default function AssetTable({
                     </code>
                   </td>
                 )}
-                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {onChangeOwner && (
-                    <button
-                      type="button"
-                      className="button ghost"
-                      style={{ padding: '5px 10px', fontSize: '11px' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onChangeOwner(asset);
-                      }}
-                      title="Transfer ownership"
-                    >
-                      👤 Transfer Owner
-                    </button>
-                  )}
-                </td>
               </tr>
             );
           })}
