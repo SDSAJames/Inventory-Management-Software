@@ -8,8 +8,15 @@ export default function Modal({ open, onClose, children }) {
     return () => document.removeEventListener('keydown', handleKey);
   }, [open, onClose]);
 
+  if (!open) return null;
+
   return (
-    <div className={`modal-backdrop${open ? '' : ' hidden'}`}>
+    <div
+      className="modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <section className="modal" role="dialog" aria-modal="true">
         <button
           className="modal-close"

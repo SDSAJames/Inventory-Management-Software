@@ -2,7 +2,7 @@
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
-import { todayIso } from './utils';
+import { todayIso, readableLoanDate } from './utils';
 
 /**
  * Reconciles an asset against all loans in the database to derive its true latest
@@ -101,40 +101,111 @@ export function createOwnershipEntry({
   date = '',
   reason = 'Reassigned',
   notes = '',
+  location = '',
+  department = '',
 }) {
   return {
     id: crypto.randomUUID(),
     date: date || new Date().toISOString().slice(0, 19).replace('T', ' '),
     previousOwner: previousOwner || 'None',
     newOwner: newOwner || 'None',
+    location: location || '',
+    department: department || '',
     reason: reason || 'Reassigned',
     notes: notes || '',
   };
 }
 
 /**
- * Returns the effective ownership history for an asset.
- * If no explicit ownership transfers were recorded yet, but the asset has a current holder (e.g. from seed, import, or registration),
- * an initial baseline ownership entry is automatically synthesized so history is never empty or buggy.
+ * Returns the effective ownership history for an asset, including
+ * permanent transfers, initial assignments, and all loan checkouts and returns.
  */
-export function getAssetEffectiveOwnershipHistory(asset) {
+export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   if (!asset) return [];
-  const explicit = asset.ownershipHistory || [];
-  if (explicit.length > 0) return explicit;
 
-  if (asset.owner) {
-    return [
-      {
-        id: `initial-${asset.id || 'owner'}`,
-        date: asset.issuedDate || asset.updated || todayIso(),
-        previousOwner: 'None',
-        newOwner: asset.owner,
-        reason: 'Current Assigned Holder',
-        notes: asset.department ? `Department: ${asset.department}` : (asset.notes || 'Initial record'),
-      },
-    ];
+  const entries = [];
+  const seen = new Set();
+
+  const addEntry = (item) => {
+    if (!item) return;
+    const key = `${item.date || ''}|${item.newOwner || ''}|${item.reason || ''}`.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    entries.push(item);
+  };
+
+  // 1. Explicit ownership transfers recorded on the asset
+  const explicit = asset.ownershipHistory || [];
+  explicit.forEach((entry) => {
+    addEntry({
+      ...entry,
+      isLoan: false,
+    });
+  });
+
+  // 2. Loan history records for this asset code
+  if (asset.code && Array.isArray(loans)) {
+    const code = String(asset.code).trim().toLowerCase();
+    const assetLoans = loans.filter((l) => String(l.assetCode || '').trim().toLowerCase() === code);
+
+    assetLoans.forEach((l) => {
+      // Loan checkout / pickup event
+      const startDate = readableLoanDate(l.pickupDate || l.startDate || l.loanDate);
+      if (startDate) {
+        addEntry({
+          id: `loan-out-${l.id}`,
+          date: startDate,
+          previousOwner: l.previousOwner || 'Pool / Available',
+          newOwner: l.assignee || l.borrower || 'Borrower',
+          department: l.department || '',
+          location: l.location || asset.location || '',
+          reason: l.purpose ? `Loan: ${l.purpose}` : 'Loan Handover',
+          notes: [
+            l.knoxId ? `Knox: ${l.knoxId}` : '',
+            l.dueDate ? `Due: ${readableLoanDate(l.dueDate)}` : '',
+            l.status ? `Status: ${l.status}` : '',
+          ].filter(Boolean).join(' • '),
+          isLoan: true,
+          loanStatus: l.status || (l.returnDate ? 'Returned' : 'Active'),
+        });
+      }
+
+      // Loan return event
+      const returnDate = readableLoanDate(l.returnDate || l.returnedDate);
+      if (returnDate || l.status === 'Returned') {
+        const retDate = returnDate || startDate || todayIso();
+        addEntry({
+          id: `loan-in-${l.id}`,
+          date: retDate,
+          previousOwner: l.assignee || l.borrower || 'Borrower',
+          newOwner: 'Returned to Pool / Available',
+          department: l.department || '',
+          location: l.location || asset.location || '',
+          reason: 'Loan Returned',
+          notes: `Returned to inventory (was borrowed by ${l.assignee || l.borrower || 'borrower'})`,
+          isLoan: true,
+          loanStatus: 'Returned',
+        });
+      }
+    });
   }
 
-  return [];
+  // 3. If no entries exist yet, but asset has a current holder, synthesize baseline
+  if (entries.length === 0 && asset.owner) {
+    addEntry({
+      id: `initial-${asset.id || 'owner'}`,
+      date: asset.issuedDate || asset.updated || todayIso(),
+      previousOwner: 'None',
+      newOwner: asset.owner,
+      location: asset.location || '',
+      department: asset.department || '',
+      reason: 'Current Assigned Holder',
+      notes: asset.department ? `Department: ${asset.department}` : (asset.notes || 'Initial record'),
+      isLoan: false,
+    });
+  }
+
+  // Sort chronologically, latest first
+  return entries.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 

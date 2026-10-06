@@ -8,6 +8,7 @@ export default function AssetTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  showUpdatedDate = true,
 }) {
   if (!assets.length) {
     return <div className="empty">No assets match the current filters.</div>;
@@ -36,6 +37,7 @@ export default function AssetTable({
             <th>Status</th>
             <th>Location</th>
             <th>Current holder</th>
+            {showUpdatedDate && <th>Modification date</th>}
             <th style={{ textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
@@ -78,6 +80,13 @@ export default function AssetTable({
                   <strong>{asset.owner || 'Unassigned'}</strong>
                   {asset.department && <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{asset.department}</div>}
                 </td>
+                {showUpdatedDate && (
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <code style={{ fontSize: '11px', color: 'var(--ink)' }}>
+                      {asset.updated || '—'}
+                    </code>
+                  </td>
+                )}
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {onChangeOwner && (
                     <button

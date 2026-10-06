@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { STATUSES } from '../lib/constants';
@@ -20,9 +21,17 @@ export default function AssetsPage() {
   const { db, deleteAsset, importAssets, verifyAndSyncAssets } = useDb();
   const toast = useToast();
   const fileRef = useRef(null);
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState('All fields');
-  const [filterStatus, setFilterStatus] = useState('All statuses');
+  const [filterStatus, setFilterStatus] = useState(() => searchParams.get('status') || 'All statuses');
+
+  useEffect(() => {
+    const s = searchParams.get('status');
+    if (s) {
+      setFilterStatus(s);
+    }
+  }, [searchParams]);
   const [editAssetId, setEditAssetId] = useState(null);
   const [showNew, setShowNew] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -215,11 +224,13 @@ export default function AssetsPage() {
       </section>
 
       <Modal open={showNew || editAssetId !== null} onClose={() => { setShowNew(false); setEditAssetId(null); }}>
-        <AssetForm
-          assetId={editAssetId}
-          onClose={() => { setShowNew(false); setEditAssetId(null); }}
-          onOpenChangeOwner={(asset) => setOwnerTargetAsset(asset)}
-        />
+        {(showNew || editAssetId !== null) && (
+          <AssetForm
+            assetId={editAssetId}
+            onClose={() => { setShowNew(false); setEditAssetId(null); }}
+            onOpenChangeOwner={(asset) => setOwnerTargetAsset(asset)}
+          />
+        )}
       </Modal>
 
       {/* Change Owner Modal */}

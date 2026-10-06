@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { STATUSES } from '../lib/constants';
-import { nextAssetCode, readableLoanDate, statusClass } from '../lib/utils';
-import { getAssetLoanHistory, getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
+import { nextAssetCode, statusClass } from '../lib/utils';
+import { getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 
@@ -12,6 +12,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'loans' | 'ownership'
 
   const existing = assetId ? db.assets.find((a) => a.id === assetId) : null;
+  const currentTab = existing ? activeTab : 'details';
 
   const makeBlank = () => ({
     code: nextAssetCode(db.assets.length),
@@ -38,21 +39,15 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       setForm({ ...existing });
     } else {
       setForm(makeBlank());
+      setActiveTab('details');
     }
-    setActiveTab('details');
   }, [assetId]);
 
-  // Loans history for this asset
-  const loanHistory = useMemo(() => {
-    if (!existing || !existing.code) return [];
-    return getAssetLoanHistory(existing.code, db.loans);
-  }, [existing, db.loans]);
-
-  // Effective ownership history for this asset (never empty if there is a holder)
+  // Effective ownership history for this asset including all loans and assignments
   const ownershipHistory = useMemo(() => {
     if (!existing) return [];
-    return getAssetEffectiveOwnershipHistory(existing);
-  }, [existing]);
+    return getAssetEffectiveOwnershipHistory(existing, db.loans);
+  }, [existing, db.loans]);
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -96,22 +91,14 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
         <div className="loan-tabs" style={{ marginBottom: '18px' }}>
           <button
             type="button"
-            className={`loan-tab ${activeTab === 'details' ? 'active' : ''}`}
+            className={`loan-tab ${currentTab === 'details' ? 'active' : ''}`}
             onClick={() => setActiveTab('details')}
           >
             📋 Details
           </button>
           <button
             type="button"
-            className={`loan-tab ${activeTab === 'loans' ? 'active' : ''}`}
-            onClick={() => setActiveTab('loans')}
-          >
-            📦 Loans History
-            <span className="loan-tab-count">{loanHistory.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`loan-tab ${activeTab === 'ownership' ? 'active' : ''}`}
+            className={`loan-tab ${currentTab === 'ownership' ? 'active' : ''}`}
             onClick={() => setActiveTab('ownership')}
           >
             👤 Ownership History
@@ -121,7 +108,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       )}
 
       {/* TAB 1: DETAILS FORM */}
-      {activeTab === 'details' && (
+      {currentTab === 'details' && (
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="field">
@@ -205,69 +192,16 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
         </form>
       )}
 
-      {/* TAB 2: LOANS HISTORY */}
-      {activeTab === 'loans' && (
+      {/* TAB 2: OWNERSHIP & CUSTODY HISTORY (Unified with loans) */}
+      {currentTab === 'ownership' && existing && (
         <div className="asset-history-tab">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <strong>Loan Records for {existing.code} ({loanHistory.length})</strong>
-            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>Synchronized with live loans schedule</span>
-          </div>
-
-          {loanHistory.length === 0 ? (
-            <div className="empty" style={{ padding: '24px' }}>
-              No loan history found for this asset.
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <strong>Ownership &amp; Custody History ({ownershipHistory.length})</strong>
+              <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                Comprehensive timeline of all permanent assignments, loans, and returns
+              </div>
             </div>
-          ) : (
-            <div className="table-wrap" style={{ maxHeight: '340px', overflowY: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Borrower / Assignee</th>
-                    <th>Type</th>
-                    <th>Loan Status</th>
-                    <th>Start Date</th>
-                    <th>Pickup Date</th>
-                    <th>Return Date</th>
-                    <th>Location</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loanHistory.map((l) => (
-                    <tr key={l.id}>
-                      <td>
-                        <strong>{l.assignee || l.borrower || '—'}</strong>
-                        {l.knoxId && <div style={{ fontSize: '10px', color: 'var(--muted)' }}>Knox: {l.knoxId}</div>}
-                      </td>
-                      <td>{l.assigneeType || 'Employee'}</td>
-                      <td>
-                        <span className={`status ${statusClass(l.status || (l.returnDate ? 'Returned' : l.pickupDate ? 'Active' : 'Scheduled'))}`}>
-                          {l.status || (l.returnDate ? 'Returned' : l.pickupDate ? 'Active' : 'Scheduled')}
-                        </span>
-                      </td>
-                      <td>{readableLoanDate(l.startDate || l.loanDate) || '—'}</td>
-                      <td>{readableLoanDate(l.pickupDate) || '—'}</td>
-                      <td>{readableLoanDate(l.returnDate || l.returnedDate) || '—'}</td>
-                      <td>{l.location || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <div className="form-actions" style={{ marginTop: '20px' }}>
-            <button type="button" className="button ghost" onClick={onClose}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: OWNERSHIP HISTORY */}
-      {activeTab === 'ownership' && (
-        <div className="asset-history-tab">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <strong>Ownership & Transfer Log ({ownershipHistory.length})</strong>
             {onOpenChangeOwner && (
               <button
                 type="button"
@@ -282,8 +216,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
           {ownershipHistory.length === 0 ? (
             <div className="empty" style={{ padding: '24px' }}>
-              No explicit ownership transfers logged yet.
-              {existing.owner && (
+              No ownership transfers or loan history recorded yet.
+              {existing?.owner && (
                 <div style={{ marginTop: '8px', fontSize: '12px' }}>
                   Current holder: <strong>{existing.owner}</strong> ({existing.department || 'No department'})
                 </div>
@@ -294,10 +228,11 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               <table>
                 <thead>
                   <tr>
-                    <th>Date</th>
+                    <th>Date / Time</th>
                     <th>Previous Holder</th>
                     <th>New Holder</th>
-                    <th>Reason</th>
+                    <th>Location</th>
+                    <th>Reason / Status</th>
                     <th>Notes</th>
                   </tr>
                 </thead>
@@ -306,11 +241,24 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                     <tr key={item.id}>
                       <td><code>{item.date}</code></td>
                       <td>{item.previousOwner || 'None'}</td>
-                      <td><strong>{item.newOwner || 'None'}</strong></td>
                       <td>
-                        <span className="batch-chip" style={{ fontSize: '10px' }}>
-                          {item.reason || 'Reassigned'}
-                        </span>
+                        <strong>{item.newOwner || 'None'}</strong>
+                        {item.department && (
+                          <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{item.department}</div>
+                        )}
+                      </td>
+                      <td>{item.location || '—'}</td>
+                      <td>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <span className="batch-chip" style={{ fontSize: '10px' }}>
+                            {item.reason || 'Reassigned'}
+                          </span>
+                          {item.isLoan && item.loanStatus && (
+                            <span className={`status ${statusClass(item.loanStatus)}`} style={{ fontSize: '9px', padding: '1px 5px' }}>
+                              {item.loanStatus}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td style={{ color: 'var(--muted)', fontSize: '11px' }}>{item.notes || '—'}</td>
                     </tr>

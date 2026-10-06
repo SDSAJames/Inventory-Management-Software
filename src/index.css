@@ -75,6 +75,31 @@ button { cursor: pointer; }
 .stat-card:after { content: ""; position: absolute; width: 5px; top: 17px; bottom: 17px; left: 0; background: var(--green); border-radius: 0 4px 4px 0; }
 .stat-card.warn:after { background: #d1a82e; }
 .stat-card.alert:after { background: #be665a; }
+.stat-card.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  user-select: none;
+}
+.stat-card.clickable:hover {
+  transform: translateY(-2px);
+  border-color: var(--green);
+  box-shadow: 0 4px 14px rgba(15, 39, 34, 0.08);
+}
+.stat-card.clickable.active {
+  border-color: var(--green);
+  background: #f0f7f3;
+  box-shadow: 0 0 0 2px var(--green);
+}
+.stat-card.clickable.warn.active {
+  border-color: #d1a82e;
+  background: #fdfaf0;
+  box-shadow: 0 0 0 2px #d1a82e;
+}
+.stat-card.clickable.alert.active {
+  border-color: #be665a;
+  background: #fdf5f4;
+  box-shadow: 0 0 0 2px #be665a;
+}
 .stat-label { color: var(--muted); font-size: 11px; }
 .stat-value { display: block; font-family: Georgia, serif; font-size: 36px; margin-top: 11px; }
 .stat-note { color: var(--muted); font-size: 10px; }

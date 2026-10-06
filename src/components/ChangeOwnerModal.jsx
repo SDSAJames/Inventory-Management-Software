@@ -9,8 +9,8 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
 
   const [newOwner, setNewOwner] = useState('');
   const [department, setDepartment] = useState(asset?.department || '');
-  const [reason, setReason] = useState(transferReasons[0] || 'Reassigned to new staff');
-  const [customReasonInput, setCustomReasonInput] = useState('');
+  const [location, setLocation] = useState(asset?.location || '');
+  const [reason, setReason] = useState('');
   const [showManageReasons, setShowManageReasons] = useState(false);
   const [newCustomReason, setNewCustomReason] = useState('');
 
@@ -42,18 +42,22 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
       return;
     }
 
-    const effectiveReason = reason === '__custom__'
-      ? (customReasonInput.trim() || 'Other')
-      : reason;
+    if (!reason.trim()) {
+      toast('Please enter a transfer reason');
+      return;
+    }
 
-    // If user typed a custom reason, also save to manage list if not present
-    if (reason === '__custom__' && customReasonInput.trim()) {
-      addTransferReason(customReasonInput.trim());
+    const effectiveReason = reason.trim();
+
+    // If typed reason is not in the presets, save it so it appears in suggestions
+    if (effectiveReason) {
+      addTransferReason(effectiveReason);
     }
 
     changeAssetOwner(asset.id, {
       newOwner: newOwner.trim(),
       department: department.trim(),
+      location: location.trim(),
       reason: effectiveReason,
       notes: notes.trim(),
       date: timestamp.replace('T', ' '),
@@ -68,7 +72,8 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
     changeAssetOwner(asset.id, {
       newOwner: '',
       department: '',
-      reason: 'Returned to Pool / Unassigned',
+      location: location.trim() || asset.location || '',
+      reason: reason.trim() || 'Returned to Pool / Unassigned',
       notes: notes.trim() || 'Cleared ownership',
       date: timestamp.replace('T', ' '),
     });
@@ -96,7 +101,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
           <dd>{asset.owner || '— None (Unassigned)'}</dd>
           <dt>Current status:</dt>
           <dd>{asset.status}</dd>
-          <dt>Location:</dt>
+          <dt>Current location:</dt>
           <dd>{asset.location || '—'}</dd>
         </dl>
       </div>
@@ -104,7 +109,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
       <form onSubmit={handleSubmit}>
         <div className="form-grid">
           {/* New Owner */}
-          <div className="field">
+          <div className="field full">
             <label htmlFor="newOwnerInput">New owner / holder <span style={{ color: '#be665a' }}>*</span></label>
             <input
               id="newOwnerInput"
@@ -140,7 +145,24 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
             />
           </div>
 
-          {/* Transfer Reason with Manage & Manual Typing */}
+          {/* Location */}
+          <div className="field">
+            <label htmlFor="ownerLocation">Location</label>
+            <input
+              id="ownerLocation"
+              list="locationsList"
+              placeholder="e.g. Head Office, Regional Office, IT Store"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+            <datalist id="locationsList">
+              {db.locations?.map((loc, idx) => (
+                <option key={idx} value={loc} />
+              ))}
+            </datalist>
+          </div>
+
+          {/* Transfer Reason - Directly typeable with datalist & reason options manager */}
           <div className="field full">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
               <label htmlFor="transferReason">Transfer reason</label>
@@ -154,48 +176,89 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <select
+            <div style={{ position: 'relative' }}>
+              <input
                 id="transferReason"
-                style={{ flex: 1 }}
+                list="transferReasonsList"
+                placeholder="Type transfer reason here (e.g. Reassigned to new staff, Project allocation)"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-              >
-                {transferReasons.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                required
+              />
+              <datalist id="transferReasonsList">
+                {transferReasons.map((r, idx) => (
+                  <option key={idx} value={r} />
                 ))}
-                <option value="__custom__">✎ Other (type manually below)...</option>
-              </select>
+              </datalist>
             </div>
 
-            {/* Manual reason typing if selected or user wants custom input */}
-            {reason === '__custom__' && (
-              <div style={{ marginTop: '8px' }}>
-                <input
-                  placeholder="Type custom transfer reason..."
-                  value={customReasonInput}
-                  onChange={(e) => setCustomReasonInput(e.target.value)}
-                  required
-                />
+            {/* Quick preset suggestions */}
+            {transferReasons.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>Quick suggestions:</span>
+                {transferReasons.slice(0, 5).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className="batch-chip"
+                    style={{
+                      border: reason === r ? '1px solid var(--accent)' : '1px solid var(--line)',
+                      background: reason === r ? '#e8f0fe' : '#f5f5f5',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                    }}
+                    onClick={() => setReason(r)}
+                    title={`Click to fill: "${r}"`}
+                  >
+                    {r}
+                  </button>
+                ))}
               </div>
             )}
 
             {/* Manage Reason Options panel */}
             {showManageReasons && (
               <div className="manage-reasons-box" style={{ marginTop: '10px', padding: '12px', background: '#f7faf8', border: '1px solid var(--line)', borderRadius: '6px' }}>
-                <strong style={{ fontSize: '11px', color: 'var(--green-dark)', display: 'block', marginBottom: '6px' }}>
-                  Manage Pre-configured Reasons
-                </strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--green-dark)' }}>
+                    Preset Reason Options (click to populate field or manage)
+                  </strong>
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                   {transferReasons.map((r) => (
-                    <span key={r} className="batch-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 8px' }}>
-                      {r}
+                    <span
+                      key={r}
+                      className="batch-chip"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => setReason(r)}
+                      title="Click to select this reason"
+                    >
+                      <span>{r}</span>
                       {transferReasons.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => removeTransferReason(r)}
-                          style={{ background: 'none', border: 'none', color: '#be665a', cursor: 'pointer', padding: 0, fontWeight: 'bold' }}
-                          title={`Remove ${r}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeTransferReason(r);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#be665a',
+                            cursor: 'pointer',
+                            padding: 0,
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                          }}
+                          title={`Remove "${r}" option`}
                         >
                           ×
                         </button>

@@ -120,15 +120,20 @@ export function DbProvider({ children }) {
   /**
    * Explicitly change the ownership of an asset and record it in the asset's ownership history.
    */
-  const changeAssetOwner = useCallback((assetId, { newOwner, department, reason, notes, date }) => {
+  const changeAssetOwner = useCallback((assetId, { newOwner, department, location, reason, notes, date }) => {
     setDb((prev) => {
       const asset = prev.assets.find((a) => a.id === assetId);
       if (!asset) return prev;
 
       const previousOwner = asset.owner || '';
+      const previousLocation = asset.location || '';
+      const effectiveLocation = location !== undefined ? location.trim() : previousLocation;
+
       const entry = createOwnershipEntry({
         previousOwner: previousOwner || 'None',
         newOwner: newOwner || 'None',
+        location: effectiveLocation,
+        department: department !== undefined ? department : asset.department,
         date: date || todayIso(),
         reason: reason || (newOwner ? (previousOwner ? 'Transferred' : 'Assigned') : 'Unassigned'),
         notes: notes || '',
@@ -141,6 +146,7 @@ export function DbProvider({ children }) {
           ...a,
           owner: newOwner || '',
           department: department !== undefined ? department : a.department,
+          location: effectiveLocation,
           status: newStatus,
           ownershipHistory: [entry, ...(a.ownershipHistory || [])],
           updated: todayIso(),
@@ -153,10 +159,17 @@ export function DbProvider({ children }) {
         nextEmployees = [...prev.employees, { name: newOwner.trim(), department: department || '', position: 'Staff' }];
       }
 
+      // Also ensure locations list contains this location if not empty and not existing
+      const nextLocations = [...(prev.locations || [])];
+      if (effectiveLocation && !nextLocations.includes(effectiveLocation)) {
+        nextLocations.push(effectiveLocation);
+      }
+
       return {
         ...prev,
         assets: nextAssets,
         employees: nextEmployees,
+        locations: nextLocations,
       };
     });
   }, []);
