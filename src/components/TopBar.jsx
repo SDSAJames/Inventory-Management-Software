@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { APP_VERSION } from '../lib/constants';
 
 const PAGE_META = {
   '/': {
@@ -32,14 +33,17 @@ export default function TopBar() {
 
   return (
     <header className="topbar">
-      <div>
-        <p className="eyebrow">{current.eyebrow}</p>
+      <div className="topbar-title-wrap">
         <h1>{current.title}</h1>
+        <span className="topbar-tag">{current.eyebrow}</span>
       </div>
       <div className="top-actions">
-        <div className="offline-pill" title="Local browser IndexedDB storage active (100% offline compatible)">
+        <div className="version-pill" title={`StarPlus Energy Asset Management System v${APP_VERSION}`}>
+          v{APP_VERSION}
+        </div>
+        <div className="offline-pill" title="Local browser storage active (100% offline compatible)">
           <span className="status-indicator-dot" />
-          <span>Offline Ready</span>
+          <span>Offline</span>
         </div>
         <div className="profile-chip" title="IT Department Workspace">
           <span className="profile-chip-name">IT Admin</span>

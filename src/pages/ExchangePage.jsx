@@ -161,8 +161,7 @@ export default function ExchangePage() {
     <>
       <div className="view-header">
         <div>
-          <h2>Excel exchange</h2>
-          <p>Import and export the SPE IT equipment loan list format.</p>
+          <p className="view-subtitle">Import and export workbook files in standard equipment list format.</p>
         </div>
       </div>
 

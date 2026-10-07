@@ -158,9 +158,8 @@ export default function LoansPage() {
     <>
       <div className="view-header">
         <div>
-          <h2>Laptop loan scheduling & process management</h2>
-          <p>
-            Track scheduled pickups, timestamp handovers, process returns, or revert stages if marked by mistake. Click any row to view loaner details.
+          <p className="view-subtitle">
+            Track scheduled pickups, device handovers, and return records. Click any row to view details.
           </p>
         </div>
         <div className="view-header-actions">
@@ -418,12 +417,12 @@ export default function LoansPage() {
       </Modal>
 
       {/* Create loan modal */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)}>
+      <Modal open={showCreate} size="wide" onClose={() => setShowCreate(false)}>
         <LoanForm onClose={() => setShowCreate(false)} />
       </Modal>
 
       {/* Edit loan modal (fallback / full edit from expanded row) */}
-      <Modal open={editLoanId !== null} onClose={() => setEditLoanId(null)}>
+      <Modal open={editLoanId !== null} size="wide" onClose={() => setEditLoanId(null)}>
         {editLoanId && (
           <EditLoanForm loanId={editLoanId} onClose={() => setEditLoanId(null)} />
         )}

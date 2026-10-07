@@ -7,8 +7,7 @@ export default function DirectoryPage() {
     <>
       <div className="view-header">
         <div>
-          <h2>Directory</h2>
-          <p>Departments and locations used by the asset register.</p>
+          <p className="view-subtitle">Departments and facility locations registered in the system.</p>
         </div>
       </div>
 

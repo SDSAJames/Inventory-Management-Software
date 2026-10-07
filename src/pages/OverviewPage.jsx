@@ -97,7 +97,6 @@ export default function OverviewPage() {
     <>
       <div className="view-header">
         <div>
-          <h2 className="view-title">Fleet Summary & Key Metrics</h2>
           <p className="view-subtitle">Real-time equipment allocation, fleet availability, and custody records.</p>
         </div>
         <button className="button" onClick={() => setModal('asset')}>+ Register asset</button>
@@ -222,7 +221,7 @@ export default function OverviewPage() {
       </Modal>
 
       {/* Loan modal */}
-      <Modal open={modal === 'loan'} onClose={() => setModal(null)}>
+      <Modal open={modal === 'loan'} size="wide" onClose={() => setModal(null)}>
         {modal === 'loan' && <LoanForm onClose={() => setModal(null)} />}
       </Modal>
     </>

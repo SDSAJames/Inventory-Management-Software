@@ -163,8 +163,7 @@ export default function AssetsPage() {
     <>
       <div className="view-header">
         <div>
-          <h2>Asset register</h2>
-          <p>{filtered.length} of {db.assets.length} assets shown.</p>
+          <p>{filtered.length} of {db.assets.length} assets shown</p>
         </div>
         <div className="view-header-actions">
           {selectedIds.size > 0 && (

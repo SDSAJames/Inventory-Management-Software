@@ -222,20 +222,27 @@ export default function LoanForm({ onClose }) {
           </div>
 
           {/* Equipment */}
-          {[
-            ['Charging Adapter', 'adapter'],
-            ['Charging Cable', 'cable'],
-            ['Dongle', 'dongle'],
-            ['Keyboard', 'keyboard'],
-            ['Mouse', 'mouse'],
-            ['Monitor asset number', 'monitor'],
-            ['Ethernet cable', 'ethernetCable'],
-          ].map(([label, key]) => (
-            <div className="equipment-field" key={key}>
-              <label htmlFor={key}>{label}</label>
-              <input id={key} value={form[key]} onChange={set(key)} />
+          <div className="field full">
+            <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
+              Equipment Checklist
+            </label>
+            <div className="equipment-grid">
+              {[
+                ['Charging Adapter', 'adapter'],
+                ['Charging Cable', 'cable'],
+                ['Dongle', 'dongle'],
+                ['Keyboard', 'keyboard'],
+                ['Mouse', 'mouse'],
+                ['Monitor asset number', 'monitor'],
+                ['Ethernet cable', 'ethernetCable'],
+              ].map(([label, key]) => (
+                <div className="equipment-field" key={key}>
+                  <label htmlFor={key}>{label}</label>
+                  <input id={key} value={form[key]} onChange={set(key)} />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
 
           <div className="field">
             <label htmlFor="others">Others</label>

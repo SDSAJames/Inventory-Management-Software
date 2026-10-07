@@ -126,7 +126,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
         </div>
       </div>
 
-      <p className="modal-intro" style={{ marginBottom: '16px' }}>
+      <p className="modal-intro" style={{ marginBottom: '10px' }}>
         {existing
           ? `Code: ${existing.code} • Current Holder: ${existing.owner || 'None (Unassigned)'}`
           : 'The asset remains the master record through every assignment and return.'}
@@ -134,7 +134,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
       {/* Tabs for existing asset */}
       {existing && (
-        <div className="loan-tabs" style={{ marginBottom: '18px' }}>
+        <div className="loan-tabs" style={{ marginBottom: '12px' }}>
           <button
             type="button"
             className={`loan-tab ${currentTab === 'details' ? 'active' : ''}`}
@@ -156,7 +156,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       {/* TAB 1: DETAILS FORM */}
       {currentTab === 'details' && (
         <form onSubmit={handleSubmit}>
-          <div className="form-grid">
+          <div className="asset-form-grid">
+            {/* ROW 1: Hardware Specs & Identity */}
             <div className="field">
               <label htmlFor="code">Asset code</label>
               <input id="code" value={form.code} onChange={set('code')} required />
@@ -173,6 +174,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               <label htmlFor="model">Model</label>
               <input id="model" value={form.model} onChange={set('model')} />
             </div>
+
+            {/* ROW 2: Inventory, Status & Custody */}
             <div className="field">
               <label htmlFor="serial">Serial number</label>
               <input id="serial" value={form.serial} onChange={set('serial')} />
@@ -205,6 +208,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               </div>
               <input id="owner" value={form.owner} onChange={handleOwnerChange} placeholder="Holder name" />
             </div>
+
+            {/* ROW 3: Department, Issued Date & Notes */}
             <div className="field">
               <label htmlFor="department">Department</label>
               <input id="department" value={form.department} onChange={set('department')} />
@@ -213,13 +218,13 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               <label htmlFor="issuedDate">Issued date</label>
               <input id="issuedDate" type="date" value={form.issuedDate || ''} onChange={set('issuedDate')} />
             </div>
-            <div className="field full">
+            <div className="field col-span-2">
               <label htmlFor="notes">Notes</label>
-              <input id="notes" value={form.notes} onChange={set('notes')} />
+              <input id="notes" value={form.notes} onChange={set('notes')} placeholder="Optional notes or asset condition" />
             </div>
           </div>
 
-          <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '22px' }}>
+          <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '14px' }}>
             {existing && onOpenChangeOwner ? (
               <button
                 type="button"

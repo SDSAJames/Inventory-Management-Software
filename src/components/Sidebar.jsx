@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
+import { APP_VERSION } from '../lib/constants';
 
 const NAV_ITEMS = [
   {
@@ -105,7 +106,7 @@ export default function Sidebar() {
       <div className="sidebar-footer">
         <div className="status-dot" />
         <div>
-          <strong>Offline workspace</strong>
+          <strong>v{APP_VERSION} • Offline workspace</strong>
           <span>Data stays on this device</span>
         </div>
       </div>
