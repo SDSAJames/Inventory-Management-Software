@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { todayIso, statusClass, readableLoanDate } from '../lib/utils';
+import { todayIso, readableLoanDate } from '../lib/utils';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
 
-export default function TravelersPage() {
+export default function BusinessTravelersPage() {
   const { db, returnLoan } = useDb();
   const toast = useToast();
 
@@ -16,16 +16,36 @@ export default function TravelersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editLoanId, setEditLoanId] = useState(null);
   const [returnConfirmTarget, setReturnConfirmTarget] = useState(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  /* ── Fullscreen Escape key & scroll-lock handler ─────────── */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+    if (isFullScreen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullScreen]);
 
   /* ── 1. Calculate Traveler Records ────────────────────────── */
   const allTravelers = useMemo(() => {
-    // A loan is considered a business travel assignment if assigneeType is 'Business traveler' or has destination
-    const travelLoans = db.loans.filter(
+    // A loan is considered a business travel assignment if assigneeType is 'Business traveler'
+    const travelLoans = (db.loans || []).filter(
       (l) => (l.assigneeType || 'Business traveler') === 'Business traveler'
     );
 
     return travelLoans.map((loan) => {
-      const asset = db.assets.find(
+      const asset = (db.assets || []).find(
         (a) => String(a.code || '').toLowerCase() === String(loan.assetCode || '').toLowerCase()
       );
       const isReturned = Boolean(loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived);
@@ -294,10 +314,54 @@ export default function TravelersPage() {
         </div>
       </section>
 
-      {/* ── Travelers Management Register ─────────────────────── */}
-      <section className="panel">
-        <div className="panel-heading" style={{ marginBottom: '14px' }}>
-          <h3>Business Traveler Roster ({filteredTravelers.length})</h3>
+      {/* ── Travelers Management Register (With Full Screen Mode) ─ */}
+      <section className={`panel${isFullScreen ? ' roster-fullscreen' : ''}`}>
+        <div className="panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ margin: 0 }}>Business Traveler Roster ({filteredTravelers.length})</h3>
+            {isFullScreen && (
+              <span className="fullscreen-indicator">
+                <span className="status-indicator-dot" />
+                Full Screen View • Press Esc to exit
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              className={isFullScreen ? 'button' : 'button ghost'}
+              style={{ fontSize: '12px', padding: '6px 12px' }}
+              onClick={() => setIsFullScreen((prev) => !prev)}
+              title={isFullScreen ? 'Exit full screen (or press Esc)' : 'Expand business travel roster to full screen full-body view'}
+            >
+              {isFullScreen ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: '6px', verticalAlign: '-1px' }}>
+                    <path d="M5.5 0a.5.5 0 0 1 .5.5v4A1.5 1.5 0 0 1 4.5 6h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5zm5 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 10.5 4.5v-4a.5.5 0 0 1 .5-.5zM0 10.5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 6 11.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zm10.5 1a1.5 1.5 0 0 1 1.5-1.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4z"/>
+                  </svg>
+                  Exit Full Screen
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: '6px', verticalAlign: '-1px' }}>
+                    <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zm9.5 0a.5.5 0 0 1 0-1h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4zM0 10.5a.5.5 0 0 1 1 0v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4zm15 0a.5.5 0 0 1 1 0v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4z"/>
+                  </svg>
+                  Full Screen Roster
+                </>
+              )}
+            </button>
+            {isFullScreen && (
+              <button
+                type="button"
+                className="button"
+                style={{ fontSize: '12px', padding: '6px 12px' }}
+                onClick={() => setShowCreateModal(true)}
+              >
+                + Record Traveler
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter controls & search */}

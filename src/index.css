@@ -1673,6 +1673,72 @@ tbody tr:hover { background: #f8fafc; }
   color: #0369a1;
 }
 
+/* ── Full Screen Mode for Business Traveler Roster ───── */
+.panel.roster-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: #ffffff;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  padding: 20px 28px !important;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: none;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.roster-fullscreen .panel-heading {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px !important;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.roster-fullscreen .search-row {
+  flex-shrink: 0;
+  margin-bottom: 14px !important;
+}
+
+.roster-fullscreen .table-wrap {
+  flex: 1 1 auto;
+  overflow: auto;
+  max-height: none !important;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+}
+
+.roster-fullscreen .simple-loan-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f8fafc;
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.roster-fullscreen .fullscreen-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: var(--blue);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   .sidebar { width: 190px; }

@@ -4,6 +4,21 @@ All notable changes, architectural updates, and state engine revisions for the *
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] — 2026-10-07
+
+### Improved: Full Screen Roster Mode & Specific URL Routing
+
+#### 🖥️ Business Traveler Roster Full Screen Mode
+- **Full-Body Expanded View**: Added a 1-click **"Full Screen Roster"** toggle to the Business Traveler Roster panel, allowing administrators to view the complete mobile workforce roster across the entire viewport (`roster-fullscreen`).
+- **Sticky Column Headers**: Table headers remain anchored at the top during vertical scrolling to maintain clear column reference across high-density lists.
+- **Persistent Management Controls**: Fullscreen mode preserves quick search, status filtering tabs, and the `+ Record Traveler` dispatch button directly in view.
+- **Escape Key & Scroll Lock**: Added automatic keyboard support for the `Escape` key to instantly exit full-screen mode, along with background page scroll locking.
+
+#### 🔗 Explicit & Specific URL Routing (`/business-travelers`)
+- **Route Renaming**: Upgraded the URL from the generic `/travelers` to `/business-travelers` for clear, descriptive navigation.
+- **Backward Compatibility**: Configured automatic redirection from `/travelers` to `/business-travelers` so any cached links or bookmarks resolve smoothly.
+- **Component Standard**: Refactored the view to `BusinessTravelersPage.jsx`.
+
 ---
 
 ## [1.1.0] — 2026-10-07

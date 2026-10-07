@@ -36,7 +36,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    path: '/travelers',
+    path: '/business-travelers',
     label: 'Business Travelers',
     view: 'travelers',
     countKey: 'travelers',
@@ -109,12 +109,14 @@ export default function Sidebar() {
       <div className="workspace-label">WORKSPACE</div>
 
       <nav className="nav-list" aria-label="Main navigation">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.path}
-            className={`nav-item${pathname === item.path ? ' active' : ''}`}
-            onClick={() => navigate(item.path)}
-          >
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.path || (item.path === '/business-travelers' && pathname === '/travelers');
+          return (
+            <button
+              key={item.path}
+              className={`nav-item${isActive ? ' active' : ''}`}
+              onClick={() => navigate(item.path)}
+            >
             <span className="nav-icon">{item.icon}</span>
             {item.label}
             {item.showCount && (
@@ -124,7 +126,8 @@ export default function Sidebar() {
               <span className="nav-count">{activeTravelersCount}</span>
             )}
           </button>
-        ))}
+          );
+        })}
       </nav>
 
       <div className="sidebar-footer">

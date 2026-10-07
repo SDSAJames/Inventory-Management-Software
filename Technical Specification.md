@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.1.0** |
+| **Specification Version** | **v1.1.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
@@ -74,14 +74,14 @@ Inventory-Management-Software/
 │   │   ├── OverviewPage.jsx     # Executive dashboard, KPIs, quick filters, category mix
 │   │   ├── AssetsPage.jsx       # Hardware inventory register, multi-column search, batch operations
 │   │   ├── LoansPage.jsx        # Device custody, checkout/return lifecycle, overdue tracking
-│   │   ├── TravelersPage.jsx    # Business travelers management, location matrix, traveler counts
+│   │   ├── BusinessTravelersPage.jsx # Business travelers management, full screen roster, location matrix
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
 │   │   └── ExchangePage.jsx     # Bidirectional Excel (.xlsx) export, import, restore point
 │   ├── hooks/
 │   │   ├── useDb.jsx            # Database context hook providing data access & mutations
 │   │   └── useToast.jsx         # Toast notification dispatch hook
 │   ├── lib/
-│   │   ├── constants.js         # APP_VERSION ('1.1.0'), status enums, Excel headers, default reasons
+│   │   ├── constants.js         # APP_VERSION ('1.1.1'), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
 │   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
 │   │   ├── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser

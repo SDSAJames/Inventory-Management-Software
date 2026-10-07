@@ -14,6 +14,10 @@ const PAGE_META = {
     eyebrow: 'DEVICE LOANS & CUSTODY MANAGEMENT',
     title: 'Loans & Custody',
   },
+  '/business-travelers': {
+    eyebrow: 'FIELD DEPLOYMENTS & MOBILE WORKFORCE',
+    title: 'Business Travelers',
+  },
   '/travelers': {
     eyebrow: 'FIELD DEPLOYMENTS & MOBILE WORKFORCE',
     title: 'Business Travelers',

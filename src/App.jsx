@@ -5,7 +5,7 @@ import AppShell from './components/AppShell';
 import OverviewPage from './pages/OverviewPage';
 import AssetsPage from './pages/AssetsPage';
 import LoansPage from './pages/LoansPage';
-import TravelersPage from './pages/TravelersPage';
+import BusinessTravelersPage from './pages/BusinessTravelersPage';
 import DirectoryPage from './pages/DirectoryPage';
 import ExchangePage from './pages/ExchangePage';
 
@@ -19,7 +19,8 @@ export default function App() {
               <Route path="/" element={<OverviewPage />} />
               <Route path="/assets" element={<AssetsPage />} />
               <Route path="/loans" element={<LoansPage />} />
-              <Route path="/travelers" element={<TravelersPage />} />
+              <Route path="/business-travelers" element={<BusinessTravelersPage />} />
+              <Route path="/travelers" element={<Navigate to="/business-travelers" replace />} />
               <Route path="/directory" element={<DirectoryPage />} />
               <Route path="/exchange" element={<ExchangePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

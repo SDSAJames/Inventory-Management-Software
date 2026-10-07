@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.1.0** |
+| **Document Version** | **v1.1.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -228,10 +228,11 @@ The frontend application provides six core operational views accessed via the le
    - Active, Scheduled, Overdue, and Returned custody management.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Equipment accessory checklist tracking.
-4. **Business Travelers (`/travelers`)**:
-   - Dedicated mobile workforce custody and field deployment management.
+4. **Business Travelers (`/business-travelers`)**:
+   - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
    - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, Head Office) with one-click filtering.
+   - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
 5. **Directory (`/directory`)**:
@@ -258,6 +259,10 @@ The frontend application provides six core operational views accessed via the le
 
 ## 9. Version Control & History
 
+- **v1.1.1** *(Full Screen Roster Mode & Specific URL Routing)*:
+  - Upgraded route from `/travelers` to specific `/business-travelers` with backward-compatible redirect.
+  - Added 1-click Full Screen Roster mode (`roster-fullscreen`) with full-body viewport layout, sticky table headers, and Escape key dismissal.
+  - Migrated component to `BusinessTravelersPage.jsx`.
 - **v1.1.0** *(Business Travelers Management & Location Matrix)*:
   - Dedicated Business Travelers management view (`/travelers`) with real-time active field badge in the sidebar.
   - "How many they are": KPI counters for active in field, travel locations, scheduled trips, and total unique travelers.
