@@ -224,21 +224,9 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             </div>
           </div>
 
-          <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '14px' }}>
-            {existing && onOpenChangeOwner ? (
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => onOpenChangeOwner(existing)}
-              >
-                👤 Change Owner
-              </button>
-            ) : <div />}
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button type="button" className="button ghost" onClick={onClose}>Cancel</button>
-              <button type="submit" className="button">{existing ? 'Save changes' : 'Create asset'}</button>
-            </div>
+          <div className="form-actions" style={{ marginTop: '14px' }}>
+            <button type="button" className="button ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="button">{existing ? 'Save changes' : 'Create asset'}</button>
           </div>
         </form>
       )}

@@ -62,19 +62,19 @@ button { cursor: pointer; }
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 0 8px 38px;
+  padding: 0 4px 34px;
 }
 .brand-mark {
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   background: #ffffff;
   color: var(--blue);
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 11px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.22);
   flex-shrink: 0;
-  padding: 6px;
+  padding: 4px;
 }
 .brand-logo-svg {
   width: 100%;
@@ -83,15 +83,16 @@ button { cursor: pointer; }
 }
 .brand strong, .brand span, .sidebar-footer strong, .sidebar-footer span { display: block; }
 .brand strong {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
-  letter-spacing: .6px;
+  letter-spacing: .5px;
   color: #ffffff;
+  line-height: 1.25;
 }
 .brand span {
   font-size: 11px;
   color: #94a9c0;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .workspace-label {
   color: #7188a4;
