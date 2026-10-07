@@ -220,9 +220,9 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
 
             {/* Manage Reason Options panel */}
             {showManageReasons && (
-              <div className="manage-reasons-box" style={{ marginTop: '10px', padding: '12px', background: '#f7faf8', border: '1px solid var(--line)', borderRadius: '6px' }}>
+              <div className="manage-reasons-box" style={{ marginTop: '10px', padding: '12px', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <strong style={{ fontSize: '11px', color: 'var(--green-dark)' }}>
+                  <strong style={{ fontSize: '11px', color: 'var(--blue-dark)' }}>
                     Preset Reason Options (click to populate field or manage)
                   </strong>
                 </div>
