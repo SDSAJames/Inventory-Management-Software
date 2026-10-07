@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ open, onClose, children }) {
+export default function Modal({ open, onClose, children, size, className = '' }) {
   useEffect(() => {
     if (!open) return;
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -10,6 +10,8 @@ export default function Modal({ open, onClose, children }) {
 
   if (!open) return null;
 
+  const sizeClass = size ? `modal-${size}` : '';
+
   return (
     <div
       className="modal-backdrop"
@@ -17,7 +19,7 @@ export default function Modal({ open, onClose, children }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <section className="modal" role="dialog" aria-modal="true">
+      <section className={`modal ${sizeClass} ${className}`.trim()} role="dialog" aria-modal="true">
         <button
           className="modal-close"
           type="button"

@@ -10,7 +10,7 @@ import {
   saveTransferReasons,
 } from '../lib/db';
 import { todayIso } from '../lib/utils';
-import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus } from '../lib/assetIntegrity';
+import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 
 const DbContext = createContext(null);
@@ -21,21 +21,23 @@ export function DbProvider({ children }) {
     if (raw && raw.assets && raw.loans) {
       // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
       const assetsWithHistory = raw.assets.map((a) => {
-        if ((!a.ownershipHistory || a.ownershipHistory.length === 0) && a.owner) {
+        const normOwner = normalizeHolder(a.owner);
+        const assetWithNorm = normOwner !== a.owner ? { ...a, owner: normOwner } : a;
+        if ((!assetWithNorm.ownershipHistory || assetWithNorm.ownershipHistory.length === 0) && assetWithNorm.owner) {
           return {
-            ...a,
+            ...assetWithNorm,
             ownershipHistory: [
               createOwnershipEntry({
                 previousOwner: 'None',
-                newOwner: a.owner,
-                date: a.issuedDate || a.updated || todayIso(),
-                reason: 'Initial assignment',
-                notes: a.department ? `Department: ${a.department}` : (a.notes || ''),
+                newOwner: assetWithNorm.owner,
+                date: assetWithNorm.issuedDate || assetWithNorm.updated || todayIso(),
+                reason: assetWithNorm.owner === 'IT department' ? 'Returned to IT department' : 'Initial assignment',
+                notes: assetWithNorm.department ? `Department: ${assetWithNorm.department}` : (assetWithNorm.notes || ''),
               }),
             ],
           };
         }
-        return a;
+        return assetWithNorm;
       });
 
       return {
@@ -447,11 +449,26 @@ export function DbProvider({ children }) {
             }
           : l,
       );
-      const nextAssets = prev.assets.map((a) =>
-        a.code === loan.assetCode
-          ? { ...a, status: 'Available', owner: '', department: '', updated: todayIso() }
-          : a,
-      );
+      const nextAssets = prev.assets.map((a) => {
+        if (a.code !== loan.assetCode) return a;
+        const returnEntry = createOwnershipEntry({
+          previousOwner: loan.assignee || 'Borrower',
+          newOwner: 'IT department',
+          department: 'IT',
+          location: loan.location || a.location || 'IT Store',
+          reason: 'Loan Returned',
+          notes: `Returned to IT department (was borrowed by ${loan.assignee || 'borrower'})`,
+          date: timestamp.replace('T', ' '),
+        });
+        return {
+          ...a,
+          status: a.status === 'Damaged' || a.status === 'Under repair' || a.status === 'Disposed' ? a.status : 'Available',
+          owner: 'IT department',
+          department: 'IT',
+          ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],
+          updated: todayIso(),
+        };
+      });
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
   }, []);

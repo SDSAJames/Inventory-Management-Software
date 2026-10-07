@@ -317,7 +317,7 @@ export default function LoansPage() {
           <div className="return-dialog">
             <h2>Record return & archive</h2>
             <p className="modal-intro">
-              Timestamp defaults to current time. Confirming return will make the laptop available in inventory and archive this loan record.
+              Timestamp defaults to current time. Confirming return will return the laptop to IT department and archive this loan record.
             </p>
 
             <div className="timestamp-dialog-card">

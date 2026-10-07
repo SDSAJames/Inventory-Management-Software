@@ -70,14 +70,14 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
 
   const handleClearOwner = () => {
     changeAssetOwner(asset.id, {
-      newOwner: '',
-      department: '',
-      location: location.trim() || asset.location || '',
-      reason: reason.trim() || 'Returned to Pool / Unassigned',
-      notes: notes.trim() || 'Cleared ownership',
+      newOwner: 'IT department',
+      department: 'IT',
+      location: location.trim() || asset.location || 'IT Store',
+      reason: reason.trim() || 'Returned to IT department',
+      notes: notes.trim() || 'Returned to IT department custody',
       date: timestamp.replace('T', ' '),
     });
-    toast(`Ownership cleared for ${asset.code}`);
+    toast(`Asset ${asset.code} returned to IT department`);
     if (onDone) onDone();
     onClose();
   };
@@ -326,14 +326,14 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
         </div>
 
         <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '22px' }}>
-          {asset.owner ? (
+          {asset.owner && asset.owner !== 'IT department' ? (
             <button
               type="button"
               className="button danger-btn"
               style={{ background: '#be665a', borderColor: '#be665a', color: 'white' }}
               onClick={handleClearOwner}
             >
-              Clear current holder
+              Return to IT department
             </button>
           ) : <div />}
 

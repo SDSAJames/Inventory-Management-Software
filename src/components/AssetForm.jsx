@@ -54,9 +54,12 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const handleStatusChange = (e) => {
     const nextStatus = e.target.value;
     setForm((prev) => {
-      // If user chooses 'Available', holder must be cleared
+      // If user chooses 'Available', holder defaults to IT department
       if (nextStatus === 'Available') {
-        return { ...prev, status: 'Available', owner: '' };
+        return { ...prev, status: 'Available', owner: 'IT department', department: 'IT' };
+      }
+      if (nextStatus === 'Assigned' && prev.owner === 'IT department') {
+        return { ...prev, status: 'Assigned', owner: '', department: '' };
       }
       return { ...prev, status: nextStatus };
     });
@@ -65,12 +68,13 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const handleOwnerChange = (e) => {
     const nextOwner = e.target.value;
     setForm((prev) => {
-      const hasHolder = Boolean(nextOwner && nextOwner.trim());
+      const isItDept = nextOwner.trim().toLowerCase() === 'it department';
+      const hasEmployeeHolder = Boolean(nextOwner && nextOwner.trim() && !isItDept);
       let nextStatus = prev.status;
-      // If there is a current holder, it must be 'Assigned' status, not 'Available'
-      if (hasHolder && prev.status === 'Available') {
+      // If assigned to an employee, it must be 'Assigned' status, not 'Available'
+      if (hasEmployeeHolder && prev.status === 'Available') {
         nextStatus = 'Assigned';
-      } else if (!hasHolder && prev.status === 'Assigned') {
+      } else if (!hasEmployeeHolder && prev.status === 'Assigned') {
         nextStatus = 'Available';
       }
       return { ...prev, owner: nextOwner, status: nextStatus };
@@ -84,11 +88,12 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       return;
     }
 
-    const hasHolder = Boolean(form.owner && form.owner.trim());
+    const isItDept = String(form.owner || '').trim().toLowerCase() === 'it department';
+    const hasEmployeeHolder = Boolean(form.owner && form.owner.trim() && !isItDept);
     let validatedStatus = form.status;
-    if (hasHolder && validatedStatus === 'Available') {
+    if (hasEmployeeHolder && validatedStatus === 'Available') {
       validatedStatus = 'Assigned';
-    } else if (!hasHolder && validatedStatus === 'Assigned') {
+    } else if (!hasEmployeeHolder && validatedStatus === 'Assigned') {
       validatedStatus = 'Available';
     }
 
@@ -265,32 +270,44 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               )}
             </div>
           ) : (
-            <div className="table-wrap" style={{ maxHeight: '340px', overflowY: 'auto' }}>
-              <table>
+            <div className="table-wrap" style={{ maxHeight: '480px', overflowY: 'auto', border: '1px solid var(--line)', borderRadius: '8px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th>Date / Time</th>
-                    <th>Previous Holder</th>
-                    <th>New Holder</th>
-                    <th>Location</th>
-                    <th>Reason / Status</th>
+                    <th style={{ width: '155px', whiteSpace: 'nowrap' }}>Date / Time</th>
+                    <th style={{ width: '140px' }}>Previous Holder</th>
+                    <th style={{ width: '150px' }}>New Holder</th>
+                    <th style={{ width: '120px' }}>Location</th>
+                    <th style={{ width: '160px' }}>Reason / Status</th>
                     <th>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ownershipHistory.map((item) => (
                     <tr key={item.id}>
-                      <td><code>{item.date}</code></td>
-                      <td>{item.previousOwner || 'None'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <code style={{ fontSize: '11px', color: 'var(--ink)' }}>{item.date}</code>
+                      </td>
                       <td>
-                        <strong>{item.newOwner || 'None'}</strong>
-                        {item.department && (
+                        {item.previousOwner === 'IT department' ? (
+                          <span className="it-dept-badge">IT department</span>
+                        ) : (
+                          <span>{item.previousOwner || 'None'}</span>
+                        )}
+                      </td>
+                      <td>
+                        {item.newOwner === 'IT department' ? (
+                          <span className="it-dept-badge">IT department</span>
+                        ) : (
+                          <strong>{item.newOwner || 'None'}</strong>
+                        )}
+                        {item.department && item.newOwner !== 'IT department' && (
                           <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{item.department}</div>
                         )}
                       </td>
                       <td>{item.location || '—'}</td>
                       <td>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
                           <span className="batch-chip" style={{ fontSize: '10px' }}>
                             {item.reason || 'Reassigned'}
                           </span>
@@ -301,7 +318,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                           )}
                         </div>
                       </td>
-                      <td style={{ color: 'var(--muted)', fontSize: '11px' }}>{item.notes || '—'}</td>
+                      <td style={{ color: 'var(--muted)', fontSize: '11px', lineHeight: 1.45 }}>{item.notes || '—'}</td>
                     </tr>
                   ))}
                 </tbody>

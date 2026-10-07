@@ -200,7 +200,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Asset modal */}
-      <Modal open={modal === 'asset' || (modal && modal !== 'loan')} onClose={() => setModal(null)}>
+      <Modal open={modal === 'asset' || (modal && modal !== 'loan')} size="wide" onClose={() => setModal(null)}>
         {(modal === 'asset' || (modal && modal !== 'loan')) && (
           <AssetForm
             assetId={modal !== 'asset' ? modal : undefined}

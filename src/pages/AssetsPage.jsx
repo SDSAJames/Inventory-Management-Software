@@ -217,7 +217,7 @@ export default function AssetsPage() {
         />
       </section>
 
-      <Modal open={showNew || editAssetId !== null} onClose={() => { setShowNew(false); setEditAssetId(null); }}>
+      <Modal open={showNew || editAssetId !== null} size="wide" onClose={() => { setShowNew(false); setEditAssetId(null); }}>
         {(showNew || editAssetId !== null) && (
           <AssetForm
             assetId={editAssetId}
@@ -248,7 +248,7 @@ export default function AssetsPage() {
       </Modal>
 
       {/* Bulk Deletion Confirmation Modal */}
-      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+      <Modal open={showDeleteConfirm} size="sm" onClose={() => setShowDeleteConfirm(false)}>
         <div className="delete-dialog">
           <h2>Delete {selectedAssets.length} asset{selectedAssets.length > 1 ? 's' : ''}</h2>
           <p className="modal-intro">
@@ -287,7 +287,7 @@ export default function AssetsPage() {
       </Modal>
 
       {/* Excel Import Preview Modal */}
-      <Modal open={importPreview !== null} onClose={() => { setImportPreview(null); setOverwriteDuplicates(false); }}>
+      <Modal open={importPreview !== null} size="wide" onClose={() => { setImportPreview(null); setOverwriteDuplicates(false); }}>
         {importPreview && (
           <div className="import-preview">
             <h2>Import assets from Excel</h2>

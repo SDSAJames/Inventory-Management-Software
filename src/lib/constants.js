@@ -20,7 +20,7 @@ export const DEFAULT_TRANSFER_REASONS = [
   'Department Transfer',
   'Temporary Handover',
   'Permanent Allocation',
-  'Returned to Pool',
+  'Returned to IT department',
   'Repaired & Reassigned',
 ];
 
