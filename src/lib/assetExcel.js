@@ -27,7 +27,15 @@ const COLUMNS = [
   ['updated', ['Updated', 'Last updated']],
 ];
 
-export const ASSET_EXPORT_HEADERS = COLUMNS.map(([, names]) => names[0]);
+export const DEFAULT_ASSET_HEADERS = [
+  'Host Name',
+  'Serial Number',
+  'Status',
+  'Issued Knox ID',
+  'Issued Date',
+];
+
+export const ASSET_EXPORT_HEADERS = DEFAULT_ASSET_HEADERS;
 
 // Spreadsheet vocabulary -> register statuses
 const STATUS_ALIASES = {
@@ -47,6 +55,15 @@ function normalizeStatus(raw) {
   if (!value) return 'Available';
   const direct = STATUSES.find((s) => s.toLowerCase() === value);
   return direct || STATUS_ALIASES[value] || 'Available';
+}
+
+function exportStatus(status) {
+  if (status === 'Assigned') return 'Issued';
+  if (status === 'Damaged') return 'Broken';
+  if (status === 'On loan') return 'Loaned';
+  if (status === 'Under repair') return 'Repair';
+  if (status === 'Retired') return 'Disposed';
+  return status || 'Available';
 }
 
 /** Excel serial (e.g. 46296) or date-like text -> YYYY-MM-DD. */
@@ -69,13 +86,14 @@ function normalizeDate(raw) {
 
 /**
  * Parse sheet rows into new and duplicate assets.
- * @returns {{ added: object[], duplicates: object[], invalid: number }}
+ * @returns {{ added: object[], duplicates: object[], invalid: number, importedHeaders: string[] }}
  */
 export function parseAssetRows(rows, existingAssets) {
   const headerRowIndex = rows.findIndex((r) => r && r.some((c) => clean(c)));
   if (headerRowIndex < 0) throw new Error('The workbook is empty');
 
-  const headers = rows[headerRowIndex].map((h) => clean(h).toLowerCase());
+  const rawHeaders = rows[headerRowIndex].map((h) => clean(h)).filter(Boolean);
+  const headers = rawHeaders.map((h) => h.toLowerCase());
   const index = {};
   COLUMNS.forEach(([field, names]) => {
     index[field] = headers.findIndex((h) => names.some((n) => n.toLowerCase() === h));
@@ -138,14 +156,62 @@ export function parseAssetRows(rows, existingAssets) {
     }
   });
 
-  return { added, duplicates, invalid };
+  return { added, duplicates, invalid, importedHeaders: rawHeaders };
 }
 
 /* ── Export ─────────────────────────────────────────── */
 
-export function assetsToRows(assets) {
+/**
+ * Format assets into tabular rows with columns matching the imported Excel format.
+ * Defaults to the 5 standard columns: Host Name | Serial Number | Status | Issued Knox ID | Issued Date.
+ * If custom headers from an imported file are provided, uses those exact columns.
+ */
+export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS) {
+  const activeHeaders = Array.isArray(headers) && headers.length > 0 ? headers : DEFAULT_ASSET_HEADERS;
+
+  const getFieldValue = (asset, headerName) => {
+    const h = clean(headerName).toLowerCase();
+    if (['host name', 'asset code', 'code', 'asset number'].includes(h)) {
+      return asset.code || '';
+    }
+    if (['serial number', 'serial', 's/n'].includes(h)) {
+      return asset.serial || '';
+    }
+    if (['status'].includes(h)) {
+      return exportStatus(asset.status);
+    }
+    if (['issued knox id', 'knox id', 'holder', 'current holder', 'owner'].includes(h)) {
+      return asset.owner || '';
+    }
+    if (['issued date', 'issue date'].includes(h)) {
+      return asset.issuedDate || asset.updated || '';
+    }
+    if (['asset name', 'name'].includes(h)) {
+      return asset.name || '';
+    }
+    if (['category'].includes(h)) {
+      return asset.category || '';
+    }
+    if (['model'].includes(h)) {
+      return asset.model || '';
+    }
+    if (['location'].includes(h)) {
+      return asset.location || '';
+    }
+    if (['department'].includes(h)) {
+      return asset.department || '';
+    }
+    if (['notes', 'note'].includes(h)) {
+      return asset.notes || '';
+    }
+    if (['updated', 'last updated', 'modification date'].includes(h)) {
+      return asset.updated || '';
+    }
+    return asset[headerName] ?? '';
+  };
+
   return [
-    ASSET_EXPORT_HEADERS,
-    ...assets.map((a) => COLUMNS.map(([field]) => a[field] ?? '')),
+    activeHeaders,
+    ...assets.map((asset) => activeHeaders.map((header) => getFieldValue(asset, header))),
   ];
 }

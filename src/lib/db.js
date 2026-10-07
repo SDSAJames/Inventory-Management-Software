@@ -47,3 +47,20 @@ export function saveTransferReasons(reasons) {
   localStorage.setItem('starplusenergy-transfer-reasons-v1', JSON.stringify(reasons));
 }
 
+export const ASSET_HEADERS_KEY = 'starplusenergy-asset-headers-v1';
+
+export function loadAssetExportHeaders() {
+  try {
+    const raw = localStorage.getItem(ASSET_HEADERS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAssetExportHeaders(headers) {
+  if (Array.isArray(headers) && headers.length > 0) {
+    localStorage.setItem(ASSET_HEADERS_KEY, JSON.stringify(headers));
+  }
+}
+

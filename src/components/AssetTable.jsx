@@ -92,11 +92,6 @@ export default function AssetTable({
                   ) : (
                     <strong>{asset.owner || 'Unassigned'}</strong>
                   )}
-                  {asset.department && (
-                    <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
-                      {asset.department}
-                    </div>
-                  )}
                 </td>
                 {showUpdatedDate && (
                   <td style={{ whiteSpace: 'nowrap' }}>

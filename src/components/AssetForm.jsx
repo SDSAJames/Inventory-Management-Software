@@ -270,21 +270,21 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               )}
             </div>
           ) : (
-            <div className="table-wrap" style={{ maxHeight: '480px', overflowY: 'auto', border: '1px solid var(--line)', borderRadius: '8px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="ownership-history-wrap">
+              <table className="ownership-history-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '155px', whiteSpace: 'nowrap' }}>Date / Time</th>
-                    <th style={{ width: '140px' }}>Previous Holder</th>
-                    <th style={{ width: '150px' }}>New Holder</th>
-                    <th style={{ width: '120px' }}>Location</th>
-                    <th style={{ width: '160px' }}>Reason / Status</th>
+                    <th style={{ width: '160px', whiteSpace: 'nowrap' }}>Date / Time</th>
+                    <th style={{ width: '145px' }}>Previous Holder</th>
+                    <th style={{ width: '155px' }}>New Holder</th>
+                    <th style={{ width: '125px' }}>Location</th>
+                    <th style={{ width: '165px' }}>Reason / Status</th>
                     <th>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ownershipHistory.map((item) => (
-                    <tr key={item.id}>
+                    <tr key={item.id} className="history-row">
                       <td style={{ whiteSpace: 'nowrap' }}>
                         <code style={{ fontSize: '11px', color: 'var(--ink)' }}>{item.date}</code>
                       </td>

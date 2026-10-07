@@ -6,6 +6,7 @@ import { STATUSES } from '../lib/constants';
 import { todayIso, statusClass } from '../lib/utils';
 import { makeXlsx, readXlsx, downloadBlob } from '../lib/xlsx';
 import { parseAssetRows, assetsToRows } from '../lib/assetExcel';
+import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
 import AssetTable from '../components/AssetTable';
 import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
@@ -128,7 +129,9 @@ export default function AssetsPage() {
       ? [...importPreview.added, ...importPreview.duplicates]
       : importPreview.added;
 
-    importAssets(assetsToImport, overwriteDuplicates);
+    if (importPreview.importedHeaders && importPreview.importedHeaders.length > 0) {
+      saveAssetExportHeaders(importPreview.importedHeaders);
+    }
 
     let msg = '';
     if (freshCount > 0 && overwriteCount > 0) {
@@ -150,7 +153,8 @@ export default function AssetsPage() {
       toast('No assets to export');
       return;
     }
-    const workbook = await makeXlsx(assetsToRows(filtered));
+    const headers = loadAssetExportHeaders();
+    const workbook = await makeXlsx(assetsToRows(filtered, headers));
     downloadBlob(new Blob([workbook], { type: XLSX_MIME }), `SPE_Equipments_${todayIso()}.xlsx`);
     toast(`${filtered.length} asset${filtered.length === 1 ? '' : 's'} exported.`);
   };

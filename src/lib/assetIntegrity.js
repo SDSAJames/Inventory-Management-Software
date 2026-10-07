@@ -109,7 +109,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
       ...asset,
       status: hasOtherHolder ? 'Assigned' : 'Available',
       owner: hasOtherHolder ? asset.owner : 'IT department',
-      department: hasOtherHolder ? asset.department : 'IT',
+      department: hasOtherHolder ? asset.department : '',
       updated: todayIso(),
     };
   }
@@ -122,7 +122,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
       return {
         ...asset,
         owner: 'IT department',
-        department: 'IT',
+        department: '',
         status: asset.status === 'Damaged' || asset.status === 'Under repair' || asset.status === 'Disposed' ? asset.status : 'Available',
         updated: asset.updated || todayIso(),
       };
@@ -145,6 +145,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
       ...asset,
       status: 'Available',
       owner: isItDepartment(asset.owner) ? 'IT department' : '',
+      department: isItDepartment(asset.owner) ? '' : asset.department,
       updated: asset.updated || todayIso(),
     };
   }
@@ -167,7 +168,7 @@ export function validateAssetStatus(asset) {
     return {
       ...asset,
       owner: 'IT department',
-      department: 'IT',
+      department: '',
       status: asset.status === 'Assigned' ? 'Available' : asset.status,
     };
   }
@@ -309,23 +310,59 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
     });
   }
 
-  // 3. If no entries exist yet, but asset has a current holder, synthesize baseline
-  if (entries.length === 0 && asset.owner) {
-    const normOwner = normalizeHolder(asset.owner);
-    addEntry({
-      id: `initial-${asset.id || 'owner'}`,
-      date: asset.issuedDate || asset.updated || todayIso(),
-      previousOwner: 'None',
-      newOwner: normOwner,
-      location: asset.location || '',
-      department: normOwner === 'IT department' ? 'IT' : (asset.department || ''),
-      reason: normOwner === 'IT department' ? 'Returned to IT department' : 'Current Assigned Holder',
-      notes: asset.department ? `Department: ${asset.department}` : (asset.notes || 'Initial record'),
-      isLoan: false,
-    });
+  // 3. Ensure the current holder is represented in the timeline
+  if (asset.owner && asset.owner.trim() !== '') {
+    const normCurrentOwner = normalizeHolder(asset.owner);
+    const hasCurrentOwnerEntry = entries.some(
+      (e) => normalizeHolder(e.newOwner).toLowerCase() === normCurrentOwner.toLowerCase()
+    );
+
+    if (!hasCurrentOwnerEntry) {
+      addEntry({
+        id: `current-owner-${asset.id || asset.code}`,
+        date: asset.issuedDate || asset.updated || todayIso(),
+        previousOwner: 'IT department',
+        newOwner: normCurrentOwner,
+        location: asset.location || '',
+        department: asset.department || '',
+        reason: 'Assigned',
+        notes: asset.notes || '',
+        isLoan: false,
+      });
+    }
   }
 
-  // Sort chronologically, latest first
-  return entries.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  // 4. Sort ascending (oldest first) to chain and repair continuity
+  const sortedAsc = entries.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+  for (let i = 0; i < sortedAsc.length; i++) {
+    const current = sortedAsc[i];
+    current.previousOwner = normalizeHolder(current.previousOwner);
+    current.newOwner = normalizeHolder(current.newOwner);
+
+    if (i === 0) {
+      // The very first event in the life of this asset
+      if (!current.previousOwner || current.previousOwner === 'Unassigned') {
+        current.previousOwner = current.isLoan ? 'IT department' : 'None';
+      }
+    } else {
+      const priorEvent = sortedAsc[i - 1];
+      const priorHolder = priorEvent.newOwner || 'IT department';
+
+      // If previous holder is 'None', empty, or unassigned, but someone (e.g. IT department)
+      // held the laptop immediately before, chain it!
+      if (!current.previousOwner || current.previousOwner === 'None' || current.previousOwner === 'Unassigned') {
+        current.previousOwner = priorHolder;
+      }
+
+      // If reason was 'Initial assignment' but this event occurred after earlier loans/assignments:
+      if (current.reason === 'Initial assignment') {
+        current.reason = 'Assigned';
+      }
+    }
+  }
+
+  // 5. Sort chronologically descending (latest first) for display
+  return sortedAsc.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 

@@ -22,7 +22,8 @@ export function DbProvider({ children }) {
       // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
       const assetsWithHistory = raw.assets.map((a) => {
         const normOwner = normalizeHolder(a.owner);
-        const assetWithNorm = normOwner !== a.owner ? { ...a, owner: normOwner } : a;
+        const normDept = normOwner === 'IT department' ? '' : a.department;
+        const assetWithNorm = { ...a, owner: normOwner, department: normDept };
         if ((!assetWithNorm.ownershipHistory || assetWithNorm.ownershipHistory.length === 0) && assetWithNorm.owner) {
           return {
             ...assetWithNorm,
@@ -464,7 +465,7 @@ export function DbProvider({ children }) {
           ...a,
           status: a.status === 'Damaged' || a.status === 'Under repair' || a.status === 'Disposed' ? a.status : 'Available',
           owner: 'IT department',
-          department: 'IT',
+          department: '',
           ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],
           updated: todayIso(),
         };
