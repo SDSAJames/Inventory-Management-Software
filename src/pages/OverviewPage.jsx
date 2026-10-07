@@ -97,10 +97,10 @@ export default function OverviewPage() {
     <>
       <div className="view-header">
         <div>
-          <h2>Operations overview</h2>
-          <p>A live view of your company's asset position.</p>
+          <h2 className="view-title">Fleet Summary & Key Metrics</h2>
+          <p className="view-subtitle">Real-time equipment allocation, fleet availability, and custody records.</p>
         </div>
-        <button className="button" onClick={() => setModal('asset')}>+ Add asset</button>
+        <button className="button" onClick={() => setModal('asset')}>+ Register asset</button>
       </div>
 
       <div className="stat-grid">

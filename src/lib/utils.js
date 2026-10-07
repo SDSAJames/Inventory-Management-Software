@@ -52,12 +52,9 @@ export function todayLabel() {
   }).format(new Date()).toUpperCase();
 }
 
-/** Time-aware greeting. */
+/** Default system dashboard title. */
 export function greetingTitle() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning, James';
-  if (hour < 17) return 'Good afternoon, James';
-  return 'Good evening, James';
+  return 'Operations Dashboard';
 }
 
 /** Generate a new asset code based on the current year and asset count. */

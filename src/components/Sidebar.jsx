@@ -2,11 +2,57 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 
 const NAV_ITEMS = [
-  { path: '/', icon: '+', label: 'Overview', view: 'overview' },
-  { path: '/assets', icon: '#', label: 'Assets', view: 'assets', showCount: true },
-  { path: '/loans', icon: '↗', label: 'Loans', view: 'loans' },
-  { path: '/directory', icon: '○', label: 'Directory', view: 'directory' },
-  { path: '/exchange', icon: '⇄', label: 'Excel exchange', view: 'exchange' },
+  {
+    path: '/',
+    label: 'Overview',
+    view: 'overview',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/>
+      </svg>
+    ),
+  },
+  {
+    path: '/assets',
+    label: 'Assets',
+    view: 'assets',
+    showCount: true,
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm1.5 1v2.5h13V3a.5.5 0 0 0-.5-.5H2a.5.5 0 0 0-.5.5zm13 3.5h-13V14a.5.5 0 0 0 .5.5h12a.5.5 0 0 0 .5-.5V6.5zM3 8.5h4v1H3v-1zm0 2.5h6v1H3v-1z"/>
+      </svg>
+    ),
+  },
+  {
+    path: '/loans',
+    label: 'Loans',
+    view: 'loans',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 8h12M10 4l4 4-4 4"/>
+      </svg>
+    ),
+  },
+  {
+    path: '/directory',
+    label: 'Directory',
+    view: 'directory',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0-2.2-2.7-4-6-4s-6 1.8-6 4v1h12v-1zm-1.5 0c-.3-1.4-2.2-2.5-4.5-2.5S4.8 11.6 4.5 13h7z"/>
+      </svg>
+    ),
+  },
+  {
+    path: '/exchange',
+    label: 'Excel Exchange',
+    view: 'exchange',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 11l-3-3 3-3M1 8h14M12 5l3 3-3 3"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function Sidebar() {
