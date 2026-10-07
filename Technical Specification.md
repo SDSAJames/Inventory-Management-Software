@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.0.0** |
+| **Specification Version** | **v1.1.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
@@ -52,7 +52,7 @@ graph TD
 ```
 Inventory-Management-Software/
 ├── index.html                   # HTML entry point (clean system typography, zero CDNs)
-├── package.json                 # Project manifest (v1.0.0, scripts, dependencies)
+├── package.json                 # Project manifest (v1.1.0, scripts, dependencies)
 ├── vite.config.js               # Vite 6 configuration with React plugin
 ├── src/
 │   ├── main.jsx                 # Application entry point, mounts AppShell inside BrowserRouter
@@ -74,13 +74,14 @@ Inventory-Management-Software/
 │   │   ├── OverviewPage.jsx     # Executive dashboard, KPIs, quick filters, category mix
 │   │   ├── AssetsPage.jsx       # Hardware inventory register, multi-column search, batch operations
 │   │   ├── LoansPage.jsx        # Device custody, checkout/return lifecycle, overdue tracking
+│   │   ├── TravelersPage.jsx    # Business travelers management, location matrix, traveler counts
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
 │   │   └── ExchangePage.jsx     # Bidirectional Excel (.xlsx) export, import, restore point
 │   ├── hooks/
 │   │   ├── useDb.jsx            # Database context hook providing data access & mutations
 │   │   └── useToast.jsx         # Toast notification dispatch hook
 │   ├── lib/
-│   │   ├── constants.js         # APP_VERSION ('1.0.0'), status enums, Excel headers, default reasons
+│   │   ├── constants.js         # APP_VERSION ('1.1.0'), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
 │   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
 │   │   ├── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser
@@ -305,7 +306,7 @@ The engine constructs valid ZIP-compressed OpenXML packages containing:
 ## 7. Performance & Build Metrics
 
 Production build execution via `npm run build`:
-- **Modules Transformed**: 69 modules.
+- **Modules Transformed**: 70 modules.
 - **HTML Bundle**: `dist/index.html` (~0.92 kB).
 - **CSS Bundle**: `dist/assets/index-[hash].css` (~29.6 kB, ~6.6 kB gzip).
 - **JS Bundle**: `dist/assets/index-[hash].js` (~367 kB, ~111 kB gzip) — includes full OpenXML parser, DEFLATE compressor, seed database, and React 19 runtime.

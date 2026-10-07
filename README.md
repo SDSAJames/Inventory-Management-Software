@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.0.0)
+# StarPlus Energy Asset Management System (v1.1.0)
 
 > **High-reliability, air-gapped IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations with 100% offline guarantees, bidirectional Excel interoperability, and deterministic state management.
@@ -39,8 +39,9 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, bulk status updates, batch deletion, and direct click-to-transfer ownership badges.
 3. **Loans & Custody (`/loans`)**: Checkouts, pickups, accessory checklists (Adapter, Cable, Dongle, Keyboard, Mouse, Monitor, Ethernet cable), and return processing.
-4. **Directory (`/directory`)**: Personnel directory with Knox IDs, department rosters, and rental facility locations.
-5. **Excel Data Exchange (`/exchange`)**: 1:1 reference-format `.xlsx` export, standalone offline import, and one-click database rollback.
+4. **Business Travelers (`/travelers`)**: Dedicated mobile workforce custody; displays counts of active/scheduled/overdue travelers ("how many they are"), interactive location distribution cards ("where they are"), and return/edit workflows.
+5. **Directory (`/directory`)**: Personnel directory with Knox IDs, department rosters, and rental facility locations.
+6. **Excel Data Exchange (`/exchange`)**: 1:1 reference-format `.xlsx` export, standalone offline import, and one-click database rollback.
 
 ---
 

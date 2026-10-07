@@ -6,6 +6,32 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ---
 
+## [1.1.0] — 2026-10-07
+
+### Added: Dedicated Business Travelers Management Module & Location Matrix
+
+#### ✈️ Dedicated Business Travelers Management (`/travelers`)
+- **Sidebar Integration**: Added a dedicated **Business Travelers** navigation item to the sidebar with an enterprise briefcase icon and an active count badge showing unreturned travelers in real time.
+- **"How Many They Are" Fleet Metrics**:
+  - **Active in Field**: Total travelers holding IT hardware on active or overdue assignments outside IT custody.
+  - **Travel Locations**: Count of active remote plant/office deployment sites.
+  - **Scheduled Trips**: Upcoming equipment pickups awaiting dispatch.
+  - **Total Travelers**: Count of unique personnel who have undertaken travel assignments.
+- **"Where They Are" Location Distribution Grid**:
+  - Interactive cards grouped by deployment location (e.g., Kokomo Plant, Regional Office, Detroit Center, Head Office).
+  - Displays headcount of travelers deployed per site, active/overdue breakdown, and lists assigned staff names.
+  - One-click location filtering: clicking any location card instantly filters the roster table to that site.
+- **Mobile Workforce Roster & Return Actions**:
+  - Searchable by traveler name, Knox ID, location, asset code, or IP.
+  - Filterable by status (Active in Field, Scheduled, Overdue, Returned, All).
+  - Direct **"Return"** action button launching a dedicated return confirmation modal that routes equipment directly back to the IT department as `Available`.
+  - Direct **"Edit"** trip button opening the full loan editor modal.
+  - Direct **"+ Record Business Traveler"** workflow for quick deployment registration.
+- **Header & Navigation Metadata**:
+  - Integrated `/travelers` in TopBar with eyebrow `FIELD DEPLOYMENTS & MOBILE WORKFORCE` and title `Business Travelers`.
+
+---
+
 ## [1.0.0] — 2026-10-07 (Official Production Release)
 
 ### Baseline Release: StarPlus Energy Rebrand, States Engine v1.0.0, and 100% Offline Air-Gap Architecture

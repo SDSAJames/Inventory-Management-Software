@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 export const STORAGE_KEY = 'starplusenergy-asset-index-v1';
 export const IMPORT_BACKUP_KEY = 'starplusenergy-last-import-backup-v1';
 

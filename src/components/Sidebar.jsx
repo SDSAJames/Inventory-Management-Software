@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { APP_VERSION } from '../lib/constants';
@@ -35,6 +36,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    path: '/travelers',
+    label: 'Business Travelers',
+    view: 'travelers',
+    countKey: 'travelers',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1.5 4.5a1.5 1.5 0 0 1 1.5-1.5h10a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H3a1.5 1.5 0 0 1-1.5-1.5v-8z"/>
+        <path d="M5.5 3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1M1.5 7.5h13"/>
+      </svg>
+    ),
+  },
+  {
     path: '/directory',
     label: 'Directory',
     view: 'directory',
@@ -60,6 +73,14 @@ export default function Sidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { db } = useDb();
+
+  const activeTravelersCount = useMemo(() => {
+    return (db.loans || []).filter((l) => {
+      const isTraveler = (l.assigneeType || 'Business traveler') === 'Business traveler';
+      const isOngoing = !l.returnDate && !l.returnedDate && l.status !== 'Returned' && !l.isArchived;
+      return isTraveler && isOngoing;
+    }).length;
+  }, [db.loans]);
 
   return (
     <aside className="sidebar">
@@ -98,6 +119,9 @@ export default function Sidebar() {
             {item.label}
             {item.showCount && (
               <span className="nav-count">{db.assets.length}</span>
+            )}
+            {item.countKey === 'travelers' && activeTravelersCount > 0 && (
+              <span className="nav-count">{activeTravelersCount}</span>
             )}
           </button>
         ))}

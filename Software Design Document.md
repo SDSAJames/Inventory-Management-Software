@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.0.0** |
+| **Document Version** | **v1.1.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -214,7 +214,7 @@ Prior to importing an external workbook that replaces the active database, the s
 
 ## 7. User Interface Layout & Views
 
-The frontend application provides five core operational views accessed via the left navigation sidebar:
+The frontend application provides six core operational views accessed via the left navigation sidebar:
 
 1. **Operations Dashboard (`/`)**:
    - High-level KPI stat cards (Total Fleet, Available for Deployment, In Active Custody, Under Maintenance/Repair, Overdue Loans).
@@ -228,10 +228,16 @@ The frontend application provides five core operational views accessed via the l
    - Active, Scheduled, Overdue, and Returned custody management.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Equipment accessory checklist tracking.
-4. **Directory (`/directory`)**:
+4. **Business Travelers (`/travelers`)**:
+   - Dedicated mobile workforce custody and field deployment management.
+   - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
+   - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, Head Office) with one-click filtering.
+   - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
+   - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
+5. **Directory (`/directory`)**:
    - Personnel directory with Knox IDs, departments, and active equipment counts.
    - Department directory and rental facility locations.
-5. **Excel Data Exchange (`/exchange`)**:
+6. **Excel Data Exchange (`/exchange`)**:
    - Reference-format `.xlsx` export with 1:1 column parity.
    - Standalone offline `.xlsx` import parser with row validation.
    - Snapshot restore point management.
@@ -252,7 +258,11 @@ The frontend application provides five core operational views accessed via the l
 
 ## 9. Version Control & History
 
-- **v0.1.0** *(Pre-release Prototype)*: Initial standalone HTML/JS inventory prototype (`app.legacy.js`).
+- **v1.1.0** *(Business Travelers Management & Location Matrix)*:
+  - Dedicated Business Travelers management view (`/travelers`) with real-time active field badge in the sidebar.
+  - "How many they are": KPI counters for active in field, travel locations, scheduled trips, and total unique travelers.
+  - "Where they are": Interactive location distribution matrix grouping travelers by destination/plant with one-click filtering.
+  - Integrated mobile workforce roster with countdown badges, trip editing, and return-to-IT workflow.
 - **v1.0.0** *(Official Production Baseline)*:
   - Production architecture in React 19 + Vite 6 + React Router 7.
   - StarPlus Energy corporate design language (Blue `#1449d6`, Navy `#0a2547`, Slate `#141519`, geometric SVG logo).
