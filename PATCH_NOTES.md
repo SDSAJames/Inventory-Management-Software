@@ -4,6 +4,32 @@ All notable changes, architectural updates, and state engine revisions for the *
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-10-07
+
+### Added: TXT File Import Extracted from Excel & Preserved 1:1 Excel Export
+
+#### 📥 Primary TXT File Import Architecture (`src/lib/txtImport.js`)
+- **Extracted from Excel Support**: Standardized the system import engine to ingest tab-delimited text (`.txt`) files exported directly from Excel:
+  - **Equipment Master Register (`SPE_Equipments_example.txt`)**: Parses `Host Name`, `Serial Number`, `Status`, `Issued Knox ID`, and `Issued Date`, updating or creating master inventory records and ownership lineage.
+  - **IT Equipment Loan List (`SPE_IT_Equipment_Loan_List_Example.txt`)**: Parses `Start Date`, `Pickup Date`, `End Date`, `Return Date`, `Laptop`, accessories (`Adapter`, `Cable`, `Dongle`, `Keyboard`, `Mouse`, `Monitor`, `Ethernet cable`), and notes.
+- **Universal Multiline & Quote Delimited Parser**: Handles multiline Excel quoted fields (e.g., `"Charging \r\nAdapter"`), BOM headers (`\uFEFF`), CRLF/LF line breaks, and auto-detects tab vs comma delimiters completely client-side.
+- **Automatic Format Detection**: Automatically inspects header signatures to identify whether an uploaded text file is an Equipment Master Register or a Loan List.
+- **Batch Multi-File Ingestion**: Allows administrators to drag & drop or select both `SPE_Equipments_example.txt` and `SPE_IT_Equipment_Loan_List_Example.txt` simultaneously. The engine parses both files in tandem, cross-referencing borrower Knox IDs with laptop custody records.
+
+#### 👁️ Interactive Import Preview Modal
+- **Live Pre-Flight Inspection**: Inspects extracted rows and presents a tabbed preview (`Equipment Assets` vs `Loan Records`) before writing to storage.
+- **Flexible Ingestion Modes**:
+  - **Merge & Sync (Recommended)**: Intelligently updates matching assets and loans, appending new records while safeguarding existing unmentioned entries.
+  - **Full Database Replacement**: Performs a clean database replacement with automated pre-import restore snapshots.
+
+#### 📊 Preserved 1:1 Reference Excel Exports
+- **Excel Export Parity**: Retained exact `.xlsx` OpenXML export capabilities:
+  - `SPE_IT_Equipment_Loan_List_YYYY-MM-DD.xlsx` with all 19 corporate standard columns.
+  - `SPE_Equipments_YYYY-MM-DD.xlsx` with official equipment columns (`Host Name`, `Serial Number`, `Status`, `Issued Knox ID`, `Issued Date`).
+- **Assets Page TXT Support**: Extended the Quick Import button on the Assets table (`/assets`) to seamlessly accept `.txt` equipment files.
+
+---
+
 ## [1.1.1] — 2026-10-07
 
 ### Improved: Full Screen Roster Mode & Specific URL Routing

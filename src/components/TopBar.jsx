@@ -28,7 +28,7 @@ const PAGE_META = {
   },
   '/exchange': {
     eyebrow: 'DATA INTEGRATION & BACKUP',
-    title: 'Excel Data Exchange',
+    title: 'Data Exchange',
   },
 };
 

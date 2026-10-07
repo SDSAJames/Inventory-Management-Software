@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.1.1** |
+| **Document Version** | **v1.2.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -179,36 +179,29 @@ The system dynamically merges permanent assignments with internal loan checkout/
 
 ---
 
-## 6. Excel Data Exchange & Header Parity (1:1 Reference Format)
+## 6. Data Exchange Engine (TXT Import & 1:1 Excel Export)
 
-To maintain seamless interoperability with corporate spreadsheet workflows, the application implements exact 1:1 column preservation matching the reference workbook `SPE_IT_Equipment_Loan_List.xlsx`:
+To maximize interoperability with corporate spreadsheet workflows, the application standardizes on tab-delimited text (`.txt`) imports extracted directly from Excel, while preserving exact 1:1 OpenXML `.xlsx` exports.
 
-### 6.1 Column Schema
+### 6.1 Supported Import Formats (TXT Extracted from Excel)
+The client-side parser (`src/lib/txtImport.js`) runs 100% offline and automatically recognizes:
+1. **Equipment Inventory Master (`SPE_Equipments_example.txt`)**:
+   - `Host Name` (Asset code), `Serial Number`, `Status`, `Issued Knox ID`, `Issued Date`.
+   - Automatically maps statuses (`Issued` ➔ `Assigned`, `Broken` ➔ `Damaged`, `Available` ➔ `Available`).
+2. **IT Equipment Loan List (`SPE_IT_Equipment_Loan_List_Example.txt`)**:
+   - `Start Date`, `Pickup Date`, `End Date`, `Return Date`, `Laptop`, itemized accessories (`Adapter`, `Cable`, `Dongle`, `Keyboard`, `Mouse`, `Monitor`, `Ethernet cable`), and notes.
+   - Accurately parses multiline quoted fields (e.g. `"Charging \r\nAdapter"`), BOM marks, and normalizes Excel null dates (`1/0/1900`).
+   - Automatically correlates laptop asset codes with equipment holder records to ensure borrower identities remain consistent.
+3. **Batch Multi-File Ingestion**:
+   - Allows administrators to upload both files in tandem; the engine cross-references equipment serials and active loans before writing to local storage.
 
-| Column Index | Header Title | Source Field | Description |
-| :---: | :--- | :--- | :--- |
-| **1** | `no` | Row sequence index | Sequential integer (1, 2, 3...) |
-| **2** | `Name` | `loan.assignee` | Borrower or assigned employee |
-| **3** | `Knox ID` | `loan.knoxId` | Corporate Knox directory identity |
-| **4** | `Rental Location` | `loan.location` | Facility / desk location |
-| **5** | `IP` | `loan.ip` | Assigned IP address (`105.101.x.x`) |
-| **6** | `Start Date` | `loan.startDate` | Loan request / agreement start date |
-| **7** | `Pickup Date` | `loan.pickupDate` | Date equipment was handed over |
-| **8** | `End Date` | `loan.endDate` | Scheduled return due date |
-| **9** | `Return Date` | `loan.returnDate` | Date equipment was returned to IT |
-| **10** | `Laptop` | `loan.assetCode` | Master Asset Code (`SPE-XXXX`) |
-| **11** | `Charging _x000D_\nAdapter` | `loan.equipment.Adapter` | Power adapter quantity |
-| **12** | `Charging _x000D_\nCable` | `loan.equipment.Cable` | Power cable quantity |
-| **13** | `Dongle` | `loan.equipment.Dongle` | USB-C dongle / hub count |
-| **14** | `Keyboard` | `loan.equipment.Keyboard` | External keyboard count |
-| **15** | `Mouse` | `loan.equipment.Mouse` | External mouse count |
-| **16** | `Monitor` | `loan.equipment.Monitor` | External display count |
-| **17** | `Ethernet cable` | `loan.equipment['Ethernet cable']` | Network cable count |
-| **18** | `others` | `loan.others` | Additional accessory notes |
-| **19** | `Note` | `loan.note` | Custody notes & special instructions |
+### 6.2 1:1 Reference Excel Exports
+Export functionality continues to generate native OpenXML `.xlsx` workbooks:
+- `SPE_IT_Equipment_Loan_List_YYYY-MM-DD.xlsx` with exact 1:1 column parity matching the corporate loan register.
+- `SPE_Equipments_YYYY-MM-DD.xlsx` matching the equipment master structure.
 
-### 6.2 Pre-Import Snapshot & One-Click Revert
-Prior to importing an external workbook that replaces the active database, the system automatically saves a serialized snapshot of the local database to `IMPORT_BACKUP_KEY`. If an accidental or malformed import occurs, the user can click **"Revert last import"** on the Excel Exchange view to instantly restore the previous dataset.
+### 6.3 Pre-Import Snapshot & One-Click Revert
+Prior to importing external text files that modify the active database, the system automatically saves a serialized snapshot of the local database to `IMPORT_BACKUP_KEY`. If an accidental or malformed import occurs, the user can click **"Revert last import"** on the Data Exchange view to instantly restore the previous dataset.
 
 ---
 
@@ -238,9 +231,10 @@ The frontend application provides six core operational views accessed via the le
 5. **Directory (`/directory`)**:
    - Personnel directory with Knox IDs, departments, and active equipment counts.
    - Department directory and rental facility locations.
-6. **Excel Data Exchange (`/exchange`)**:
-   - Reference-format `.xlsx` export with 1:1 column parity.
-   - Standalone offline `.xlsx` import parser with row validation.
+6. **Data Exchange (`/exchange`)**:
+   - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
+   - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
+   - Reference-format `.xlsx` OpenXML export maintaining 1:1 column parity.
    - Snapshot restore point management.
 
 ---
@@ -259,6 +253,11 @@ The frontend application provides six core operational views accessed via the le
 
 ## 9. Version Control & History
 
+- **v1.2.0** *(TXT Import Extracted from Excel & 1:1 Excel Export)*:
+  - Standardized on tab-delimited `.txt` import format for Equipment Inventory (`SPE_Equipments_example.txt`) and IT Loan Lists (`SPE_IT_Equipment_Loan_List_Example.txt`).
+  - Added multiline quoted field parser and automatic header format detection (`src/lib/txtImport.js`).
+  - Interactive import preview modal with Merge & Sync vs Full Replace modes.
+  - Preserved 1:1 OpenXML `.xlsx` exports for both loans and equipment masters.
 - **v1.1.1** *(Full Screen Roster Mode & Specific URL Routing)*:
   - Upgraded route from `/travelers` to specific `/business-travelers` with backward-compatible redirect.
   - Added 1-click Full Screen Roster mode (`roster-fullscreen`) with full-body viewport layout, sticky table headers, and Escape key dismissal.

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.1.1** |
+| **Specification Version** | **v1.2.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
@@ -52,7 +52,7 @@ graph TD
 ```
 Inventory-Management-Software/
 ├── index.html                   # HTML entry point (clean system typography, zero CDNs)
-├── package.json                 # Project manifest (v1.1.0, scripts, dependencies)
+├── package.json                 # Project manifest (v1.2.0, scripts, dependencies)
 ├── vite.config.js               # Vite 6 configuration with React plugin
 ├── src/
 │   ├── main.jsx                 # Application entry point, mounts AppShell inside BrowserRouter
@@ -76,14 +76,15 @@ Inventory-Management-Software/
 │   │   ├── LoansPage.jsx        # Device custody, checkout/return lifecycle, overdue tracking
 │   │   ├── BusinessTravelersPage.jsx # Business travelers management, full screen roster, location matrix
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
-│   │   └── ExchangePage.jsx     # Bidirectional Excel (.xlsx) export, import, restore point
+│   │   └── ExchangePage.jsx     # TXT import (extracted from Excel) & 1:1 Excel export (.xlsx)
 │   ├── hooks/
 │   │   ├── useDb.jsx            # Database context hook providing data access & mutations
 │   │   └── useToast.jsx         # Toast notification dispatch hook
 │   ├── lib/
-│   │   ├── constants.js         # APP_VERSION ('1.1.1'), status enums, Excel headers, default reasons
+│   │   ├── constants.js         # APP_VERSION ('1.2.0'), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
 │   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
+│   │   ├── txtImport.js         # Delimited text parser & format detector for TXT extracted from Excel
 │   │   ├── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser
 │   │   └── utils.js             # Date formatters (ISO, readable), ID generators, sanitizers
 │   └── data/

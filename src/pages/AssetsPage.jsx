@@ -6,6 +6,7 @@ import { STATUSES } from '../lib/constants';
 import { todayIso, statusClass } from '../lib/utils';
 import { makeXlsx, readXlsx, downloadBlob } from '../lib/xlsx';
 import { parseAssetRows, assetsToRows } from '../lib/assetExcel';
+import { parseDelimitedText } from '../lib/txtImport';
 import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
 import AssetTable from '../components/AssetTable';
 import SearchBar from '../components/SearchBar';
@@ -108,10 +109,16 @@ export default function AssetsPage() {
     e.target.value = '';
     if (!file) return;
     try {
-      const rows = await readXlsx(file);
+      let rows;
+      if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.tsv') || file.name.toLowerCase().endsWith('.csv')) {
+        const text = await file.text();
+        rows = parseDelimitedText(text);
+      } else {
+        rows = await readXlsx(file);
+      }
       const result = parseAssetRows(rows, db.assets);
       if (!result.added.length && !result.duplicates.length) {
-        throw new Error('The workbook contains no asset rows');
+        throw new Error('The file contains no valid asset rows');
       }
       setImportPreview({ fileName: file.name, ...result });
       setOverwriteDuplicates(false);
@@ -182,8 +189,8 @@ export default function AssetsPage() {
               </button>
             </>
           )}
-          <button id="asset-import-btn" className="button ghost" onClick={() => fileRef.current?.click()}>
-            ↑ Import Excel
+          <button id="asset-import-btn" className="button ghost" onClick={() => fileRef.current?.click()} title="Import SPE_Equipments_example.txt or XLSX">
+            ↑ Import TXT / Excel
           </button>
           <button id="asset-export-btn" className="button ghost" onClick={handleExport}>
             ↓ Export Excel
@@ -191,7 +198,7 @@ export default function AssetsPage() {
           <input
             ref={fileRef}
             type="file"
-            accept={`.xlsx,${XLSX_MIME}`}
+            accept={`.txt,.tsv,.csv,.xlsx,${XLSX_MIME}`}
             className="hidden-field"
             onChange={handleImportFile}
           />

@@ -534,7 +534,93 @@ export function DbProvider({ children }) {
   const importDb = useCallback((newDb) => {
     setDb((prev) => {
       saveImportBackup(prev);
-      return newDb;
+      const reconciledAssets = reconcileAllAssets(newDb.assets || [], newDb.loans || []);
+      return {
+        ...newDb,
+        assets: reconciledAssets,
+      };
+    });
+  }, []);
+
+  const mergeImportData = useCallback(({ assets: incomingAssets = [], loans: incomingLoans = [] }) => {
+    setDb((prev) => {
+      saveImportBackup(prev);
+      let nextAssets = [...prev.assets];
+      let nextLoans = [...prev.loans];
+      let nextEmployees = [...(prev.employees || [])];
+      const nextLocations = new Set(prev.locations || []);
+
+      // 1. Merge Assets
+      if (incomingAssets && incomingAssets.length) {
+        const existingCodes = new Map(nextAssets.map((a, i) => [String(a.code || '').toLowerCase(), i]));
+        incomingAssets.forEach((inc) => {
+          const key = String(inc.code || '').toLowerCase();
+          if (existingCodes.has(key)) {
+            const idx = existingCodes.get(key);
+            const curr = nextAssets[idx];
+            let ownershipHistory = curr.ownershipHistory || [];
+            if (inc.owner && inc.owner !== curr.owner) {
+              ownershipHistory = [
+                createOwnershipEntry({
+                  previousOwner: curr.owner || 'None',
+                  newOwner: inc.owner,
+                  reason: 'TXT Import Update',
+                  date: inc.issuedDate || todayIso(),
+                }),
+                ...ownershipHistory,
+              ];
+            }
+            nextAssets[idx] = {
+              ...curr,
+              ...inc,
+              id: curr.id,
+              ownershipHistory,
+              updated: todayIso(),
+            };
+          } else {
+            nextAssets.push(inc);
+          }
+          if (inc.location) nextLocations.add(inc.location);
+          if (inc.owner && inc.owner !== 'IT department' && !nextEmployees.some((e) => e.name === inc.owner)) {
+            nextEmployees.push({ name: inc.owner, department: inc.department || '', position: '' });
+          }
+        });
+      }
+
+      // 2. Merge Loans
+      if (incomingLoans && incomingLoans.length) {
+        incomingLoans.forEach((incLoan) => {
+          const existingIdx = nextLoans.findIndex(
+            (l) =>
+              l.assetCode.toLowerCase() === incLoan.assetCode.toLowerCase() &&
+              (l.pickupDate === incLoan.pickupDate || l.startDate === incLoan.startDate)
+          );
+          if (existingIdx >= 0) {
+            nextLoans[existingIdx] = {
+              ...nextLoans[existingIdx],
+              ...incLoan,
+              id: nextLoans[existingIdx].id,
+            };
+          } else {
+            nextLoans.push(incLoan);
+          }
+          if (incLoan.location) nextLocations.add(incLoan.location);
+          if (incLoan.assignee && incLoan.assignee !== 'IT department' && !nextEmployees.some((e) => e.name === incLoan.assignee)) {
+            nextEmployees.push({ name: incLoan.assignee, department: '', position: 'Business traveler' });
+          }
+        });
+      }
+
+      // Reconcile all assets with latest loan states
+      nextAssets = reconcileAllAssets(nextAssets, nextLoans);
+
+      return {
+        ...prev,
+        assets: nextAssets,
+        loans: nextLoans,
+        employees: nextEmployees,
+        locations: [...nextLocations],
+      };
     });
   }, []);
 
@@ -577,6 +663,7 @@ export function DbProvider({ children }) {
     unarchiveLoan,
     deleteLoan,
     importDb,
+    mergeImportData,
     revertImport,
     hasBackup: checkBackup,
   }), [
@@ -599,6 +686,7 @@ export function DbProvider({ children }) {
     unarchiveLoan,
     deleteLoan,
     importDb,
+    mergeImportData,
     revertImport,
   ]);
 
