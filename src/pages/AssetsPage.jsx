@@ -140,6 +140,8 @@ export default function AssetsPage() {
       saveAssetExportHeaders(importPreview.importedHeaders);
     }
 
+    importAssets(assetsToImport, overwriteDuplicates);
+
     let msg = '';
     if (freshCount > 0 && overwriteCount > 0) {
       msg = `${freshCount} added, ${overwriteCount} updated from Excel.`;

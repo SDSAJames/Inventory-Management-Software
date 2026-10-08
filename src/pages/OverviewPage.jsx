@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
+import { isLoanOverdue } from '../lib/utils';
 import StatCard from '../components/StatCard';
 import BarChart from '../components/BarChart';
 import AssetTable from '../components/AssetTable';
 import Modal from '../components/Modal';
-import AssetForm from '../components/AssetForm';
 import LoanForm from '../components/LoanForm';
 import ChangeOwnerModal from '../components/ChangeOwnerModal';
 
@@ -19,7 +19,7 @@ export default function OverviewPage() {
   const available = db.assets.filter((a) => a.status === 'Available').length;
   const assigned = db.assets.filter((a) => ['Assigned', 'On loan'].includes(a.status)).length;
   const issues = db.assets.filter((a) => ['Damaged', 'Under repair'].includes(a.status)).length;
-  const overdueLoans = db.loans.filter((l) => l.status === 'Overdue');
+  const overdueLoans = db.loans.filter(isLoanOverdue);
   const overdueCount = overdueLoans.length;
 
   const categories = useMemo(() => {

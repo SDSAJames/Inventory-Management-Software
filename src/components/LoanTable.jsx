@@ -1,15 +1,29 @@
-import { useState } from 'react';
-import { readableLoanDate, statusClass } from '../lib/utils';
+import { Fragment, useMemo, useState } from 'react';
+import { readableLoanDate, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
 
-const HEADERS = [
-  'Action',
-  'No',
-  'Knox ID',
-  'Start date',
-  'Pickup date',
-  'End date',
-  'Return date',
-  'Status',
+const STATUS_ORDER = { Scheduled: 0, Loaned: 1, Overdue: 2, Returned: 3 };
+
+/** Converts stored date strings into a lexicographically sortable key ('' when empty). */
+function dateSortKey(raw) {
+  const str = String(raw || '').trim();
+  if (!str) return '';
+  const normalized = normalizeDateToIso(str);
+  if (normalized) {
+    const timeMatch = str.match(/\b(\d{2}:\d{2})(?::\d{2})?\b/);
+    return timeMatch ? `${normalized} ${timeMatch[1]}` : normalized;
+  }
+  return str;
+}
+
+/* Sortable data columns (the first Action/checkbox column is prepended at render time). */
+const COLUMNS = [
+  { key: 'no', label: 'No', className: 'col-no', getValue: (_l, idx) => idx },
+  { key: 'knoxId', label: 'Knox ID', className: 'col-knox', getValue: (l) => String(l.knoxId || '').toLowerCase() },
+  { key: 'startDate', label: 'Start date', getValue: (l) => dateSortKey(l.startDate || l.loanDate) },
+  { key: 'pickupDate', label: 'Pickup date', getValue: (l) => dateSortKey(l.pickupDate) },
+  { key: 'endDate', label: 'End date', getValue: (l) => dateSortKey(l.endDate || l.dueDate) },
+  { key: 'returnDate', label: 'Return date', getValue: (l) => dateSortKey(l.returnDate || l.returnedDate) },
+  { key: 'status', label: 'Status', getValue: (l) => STATUS_ORDER[getLoanStatus(l)] },
 ];
 
 export default function LoanTable({
@@ -23,10 +37,51 @@ export default function LoanTable({
   onRevertReturn,
   onDeleteLoan,
   onEditFullLoan,
+  // Checkbox selection mode (replaces the per-row Action column)
+  selectable = false,
+  selectedIds = new Set(),
+  onToggleSelect,
+  onToggleSelectAll,
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [sort, setSort] = useState({ key: null, dir: 'asc' });
+
+  const totalColumns = COLUMNS.length + 1;
+
+  // Keep the original position (No) attached to each loan, then apply sorting.
+  const sortedRows = useMemo(() => {
+    const rows = loans.map((loan, idx) => ({ loan, idx }));
+    const column = COLUMNS.find((c) => c.key === sort.key);
+    if (!column) return rows;
+    const factor = sort.dir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const va = column.getValue(a.loan, a.idx);
+      const vb = column.getValue(b.loan, b.idx);
+      const emptyA = va === '' || va === undefined || va === null;
+      const emptyB = vb === '' || vb === undefined || vb === null;
+      // Empty values always go to the bottom regardless of direction
+      if (emptyA && emptyB) return a.idx - b.idx;
+      if (emptyA) return 1;
+      if (emptyB) return -1;
+      if (va < vb) return -1 * factor;
+      if (va > vb) return 1 * factor;
+      return a.idx - b.idx;
+    });
+  }, [loans, sort]);
+
+  // Cycle: ascending → descending → original order
+  const handleSort = (key) => {
+    setSort((prev) => {
+      if (prev.key !== key) return { key, dir: 'asc' };
+      if (prev.dir === 'asc') return { key, dir: 'desc' };
+      return { key: null, dir: 'asc' };
+    });
+  };
+
+  const allSelected = selectable && loans.length > 0 && loans.every((l) => selectedIds.has(l.id));
+  const someSelected = selectable && !allSelected && loans.some((l) => selectedIds.has(l.id));
 
   const startEdit = (loan) => {
     setEditingId(loan.id);
@@ -67,44 +122,65 @@ export default function LoanTable({
 
   return (
     <div className="table-wrap">
-      <table className="loan-table simple-loan-table">
+      <table className={`loan-table simple-loan-table ${selectable ? 'selectable-loan-table' : ''}`}>
         <thead>
           <tr>
-            {HEADERS.map((h, i) => (
-              <th
-                key={i}
-                className={
-                  i === 0
-                    ? 'col-action'
-                    : i === 1
-                    ? 'col-no'
-                    : i === 2
-                    ? 'col-knox'
-                    : undefined
-                }
-              >
-                {h}
+            {selectable ? (
+              <th className="col-checkbox">
+                <input
+                  type="checkbox"
+                  aria-label="Select all loans"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={() => onToggleSelectAll && onToggleSelectAll(loans)}
+                />
               </th>
-            ))}
+            ) : (
+              <th className="col-action">Action</th>
+            )}
+            {COLUMNS.map((col) => {
+              const isActive = sort.key === col.key;
+              return (
+                <th
+                  key={col.key}
+                  className={`sortable-th ${col.className || ''} ${isActive ? 'sorted' : ''}`}
+                  onClick={() => handleSort(col.key)}
+                  aria-sort={isActive ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  title={
+                    !isActive
+                      ? `Sort by ${col.label} (ascending)`
+                      : sort.dir === 'asc'
+                      ? `Sort by ${col.label} (descending)`
+                      : 'Clear sorting'
+                  }
+                >
+                  <span className="sortable-th-inner">
+                    {col.label}
+                    <span className="sort-indicator">
+                      {isActive ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}
+                    </span>
+                  </span>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {loans.map((loan, index) => {
+          {sortedRows.map(({ loan, idx: index }) => {
             const eq = loan.equipment || {};
             const asset = assets.find((a) => a.code === loan.assetCode);
             const isEditing = editingId === loan.id;
             const isExpanded = expandedId === loan.id;
+            const isSelected = selectable && selectedIds.has(loan.id);
             const isReturned = Boolean(
               loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived,
             );
             const isPickedUp = Boolean(loan.pickupDate);
 
-            // Compute current lifecycle status label
-            const statusLabel = isReturned
-              ? 'Returned'
-              : isPickedUp
-              ? 'Loaned'
-              : 'Scheduled';
+            // Compute current lifecycle status label (accurately reflecting Overdue if end date is over today)
+            const statusLabel = isEditing && draft ? getLoanStatus(draft) : getLoanStatus(loan);
 
             if (isEditing && draft) {
               return (
@@ -196,18 +272,28 @@ export default function LoanTable({
             }
 
             return (
-              <>
+              <Fragment key={loan.id}>
                 <tr
-                  key={loan.id}
                   className={`loan-row ${isExpanded ? 'row-expanded' : ''} ${
                     isReturned ? 'archived-row' : ''
-                  }`}
+                  } ${isSelected ? 'row-selected' : ''}`}
                   onClick={(e) => {
                     if (['BUTTON', 'INPUT', 'SELECT', 'A'].includes(e.target.tagName)) return;
                     toggleExpand(loan.id);
                   }}
                   title="Click to view loaner and equipment information"
                 >
+                  {selectable ? (
+                  <td className="col-checkbox">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select loan ${loan.knoxId || loan.assetCode || ''}`}
+                      checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => onToggleSelect && onToggleSelect(loan.id)}
+                    />
+                  </td>
+                  ) : (
                   <td className="col-action">
                     <div className="action-button-group">
                       {isReturned ? (
@@ -260,6 +346,7 @@ export default function LoanTable({
                       )}
                     </div>
                   </td>
+                  )}
                   <td className="col-no">{index + 1}</td>
                   <td className="col-knox">
                     <div className="knox-cell">
@@ -296,8 +383,8 @@ export default function LoanTable({
 
                 {/* Expanded Loaner Information Panel */}
                 {isExpanded && (
-                  <tr key={`${loan.id}-details`} className="loan-detail-tr">
-                    <td colSpan={HEADERS.length} className="loan-detail-td">
+                  <tr className="loan-detail-tr">
+                    <td colSpan={totalColumns} className="loan-detail-td">
                       <div className="loan-detail-card">
                         <div className="loan-detail-header">
                           <div className="loan-detail-title">
@@ -460,7 +547,7 @@ export default function LoanTable({
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </tbody>

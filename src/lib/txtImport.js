@@ -87,14 +87,24 @@ export function parseDelimitedText(text) {
  * Excel null date "1/0/1900" is normalized to empty string "".
  */
 export function normalizeTextDate(raw) {
-  if (!raw) return '';
+  if (raw === undefined || raw === null) return '';
   const str = String(raw).trim();
-  if (!str || str === '1/0/1900' || str === '0' || str.startsWith('1900-01-00')) {
+  if (!str || str === '1/0/1900' || str === '0' || str.startsWith('1900-01-00') || str === '—') {
     return '';
   }
 
-  // Match M/D/YYYY or M/D/YYYY H:mm
-  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  // 1. Check Excel numeric serial date (e.g. 46202 or 46189.474305555559)
+  const numeric = Number(str);
+  if (Number.isFinite(numeric) && numeric > 20000 && numeric < 100000) {
+    const date = new Date(Date.UTC(1899, 11, 30) + numeric * 86400000);
+    if (numeric % 1 !== 0) {
+      return date.toISOString().slice(0, 16).replace('T', ' ');
+    }
+    return date.toISOString().slice(0, 10);
+  }
+
+  // 2. Match M/D/YYYY or M/D/YYYY H:mm or M/D/YYYY HH:mm:ss
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if (m) {
     const month = m[1].padStart(2, '0');
     const day = m[2].padStart(2, '0');
@@ -107,10 +117,13 @@ export function normalizeTextDate(raw) {
     return `${year}-${month}-${day}`;
   }
 
-  // Standard ISO or valid date string
-  const parsed = new Date(str);
-  if (!Number.isNaN(parsed.getTime()) && /\d{4}/.test(str)) {
-    return parsed.toISOString().slice(0, 10);
+  // 3. Match ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:mm or YYYY-MM-DD HH:mm
+  const isoMatch = str.match(/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::\d{2})?)?/);
+  if (isoMatch) {
+    if (isoMatch[2]) {
+      return `${isoMatch[1]} ${isoMatch[2]}`;
+    }
+    return isoMatch[1];
   }
 
   return str;
@@ -300,30 +313,33 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
   }
 
   const rawHeaders = rows[0];
-  const normHeaders = rawHeaders.map((h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+  const normHeaders = rawHeaders.map((h) =>
+    String(h || '').toLowerCase().replace(/_?x000d_?/g, '').replace(/[^a-z0-9]/g, '')
+  );
 
   const findIdx = (candidates) => {
     return normHeaders.findIndex((h) => candidates.includes(h));
   };
 
-  const colLaptop = findIdx(['laptop', 'assetcode', 'code', 'laptopnumber']);
+  const colNo = findIdx(['no', 'number', 'seq', 'id', 'colno']);
+  const colName = findIdx(['name', 'assignee', 'borrower']);
+  const colKnoxId = findIdx(['knoxid', 'issuedknoxid']);
+  const colLocation = findIdx(['rentallocation', 'location', 'facility']);
+  const colIp = findIdx(['ip', 'ipaddress']);
   const colStartDate = findIdx(['startdate', 'loandate']);
   const colPickupDate = findIdx(['pickupdate']);
   const colEndDate = findIdx(['enddate', 'duedate']);
   const colReturnDate = findIdx(['returndate', 'returneddate']);
-  const colName = findIdx(['name', 'assignee', 'borrower']);
-  const colKnoxId = findIdx(['knoxid', 'issuedknoxid']);
-  const colLocation = findIdx(['rentallocation', 'location']);
-  const colIp = findIdx(['ip', 'ipaddress']);
-  const colAdapter = findIdx(['chargingadapter', 'adapter']);
-  const colCable = findIdx(['chargingcable', 'cable']);
+  const colLaptop = findIdx(['laptop', 'assetcode', 'code', 'laptopnumber']);
+  const colAdapter = findIdx(['chargingadapter', 'adapter', 'chargingx000dadapter']);
+  const colCable = findIdx(['chargingcable', 'cable', 'chargingx000dcable']);
   const colDongle = findIdx(['dongle']);
   const colKeyboard = findIdx(['keyboard']);
   const colMouse = findIdx(['mouse']);
   const colMonitor = findIdx(['monitor']);
   const colEthernet = findIdx(['ethernetcable', 'ethernet']);
   const colOthers = findIdx(['others', 'other']);
-  const colNote = findIdx(['note', 'notes']);
+  const colNote = findIdx(['note', 'notes', 'purpose']);
 
   if (colLaptop < 0) {
     throw new Error('Loan list file is missing required "Laptop" / "Asset Code" column');
@@ -343,6 +359,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     const assetCode = String(row[colLaptop] || '').trim();
     if (!assetCode) continue;
 
+    const no = colNo >= 0 ? String(row[colNo] || '').trim() : String(i);
     const startDate = colStartDate >= 0 ? normalizeTextDate(row[colStartDate]) : '';
     const pickupDate = colPickupDate >= 0 ? normalizeTextDate(row[colPickupDate]) : '';
     const endDate = colEndDate >= 0 ? normalizeTextDate(row[colEndDate]) : '';
@@ -390,6 +407,8 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     let status = 'Scheduled';
     if (isReturned) {
       status = 'Returned';
+    } else if (endDate && endDate < todayIso()) {
+      status = 'Overdue';
     } else if (pickupDate) {
       status = 'Active';
     }
@@ -398,28 +417,29 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
 
     parsedLoans.push({
       id: loanId,
+      no: no || String(i),
       assetCode,
       assignee,
       assigneeType: 'Business traveler',
       knoxId,
       location,
       ip,
-      startDate: startDate || pickupDate || todayIso(),
-      pickupDate,
+      startDate: startDate || '',
+      pickupDate: pickupDate || '',
       endDate: endDate || '',
-      returnDate,
+      returnDate: returnDate || '',
       loanDate: startDate || pickupDate || todayIso(),
       dueDate: endDate || '',
-      returnedDate: returnDate,
+      returnedDate: returnDate || '',
       status,
       equipment: {
-        Adapter: adapter || '1',
-        Cable: cable || '1',
-        Dongle: dongle || '0',
-        Keyboard: keyboard || '0',
-        Mouse: mouse || '0',
-        Monitor: monitor || '0',
-        'Ethernet cable': ethernet || '0',
+        Adapter: adapter !== '' ? adapter : '1',
+        Cable: cable !== '' ? cable : '1',
+        Dongle: dongle !== '' ? dongle : '0',
+        Keyboard: keyboard !== '' ? keyboard : '0',
+        Mouse: mouse !== '' ? mouse : '0',
+        Monitor: monitor !== '' ? monitor : '0',
+        'Ethernet cable': ethernet !== '' ? ethernet : '0',
       },
       others,
       note,

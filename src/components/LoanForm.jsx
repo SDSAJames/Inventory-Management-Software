@@ -48,6 +48,9 @@ export default function LoanForm({ onClose }) {
     if (form.assigneeType === 'Business traveler' && !form.endDate) {
       return toast('Enter a due date for a business traveler');
     }
+    if (form.startDate && form.endDate && form.endDate < form.startDate) {
+      return toast('End date cannot be earlier than start date');
+    }
     if ((form.ipSubnet || form.ipNumber) && (!validOctet(form.ipSubnet) || !validOctet(form.ipNumber))) {
       return toast('IP subnet and number must each be between 0 and 255');
     }

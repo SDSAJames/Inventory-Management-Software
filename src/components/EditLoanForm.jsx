@@ -58,6 +58,10 @@ export default function EditLoanForm({ loanId, onClose }) {
       return toast('IP subnet and number must each be between 0 and 255');
     }
 
+    if (form.startDate && form.endDate && form.endDate < form.startDate) {
+      return toast('End date cannot be earlier than start date');
+    }
+
     const ip = form.ipSubnet && form.ipNumber
       ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
       : '';

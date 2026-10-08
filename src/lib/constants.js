@@ -8,7 +8,7 @@ export const LOAN_HEADERS = [
   'no', 'Name', 'Knox ID', 'Rental Location', 'IP',
   'Start Date', 'Pickup Date', 'End Date', 'Return Date',
   'Laptop',
-  'Charging _x000D_\nAdapter', 'Charging _x000D_\nCable',
+  'Charging Adapter', 'Charging Cable',
   'Dongle', 'Keyboard', 'Mouse', 'Monitor', 'Ethernet cable',
   'others', 'Note',
 ];

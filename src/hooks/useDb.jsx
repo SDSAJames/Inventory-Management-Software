@@ -9,7 +9,7 @@ import {
   loadTransferReasons,
   saveTransferReasons,
 } from '../lib/db';
-import { todayIso } from '../lib/utils';
+import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 
@@ -300,7 +300,7 @@ export function DbProvider({ children }) {
           {
             id: crypto.randomUUID(),
             ...loanData,
-            status: loanData.status || (loanData.pickupDate ? 'Active' : 'Scheduled'),
+            status: loanData.status || (isLoanOverdue(loanData) ? 'Overdue' : (loanData.pickupDate ? 'Active' : 'Scheduled')),
             isArchived: Boolean(loanData.returnDate || loanData.returnedDate),
           },
           ...prev.loans,
@@ -329,6 +329,11 @@ export function DbProvider({ children }) {
       if (hasReturn) {
         computedStatus = 'Returned';
         isArchived = true;
+      } else if (isLoanOverdue(merged)) {
+        computedStatus = 'Overdue';
+        isArchived = false;
+        merged.returnDate = '';
+        merged.returnedDate = '';
       } else if (hasPickup) {
         computedStatus = 'Active';
         isArchived = false;
@@ -388,7 +393,7 @@ export function DbProvider({ children }) {
           ? {
               ...l,
               pickupDate: timestamp,
-              status: 'Active',
+              status: isLoanOverdue({ ...l, pickupDate: timestamp, returnDate: '', returnedDate: '' }) ? 'Overdue' : 'Active',
             }
           : l,
       );
@@ -416,7 +421,7 @@ export function DbProvider({ children }) {
           ? {
               ...l,
               pickupDate: '',
-              status: 'Scheduled',
+              status: isLoanOverdue({ ...l, pickupDate: '', returnDate: '', returnedDate: '' }) ? 'Overdue' : 'Scheduled',
             }
           : l,
       );
@@ -484,7 +489,9 @@ export function DbProvider({ children }) {
               ...l,
               returnDate: '',
               returnedDate: '',
-              status: l.pickupDate ? 'Active' : 'Scheduled',
+              status: isLoanOverdue({ ...l, returnDate: '', returnedDate: '' })
+                ? 'Overdue'
+                : l.pickupDate ? 'Active' : 'Scheduled',
               isArchived: false,
             }
           : l,
@@ -593,7 +600,13 @@ export function DbProvider({ children }) {
           const existingIdx = nextLoans.findIndex(
             (l) =>
               l.assetCode.toLowerCase() === incLoan.assetCode.toLowerCase() &&
-              (l.pickupDate === incLoan.pickupDate || l.startDate === incLoan.startDate)
+              (
+                (l.pickupDate && incLoan.pickupDate && l.pickupDate.slice(0, 10) === incLoan.pickupDate.slice(0, 10)) ||
+                (l.startDate && incLoan.startDate && l.startDate.slice(0, 10) === incLoan.startDate.slice(0, 10)) ||
+                (l.knoxId && incLoan.knoxId && l.knoxId.toLowerCase() === incLoan.knoxId.toLowerCase()) ||
+                (l.assignee && incLoan.assignee && l.assignee.toLowerCase() === incLoan.assignee.toLowerCase()) ||
+                (!l.returnDate && !incLoan.returnDate)
+              )
           );
           if (existingIdx >= 0) {
             nextLoans[existingIdx] = {

@@ -5,6 +5,7 @@ import { todayIso, readableLoanDate } from '../lib/utils';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
+import TravelerCalendar from '../components/TravelerCalendar';
 
 export default function BusinessTravelersPage() {
   const { db, returnLoan } = useDb();
@@ -17,6 +18,7 @@ export default function BusinessTravelersPage() {
   const [editLoanId, setEditLoanId] = useState(null);
   const [returnConfirmTarget, setReturnConfirmTarget] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'roster' | 'both'
 
   /* ── Fullscreen Escape key & scroll-lock handler ─────────── */
   useEffect(() => {
@@ -94,6 +96,10 @@ export default function BusinessTravelersPage() {
       };
     });
   }, [db.loans, db.assets]);
+
+  const overdueTravelers = useMemo(() => {
+    return allTravelers.filter((t) => t.isOverdue || t.tripStatus === 'Overdue');
+  }, [allTravelers]);
 
   /* ── 2. Summary Metrics ("How many they are") ─────────────── */
   const metrics = useMemo(() => {
@@ -204,6 +210,40 @@ export default function BusinessTravelersPage() {
           </p>
         </div>
         <div className="view-header-actions">
+          <div className="view-mode-toggle">
+            <button
+              type="button"
+              className={`view-mode-btn ${viewMode === 'overdue' ? 'active overdue-toggle-active' : ''}`}
+              onClick={() => setViewMode('overdue')}
+              title="View overdue business travelers only"
+            >
+              ⚠️ Overdue Only ({metrics.overdue})
+            </button>
+            <button
+              type="button"
+              className={`view-mode-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+              onClick={() => setViewMode('calendar')}
+              title="View monthly schedule calendar"
+            >
+              📅 Calendar View
+            </button>
+            <button
+              type="button"
+              className={`view-mode-btn ${viewMode === 'roster' ? 'active' : ''}`}
+              onClick={() => setViewMode('roster')}
+              title="View roster list table"
+            >
+              📋 Roster List
+            </button>
+            <button
+              type="button"
+              className={`view-mode-btn ${viewMode === 'both' ? 'active' : ''}`}
+              onClick={() => setViewMode('both')}
+              title="Show all sections (overdue, calendar, and roster)"
+            >
+              🗂 All Sections
+            </button>
+          </div>
           <button className="button" onClick={() => setShowCreateModal(true)}>
             + Record Business Traveler
           </button>
@@ -212,13 +252,21 @@ export default function BusinessTravelersPage() {
 
       {/* ── KPI Stat Cards ("How many they are") ─────────────── */}
       <section className="stat-grid" style={{ marginBottom: '22px' }}>
-        <div className="stat-card">
+        <div
+          className="stat-card"
+          style={{ cursor: 'pointer' }}
+          onClick={() => setViewMode('overdue')}
+          title="Click to view overdue travelers only"
+        >
           <div className="stat-label">Active in Field</div>
           <div className="stat-value" style={{ color: 'var(--blue)' }}>
             {metrics.activeTotal}
           </div>
           <div className="stat-hint">
-            {metrics.inField} deployed • {metrics.overdue} overdue
+            {metrics.inField} deployed •{' '}
+            <strong style={{ color: metrics.overdue > 0 ? '#dc2626' : 'inherit' }}>
+              {metrics.overdue} overdue (click to view)
+            </strong>
           </div>
         </div>
 
@@ -263,59 +311,202 @@ export default function BusinessTravelersPage() {
           )}
         </div>
 
-        <div className="traveler-locations-grid">
+        <div className="traveler-locations-list">
           {locationsBreakdown.map((loc) => {
             const activeAtLoc = loc.inField + loc.overdue;
             const isSelected = selectedLocation === loc.location;
             return (
               <div
                 key={loc.location}
-                className={`traveler-location-card${isSelected ? ' selected' : ''}${activeAtLoc > 0 ? ' has-active' : ''}`}
+                className={`traveler-location-row${isSelected ? ' selected' : ''}${activeAtLoc > 0 ? ' has-active' : ''}`}
                 onClick={() => setSelectedLocation(isSelected ? 'ALL' : loc.location)}
+                title={`Click to filter roster and calendar by ${loc.location}`}
               >
-                <div className="loc-card-top">
-                  <div className="loc-name-wrap">
-                    <span className="loc-pin">📍</span>
-                    <strong>{loc.location}</strong>
+                <div className="loc-row-left">
+                  <span className="loc-pin">📍</span>
+                  <div className="loc-row-name-block">
+                    <strong className="loc-row-name">{loc.location}</strong>
+                    <span className="loc-row-sub">
+                      {loc.total} total assignment{loc.total === 1 ? '' : 's'}
+                    </span>
                   </div>
                   <span className={`loc-count-pill${activeAtLoc > 0 ? ' active' : ''}`}>
                     {activeAtLoc} Active
                   </span>
                 </div>
 
-                <div className="loc-card-body">
-                  <div className="loc-stat-row">
-                    <span>In field:</span>
+                <div className="loc-row-stats">
+                  <div className="loc-stat-cell">
+                    <span className="loc-stat-label">In field:</span>
                     <strong>{loc.inField}</strong>
                   </div>
-                  {loc.overdue > 0 && (
-                    <div className="loc-stat-row overdue">
-                      <span>Overdue:</span>
-                      <strong>{loc.overdue}</strong>
-                    </div>
-                  )}
-                  {loc.scheduled > 0 && (
-                    <div className="loc-stat-row">
-                      <span>Scheduled:</span>
-                      <strong>{loc.scheduled}</strong>
-                    </div>
-                  )}
+                  <div className={`loc-stat-cell ${loc.overdue > 0 ? 'overdue-cell' : ''}`}>
+                    <span className="loc-stat-label">Overdue:</span>
+                    <strong>{loc.overdue}</strong>
+                  </div>
+                  <div className="loc-stat-cell">
+                    <span className="loc-stat-label">Scheduled:</span>
+                    <strong>{loc.scheduled}</strong>
+                  </div>
+                  <div className="loc-stat-cell">
+                    <span className="loc-stat-label">Returned:</span>
+                    <strong>{loc.returned}</strong>
+                  </div>
                 </div>
 
-                {loc.travelers.size > 0 && (
-                  <div className="loc-travelers-preview">
-                    <span>Personnel:</span>
-                    <p>{Array.from(loc.travelers).join(', ')}</p>
-                  </div>
-                )}
+                <div className="loc-row-personnel">
+                  <span className="loc-personnel-label">Personnel:</span>
+                  <span className="loc-personnel-names" title={loc.travelers.size > 0 ? Array.from(loc.travelers).join(', ') : 'None'}>
+                    {loc.travelers.size > 0 ? Array.from(loc.travelers).join(', ') : 'None'}
+                  </span>
+                </div>
+
+                <div className="loc-row-action">
+                  {isSelected ? (
+                    <span className="loc-selected-badge">✓ Active Filter</span>
+                  ) : (
+                    <span className="loc-filter-hint">Filter →</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       </section>
 
+      {/* ── Dedicated Overdue Business Travelers Section ─────── */}
+      {(viewMode === 'overdue' || viewMode === 'both' || (viewMode === 'roster' && overdueTravelers.length > 0)) && (
+        <section className="panel overdue-section" id="overdue-travelers-section" style={{ marginBottom: '22px' }}>
+          <div className="panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="overdue-icon-badge">⚠️</span>
+              <div>
+                <h3 style={{ margin: 0, color: overdueTravelers.length > 0 ? '#b91c1c' : 'var(--ink)' }}>
+                  Overdue Business Travelers ({overdueTravelers.length})
+                </h3>
+                <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                  {overdueTravelers.length > 0
+                    ? 'Urgent attention required: mobile staff holding equipment past scheduled return date.'
+                    : 'All mobile staff equipment custody is on schedule. No overdue travelers.'}
+                </span>
+              </div>
+            </div>
+            {overdueTravelers.length > 0 && (
+              <span className="urgent-count-pill">
+                {overdueTravelers.length} Overdue Action{overdueTravelers.length === 1 ? '' : 's'} Required
+              </span>
+            )}
+          </div>
+
+          {overdueTravelers.length === 0 ? (
+            <div className="overdue-empty-card">
+              <span className="overdue-empty-check">✓</span>
+              <div>
+                <strong style={{ fontSize: '13px' }}>All Clear: No Overdue Business Travelers</strong>
+                <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--muted)' }}>
+                  All mobile employees currently in the field are within their authorized travel schedule dates.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table className="loan-table simple-loan-table overdue-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>No</th>
+                    <th style={{ minWidth: '150px' }}>Traveler</th>
+                    <th style={{ minWidth: '130px' }}>Location</th>
+                    <th style={{ minWidth: '150px' }}>Assigned Laptop</th>
+                    <th style={{ minWidth: '130px' }}>Due Date</th>
+                    <th style={{ minWidth: '120px' }}>Overdue By</th>
+                    <th style={{ minWidth: '110px' }}>Knox IP</th>
+                    <th style={{ width: '170px', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdueTravelers.map((t, idx) => (
+                    <tr key={`overdue-${t.id}`} className="overdue-row-highlight">
+                      <td className="col-no">{idx + 1}</td>
+                      <td>
+                        <strong>{t.assignee}</strong>
+                        {t.knoxId && (
+                          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                            ID: <code>{t.knoxId}</code>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="traveler-loc-chip">📍 {t.location}</span>
+                      </td>
+                      <td>
+                        <strong>{t.assetCode}</strong>
+                        {t.assetName && (
+                          <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>
+                            {t.assetName} {t.assetModel ? `(${t.assetModel})` : ''}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <strong style={{ color: '#b91c1c', fontSize: '12px' }}>
+                          {readableLoanDate(t.endDate || t.dueDate)}
+                        </strong>
+                      </td>
+                      <td>
+                        <span className="status status-danger" style={{ fontWeight: 700, padding: '3px 8px' }}>
+                          ⚠️ {t.remainingText || 'Overdue'}
+                        </span>
+                      </td>
+                      <td>
+                        {t.ip ? (
+                          <code style={{ fontSize: '11px', color: 'var(--blue)' }}>{t.ip}</code>
+                        ) : (
+                          <span style={{ color: 'var(--muted)' }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          type="button"
+                          className="button secondary small-btn"
+                          style={{ marginRight: '6px', background: '#0284c7', color: 'white', borderColor: '#0284c7' }}
+                          onClick={() => setReturnConfirmTarget(t)}
+                          title="Record equipment return to IT department"
+                        >
+                          ↙ Return to IT
+                        </button>
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => setEditLoanId(t.id)}
+                          title="Edit travel assignment"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── Monthly Travel Schedule Calendar ────────────────── */}
+      {(viewMode === 'calendar' || viewMode === 'both') && (
+        <TravelerCalendar
+          travelers={allTravelers}
+          locations={locationsBreakdown.map((l) => l.location)}
+          selectedLocation={selectedLocation}
+          onSelectLocation={setSelectedLocation}
+          onEditTraveler={(id) => setEditLoanId(id)}
+          onReturnTraveler={(traveler) => setReturnConfirmTarget(traveler)}
+          onRecordTraveler={() => setShowCreateModal(true)}
+        />
+      )}
+
       {/* ── Travelers Management Register (With Full Screen Mode) ─ */}
-      <section className={`panel${isFullScreen ? ' roster-fullscreen' : ''}`}>
+      {(viewMode === 'roster' || viewMode === 'both') && (
+        <section className={`panel${isFullScreen ? ' roster-fullscreen' : ''}`}>
         <div className="panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h3 style={{ margin: 0 }}>Business Traveler Roster ({filteredTravelers.length})</h3>
@@ -540,6 +731,7 @@ export default function BusinessTravelersPage() {
           </table>
         </div>
       </section>
+      )}
 
       {/* ── Modal: Create Business Traveler Assignment ───────── */}
       <Modal open={showCreateModal} size="wide" onClose={() => setShowCreateModal(false)}>

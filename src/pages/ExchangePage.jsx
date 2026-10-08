@@ -457,32 +457,65 @@ export default function ExchangePage() {
                   </tbody>
                 </table>
               ) : previewData.loans ? (
-                <table className="loan-table" style={{ fontSize: '11px' }}>
+                <table className="loan-table" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
                   <thead>
                     <tr>
-                      <th>Laptop</th>
-                      <th>Borrower / Knox ID</th>
+                      <th>No</th>
+                      <th>Name</th>
+                      <th>Knox ID</th>
+                      <th>Rental Location</th>
+                      <th>IP</th>
+                      <th>Start Date</th>
                       <th>Pickup Date</th>
+                      <th>End Date</th>
                       <th>Return Date</th>
-                      <th>Status</th>
+                      <th>Laptop</th>
+                      <th>Charging Adapter</th>
+                      <th>Charging Cable</th>
+                      <th>Dongle</th>
+                      <th>Keyboard</th>
+                      <th>Mouse</th>
+                      <th>Monitor</th>
+                      <th>Ethernet cable</th>
+                      <th>others</th>
                       <th>Note</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {previewData.loans.loans.map((l, i) => (
-                      <tr key={i}>
-                        <td><strong>{l.assetCode}</strong></td>
-                        <td>{l.assignee} {l.knoxId ? `(${l.knoxId})` : ''}</td>
-                        <td>{l.pickupDate || l.startDate || '—'}</td>
-                        <td>{l.returnDate || '—'}</td>
-                        <td>
-                          <span className={`status ${l.status === 'Active' ? 'status-warning' : l.status === 'Returned' ? 'status-archived' : 'status-available'}`}>
-                            {l.status}
-                          </span>
-                        </td>
-                        <td>{l.note || '—'}</td>
-                      </tr>
-                    ))}
+                    {previewData.loans.loans.map((l, i) => {
+                      const eq = l.equipment || {};
+                      const isReturned = Boolean(l.returnDate);
+                      const statusLabel = isReturned ? 'Returned' : l.pickupDate ? 'Loaned' : 'Scheduled';
+                      return (
+                        <tr key={i}>
+                          <td>{l.no || i + 1}</td>
+                          <td><strong>{l.assignee || '—'}</strong></td>
+                          <td><code>{l.knoxId || '—'}</code></td>
+                          <td>{l.location || '—'}</td>
+                          <td><code>{l.ip || '—'}</code></td>
+                          <td>{readableLoanDate(l.startDate) || '—'}</td>
+                          <td>{readableLoanDate(l.pickupDate) || '—'}</td>
+                          <td>{readableLoanDate(l.endDate) || '—'}</td>
+                          <td>{readableLoanDate(l.returnDate) || '—'}</td>
+                          <td><strong>{l.assetCode}</strong></td>
+                          <td>{eq.Adapter ?? '1'}</td>
+                          <td>{eq.Cable ?? '1'}</td>
+                          <td>{eq.Dongle ?? '0'}</td>
+                          <td>{eq.Keyboard ?? '0'}</td>
+                          <td>{eq.Mouse ?? '0'}</td>
+                          <td>{eq.Monitor ?? '0'}</td>
+                          <td>{eq['Ethernet cable'] ?? '0'}</td>
+                          <td>{l.others || '—'}</td>
+                          <td>{l.note || '—'}</td>
+                          <td>
+                            <span className={`status ${statusClass(statusLabel)}`}>
+                              {statusLabel}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               ) : null}

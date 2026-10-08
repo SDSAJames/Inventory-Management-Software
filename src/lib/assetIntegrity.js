@@ -2,7 +2,7 @@
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
-import { todayIso, readableLoanDate } from './utils';
+import { todayIso, readableLoanDate } from './utils.js';
 
 /**
  * Reconciles an asset against all loans in the database to derive its true latest
