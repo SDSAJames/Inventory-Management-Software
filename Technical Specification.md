@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.2.0** |
+| **Specification Version** | **v1.2.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
@@ -52,16 +52,18 @@ graph TD
 ```
 Inventory-Management-Software/
 ├── index.html                   # HTML entry point (clean system typography, zero CDNs)
-├── package.json                 # Project manifest (v1.2.0, scripts, dependencies)
+├── package.json                 # Project manifest (v1.2.1, scripts, dependencies)
 ├── vite.config.js               # Vite 6 configuration with React plugin
 ├── src/
 │   ├── main.jsx                 # Application entry point, mounts AppShell inside BrowserRouter
 │   ├── App.jsx                  # Top-level route switch & context providers
 │   ├── index.css                # StarPlus Energy design system, tokens, and utility classes
 │   ├── components/
-│   │   ├── AppShell.jsx         # Global layout shell (Sidebar + Main panel + Toast container)
-│   │   ├── Sidebar.jsx          # Collapsible navigation, hexagon SVG brand mark, version indicator
-│   │   ├── TopBar.jsx           # High-density ~32px header, title, version pill, offline indicator
+│   │   ├── AppShell.jsx         # Global layout shell (Sidebar + Main panel + PatchHistoryModal + Toast)
+│   │   ├── Sidebar.jsx          # Collapsible navigation, hexagon SVG brand mark, clickable version indicator
+│   │   ├── TopBar.jsx           # High-density ~32px header, title, clickable version pill, offline indicator
+│   │   ├── PatchHistoryModal.jsx# In-app release notes viewer per version with search & filtering
+│   │   ├── TravelerCalendar.jsx # Monthly schedule calendar with location filtering & day inspection
 │   │   ├── Modal.jsx            # Accessible overlay modal dialog with backdrop dismiss
 │   │   ├── AssetTable.jsx       # Interactive data grid, batch checkboxes, click-to-transfer badges
 │   │   ├── AssetForm.jsx        # Asset registration and editing modal form
@@ -74,20 +76,21 @@ Inventory-Management-Software/
 │   │   ├── OverviewPage.jsx     # Executive dashboard, KPIs, quick filters, category mix
 │   │   ├── AssetsPage.jsx       # Hardware inventory register, multi-column search, batch operations
 │   │   ├── LoansPage.jsx        # Device custody, checkout/return lifecycle, overdue tracking
-│   │   ├── BusinessTravelersPage.jsx # Business travelers management, full screen roster, location matrix
+│   │   ├── BusinessTravelersPage.jsx # Exclusive calendar view, roster list, overdue triage, location matrix
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
 │   │   └── ExchangePage.jsx     # TXT import (extracted from Excel) & 1:1 Excel export (.xlsx)
 │   ├── hooks/
 │   │   ├── useDb.jsx            # Database context hook providing data access & mutations
 │   │   └── useToast.jsx         # Toast notification dispatch hook
 │   ├── lib/
-│   │   ├── constants.js         # APP_VERSION ('1.2.0'), status enums, Excel headers, default reasons
+│   │   ├── constants.js         # APP_VERSION ('1.2.1'), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
 │   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
 │   │   ├── txtImport.js         # Delimited text parser & format detector for TXT extracted from Excel
 │   │   ├── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser
 │   │   └── utils.js             # Date formatters (ISO, readable), ID generators, sanitizers
 │   └── data/
+│       ├── patchHistory.js      # Structured release notes data per version (SemVer 2.0.0)
 │       └── seed.js              # Initial seed database (assets, loans, employees, locations)
 ```
 
@@ -313,3 +316,24 @@ Production build execution via `npm run build`:
 - **JS Bundle**: `dist/assets/index-[hash].js` (~367 kB, ~111 kB gzip) — includes full OpenXML parser, DEFLATE compressor, seed database, and React 19 runtime.
 - **Build Duration**: ~1.0 second.
 - **Initial Paint**: < 100ms in modern browsers.
+
+---
+
+## 8. Patch History Architecture & Layout Guarantees
+
+### 8.1 Access Pattern
+The patch history system is accessible via:
+1. **Interactive Global Modal (`PatchHistoryModal.jsx`)**:
+   - Triggered from any page via the TopBar `v1.2.1 • Patch Notes` button or the sticky bottom-left Sidebar footer pill (`v1.2.1 • Patch Notes`), keeping the main sidebar menu clean and uncluttered.
+   - Direct button in the Business Travelers view header (`view-header-actions`), ensuring instant visibility alongside view mode toggles.
+   - Pinned header and filter controls with internal scrolling stream (`.patch-cards-stream`).
+   - Anchored from the top (`margin: 12px auto !important; align-items: flex-start; z-index: 100000;`) to prevent header clipping in all viewport heights.
+2. **Dedicated Full-Page Route (`PatchHistoryPage.jsx`)**:
+   - Routed at `/patch-history` and `/changelog` for direct deep-linking when needed.
+
+### 8.2 Layout Overflow & Obscurity Prevention
+- **Sticky Sidebar Positioning**: `.sidebar` is styled with `position: sticky; top: 0; height: 100vh; max-height: 100vh; flex-shrink: 0; overflow-y: auto;`. This ensures that on tall pages (such as Business Travelers), the bottom-left version info (`v1.2.1 • Patch Notes`) remains permanently pinned in the viewport without scrolling out of sight.
+- **Card Flex-Shrink Prevention**: `.patch-card`, `.patch-card-header`, and `.patch-card-body` are configured with `flex-shrink: 0 !important; min-height: min-content !important;`. This prevents CSS flexbox from squishing cards into flat horizontal lines when multiple versions are expanded, allowing the cards to render at full natural height with an active vertical scrollbar on `.patch-cards-stream`.
+- **Container Constraints**: `.main-content` is styled with `max-width: calc(100vw - 252px); overflow-x: hidden; min-width: 0;` to ensure wide tabular or calendar content never expands the viewport horizontally.
+- **Component Horizontal Scrollers**: `TravelerCalendar` and tables are wrapped in containers with `overflow-x: auto; max-width: 100%;`, preserving the visibility of `.top-actions` and TopBar version pills regardless of display resolution.
+- **Exclusive Calendar View**: On `/business-travelers`, activating Calendar View cleanly hides KPI stat cards, location breakdown lists, overdue blocks, and roster tables, ensuring the schedule calendar receives 100% of the focus area.

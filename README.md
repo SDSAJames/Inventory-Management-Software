@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.2.0)
+# StarPlus Energy Asset Management System (v1.2.1)
 
 > **High-reliability, air-gapped IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations with 100% offline guarantees, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and deterministic state management.
@@ -12,6 +12,8 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 ### Core Highlights
 - **100% Air-Gapped Offline Operation**: Completely self-contained. No external CDN scripts, no remote Google Fonts, and zero telemetry. All fonts use the native operating system typography stack.
 - **Corporate Brand Identity**: Built in accordance with StarPlus Energy design standards featuring Corporate Blue (`#1449d6`), Deep Navy (`#0a2547`), Slate (`#141519`), and the geometric SVG hexagon brand mark.
+- **Frontend Patch History & Versioning Governance**: In-app Patch History modal displaying full release notes per version, accessible directly via the TopBar version pill, the sticky bottom-left Sidebar footer pill (`v1.2.1 • Patch Notes`), and the Business Travelers header button. Adheres strictly to Semantic Versioning (SemVer 2.0.0) with paced patch increments (`1.2.x`).
+- **Dedicated Calendar-Only Focus View**: Operators can toggle the Business Travelers module into an exclusive Calendar View that omits KPI stat cards and location panels to display solely the monthly schedule calendar.
 - **Tab-Delimited TXT Import Engine**: Fast, robust client-side parser specifically designed for text files extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`). Supports multiline quoted headers, BOM stripping, date normalization (handling Excel serials and `1/0/1900` nulls), and auto-detecting file signatures.
 - **1:1 Excel OpenXML Export Parity**: Pure client-side `.xlsx` generator maintaining exact 19-column parity with corporate loan spreadsheets (`SPE_IT_Equipment_Loan_List.xlsx`) and equipment registers (`SPE_Equipments.xlsx`), backed by automated pre-import restore snapshots.
 - **States Version 1.0.0 State Engine**: Strict operational states (`Available`, `Assigned`, `On loan`, `Damaged`, `Under repair`, `Retired`) with invariant validation.
@@ -40,9 +42,10 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
 3. **Loans & Custody (`/loans`)**: Checkouts, pickups, accessory checklists (Adapter, Cable, Dongle, Keyboard, Mouse, Monitor, Ethernet cable), and return processing.
-4. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; displays counts of active/scheduled/overdue travelers ("how many they are"), interactive location distribution cards ("where they are"), 1-click full-screen roster view, and return/edit workflows.
+4. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View** (renders only the monthly schedule calendar), **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
 5. **Directory (`/directory`)**: Personnel directory with Knox IDs, department rosters, and rental facility locations.
 6. **Data Exchange (`/exchange`)**: Tab-delimited TXT file import extracted from Excel, 1:1 reference-format `.xlsx` export, interactive pre-flight preview modal, and one-click database rollback.
+7. **Patch History & Changelog (`/patch-history` & `/changelog`)**: Dedicated release notes view with version filtering, keyword search, type toggles, and detailed per-version changelogs. Also accessible anywhere via the TopBar `v1.2.1 • Patch Notes` button and bottom-left Sidebar footer.
 
 ---
 

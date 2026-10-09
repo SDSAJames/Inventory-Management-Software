@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.2.0** |
+| **Document Version** | **v1.2.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -223,6 +223,7 @@ The frontend application provides six core operational views accessed via the le
    - Equipment accessory checklist tracking.
 4. **Business Travelers (`/business-travelers`)**:
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
+   - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, Head Office) with one-click filtering.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
@@ -236,6 +237,10 @@ The frontend application provides six core operational views accessed via the le
    - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
    - Reference-format `.xlsx` OpenXML export maintaining 1:1 column parity.
    - Snapshot restore point management.
+7. **Patch History & Release Notes (`PatchHistoryModal.jsx` & `PatchHistoryPage.jsx`)**:
+   - In-app release notes viewer accessible via the TopBar version pill (`v1.2.1 • Patch Notes`), the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
+   - Pinned modal header and filter controls with internal single-scroll stream (`.patch-cards-stream`), preventing clipped headers and double scrollbars.
+   - Per-version tabbed navigation, real-time keyword search, change type filtering (`All Types`, `Patches`, `Minor`, `Major`), and structured release highlights.
 
 ---
 
@@ -253,6 +258,13 @@ The frontend application provides six core operational views accessed via the le
 
 ## 9. Version Control & History
 
+- **v1.2.1** *(Exclusive Calendar Focus View, Frontend Patch History & Versioning Calibration)*:
+  - Added exclusive Calendar View mode on `/business-travelers` hiding KPI cards and location breakdown blocks to display only the monthly schedule calendar.
+  - Implemented in-app Patch History Modal (`PatchHistoryModal.jsx`) and dataset (`src/data/patchHistory.js`) triggered via TopBar, sticky bottom-left Sidebar footer pill (`v1.2.1 • Patch Notes`), and direct button in the Business Travelers header.
+  - Made sidebar sticky (`position: sticky; top: 0; height: 100vh`) ensuring the bottom-left version info is permanently pinned in view on tall pages.
+  - Resolved modal clipping, horizontal blowout, and card flex-shrink compression (`flex-shrink: 0; min-height: min-content`) ensuring patch history renders full release notes and scrolls smoothly without squishing.
+  - Calibrated Semantic Versioning policy to restrained patch increments (`1.2.x`) for UI refinements, bug fixes, and documentation synchronizations.
+  - Updated all technical and design documentation.
 - **v1.2.0** *(TXT Import Extracted from Excel & 1:1 Excel Export)*:
   - Standardized on tab-delimited `.txt` import format for Equipment Inventory (`SPE_Equipments_example.txt`) and IT Loan Lists (`SPE_IT_Equipment_Loan_List_Example.txt`).
   - Added multiline quoted field parser and automatic header format detection (`src/lib/txtImport.js`).

@@ -4,6 +4,39 @@ All notable changes, architectural updates, and state engine revisions for the *
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] — 2026-10-09
+
+### Added & Improved: Exclusive Calendar View, Frontend Patch History & Versioning Calibration
+
+#### 📅 Exclusive Calendar View Mode (`/business-travelers`)
+- **Focused Calendar Display**: When the operator selects **"Calendar View"**, the system now exclusively displays the monthly schedule calendar (`TravelerCalendar.jsx`), cleanly omitting the KPI stat cards, "Where They Are" location distribution matrix, overdue alert panels, and the roster table.
+- **De-cluttered Workspace**: Maximizes viewport real estate for inspecting month-by-month traveler dispatches, returns, and daily scheduled events without vertical page scrolling or visual distraction.
+- **Persistent View Switcher**: Operators can seamlessly toggle between **"Calendar View"** (calendar only), **"Roster List"** (KPIs, locations & table), **"Overdue Only"** (urgent overdue travelers), and **"All Sections"** (complete combined dashboard).
+
+#### 📋 Frontend Patch History & Release Notes Modal (`PatchHistoryModal.jsx`)
+- **Direct Frontend Access**: Integrated an interactive Patch History modal accessible anywhere in the application by clicking the **`v1.2.1` version pill** in the TopBar or clicking the **`v1.2.1 • Patch Notes`** footer in the Sidebar.
+- **Per-Version Inspection**: Organizes release notes per version with quick selector tabs (`All Versions`, `v1.2.1`, `v1.2.0`, `v1.1.1`, `v1.1.0`, `v1.0.0`, `v0.2.0`, `v0.1.0`).
+- **Interactive Search & Type Filtering**: Real-time keyword search across all version summaries, highlights, and change items, accompanied by type filter pills (`All Types`, `Patches`, `Minor`, `Major`).
+- **Detailed Categorized Breakdown**: Displays release dates, active version indicators, categorized change badges (`UI Enhancement`, `New Feature`, `Governance & Docs`), and expand/collapse controls.
+- **Structured Dataset (`src/data/patchHistory.js`)**: Backed by a clean, typed changelog data module mirroring `PATCH_NOTES.md` for offline intranet use.
+
+#### ⚖️ Semantic Versioning Calibration & Governance
+- **Paced Version Increments**: Addressed version inflation where minor versions advanced too quickly for iterative feature refinements. Calibrated version increments strictly to Semantic Versioning (SemVer 2.0.0):
+  - **Patch Increments (`1.2.x`)**: Reserved for UI refinements, view focus controls, bug fixes, changelog displays, and documentation synchronization.
+  - **Minor Increments (`1.x.0`)**: Reserved for major new standalone modules or external data exchange formats.
+  - **Major Increments (`x.0.0`)**: Reserved for breaking architectural shifts or master database schema overhauls.
+
+#### 🛡️ Layout Overflow & Modal Clipping Fixes (Patch History Visibility)
+- **Modal Header Anchoring & Elevated Z-Index**: Corrected modal positioning by pinning `.modal.patch-history-modal-wrapper` to an explicit top offset (`margin: 12px auto !important; align-items: flex-start; z-index: 100000;`), preventing the top header, release tags, and close button from being clipped off in tall or zoomed viewports or obscured by full-screen overlays.
+- **Card Flex Shrinkage Prevention**: Fixed critical flex compression issue by setting `flex-shrink: 0 !important; min-height: min-content !important;` on `.patch-card`, `.patch-card-header`, and `.patch-card-body`. This prevents cards from being crushed into flattened horizontal stripes when multiple versions or "Expand All" are active, guaranteeing each card renders at full natural height with a smooth, dedicated vertical scrollbar.
+- **Dedicated Single-Scroll Cards Stream**: Encapsulated release cards within an internal scroll container (`.patch-cards-stream`) with custom thin scrollbar while keeping the modal header, search filters, and footer permanently pinned.
+- **Sticky Sidebar & Pinned Bottom-Left Footer**: Made `.sidebar` sticky (`position: sticky; top: 0; height: 100vh; max-height: 100vh; overflow-y: auto;`). The bottom-left `v1.2.1 • Patch Notes` footer pill is now permanently pinned to the viewport, never scrolling out of sight on tall pages such as Business Travelers.
+- **Business Travelers Direct Patch Notes Button**: Integrated an explicit `📋 v1.2.1 Patch Notes` button directly into the Business Travelers view header (`view-header-actions`), making release notes immediately accessible when viewing the calendar or roster.
+- **Horizontal Viewport Overflow Prevention**: Constrained `.main-content` (`max-width: calc(100vw - 252px); overflow-x: hidden;`) and wide components (such as `TravelerCalendar`'s 7-column grid) with `overflow-x: auto;`, preventing layout blowouts that pushed the TopBar `v1.2.1 • Patch Notes` button off-screen.
+- **Global Context Provider**: Introduced `PatchHistoryContext` in `AppShell` with `usePatchHistoryModal` hook, allowing any view to trigger the release notes modal cleanly.
+
+---
+
 ## [1.2.0] — 2026-10-07
 
 ### Added: TXT File Import Extracted from Excel & Preserved 1:1 Excel Export

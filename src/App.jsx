@@ -8,6 +8,7 @@ import LoansPage from './pages/LoansPage';
 import BusinessTravelersPage from './pages/BusinessTravelersPage';
 import DirectoryPage from './pages/DirectoryPage';
 import ExchangePage from './pages/ExchangePage';
+import PatchHistoryPage from './pages/PatchHistoryPage';
 
 export default function App() {
   return (
@@ -23,6 +24,8 @@ export default function App() {
               <Route path="/travelers" element={<Navigate to="/business-travelers" replace />} />
               <Route path="/directory" element={<DirectoryPage />} />
               <Route path="/exchange" element={<ExchangePage />} />
+              <Route path="/patch-history" element={<PatchHistoryPage />} />
+              <Route path="/changelog" element={<Navigate to="/patch-history" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AppShell>

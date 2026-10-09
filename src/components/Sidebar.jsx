@@ -69,7 +69,7 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onOpenPatchHistory }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { db } = useDb();
@@ -125,16 +125,31 @@ export default function Sidebar() {
             {item.countKey === 'travelers' && activeTravelersCount > 0 && (
               <span className="nav-count">{activeTravelersCount}</span>
             )}
+            {item.badgeText && (
+              <span className="nav-count nav-version-badge">{item.badgeText}</span>
+            )}
           </button>
           );
         })}
       </nav>
 
-      <div className="sidebar-footer">
+      <div
+        className="sidebar-footer clickable"
+        onClick={onOpenPatchHistory}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenPatchHistory?.();
+          }
+        }}
+        title="Click to view patch history & release notes"
+      >
         <div className="status-dot" />
         <div>
-          <strong>v{APP_VERSION} • Offline workspace</strong>
-          <span>Data stays on this device</span>
+          <strong>v{APP_VERSION} • Patch Notes</strong>
+          <span>Click to view version history</span>
         </div>
       </div>
     </aside>

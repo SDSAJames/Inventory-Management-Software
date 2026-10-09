@@ -30,9 +30,17 @@ const PAGE_META = {
     eyebrow: 'DATA INTEGRATION & BACKUP',
     title: 'Data Exchange',
   },
+  '/patch-history': {
+    eyebrow: 'SYSTEM RELEASES & CHANGELOG',
+    title: 'Patch History & Release Notes',
+  },
+  '/changelog': {
+    eyebrow: 'SYSTEM RELEASES & CHANGELOG',
+    title: 'Patch History & Release Notes',
+  },
 };
 
-export default function TopBar() {
+export default function TopBar({ onOpenPatchHistory }) {
   const { pathname } = useLocation();
   const current = PAGE_META[pathname] ?? {
     eyebrow: 'ASSET OPERATIONS',
@@ -46,9 +54,17 @@ export default function TopBar() {
         <span className="topbar-tag">{current.eyebrow}</span>
       </div>
       <div className="top-actions">
-        <div className="version-pill" title={`StarPlus Energy Asset Management System v${APP_VERSION}`}>
+        <button
+          type="button"
+          className="version-pill clickable"
+          onClick={onOpenPatchHistory}
+          title={`StarPlus Energy Asset Management System v${APP_VERSION} • Click to view patch notes`}
+          aria-label={`Version ${APP_VERSION}, view patch history`}
+        >
+          <span className="version-pill-icon">📋</span>
           v{APP_VERSION}
-        </div>
+          <span className="version-pill-sub">Patch Notes</span>
+        </button>
         <div className="offline-pill" title="Local browser storage active (100% offline compatible)">
           <span className="status-indicator-dot" />
           <span>Offline</span>

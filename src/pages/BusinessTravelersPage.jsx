@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { todayIso, readableLoanDate } from '../lib/utils';
+import { APP_VERSION } from '../lib/constants';
+import { usePatchHistoryModal } from '../components/AppShell';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
@@ -10,6 +12,7 @@ import TravelerCalendar from '../components/TravelerCalendar';
 export default function BusinessTravelersPage() {
   const { db, returnLoan } = useDb();
   const toast = useToast();
+  const openPatchHistory = usePatchHistoryModal();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
@@ -244,135 +247,153 @@ export default function BusinessTravelersPage() {
               🗂 All Sections
             </button>
           </div>
+          <button
+            type="button"
+            className="version-pill clickable"
+            onClick={openPatchHistory}
+            title={`StarPlus Energy v${APP_VERSION} • Click to view patch notes`}
+            style={{ padding: '6px 12px', fontSize: '11.5px', fontWeight: 700, height: '34px' }}
+          >
+            <span className="version-pill-icon">📋</span>
+            v{APP_VERSION}
+            <span className="version-pill-sub">Patch Notes</span>
+          </button>
           <button className="button" onClick={() => setShowCreateModal(true)}>
             + Record Business Traveler
           </button>
         </div>
       </div>
 
-      {/* ── KPI Stat Cards ("How many they are") ─────────────── */}
-      <section className="stat-grid" style={{ marginBottom: '22px' }}>
-        <div
-          className="stat-card"
-          style={{ cursor: 'pointer' }}
-          onClick={() => setViewMode('overdue')}
-          title="Click to view overdue travelers only"
-        >
-          <div className="stat-label">Active in Field</div>
-          <div className="stat-value" style={{ color: 'var(--blue)' }}>
-            {metrics.activeTotal}
-          </div>
-          <div className="stat-hint">
-            {metrics.inField} deployed •{' '}
-            <strong style={{ color: metrics.overdue > 0 ? '#dc2626' : 'inherit' }}>
-              {metrics.overdue} overdue (click to view)
-            </strong>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">Travel Locations</div>
-          <div className="stat-value">{locationsBreakdown.filter((l) => l.inField + l.overdue > 0).length}</div>
-          <div className="stat-hint">Active remote deployment sites</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">Scheduled Trips</div>
-          <div className="stat-value" style={{ color: '#0284c7' }}>
-            {metrics.scheduled}
-          </div>
-          <div className="stat-hint">Upcoming equipment pickups</div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-label">Total Travelers</div>
-          <div className="stat-value">{metrics.distinctTravelers}</div>
-          <div className="stat-hint">{metrics.totalAssignments} total assignments</div>
-        </div>
-      </section>
-
-      {/* ── Location Breakdown ("Where they are") ────────────── */}
-      <section className="panel" style={{ marginBottom: '22px' }}>
-        <div className="panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div>
-            <h3 style={{ margin: 0 }}>Where They Are — Location Distribution</h3>
-            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-              Click any location to filter traveler assignments below
-            </span>
-          </div>
-          {selectedLocation !== 'ALL' && (
-            <button
-              className="text-button"
-              style={{ fontSize: '12px', fontWeight: 600 }}
-              onClick={() => setSelectedLocation('ALL')}
+      {/* ── KPI Stat Cards & Location Breakdown (Hidden when Calendar View is selected) ── */}
+      {viewMode !== 'calendar' && (
+        <>
+          {/* ── KPI Stat Cards ("How many they are") ─────────────── */}
+          <section className="stat-grid" style={{ marginBottom: '22px' }}>
+            <div
+              className="stat-card"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setViewMode('overdue')}
+              title="Click to view overdue travelers only"
             >
-              Clear filter (Show all)
-            </button>
-          )}
-        </div>
-
-        <div className="traveler-locations-list">
-          {locationsBreakdown.map((loc) => {
-            const activeAtLoc = loc.inField + loc.overdue;
-            const isSelected = selectedLocation === loc.location;
-            return (
-              <div
-                key={loc.location}
-                className={`traveler-location-row${isSelected ? ' selected' : ''}${activeAtLoc > 0 ? ' has-active' : ''}`}
-                onClick={() => setSelectedLocation(isSelected ? 'ALL' : loc.location)}
-                title={`Click to filter roster and calendar by ${loc.location}`}
-              >
-                <div className="loc-row-left">
-                  <span className="loc-pin">📍</span>
-                  <div className="loc-row-name-block">
-                    <strong className="loc-row-name">{loc.location}</strong>
-                    <span className="loc-row-sub">
-                      {loc.total} total assignment{loc.total === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  <span className={`loc-count-pill${activeAtLoc > 0 ? ' active' : ''}`}>
-                    {activeAtLoc} Active
-                  </span>
-                </div>
-
-                <div className="loc-row-stats">
-                  <div className="loc-stat-cell">
-                    <span className="loc-stat-label">In field:</span>
-                    <strong>{loc.inField}</strong>
-                  </div>
-                  <div className={`loc-stat-cell ${loc.overdue > 0 ? 'overdue-cell' : ''}`}>
-                    <span className="loc-stat-label">Overdue:</span>
-                    <strong>{loc.overdue}</strong>
-                  </div>
-                  <div className="loc-stat-cell">
-                    <span className="loc-stat-label">Scheduled:</span>
-                    <strong>{loc.scheduled}</strong>
-                  </div>
-                  <div className="loc-stat-cell">
-                    <span className="loc-stat-label">Returned:</span>
-                    <strong>{loc.returned}</strong>
-                  </div>
-                </div>
-
-                <div className="loc-row-personnel">
-                  <span className="loc-personnel-label">Personnel:</span>
-                  <span className="loc-personnel-names" title={loc.travelers.size > 0 ? Array.from(loc.travelers).join(', ') : 'None'}>
-                    {loc.travelers.size > 0 ? Array.from(loc.travelers).join(', ') : 'None'}
-                  </span>
-                </div>
-
-                <div className="loc-row-action">
-                  {isSelected ? (
-                    <span className="loc-selected-badge">✓ Active Filter</span>
-                  ) : (
-                    <span className="loc-filter-hint">Filter →</span>
-                  )}
-                </div>
+              <div className="stat-label">Active in Field</div>
+              <div className="stat-value" style={{ color: 'var(--blue)' }}>
+                {metrics.activeTotal}
               </div>
-            );
-          })}
-        </div>
-      </section>
+              <div className="stat-hint">
+                {metrics.inField} deployed •{' '}
+                <strong style={{ color: metrics.overdue > 0 ? '#dc2626' : 'inherit' }}>
+                  {metrics.overdue} overdue (click to view)
+                </strong>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-label">Travel Locations</div>
+              <div className="stat-value">{locationsBreakdown.filter((l) => l.inField + l.overdue > 0).length}</div>
+              <div className="stat-hint">Active remote deployment sites</div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-label">Scheduled Trips</div>
+              <div className="stat-value" style={{ color: '#0284c7' }}>
+                {metrics.scheduled}
+              </div>
+              <div className="stat-hint">Upcoming equipment pickups</div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-label">Total Travelers</div>
+              <div className="stat-value">{metrics.distinctTravelers}</div>
+              <div className="stat-hint">{metrics.totalAssignments} total assignments</div>
+            </div>
+          </section>
+
+          {/* ── Location Breakdown ("Where they are") ────────────── */}
+          {viewMode !== 'overdue' && (
+            <section className="panel" style={{ marginBottom: '22px' }}>
+              <div className="panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Where They Are — Location Distribution</h3>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                    Click any location to filter traveler assignments below
+                  </span>
+                </div>
+                {selectedLocation !== 'ALL' && (
+                  <button
+                    className="text-button"
+                    style={{ fontSize: '12px', fontWeight: 600 }}
+                    onClick={() => setSelectedLocation('ALL')}
+                  >
+                    Clear filter (Show all)
+                  </button>
+                )}
+              </div>
+
+              <div className="traveler-locations-list">
+                {locationsBreakdown.map((loc) => {
+                  const activeAtLoc = loc.inField + loc.overdue;
+                  const isSelected = selectedLocation === loc.location;
+                  return (
+                    <div
+                      key={loc.location}
+                      className={`traveler-location-row${isSelected ? ' selected' : ''}${activeAtLoc > 0 ? ' has-active' : ''}`}
+                      onClick={() => setSelectedLocation(isSelected ? 'ALL' : loc.location)}
+                      title={`Click to filter roster and calendar by ${loc.location}`}
+                    >
+                      <div className="loc-row-left">
+                        <span className="loc-pin">📍</span>
+                        <div className="loc-row-name-block">
+                          <strong className="loc-row-name">{loc.location}</strong>
+                          <span className="loc-row-sub">
+                            {loc.total} total assignment{loc.total === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                        <span className={`loc-count-pill${activeAtLoc > 0 ? ' active' : ''}`}>
+                          {activeAtLoc} Active
+                        </span>
+                      </div>
+
+                      <div className="loc-row-stats">
+                        <div className="loc-stat-cell">
+                          <span className="loc-stat-label">In field:</span>
+                          <strong>{loc.inField}</strong>
+                        </div>
+                        <div className={`loc-stat-cell ${loc.overdue > 0 ? 'overdue-cell' : ''}`}>
+                          <span className="loc-stat-label">Overdue:</span>
+                          <strong>{loc.overdue}</strong>
+                        </div>
+                        <div className="loc-stat-cell">
+                          <span className="loc-stat-label">Scheduled:</span>
+                          <strong>{loc.scheduled}</strong>
+                        </div>
+                        <div className="loc-stat-cell">
+                          <span className="loc-stat-label">Returned:</span>
+                          <strong>{loc.returned}</strong>
+                        </div>
+                      </div>
+
+                      <div className="loc-row-personnel">
+                        <span className="loc-personnel-label">Personnel:</span>
+                        <span className="loc-personnel-names" title={loc.travelers.size > 0 ? Array.from(loc.travelers).join(', ') : 'None'}>
+                          {loc.travelers.size > 0 ? Array.from(loc.travelers).join(', ') : 'None'}
+                        </span>
+                      </div>
+
+                      <div className="loc-row-action">
+                        {isSelected ? (
+                          <span className="loc-selected-badge">✓ Active Filter</span>
+                        ) : (
+                          <span className="loc-filter-hint">Filter →</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </>
+      )}
 
       {/* ── Dedicated Overdue Business Travelers Section ─────── */}
       {(viewMode === 'overdue' || viewMode === 'both' || (viewMode === 'roster' && overdueTravelers.length > 0)) && (
