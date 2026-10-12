@@ -74,6 +74,7 @@ export default function LoanForm({ onClose }) {
       location: form.location,
       department: form.department,
       equipment: {
+        Laptop: assetCode,
         Adapter: form.adapter,
         Cable: form.cable,
         Dongle: form.dongle,
@@ -117,23 +118,6 @@ export default function LoanForm({ onClose }) {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
-          {/* Asset code */}
-          <div className="field full">
-            <label htmlFor="assetCode">Laptop / asset number</label>
-            <input
-              id="assetCode"
-              list="assetCodeList"
-              placeholder="Type asset number, e.g. SPE-1234"
-              value={form.assetCode}
-              onChange={set('assetCode')}
-            />
-            <datalist id="assetCodeList">
-              {available.map((a) => (
-                <option key={a.id} value={a.code}>{a.name}</option>
-              ))}
-            </datalist>
-          </div>
-
           {/* Assignee type */}
           <div className="field">
             <label htmlFor="assigneeType">Assignee type</label>
@@ -224,12 +208,27 @@ export default function LoanForm({ onClose }) {
             <input id="department" value={form.department} onChange={set('department')} />
           </div>
 
-          {/* Equipment */}
+          {/* Equipment Checklist */}
           <div className="field full">
             <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
               Equipment Checklist
             </label>
             <div className="equipment-grid">
+              <div className="equipment-field">
+                <label htmlFor="assetCode">Laptop / asset number</label>
+                <input
+                  id="assetCode"
+                  list="assetCodeList"
+                  placeholder="e.g. SPE-1234"
+                  value={form.assetCode}
+                  onChange={set('assetCode')}
+                />
+                <datalist id="assetCodeList">
+                  {available.map((a) => (
+                    <option key={a.id} value={a.code}>{a.name}</option>
+                  ))}
+                </datalist>
+              </div>
               {[
                 ['Charging Adapter', 'adapter'],
                 ['Charging Cable', 'cable'],

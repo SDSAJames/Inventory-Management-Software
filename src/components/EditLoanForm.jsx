@@ -84,6 +84,7 @@ export default function EditLoanForm({ loanId, onClose }) {
       others: form.others,
       note: form.note,
       equipment: {
+        Laptop: form.assetCode,
         Adapter: form.adapter,
         Cable: form.cable,
         Dongle: form.dongle,
@@ -114,10 +115,6 @@ export default function EditLoanForm({ loanId, onClose }) {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
-          <div className="field">
-            <label htmlFor="assetCode">Laptop / asset number</label>
-            <input id="assetCode" value={form.assetCode} onChange={set('assetCode')} />
-          </div>
           <div className="field">
             <label htmlFor="assignee">Assignee</label>
             <input id="assignee" value={form.assignee} onChange={set('assignee')} />
@@ -240,6 +237,21 @@ export default function EditLoanForm({ loanId, onClose }) {
               Equipment Checklist
             </label>
             <div className="equipment-grid">
+              <div className="equipment-field">
+                <label htmlFor="edit-assetCode">Laptop / asset number</label>
+                <input
+                  id="edit-assetCode"
+                  list="editAssetCodeList"
+                  placeholder="e.g. SPE-1234"
+                  value={form.assetCode}
+                  onChange={set('assetCode')}
+                />
+                <datalist id="editAssetCodeList">
+                  {db.assets.map((a) => (
+                    <option key={a.id} value={a.code}>{a.name}</option>
+                  ))}
+                </datalist>
+              </div>
               {[
                 ['Charging Adapter', 'adapter'],
                 ['Charging Cable', 'cable'],
