@@ -17,5 +17,5 @@ export const config = {
   dbPath: process.env.DB_PATH || path.join(__dirname, 'data', 'inventory.db'),
   clientDistPath: path.join(__dirname, '..', 'dist'),
   corsOrigin: process.env.CORS_ORIGIN || '*',
-  authOptional: process.env.AUTH_OPTIONAL !== 'false', // Corporate intranet multi-host access
+  authOptional: process.env.AUTH_OPTIONAL === 'true', // Restricted access system (requires login)
 };

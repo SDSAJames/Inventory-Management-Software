@@ -3180,3 +3180,466 @@ tbody tr:hover { background: #f8fafc; }
   font-weight: 700 !important;
 }
 
+/* ── Restricted Access SPE Logo Lock Screen ────────────────────── */
+.lockscreen-root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background-color: #061021;
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(20, 73, 214, 0.22) 0px, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(10, 37, 71, 0.8) 0px, transparent 100%);
+  position: relative;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #f1f5f9;
+}
+
+.lockscreen-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lockscreen-glow-1 {
+  width: 480px;
+  height: 480px;
+  background: rgba(20, 73, 214, 0.28);
+  top: -120px;
+  right: -80px;
+}
+
+.lockscreen-glow-2 {
+  width: 400px;
+  height: 400px;
+  background: rgba(30, 58, 138, 0.35);
+  bottom: -100px;
+  left: -60px;
+}
+
+.lockscreen-card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 440px;
+  background: rgba(11, 26, 49, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 38px 32px 28px;
+  box-shadow: 
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: lockscreenFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes lockscreenFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.lockscreen-brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.lockscreen-logo-badge {
+  width: 68px;
+  height: 68px;
+  background: #ffffff;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(20, 73, 214, 0.3),
+    0 0 35px rgba(20, 73, 214, 0.45);
+  margin-bottom: 16px;
+  transition: transform 0.25s ease;
+}
+
+.lockscreen-logo-badge:hover {
+  transform: scale(1.05);
+}
+
+.lockscreen-logo-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lockscreen-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.lockscreen-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.lockscreen-security-pill {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20, 73, 214, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.lockscreen-lock-icon {
+  font-size: 11px;
+}
+
+.lockscreen-error-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  animation: lockscreenShake 0.3s ease;
+}
+
+@keyframes lockscreenShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.lockscreen-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lockscreen-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lockscreen-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lockscreen-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  letter-spacing: 0.2px;
+}
+
+.lockscreen-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lockscreen-input-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.lockscreen-input {
+  width: 100%;
+  height: 42px;
+  background: rgba(7, 18, 35, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  padding: 0 40px 0 38px;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.lockscreen-input:focus {
+  border-color: #3b82f6;
+  background: rgba(10, 25, 48, 0.95);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.lockscreen-input::placeholder {
+  color: #64748b;
+}
+
+.lockscreen-eye-btn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.lockscreen-eye-btn:hover {
+  color: #ffffff;
+}
+
+.lockscreen-submit-btn {
+  margin-top: 6px;
+  height: 44px;
+  background: #1449d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 
+    0 4px 14px rgba(20, 73, 214, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.lockscreen-submit-btn:hover:not(:disabled) {
+  background: #0e38aa;
+  box-shadow: 0 6px 20px rgba(20, 73, 214, 0.55);
+  transform: translateY(-1px);
+}
+
+.lockscreen-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.lockscreen-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lockscreen-btn-arrow {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.lockscreen-submit-btn:hover .lockscreen-btn-arrow {
+  transform: translateX(3px);
+}
+
+.lockscreen-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: lockscreenSpin 0.7s linear infinite;
+}
+
+@keyframes lockscreenSpin {
+  to { transform: rotate(360deg); }
+}
+
+.lockscreen-demo-helper {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.lockscreen-helper-label {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+
+.lockscreen-helper-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lockscreen-chip {
+  flex: 1;
+  min-width: 140px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.lockscreen-chip:hover {
+  background: rgba(20, 73, 214, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #ffffff;
+}
+
+.lockscreen-chip .chip-role {
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.lockscreen-chip .chip-val {
+  color: #cbd5e1;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.lockscreen-footer {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 11.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.lockscreen-footer-divider {
+  opacity: 0.5;
+}
+
+/* ── TopBar Sign Out / User Controls ────────────────────────────── */
+.topbar-user-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-lock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(241, 245, 249, 0.8);
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.topbar-lock-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.profile-chip-role {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(20, 73, 214, 0.12);
+  color: var(--blue);
+  letter-spacing: 0.3px;
+  margin-left: 4px;
+}
+
+/* ── Sidebar User Footbar ────────────────────────────── */
+.sidebar-user-card {
+  margin-top: auto;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-user-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: 10px;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-logout-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+

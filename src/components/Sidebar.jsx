@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
+import { useAuth } from '../hooks/useAuth';
 import { APP_VERSION } from '../lib/constants';
 
 const NAV_ITEMS = [
@@ -73,6 +74,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { db } = useDb();
+  const { user, logout } = useAuth();
 
   const activeTravelersCount = useMemo(() => {
     return (db.loans || []).filter((l) => {
@@ -132,6 +134,24 @@ export default function Sidebar({ onOpenPatchHistory }) {
           );
         })}
       </nav>
+
+      {user && (
+        <div className="sidebar-user-card" title={`Signed in as ${user.fullName || user.username} (${user.role})`}>
+          <div className="sidebar-user-info">
+            <span className="sidebar-user-name">{user.fullName || user.username}</span>
+            <span className="sidebar-user-role">{user.role}</span>
+          </div>
+          <button
+            type="button"
+            className="sidebar-logout-btn"
+            onClick={logout}
+            title="Lock terminal and sign out"
+            aria-label="Sign out"
+          >
+            Lock 🔒
+          </button>
+        </div>
+      )}
 
       <div
         className="sidebar-footer clickable"

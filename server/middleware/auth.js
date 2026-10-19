@@ -3,6 +3,10 @@ import { config } from '../config.js';
 import { db } from '../db/database.js';
 
 export function authenticate(req, res, next) {
+  if (req.user) {
+    return next();
+  }
+
   // 1. Try to read from cookie or Authorization header
   let token = req.cookies?.spe_token;
   if (!token && req.headers.authorization?.startsWith('Bearer ')) {

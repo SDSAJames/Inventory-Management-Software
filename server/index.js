@@ -12,6 +12,7 @@ import { loansRouter } from './routes/loans.js';
 import { directoryRouter } from './routes/directory.js';
 import { statsRouter } from './routes/stats.js';
 import { exchangeRouter } from './routes/exchange.js';
+import { authenticate } from './middleware/auth.js';
 
 const app = express();
 
@@ -89,11 +90,11 @@ app.get('/api/health', (req, res) => {
 
 // 3. API Routers
 app.use('/api/auth', authRouter);
-app.use('/api/assets', assetsRouter);
-app.use('/api/loans', loansRouter);
-app.use('/api/directory', directoryRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/exchange', exchangeRouter);
+app.use('/api/assets', authenticate, assetsRouter);
+app.use('/api/loans', authenticate, loansRouter);
+app.use('/api/directory', authenticate, directoryRouter);
+app.use('/api/stats', authenticate, statsRouter);
+app.use('/api/exchange', authenticate, exchangeRouter);
 
 // 4. Serve Frontend static files if production build exists
 if (fs.existsSync(config.clientDistPath)) {

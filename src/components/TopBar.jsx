@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { APP_VERSION } from '../lib/constants';
+import { useAuth } from '../hooks/useAuth';
 
 const PAGE_META = {
   '/': {
@@ -42,10 +43,21 @@ const PAGE_META = {
 
 export default function TopBar({ onOpenPatchHistory }) {
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
   const current = PAGE_META[pathname] ?? {
     eyebrow: 'ASSET OPERATIONS',
     title: 'Asset Management',
   };
+
+  const displayName = user?.fullName || user?.username || 'IT Admin';
+  const role = user?.role || 'OPERATOR';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'IT';
 
   return (
     <header className="topbar">
@@ -69,9 +81,24 @@ export default function TopBar({ onOpenPatchHistory }) {
           <span className="status-indicator-dot" />
           <span>Offline</span>
         </div>
-        <div className="profile-chip" title="IT Department Workspace">
-          <span className="profile-chip-name">IT Admin</span>
-          <div className="avatar">IT</div>
+        <div className="topbar-user-control">
+          <div className="profile-chip" title={`Authenticated as ${displayName} (${role})`}>
+            <span className="profile-chip-name">
+              {displayName}
+              <span className="profile-chip-role">{role}</span>
+            </span>
+            <div className="avatar">{initials}</div>
+          </div>
+          <button
+            type="button"
+            className="topbar-lock-btn"
+            onClick={logout}
+            title="Lock terminal and sign out"
+            aria-label="Sign out"
+          >
+            <span>🔒</span>
+            <span>Sign Out</span>
+          </button>
         </div>
       </div>
     </header>

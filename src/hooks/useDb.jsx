@@ -83,6 +83,11 @@ export function DbProvider({ children }) {
     let active = true;
 
     const fetchLatestFromServer = async () => {
+      // Only sync if user is signed in
+      const token = typeof window !== 'undefined' ? localStorage.getItem('starplusenergy-token') : null;
+      const authUser = typeof window !== 'undefined' ? localStorage.getItem('starplusenergy-auth-user') : null;
+      if (!token && !authUser) return;
+
       try {
         const res = await api.exchange.export();
         if (!active || !res?.success || !res?.db) return;
