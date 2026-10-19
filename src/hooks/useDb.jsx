@@ -12,6 +12,7 @@ import {
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
+import { api } from '../lib/api';
 
 const DbContext = createContext(null);
 
@@ -72,27 +73,79 @@ export function DbProvider({ children }) {
     });
   }, []);
 
-  // Auto-persist every change to localStorage
+  // Auto-persist every change to localStorage (local cache)
   useEffect(() => {
     persistDb(db);
   }, [db]);
 
+  // Synchronize with central corporate intranet SQLite server database
+  useEffect(() => {
+    let active = true;
+
+    const fetchLatestFromServer = async () => {
+      try {
+        const res = await api.exchange.export();
+        if (!active || !res?.success || !res?.db) return;
+        const serverDb = res.db;
+
+        if (serverDb.assets?.length || serverDb.loans?.length) {
+          setDb((prev) => ({
+            ...prev,
+            assets: reconcileAllAssets(serverDb.assets || [], serverDb.loans || []),
+            loans: serverDb.loans || [],
+            employees: serverDb.employees?.length ? serverDb.employees : prev.employees,
+            departments: serverDb.departments?.length ? serverDb.departments : prev.departments,
+            locations: serverDb.locations?.length ? serverDb.locations : prev.locations,
+          }));
+        } else {
+          // If server database is newly created, seed it with initial baseline data
+          const local = loadDb();
+          if (local?.assets?.length || local?.loans?.length) {
+            await api.exchange.importData({
+              assets: local.assets || [],
+              loans: local.loans || [],
+              overwrite: true,
+            });
+          }
+        }
+      } catch (err) {
+        // Operates smoothly offline/from local cache if server is offline
+      }
+    };
+
+    fetchLatestFromServer();
+
+    // Re-synchronize when user returns to this tab so edits from other intranet hosts appear immediately
+    const handleFocus = () => {
+      fetchLatestFromServer();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    // Periodic sync every 15s across corporate intranet hosts
+    const interval = setInterval(fetchLatestFromServer, 15000);
+
+    return () => {
+      active = false;
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, []);
+
   /* ── Asset operations ───────────────────────────── */
 
   const addAsset = useCallback((asset) => {
-    setDb((prev) => {
-      const validated = validateAssetStatus(asset);
-      const initialHistory = validated.owner
-        ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: 'Initial assignment' })]
-        : [];
-      const newAsset = {
-        id: crypto.randomUUID(),
-        ...validated,
-        ownershipHistory: validated.ownershipHistory || initialHistory,
-        updated: todayIso(),
-      };
-      return { ...prev, assets: [newAsset, ...prev.assets] };
-    });
+    const validated = validateAssetStatus(asset);
+    const initialHistory = validated.owner
+      ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: 'Initial assignment' })]
+      : [];
+    const newAsset = {
+      id: asset.id || crypto.randomUUID(),
+      ...validated,
+      ownershipHistory: validated.ownershipHistory || initialHistory,
+      updated: todayIso(),
+    };
+    setDb((prev) => ({ ...prev, assets: [newAsset, ...prev.assets] }));
+    api.assets.create(newAsset).catch((err) => console.warn('Could not sync asset to server:', err.message));
   }, []);
 
   const updateAsset = useCallback((id, changes) => {
@@ -119,6 +172,7 @@ export function DbProvider({ children }) {
         });
       }),
     }));
+    api.assets.update(id, changes).catch((err) => console.warn('Could not sync asset update to server:', err.message));
   }, []);
 
   /**
@@ -176,6 +230,9 @@ export function DbProvider({ children }) {
         locations: nextLocations,
       };
     });
+
+    api.assets.transfer(assetId, { newOwner, department, location, reason, notes, date })
+      .catch((err) => console.warn('Could not sync ownership transfer to server:', err.message));
   }, []);
 
   const deleteAsset = useCallback((id) => {
@@ -183,6 +240,7 @@ export function DbProvider({ children }) {
       ...prev,
       assets: prev.assets.filter((a) => a.id !== id),
     }));
+    api.assets.delete(id).catch((err) => console.warn('Could not sync asset deletion to server:', err.message));
   }, []);
 
   const batchUpdateAssets = useCallback((ids, changes) => {
@@ -193,6 +251,7 @@ export function DbProvider({ children }) {
         idSet.has(a.id) ? validateAssetStatus({ ...a, ...changes, updated: todayIso() }) : a,
       ),
     }));
+    api.assets.batchUpdate([...idSet], changes).catch((err) => console.warn('Could not sync batch asset update to server:', err.message));
   }, []);
 
   /** Append assets or update existing ones if overwriteAssets is true. Saves a restore point. */
@@ -262,11 +321,22 @@ export function DbProvider({ children }) {
       });
       return { ...prev, assets: nextAssets, locations };
     });
+
+    api.exchange.importData({ assets: newAssets, overwrite: overwriteAssets })
+      .catch((err) => console.warn('Could not sync imported assets to server:', err.message));
   }, []);
 
   /* ── Loan operations ────────────────────────────── */
 
   const addLoan = useCallback((loanData, assetUpdates, newEmployee) => {
+    const loanId = loanData.id || crypto.randomUUID();
+    const effectiveLoan = {
+      id: loanId,
+      ...loanData,
+      status: loanData.status || (isLoanOverdue(loanData) ? 'Overdue' : (loanData.pickupDate ? 'Active' : 'Scheduled')),
+      isArchived: Boolean(loanData.returnDate || loanData.returnedDate),
+    };
+
     setDb((prev) => {
       const nextAssets = prev.assets.map((a) =>
         a.code === assetUpdates?.code ? { ...a, ...assetUpdates, updated: todayIso() } : a,
@@ -296,18 +366,12 @@ export function DbProvider({ children }) {
       return {
         ...prev,
         assets: nextAssets,
-        loans: [
-          {
-            id: crypto.randomUUID(),
-            ...loanData,
-            status: loanData.status || (isLoanOverdue(loanData) ? 'Overdue' : (loanData.pickupDate ? 'Active' : 'Scheduled')),
-            isArchived: Boolean(loanData.returnDate || loanData.returnedDate),
-          },
-          ...prev.loans,
-        ],
+        loans: [effectiveLoan, ...prev.loans],
         employees: nextEmployees,
       };
     });
+
+    api.loans.create(effectiveLoan).catch((err) => console.warn('Could not sync loan creation to server:', err.message));
   }, []);
 
   const updateLoan = useCallback((id, changes, assetUpdates) => {
@@ -381,13 +445,15 @@ export function DbProvider({ children }) {
 
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
+
+    api.loans.update(id, changes).catch((err) => console.warn('Could not sync loan update to server:', err.message));
   }, []);
 
   const pickupLoan = useCallback((id, pickupDate) => {
+    const timestamp = pickupDate || todayIso();
     setDb((prev) => {
       const loan = prev.loans.find((l) => l.id === id);
       if (!loan) return prev;
-      const timestamp = pickupDate || todayIso();
       const nextLoans = prev.loans.map((l) =>
         l.id === id
           ? {
@@ -410,6 +476,8 @@ export function DbProvider({ children }) {
       );
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
+
+    api.loans.pickup(id, timestamp).catch((err) => console.warn('Could not sync loan pickup to server:', err.message));
   }, []);
 
   const revertPickup = useCallback((id) => {
@@ -437,13 +505,15 @@ export function DbProvider({ children }) {
       );
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
+
+    api.loans.revertPickup(id).catch((err) => console.warn('Could not sync revert pickup to server:', err.message));
   }, []);
 
   const returnLoan = useCallback((id, returnDate) => {
+    const timestamp = returnDate || todayIso();
     setDb((prev) => {
       const loan = prev.loans.find((l) => l.id === id);
       if (!loan) return prev;
-      const timestamp = returnDate || todayIso();
       const nextLoans = prev.loans.map((l) =>
         l.id === id
           ? {
@@ -477,6 +547,8 @@ export function DbProvider({ children }) {
       });
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
+
+    api.loans.returnLoan(id, timestamp).catch((err) => console.warn('Could not sync loan return to server:', err.message));
   }, []);
 
   const unarchiveLoan = useCallback((id) => {
@@ -508,6 +580,8 @@ export function DbProvider({ children }) {
       );
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
+
+    api.loans.unarchive(id).catch((err) => console.warn('Could not sync loan unarchive to server:', err.message));
   }, []);
 
   const deleteLoan = useCallback((id) => {
@@ -534,6 +608,8 @@ export function DbProvider({ children }) {
       }
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
+
+    api.loans.delete(id).catch((err) => console.warn('Could not sync loan deletion to server:', err.message));
   }, []);
 
   /* ── Import / Revert ────────────────────────────── */
@@ -635,6 +711,9 @@ export function DbProvider({ children }) {
         locations: [...nextLocations],
       };
     });
+
+    api.exchange.importData({ assets: incomingAssets, loans: incomingLoans, overwrite: true })
+      .catch((err) => console.warn('Could not sync merge import to server:', err.message));
   }, []);
 
   const revertImport = useCallback(() => {
@@ -642,6 +721,7 @@ export function DbProvider({ children }) {
     if (!backup) return false;
     setDb(backup);
     clearImportBackup();
+    api.exchange.revert().catch((err) => console.warn('Could not sync revert import to server:', err.message));
     return true;
   }, []);
 

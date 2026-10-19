@@ -1,16 +1,17 @@
 # StarPlus Energy Asset Management System (v1.2.1)
 
-> **High-reliability, air-gapped IT equipment asset index and custody management portal.**  
-> Built for StarPlus Energy operations with 100% offline guarantees, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and deterministic state management.
+> **High-reliability IT equipment asset index and custody management portal.**  
+> Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
 
 ---
 
 ## Overview
 
-The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central operational index for corporate IT hardware, laptops, peripherals, and device loans. The system is engineered to run completely offline without external network connectivity, cloud APIs, remote fonts, or telemetry.
+The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central operational index for corporate IT hardware, laptops, peripherals, and device loans. The system is engineered to run on a **corporate intranet web server**, binding to all network interfaces (`0.0.0.0:5000`) so staff across the corporate network can access the central portal from their workstations with zero external internet dependencies, remote fonts, or telemetry.
 
 ### Core Highlights
-- **100% Air-Gapped Offline Operation**: Completely self-contained. No external CDN scripts, no remote Google Fonts, and zero telemetry. All fonts use the native operating system typography stack.
+- **Corporate Intranet Multi-Host Network Architecture**: Hosted centrally on the intranet server and accessible from any workstation or host on the corporate network (`http://<server-ip>:5000`). Zero external cloud dependencies, no remote CDN scripts, and zero telemetry. All fonts use the native operating system typography stack.
+- **Centralized SQLite Database**: Uses Node.js's native high-performance SQLite engine (`node:sqlite`) in WAL mode (`server/data/inventory.db`). All client workstations share the exact same synchronized database in real time with client-side offline cache resilience.
 - **Corporate Brand Identity**: Built in accordance with StarPlus Energy design standards featuring Corporate Blue (`#1449d6`), Deep Navy (`#0a2547`), Slate (`#141519`), and the geometric SVG hexagon brand mark.
 - **Frontend Patch History & Versioning Governance**: In-app Patch History modal displaying full release notes per version, accessible directly via the TopBar version pill, the sticky bottom-left Sidebar footer pill (`v1.2.1 • Patch Notes`), and the Business Travelers header button. Adheres strictly to Semantic Versioning (SemVer 2.0.0) with paced patch increments (`1.2.x`).
 - **Dedicated Calendar-Only Focus View**: Operators can toggle the Business Travelers module into an exclusive Calendar View that omits KPI stat cards and location panels to display solely the monthly schedule calendar.
@@ -27,12 +28,15 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 | Layer | Technology | Details |
 | :--- | :--- | :--- |
-| **Frontend Framework** | **React 19** (`^19.0.0`) | Modern component model with concurrent rendering |
+| **Backend & Web Server** | **Node.js 22+ & Express 5** | High-performance HTTP API & static SPA server |
+| **Database** | **SQLite (`node:sqlite`)** | Embedded persistent database in WAL mode (`server/data/inventory.db`) |
+| **Network Architecture** | **Corporate Intranet (`0.0.0.0:5000`)** | Multi-host intranet connectivity with dynamic CORS for LAN subnets |
+| **Frontend Framework** | **React 19** (`^19.0.0`) | Modern component model with concurrent rendering & optimistic UI |
 | **Bundler & Dev Server** | **Vite 6** (`^6.0.0`) | Lightning-fast HMR and optimized production build |
-| **Routing** | **React Router 7** (`^7.0.0`) | Client-side Single Page Application routing |
+| **Routing** | **React Router 7** (`^7.0.0`) | Client-side Single Page Application routing with Express SPA fallback |
 | **Styling** | **Vanilla CSS** | Design tokens via CSS variables; zero runtime CSS-in-JS or Tailwind |
 | **Typography** | **System Font Stack** | Native OS fonts (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto...`) |
-| **Local Storage** | **Browser Storage** | LocalStorage / IndexedDB with automatic backup snapshots |
+| **Client Cache** | **Browser Storage** | LocalStorage backup cache for fast load and offline resilience |
 | **Data Exchange Engine** | **Delimited Text Parser & OpenXML Generator** | In-browser Excel TXT extraction parser and zero-dependency `.xlsx` exporter |
 
 ---
@@ -49,29 +53,42 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ---
 
-## Development & Usage
+## Development & Server Deployment
 
 ### Prerequisites
-- Node.js (v18+ recommended)
-- Modern web browser (Chrome, Edge, Firefox, Safari)
+- Node.js (v22+ recommended for native `node:sqlite`)
+- Modern web browser across corporate workstations (Chrome, Edge, Firefox, Safari)
 
-### Commands
+### Production Server Deployment (Corporate Intranet)
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Start local development server with Hot Module Replacement (HMR)
-npm run dev
-
-# Build production bundle for offline air-gapped distribution
+# 2. Build production frontend bundle into dist/
 npm run build
 
-# Preview production build locally
-npm run preview
+# 3. Start central intranet server (hosts web portal & API)
+npm start
+# or: npm run server
 ```
 
-The production output in `dist/` can be served by any static web server or opened directly on intranet workstations without an active internet connection.
+The server binds to `0.0.0.0:5000` and displays:
+- **Local Access**: `http://localhost:5000`
+- **Corporate Intranet URL**: `http://<server-ip>:5000` (e.g. `http://10.37.41.33:5000`)
+- **System Health & DB Stats**: `http://<server-ip>:5000/api/health`
+
+Any workstation on the corporate network can navigate to `http://<server-ip>:5000` to access the portal. All changes are immediately saved to the centralized SQLite database on the server.
+
+### Local Development Mode
+
+```bash
+# Terminal 1: Backend server with hot watch
+npm run server:dev
+
+# Terminal 2: Vite dev server with HMR on port 5173
+npm run dev
+```
 
 ---
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { config } from './config.js';
 import { initDatabase, db } from './db/database.js';
 import { authRouter } from './routes/auth.js';
@@ -17,9 +18,41 @@ const app = express();
 // Initialize SQLite database and seed defaults
 initDatabase();
 
-// 1. Middlewares
+// 1. Middlewares & Corporate Intranet Network Configuration
+app.set('trust proxy', 1);
+
+const allowedOrigins = config.corsOrigin && config.corsOrigin !== '*'
+  ? config.corsOrigin.split(',').map((s) => s.trim().toLowerCase())
+  : null;
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    // Allow requests without Origin (same-origin, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    // If configured to allow all origins on corporate intranet
+    if (!allowedOrigins) return callback(null, true);
+
+    const normOrigin = origin.toLowerCase();
+    if (allowedOrigins.includes(normOrigin)) return callback(null, true);
+
+    // Allow localhost & loopback
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow corporate intranet private IP subnets: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+    if (/^https?:\/\/(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow corporate intranet hostnames (.corp, .local, .internal, .lan)
+    if (/^https?:\/\/[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(null, true);
+  },
   credentials: true,
 }));
 app.use(cookieParser());
@@ -85,13 +118,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 6. Start Server
-app.listen(config.port, () => {
+// 6. Start Server (Binding to all network interfaces for corporate intranet multi-host access)
+app.listen(config.port, config.host, () => {
+  const interfaces = os.networkInterfaces();
+  const intranetIps = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        intranetIps.push(iface.address);
+      }
+    }
+  }
+
   console.log('──────────────────────────────────────────────────────────');
   console.log(`⚡ StarPlus Energy Asset Management Server v1.2.1`);
-  console.log(`🚀 API Server running at: http://localhost:${config.port}`);
+  console.log(`🏢 Network:              Corporate Intranet (Multi-Host Environment)`);
+  console.log(`🚀 Local Access:         http://localhost:${config.port}`);
+  if (intranetIps.length > 0) {
+    intranetIps.forEach((ip) => {
+      console.log(`🌐 Corporate Intranet:   http://${ip}:${config.port}`);
+    });
+  } else {
+    console.log(`🌐 Corporate Intranet:   http://${config.host}:${config.port}`);
+  }
   console.log(`📡 Health Check:         http://localhost:${config.port}/api/health`);
   console.log(`🔐 Default Admin User:   admin (password: admin123)`);
-  console.log(`💾 SQLite Database:      ${config.dbPath}`);
+  console.log(`💾 Shared SQLite DB:     ${config.dbPath}`);
   console.log('──────────────────────────────────────────────────────────');
 });

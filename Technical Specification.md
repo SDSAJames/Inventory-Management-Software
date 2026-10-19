@@ -6,7 +6,7 @@
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
-| **Target Runtime** | Chromium 100+, Firefox 100+, Safari 16+ (Air-Gapped Offline / Intranet) |
+| **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
 
@@ -14,35 +14,43 @@
 
 ## 1. Technology Stack Architecture
 
-The system is engineered as an **offline-first, zero-telemetry Single Page Application (SPA)** capable of running autonomously without an internet connection, application server daemon, or relational database service.
+The system is engineered as a **Corporate Intranet Client-Server Application**, hosted centrally on an intranet server (`0.0.0.0:5000`) and accessible to multiple workstations across the corporate network, with centralized SQLite database persistence, background multi-host synchronization, and local browser cache resilience.
 
 ```mermaid
 graph TD
-    subgraph Browser Runtime
-        Vite[Vite 6 SPA Bundle] --> React[React 19 Core]
-        React --> Router[React Router 7 Navigation]
-        React --> CSS[Vanilla CSS Design System / System Fonts]
-        React --> StateCtx[DbContext State Management]
-        StateCtx --> Integrity[assetIntegrity.js State Engine]
-        StateCtx --> DBAdapter[lib/db.js Storage Adapter]
-        DBAdapter --> LocalStorage[(Workstation LocalStorage Engine)]
-        StateCtx --> XLSXEngine[lib/xlsx.js Native OpenXML Engine]
+    subgraph Corporate Network Workstations
+        ClientA[Intranet Workstation A]
+        ClientB[Intranet Workstation B]
     end
-    XLSXEngine <--> FileSystem[Local .xlsx Spreadsheets]
+
+    subgraph Central Intranet Server Node.js / Express 5
+        Server[Express Server on 0.0.0.0:5000]
+        SPAFallback[Static Client Dist & SPA Fallback]
+        APIRouter[REST API Routes /api/*]
+        SQLite[(Native SQLite DB inventory.db)]
+    end
+
+    ClientA <-->|HTTP / CORS LAN| Server
+    ClientB <-->|HTTP / CORS LAN| Server
+    Server --> SPAFallback
+    Server --> APIRouter
+    APIRouter --> SQLite
 ```
 
 ### 1.1 Stack Specification
 
 | Tier | Technology | Version | Purpose & Rationale |
 | :--- | :--- | :--- | :--- |
-| **UI Library** | **React** | `^19.0.0` | Declarative UI rendering, modern hooks (`useCallback`, `useMemo`, `useTransition`), concurrent rendering safety. |
+| **Server & HTTP** | **Node.js & Express** | `^5.3.0` | High-performance server binding to `0.0.0.0:5000` with LAN CORS and static SPA hosting. |
+| **Database** | **SQLite (`node:sqlite`)** | Native Node.js | Centralized embedded database in WAL mode (`server/data/inventory.db`) with full transactional persistence. |
+| **UI Library** | **React** | `^19.0.0` | Declarative UI rendering, modern hooks (`useCallback`, `useMemo`), optimistic mutations. |
 | **DOM Renderer** | **React DOM** | `^19.0.0` | Client-side DOM mounting and tree reconciliation. |
-| **Build Tooling** | **Vite** | `^6.0.0` | Sub-second cold starts, instant Hot Module Replacement (HMR), tree-shaken static production bundling. |
+| **Build Tooling** | **Vite** | `^6.0.0` | Sub-second cold starts, Hot Module Replacement (HMR), tree-shaken static production bundling. |
 | **Vite Plugin** | **@vitejs/plugin-react** | `^4.3.0` | Fast Refresh transform pipeline. |
 | **Client Routing** | **React Router** | `^7.0.0` | Lightweight declarative SPA routing (`BrowserRouter`, `Routes`, `Route`, `useNavigate`, `useLocation`). |
 | **Styling** | **Vanilla CSS** | Standard CSS3 | CSS Custom Properties (`--blue: #1449d6`, `--ink: #141519`, etc.), responsive flexbox/grid. No Tailwind runtime or precompiler dependencies. |
-| **Typography** | **System Font Stack** | Native OS | `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto...` ensuring 100% offline air-gapped rendering without remote font downloads. |
-| **Persistence** | **LocalStorage Engine** | Web Storage API | Synchronous, zero-setup local persistence with automated transactional JSON serialization and backup restore points. |
+| **Typography** | **System Font Stack** | Native OS | `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto...` ensuring clean native rendering without remote font downloads. |
+| **Client Cache** | **LocalStorage Engine** | Web Storage API | Client-side snapshot cache for instantaneous initial paint and offline network disconnection fallback. |
 | **Spreadsheet Engine** | **Native OpenXML** | Custom ES Module | Zero-dependency pure JavaScript `.xlsx` parser/generator utilizing raw ZIP/DEFLATE OpenXML structures. |
 
 ---

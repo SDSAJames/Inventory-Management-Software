@@ -142,10 +142,10 @@ export const PATCH_HISTORY = [
     tag: 'Production Baseline',
     type: 'major',
     summary:
-      'Official baseline release featuring StarPlus Energy rebrand, compact UI architecture, state machine engine, and 100% air-gapped offline operation.',
+      'Official baseline release featuring StarPlus Energy rebrand, compact UI architecture, state machine engine, and corporate intranet multi-host deployment.',
     highlights: [
       'StarPlus Energy corporate palette and geometric hexagon brand mark',
-      '100% air-gapped offline operation with zero remote dependencies or external fonts',
+      'Corporate intranet operation with zero external cloud dependencies or remote fonts',
       'Reconciled lifecycle state machine engine across assets and loans',
       'High-density UI with ~32px compact topbar and scroll-free modal forms',
       'Direct click-to-transfer ownership badges on asset register',

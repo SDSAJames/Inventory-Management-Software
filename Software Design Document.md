@@ -6,21 +6,21 @@
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
-| **Target Environment** | 100% Air-Gapped Offline Corporate Intranet / Local Workstation |
-| **Tech Stack** | React 19, Vite 6, React Router 7, Vanilla CSS Design Tokens, Client-side OpenXML |
+| **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
+| **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
 
 ---
 
 ## 1. Executive Summary & Document Purpose
 
-The **StarPlus Energy Asset Management System (SPE-AMS)** is a high-reliability, air-gapped internal inventory and custody management web application designed for StarPlus Energy IT operations. 
+The **StarPlus Energy Asset Management System (SPE-AMS)** is a high-reliability, corporate intranet internal inventory and custody management web application designed for StarPlus Energy IT operations. 
 
-The application serves as the **single source of truth** for company hardware (laptops, monitors, peripherals, and network accessories), replacing ad-hoc spreadsheets while maintaining 100% bidirectional data interoperability with corporate Excel workbooks (`.xlsx`).
+The application serves as the **single source of truth** for company hardware (laptops, monitors, peripherals, and network accessories), replacing ad-hoc spreadsheets while maintaining 100% bidirectional data interoperability with corporate Excel workbooks (`.xlsx`) and sharing persistent data across all intranet workstations.
 
 ### Core Business Pillars
 1. **Asset as Master Record**: Every physical device carries a unique asset code (`SPE-XXXX` or serial number) that remains perpetual regardless of reassignments, temporary loans, maintenance cycles, or returns.
-2. **100% Air-Gapped Offline Operation**: Zero dependencies on external networks, cloud APIs, remote CDNs, or external typography services (Google Fonts). All assets, styling, and data storage operate strictly within the local environment.
+2. **Corporate Intranet Operation**: Deployed centrally on the corporate network (`0.0.0.0:5000`) with zero dependencies on external cloud APIs, remote CDNs, or external typography services (Google Fonts). All assets, styling, and data storage operate strictly within the company network.
 3. **Deterministic State Lifecycle & Passive Sync**: A strict state machine enforces valid operational states (`Available`, `Assigned`, `On loan`, `Damaged`, `Under repair`, `Retired`) supported by a non-intrusive background verification engine that actively reconciles custody states.
 4. **Unified Custody & Return Lineage**: Full chronological tracking of ownership transfers. When an asset is returned from custody, it is formally received by the **IT department**, returning its status to **Available** while preserving its prior holder lineage.
 

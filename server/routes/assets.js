@@ -190,7 +190,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     return res.status(409).json({ success: false, error: `Asset with code ${trimmedCode} already exists.` });
   }
 
-  const id = `ast-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const id = req.body.id || `ast-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
 
   // If owner is provided and not IT department, enforce status 'Assigned'

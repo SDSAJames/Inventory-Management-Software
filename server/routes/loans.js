@@ -207,7 +207,7 @@ loansRouter.post('/', authenticate, (req, res) => {
     Laptop: effectiveAssetCode,
   };
 
-  const id = `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const id = req.body.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
   const initialStatus = pickupDate ? (endDate && endDate < todayIso() ? 'Overdue' : 'Active') : 'Scheduled';
 

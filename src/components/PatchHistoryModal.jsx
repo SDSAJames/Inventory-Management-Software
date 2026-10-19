@@ -80,7 +80,7 @@ export default function PatchHistoryModal({ open, onClose }) {
             </div>
             <h2>Patch History & Release Notes</h2>
             <p className="modal-intro">
-              Inspect version updates, release notes, and architecture changelogs per version. Standard Semantic Versioning (Major.Minor.Patch) with 100% air-gapped offline guarantees.
+              Inspect version updates, release notes, and architecture changelogs per version. Standard Semantic Versioning (Major.Minor.Patch) with corporate intranet multi-host deployment and centralized persistence.
             </p>
           </div>
           <button
