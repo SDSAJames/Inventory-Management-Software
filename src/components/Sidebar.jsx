@@ -135,24 +135,6 @@ export default function Sidebar({ onOpenPatchHistory }) {
         })}
       </nav>
 
-      {user && (
-        <div className="sidebar-user-card" title={`Signed in as ${user.fullName || user.username} (${user.role})`}>
-          <div className="sidebar-user-info">
-            <span className="sidebar-user-name">{user.fullName || user.username}</span>
-            <span className="sidebar-user-role">{user.role}</span>
-          </div>
-          <button
-            type="button"
-            className="sidebar-logout-btn"
-            onClick={logout}
-            title="Lock terminal and sign out"
-            aria-label="Sign out"
-          >
-            Lock 🔒
-          </button>
-        </div>
-      )}
-
       <div
         className="sidebar-footer clickable"
         onClick={onOpenPatchHistory}

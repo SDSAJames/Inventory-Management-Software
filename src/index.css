@@ -3180,7 +3180,7 @@ tbody tr:hover { background: #f8fafc; }
   font-weight: 700 !important;
 }
 
-/* ── Restricted Access SPE Logo Lock Screen ────────────────────── */
+/* ── Restricted Access SPE Logo Lock Screen (Light / White Theme) ── */
 .lockscreen-root {
   min-height: 100vh;
   width: 100%;
@@ -3188,39 +3188,11 @@ tbody tr:hover { background: #f8fafc; }
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background-color: #061021;
-  background-image: 
-    radial-gradient(at 10% 20%, rgba(20, 73, 214, 0.22) 0px, transparent 50%),
-    radial-gradient(at 90% 80%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(10, 37, 71, 0.8) 0px, transparent 100%);
+  background: #ffffff;
   position: relative;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #f1f5f9;
-}
-
-.lockscreen-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.lockscreen-glow-1 {
-  width: 480px;
-  height: 480px;
-  background: rgba(20, 73, 214, 0.28);
-  top: -120px;
-  right: -80px;
-}
-
-.lockscreen-glow-2 {
-  width: 400px;
-  height: 400px;
-  background: rgba(30, 58, 138, 0.35);
-  bottom: -100px;
-  left: -60px;
+  color: #0f172a;
 }
 
 .lockscreen-card {
@@ -3228,16 +3200,13 @@ tbody tr:hover { background: #f8fafc; }
   z-index: 10;
   width: 100%;
   max-width: 440px;
-  background: rgba(11, 26, 49, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 18px;
-  padding: 38px 32px 28px;
+  padding: 40px 34px 30px;
   box-shadow: 
-    0 24px 60px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 20px 45px -12px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(15, 23, 42, 0.05);
   animation: lockscreenFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -3261,17 +3230,17 @@ tbody tr:hover { background: #f8fafc; }
 }
 
 .lockscreen-logo-badge {
-  width: 68px;
-  height: 68px;
-  background: #ffffff;
-  border-radius: 16px;
+  width: 72px;
+  height: 72px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
   display: grid;
   place-items: center;
-  padding: 8px;
+  padding: 10px;
   box-shadow: 
-    0 8px 24px rgba(0, 0, 0, 0.35),
-    0 0 0 4px rgba(20, 73, 214, 0.3),
-    0 0 35px rgba(20, 73, 214, 0.45);
+    0 6px 18px rgba(20, 73, 214, 0.12),
+    0 0 0 3px rgba(20, 73, 214, 0.08);
   margin-bottom: 16px;
   transition: transform 0.25s ease;
 }
@@ -3291,14 +3260,13 @@ tbody tr:hover { background: #f8fafc; }
   font-size: 21px;
   font-weight: 800;
   letter-spacing: 1px;
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  color: #0f172a;
 }
 
 .lockscreen-subtitle {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #94a3b8;
+  color: #64748b;
   font-weight: 500;
 }
 
@@ -3307,9 +3275,9 @@ tbody tr:hover { background: #f8fafc; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(20, 73, 214, 0.18);
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.6px;
@@ -3326,9 +3294,9 @@ tbody tr:hover { background: #f8fafc; }
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.45);
-  color: #fca5a5;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
   padding: 10px 14px;
   border-radius: 10px;
   font-size: 13px;
@@ -3361,9 +3329,9 @@ tbody tr:hover { background: #f8fafc; }
 }
 
 .lockscreen-label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: #334155;
   letter-spacing: 0.2px;
 }
 
@@ -3383,25 +3351,25 @@ tbody tr:hover { background: #f8fafc; }
 
 .lockscreen-input {
   width: 100%;
-  height: 42px;
-  background: rgba(7, 18, 35, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 9px;
+  height: 44px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
   padding: 0 40px 0 38px;
-  color: #ffffff;
+  color: #0f172a;
   font-size: 14px;
   outline: none;
   transition: all 0.2s ease;
 }
 
 .lockscreen-input:focus {
-  border-color: #3b82f6;
-  background: rgba(10, 25, 48, 0.95);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  border-color: #1449d6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(20, 73, 214, 0.16);
 }
 
 .lockscreen-input::placeholder {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .lockscreen-eye-btn {
@@ -3409,17 +3377,18 @@ tbody tr:hover { background: #f8fafc; }
   right: 8px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   padding: 6px;
   display: grid;
   place-items: center;
   font-size: 14px;
   border-radius: 6px;
-  transition: color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .lockscreen-eye-btn:hover {
-  color: #ffffff;
+  color: #0f172a;
+  background: #f1f5f9;
 }
 
 .lockscreen-submit-btn {
@@ -3437,14 +3406,15 @@ tbody tr:hover { background: #f8fafc; }
   justify-content: center;
   gap: 8px;
   box-shadow: 
-    0 4px 14px rgba(20, 73, 214, 0.4),
+    0 4px 14px rgba(20, 73, 214, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .lockscreen-submit-btn:hover:not(:disabled) {
   background: #0e38aa;
-  box-shadow: 0 6px 20px rgba(20, 73, 214, 0.55);
+  box-shadow: 0 6px 20px rgba(20, 73, 214, 0.35);
   transform: translateY(-1px);
 }
 
@@ -3469,77 +3439,28 @@ tbody tr:hover { background: #f8fafc; }
 .lockscreen-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #ffffff;
+  border: 2px solid rgba(20, 73, 214, 0.25);
+  border-top-color: #1449d6;
   border-radius: 50%;
   animation: lockscreenSpin 0.7s linear infinite;
+}
+
+.lockscreen-submit-btn .lockscreen-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
 }
 
 @keyframes lockscreenSpin {
   to { transform: rotate(360deg); }
 }
 
-.lockscreen-demo-helper {
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.12);
-}
-
-.lockscreen-helper-label {
-  display: block;
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin-bottom: 8px;
-}
-
-.lockscreen-helper-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.lockscreen-chip {
-  flex: 1;
-  min-width: 140px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 7px 10px;
-  color: #e2e8f0;
-  font-size: 11.5px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-
-.lockscreen-chip:hover {
-  background: rgba(20, 73, 214, 0.2);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #ffffff;
-}
-
-.lockscreen-chip .chip-role {
-  color: #93c5fd;
-  font-weight: 700;
-}
-
-.lockscreen-chip .chip-val {
-  color: #cbd5e1;
-  font-family: monospace;
-  font-size: 11px;
-}
-
 .lockscreen-footer {
-  margin-top: 22px;
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid #f1f5f9;
   text-align: center;
   font-size: 11.5px;
-  color: #64748b;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   justify-content: center;

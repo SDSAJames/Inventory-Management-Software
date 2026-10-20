@@ -35,7 +35,7 @@ function AppContent() {
             </svg>
           </div>
           <div className="lockscreen-spinner" style={{ margin: '0 auto 12px', width: '24px', height: '24px' }} />
-          <div style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '500' }}>
+          <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
             Verifying Security Session...
           </div>
         </div>

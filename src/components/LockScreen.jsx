@@ -40,21 +40,10 @@ export default function LockScreen() {
     }
   };
 
-  const handleFillDemo = (user, pass) => {
-    setUsername(user);
-    setPassword(pass);
-    setLocalError('');
-  };
-
   const effectiveError = localError || authError;
 
   return (
     <div className="lockscreen-root">
-      {/* Background Ambience & Geometric Mesh */}
-      <div className="lockscreen-backdrop" />
-      <div className="lockscreen-glow lockscreen-glow-1" />
-      <div className="lockscreen-glow lockscreen-glow-2" />
-
       <div className="lockscreen-card">
         {/* Header / Brand Mark */}
         <div className="lockscreen-brand-header">
@@ -106,7 +95,7 @@ export default function LockScreen() {
                 ref={usernameInputRef}
                 type="text"
                 className="lockscreen-input"
-                placeholder="e.g. admin or operator"
+                placeholder="Enter Username or Knox ID"
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
@@ -172,31 +161,6 @@ export default function LockScreen() {
             )}
           </button>
         </form>
-
-        {/* Quick Test / Demo Accounts Helper */}
-        <div className="lockscreen-demo-helper">
-          <span className="lockscreen-helper-label">Quick Sign-In Credentials:</span>
-          <div className="lockscreen-helper-chips">
-            <button
-              type="button"
-              className="lockscreen-chip"
-              onClick={() => handleFillDemo('admin', 'admin123')}
-              title="Fill default IT Administrator credentials"
-            >
-              <span className="chip-role">Admin:</span>
-              <span className="chip-val">admin / admin123</span>
-            </button>
-            <button
-              type="button"
-              className="lockscreen-chip"
-              onClick={() => handleFillDemo('operator', 'operator123')}
-              title="Fill default Field Operator credentials"
-            >
-              <span className="chip-role">Operator:</span>
-              <span className="chip-val">operator / operator123</span>
-            </button>
-          </div>
-        </div>
 
         {/* Card Footer */}
         <div className="lockscreen-footer">
