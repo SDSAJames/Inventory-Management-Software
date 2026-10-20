@@ -756,7 +756,10 @@ export default function BusinessTravelersPage() {
 
       {/* ── Modal: Create Business Traveler Assignment ───────── */}
       <Modal open={showCreateModal} size="wide" onClose={() => setShowCreateModal(false)}>
-        <LoanForm onClose={() => setShowCreateModal(false)} />
+        <LoanForm
+          defaultAssigneeType="Business traveler"
+          onClose={() => setShowCreateModal(false)}
+        />
       </Modal>
 
       {/* ── Modal: Edit Travel Assignment ─────────────────────── */}

@@ -9,6 +9,7 @@ import {
   loadTransferReasons,
   saveTransferReasons,
 } from '../lib/db';
+import { seed } from '../data/seed';
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
@@ -20,6 +21,13 @@ export function DbProvider({ children }) {
   const [db, setDb] = useState(() => {
     const raw = loadDb();
     if (raw && raw.assets && raw.loans) {
+      // Ensure baseline seed assets like SPE-4321 are present
+      const existingCodes = new Set(raw.assets.map((a) => a.code));
+      for (const sa of (seed.assets || [])) {
+        if (!existingCodes.has(sa.code)) {
+          raw.assets.push(sa);
+        }
+      }
       // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
       const assetsWithHistory = raw.assets.map((a) => {
         const normOwner = normalizeHolder(a.owner);

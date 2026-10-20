@@ -5,6 +5,7 @@ export const seed = {
     { id: 'a3', code: 'AST-2024-003', name: 'Cisco Catalyst 9200', category: 'Network', model: 'C9200L-24P', serial: 'CS9200-4129', status: 'Under repair', location: 'IT Store', owner: '', department: '', condition: 'Needs service', notes: 'Replacement fan ordered', updated: '2024-08-12' },
     { id: 'a4', code: 'AST-2024-004', name: 'MacBook Pro 14-inch', category: 'Laptop', model: 'M2 Pro', serial: 'MBP14-5271', status: 'On loan', location: 'Regional Office', owner: 'Daniel Okoro', department: 'Operations', condition: 'Excellent', notes: 'Due back 30 Aug 2024', updated: '2024-08-10' },
     { id: 'a5', code: 'AST-2024-005', name: 'Epson EB-FH52 Projector', category: 'AV Equipment', model: 'EB-FH52', serial: 'EPFH52-7330', status: 'Available', location: 'Head Office', owner: '', department: '', condition: 'Good', notes: 'Meeting room equipment', updated: '2024-08-02' },
+    { id: 'a-spe-4321', code: 'SPE-4321', name: 'Lenovo ThinkPad T14', category: 'Laptop', model: 'ThinkPad T14 Gen 4', serial: 'SPE-TP-4321', status: 'Available', location: 'Head Office', owner: '', department: 'IT', condition: 'Good', notes: 'Available for loan', updated: '2024-08-18' },
     { id: 'a6', code: 'AST-2024-006', name: 'Samsung Galaxy S23', category: 'Mobile', model: 'SM-S911B', serial: 'SGS23-2256', status: 'Damaged', location: 'Head Office', owner: 'Maya Chen', department: 'Finance', condition: 'Cracked screen', notes: 'Awaiting repair assessment', updated: '2024-07-28' },
   ],
   loans: [

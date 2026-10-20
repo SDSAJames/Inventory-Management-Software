@@ -3,6 +3,7 @@ import { IP_PREFIX } from '../lib/constants';
 import { validOctet, nowLocalIso } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
+import AssetAutocomplete from './AssetAutocomplete';
 
 export default function EditLoanForm({ loanId, onClose }) {
   const { db, updateLoan } = useDb();
@@ -237,20 +238,22 @@ export default function EditLoanForm({ loanId, onClose }) {
               Equipment Checklist
             </label>
             <div className="equipment-grid">
-              <div className="equipment-field">
+              <div className="equipment-field asset-autocomplete-wrapper">
                 <label htmlFor="edit-assetCode">Laptop / asset number</label>
-                <input
+                <AssetAutocomplete
                   id="edit-assetCode"
-                  list="editAssetCodeList"
-                  placeholder="e.g. SPE-1234"
                   value={form.assetCode}
-                  onChange={set('assetCode')}
+                  onChange={(val) => setForm((prev) => ({ ...prev, assetCode: val }))}
+                  onSelectAsset={(asset) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      assetCode: asset.code,
+                      location: prev.location || asset.location || prev.location,
+                      department: (prev.department === 'Operations' && asset.department) ? asset.department : prev.department,
+                    }));
+                  }}
+                  placeholder="e.g. 432 or SPE-4321..."
                 />
-                <datalist id="editAssetCodeList">
-                  {db.assets.map((a) => (
-                    <option key={a.id} value={a.code}>{a.name}</option>
-                  ))}
-                </datalist>
               </div>
               {[
                 ['Charging Adapter', 'adapter'],

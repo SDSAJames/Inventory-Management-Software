@@ -222,7 +222,7 @@ export default function OverviewPage() {
 
       {/* Loan modal */}
       <Modal open={modal === 'loan'} size="wide" onClose={() => setModal(null)}>
-        {modal === 'loan' && <LoanForm onClose={() => setModal(null)} />}
+        {modal === 'loan' && <LoanForm defaultAssigneeType="Employee" onClose={() => setModal(null)} />}
       </Modal>
     </>
   );

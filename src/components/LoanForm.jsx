@@ -3,15 +3,15 @@ import { IP_PREFIX } from '../lib/constants';
 import { todayIso, validOctet } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
+import AssetAutocomplete from './AssetAutocomplete';
 
-export default function LoanForm({ onClose }) {
+export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', onSuccess }) {
   const { db, addLoan } = useDb();
   const toast = useToast();
-  const available = db.assets.filter((a) => a.status === 'Available');
 
   const [form, setForm] = useState({
     assetCode: '',
-    assigneeType: 'Business traveler',
+    assigneeType: defaultAssigneeType,
     assignee: '',
     knoxId: '',
     ipSubnet: '',
@@ -31,7 +31,17 @@ export default function LoanForm({ onClose }) {
     note: '',
   });
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  // Loan state: whether the equipment is issued immediately (Active loan) or scheduled for future pickup
+  const [isImmediatePickup, setIsImmediatePickup] = useState(true);
+  const [errors, setErrors] = useState({});
+
+  const set = (field) => (e) => {
+    const val = e.target.value;
+    setForm((prev) => ({ ...prev, [field]: val }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
 
   const ipInvalid =
     (form.ipSubnet && !validOctet(form.ipSubnet)) ||
@@ -40,38 +50,49 @@ export default function LoanForm({ onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const newErrors = {};
     const assetCode = form.assetCode.trim();
     const knoxId = form.knoxId.trim();
-    if (!assetCode) return toast('Enter an asset number');
-    if (!knoxId) return toast('Knox ID is required');
-    if (!form.assignee.trim()) return toast('Enter an assignee');
-    if (form.assigneeType === 'Business traveler' && !form.endDate) {
-      return toast('Enter a due date for a business traveler');
-    }
+    const assignee = form.assignee.trim();
+
+    if (!assetCode) newErrors.assetCode = 'Please select or enter an asset number';
+    if (!knoxId) newErrors.knoxId = 'Knox ID is required';
+    if (!assignee) newErrors.assignee = 'Assignee name is required';
+
     if (form.startDate && form.endDate && form.endDate < form.startDate) {
-      return toast('End date cannot be earlier than start date');
+      newErrors.endDate = 'Due date cannot be earlier than start date';
     }
+
     if ((form.ipSubnet || form.ipNumber) && (!validOctet(form.ipSubnet) || !validOctet(form.ipNumber))) {
-      return toast('IP subnet and number must each be between 0 and 255');
+      newErrors.ip = 'IP subnet and number must each be between 0 and 255';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError = Object.values(newErrors)[0];
+      return toast(firstError);
     }
 
     const ip = form.ipSubnet && form.ipNumber
       ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
       : '';
 
+    // If immediate pickup is selected, pickupDate is set to startDate (or today) so the loan is active immediately
+    const effectivePickupDate = isImmediatePickup ? (form.startDate || todayIso()) : '';
+
     const loanData = {
       assetCode,
-      assignee: form.assignee.trim(),
+      assignee,
       assigneeType: form.assigneeType,
-      knoxId: form.knoxId,
+      knoxId,
       ip,
       startDate: form.startDate,
       loanDate: form.startDate,
       endDate: form.endDate,
       dueDate: form.endDate,
-      pickupDate: '',
+      pickupDate: effectivePickupDate,
       returnDate: '',
-      location: form.location,
+      location: form.location || 'Head Office',
       department: form.department,
       equipment: {
         Laptop: assetCode,
@@ -89,32 +110,44 @@ export default function LoanForm({ onClose }) {
 
     const assetUpdates = {
       code: assetCode,
-      status: 'On loan',
-      owner: form.assignee.trim(),
+      status: isImmediatePickup ? 'On loan' : 'Available',
+      owner: isImmediatePickup ? assignee : 'IT department',
       department: form.department,
-      location: form.location,
+      location: form.location || 'Head Office',
     };
 
     const newEmployee = {
-      name: form.assignee.trim(),
+      name: assignee,
       department: form.department,
       position: form.assigneeType,
+      knoxId,
     };
 
     addLoan(loanData, assetUpdates, newEmployee);
-    toast('Loan recorded');
+
+    if (isImmediatePickup) {
+      toast('Internal loan recorded successfully (Active loan)');
+    } else {
+      toast('Equipment scheduled for future pickup');
+    }
+
+    if (onSuccess) {
+      onSuccess(loanData);
+    }
     onClose();
   };
 
-  const isTraveler = form.assigneeType === 'Business traveler';
+  const isInternal = form.assigneeType === 'Employee';
 
   return (
     <>
-      <h2>Record internal loan</h2>
-      <p className="modal-intro">
-        Capture the complete loan-list record for an employee or business traveler.
-        Pickup and return can be added later.
-      </p>
+      <div className="modal-header-section">
+        <h2>{isInternal ? 'Record internal loan' : 'Record business traveler loan'}</h2>
+        <p className="modal-intro">
+          Capture the complete loan-list record for an employee or business traveler.
+          Pickup and return dates can be added or adjusted anytime.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
@@ -122,32 +155,50 @@ export default function LoanForm({ onClose }) {
           <div className="field">
             <label htmlFor="assigneeType">Assignee type</label>
             <select id="assigneeType" value={form.assigneeType} onChange={set('assigneeType')}>
-              <option>Business traveler</option>
-              <option>Employee</option>
+              <option value="Employee">Employee (Internal)</option>
+              <option value="Business traveler">Business traveler</option>
             </select>
           </div>
 
           {/* Assignee */}
           <div className="field">
-            <label htmlFor="assignee">Assignee</label>
-            <input id="assignee" value={form.assignee} onChange={set('assignee')} />
+            <label htmlFor="assignee">
+              Assignee <span style={{ color: '#be665a' }}>*</span>
+            </label>
+            <input
+              id="assignee"
+              placeholder="Full name or username"
+              value={form.assignee}
+              onChange={set('assignee')}
+              className={errors.assignee ? 'invalid-input' : ''}
+              required
+            />
+            {errors.assignee && (
+              <span className="field-error-msg">{errors.assignee}</span>
+            )}
           </div>
 
           {/* Knox ID */}
           <div className="field">
-            <label htmlFor="knoxId">Knox ID <span style={{ color: '#be665a' }}>*</span></label>
+            <label htmlFor="knoxId">
+              Knox ID <span style={{ color: '#be665a' }}>*</span>
+            </label>
             <input
               id="knoxId"
               value={form.knoxId}
               onChange={set('knoxId')}
-              placeholder="e.g. KNOX-1234"
+              placeholder="e.g. wnjef.123 or KNOX-1234"
+              className={errors.knoxId ? 'invalid-input' : ''}
               required
             />
+            {errors.knoxId && (
+              <span className="field-error-msg">{errors.knoxId}</span>
+            )}
           </div>
 
           {/* IP address */}
           <div className="ip-field">
-            <label>IP address</label>
+            <label>IP address <span className="field-hint">(Optional)</span></label>
             <div className="ip-control">
               <span>{IP_PREFIX}</span>
               <input
@@ -179,12 +230,54 @@ export default function LoanForm({ onClose }) {
 
           {/* Dates */}
           <div className="field">
-            <label htmlFor="startDate">Start date</label>
+            <label htmlFor="startDate">Start / Loan date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
           </div>
-          <div className={`field${isTraveler ? '' : ' hidden-field'}`}>
-            <label htmlFor="endDate">Due date</label>
-            <input id="endDate" type="date" value={form.endDate} onChange={set('endDate')} />
+          <div className="field">
+            <label htmlFor="endDate">
+              Due date <span className="field-hint">(Optional)</span>
+            </label>
+            <input
+              id="endDate"
+              type="date"
+              value={form.endDate}
+              onChange={set('endDate')}
+              className={errors.endDate ? 'invalid-input' : ''}
+            />
+            {errors.endDate && (
+              <span className="field-error-msg">{errors.endDate}</span>
+            )}
+          </div>
+
+          {/* Handed out status toggle */}
+          <div className="field full loan-status-toggle-card">
+            <label className="toggle-label-header">Loan Handout Status</label>
+            <div className="loan-status-toggle-options">
+              <label className={`loan-status-option ${isImmediatePickup ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="loanPickupStatus"
+                  checked={isImmediatePickup}
+                  onChange={() => setIsImmediatePickup(true)}
+                />
+                <div className="option-text">
+                  <strong>✓ Handed out now (Active loan)</strong>
+                  <span>Marks laptop as picked up today and changes asset status to "On loan". Appears under Loaned tab.</span>
+                </div>
+              </label>
+              <label className={`loan-status-option ${!isImmediatePickup ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="loanPickupStatus"
+                  checked={!isImmediatePickup}
+                  onChange={() => setIsImmediatePickup(false)}
+                />
+                <div className="option-text">
+                  <strong>⏳ Schedule for later pickup (Scheduled)</strong>
+                  <span>Laptop is reserved but not handed out yet. Appears under Scheduled tab until picked up.</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Location & department */}
@@ -193,73 +286,123 @@ export default function LoanForm({ onClose }) {
             <input
               id="location"
               list="locationList"
-              placeholder="Type rental location"
+              placeholder="e.g. Head Office, Plant 1"
               value={form.location}
               onChange={set('location')}
             />
             <datalist id="locationList">
-              {db.locations.map((l) => (
+              {(db.locations || []).map((l) => (
                 <option key={l} value={l} />
               ))}
             </datalist>
           </div>
           <div className="field">
             <label htmlFor="department">Department</label>
-            <input id="department" value={form.department} onChange={set('department')} />
+            <input
+              id="department"
+              list="deptList"
+              placeholder="Operations, IT, Engineering..."
+              value={form.department}
+              onChange={set('department')}
+            />
+            <datalist id="deptList">
+              {(db.departments || []).map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
           </div>
 
           {/* Equipment Checklist */}
           <div className="field full">
-            <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
-              Equipment Checklist
-            </label>
+            <div className="equipment-header-row">
+              <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', margin: 0 }}>
+                Equipment Checklist
+              </label>
+              <span className="equipment-header-hint">
+                Type <strong>432</strong> or asset code for instant assignable equipment auto-completion
+              </span>
+            </div>
+
             <div className="equipment-grid">
-              <div className="equipment-field">
-                <label htmlFor="assetCode">Laptop / asset number</label>
-                <input
+              {/* Laptop / asset number with searchable autocompletion */}
+              <div className="equipment-field asset-autocomplete-wrapper">
+                <label htmlFor="assetCode">
+                  Laptop / asset number <span style={{ color: '#be665a' }}>*</span>
+                </label>
+                <AssetAutocomplete
                   id="assetCode"
-                  list="assetCodeList"
-                  placeholder="e.g. SPE-1234"
                   value={form.assetCode}
-                  onChange={set('assetCode')}
+                  onChange={(val) => {
+                    setForm((prev) => ({ ...prev, assetCode: val }));
+                    if (errors.assetCode) setErrors((prev) => ({ ...prev, assetCode: null }));
+                  }}
+                  onSelectAsset={(asset) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      assetCode: asset.code,
+                      location: prev.location || asset.location || 'Head Office',
+                      department: (prev.department === 'Operations' && asset.department) ? asset.department : prev.department,
+                    }));
+                  }}
+                  placeholder="e.g. 432 or SPE-4321..."
+                  required
                 />
-                <datalist id="assetCodeList">
-                  {available.map((a) => (
-                    <option key={a.id} value={a.code}>{a.name}</option>
-                  ))}
-                </datalist>
+                {errors.assetCode && (
+                  <span className="field-error-msg">{errors.assetCode}</span>
+                )}
               </div>
+
               {[
-                ['Charging Adapter', 'adapter'],
-                ['Charging Cable', 'cable'],
-                ['Dongle', 'dongle'],
-                ['Keyboard', 'keyboard'],
-                ['Mouse', 'mouse'],
-                ['Monitor asset number', 'monitor'],
-                ['Ethernet cable', 'ethernetCable'],
-              ].map(([label, key]) => (
+                ['Charging Adapter', 'adapter', 'e.g. 65W USB-C'],
+                ['Charging Cable', 'cable', 'e.g. USB-C Cable'],
+                ['Dongle', 'dongle', 'e.g. HDMI/USB-C Multiport'],
+                ['Keyboard', 'keyboard', 'e.g. Wireless keyboard'],
+                ['Mouse', 'mouse', 'e.g. Optical mouse'],
+                ['Monitor asset number', 'monitor', 'e.g. SPE-MON-01'],
+                ['Ethernet cable', 'ethernetCable', 'e.g. Cat6 cable'],
+              ].map(([label, key, ph]) => (
                 <div className="equipment-field" key={key}>
                   <label htmlFor={key}>{label}</label>
-                  <input id={key} value={form[key]} onChange={set(key)} />
+                  <input
+                    id={key}
+                    placeholder={ph}
+                    value={form[key]}
+                    onChange={set(key)}
+                  />
                 </div>
               ))}
             </div>
           </div>
 
           <div className="field">
-            <label htmlFor="others">Others</label>
-            <input id="others" value={form.others} onChange={set('others')} />
+            <label htmlFor="others">Others / Peripherals</label>
+            <input
+              id="others"
+              placeholder="e.g. Headset, Privacy filter"
+              value={form.others}
+              onChange={set('others')}
+            />
           </div>
 
           <div className="field full">
-            <label htmlFor="note">Note</label>
-            <textarea id="note" value={form.note} onChange={set('note')} />
+            <label htmlFor="note">Note / Purpose</label>
+            <textarea
+              id="note"
+              rows={2}
+              placeholder="Project purpose, special requirements, or condition notes..."
+              value={form.note}
+              onChange={set('note')}
+            />
           </div>
         </div>
 
         <div className="form-actions">
-          <button type="button" className="button ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="button">Create loan</button>
+          <button type="button" className="button ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="button">
+            {isImmediatePickup ? 'Record loan (Hand out now)' : 'Schedule loan'}
+          </button>
         </div>
       </form>
     </>

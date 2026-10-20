@@ -1,0 +1,330 @@
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useDb } from '../hooks/useDb';
+
+function highlightMatch(text, query) {
+  if (!query || !text) return text;
+  const q = query.trim().toLowerCase();
+  const original = String(text);
+  const lower = original.toLowerCase();
+  const idx = lower.indexOf(q);
+  if (idx === -1) return original;
+
+  return (
+    <>
+      {original.slice(0, idx)}
+      <mark className="asset-highlight">{original.slice(idx, idx + q.length)}</mark>
+      {original.slice(idx + q.length)}
+    </>
+  );
+}
+
+export default function AssetAutocomplete({
+  value = '',
+  onChange,
+  onSelectAsset,
+  placeholder = 'Type asset number (e.g. 432, SPE-4321)...',
+  id = 'assetCode',
+  required = false,
+  categoryFilter,
+}) {
+  const { db } = useDb();
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(0);
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const query = String(value || '').trim();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter & rank matching assets
+  const matches = useMemo(() => {
+    const all = db.assets || [];
+    const q = query.toLowerCase();
+
+    // If query is empty, show available assignable assets (prioritizing Laptops)
+    if (!q) {
+      return all
+        .filter((a) => {
+          if (categoryFilter && a.category?.toLowerCase() !== categoryFilter.toLowerCase()) {
+            return false;
+          }
+          return a.status === 'Available';
+        })
+        .sort((a, b) => {
+          if (a.category === 'Laptop' && b.category !== 'Laptop') return -1;
+          if (b.category === 'Laptop' && a.category !== 'Laptop') return 1;
+          return (a.code || '').localeCompare(b.code || '');
+        })
+        .slice(0, 10);
+    }
+
+    // Match query against code, name, model, serial, category
+    const filtered = all.filter((a) => {
+      const code = String(a.code || '').toLowerCase();
+      const name = String(a.name || '').toLowerCase();
+      const model = String(a.model || '').toLowerCase();
+      const serial = String(a.serial || '').toLowerCase();
+      const category = String(a.category || '').toLowerCase();
+      return (
+        code.includes(q) ||
+        name.includes(q) ||
+        model.includes(q) ||
+        serial.includes(q) ||
+        category.includes(q)
+      );
+    });
+
+    // Score & sort:
+    // 1. Exact code match
+    // 2. Code starts with query
+    // 3. Code contains query (e.g. '432' in 'SPE-4321')
+    // 4. Status === 'Available'
+    // 5. Category === 'Laptop'
+    return filtered
+      .sort((a, b) => {
+        const codeA = String(a.code || '').toLowerCase();
+        const codeB = String(b.code || '').toLowerCase();
+
+        if (codeA === q && codeB !== q) return -1;
+        if (codeB === q && codeA !== q) return 1;
+
+        const aStarts = codeA.startsWith(q);
+        const bStarts = codeB.startsWith(q);
+        if (aStarts && !bStarts) return -1;
+        if (bStarts && !aStarts) return 1;
+
+        const aCodeMatch = codeA.includes(q);
+        const bCodeMatch = codeB.includes(q);
+        if (aCodeMatch && !bCodeMatch) return -1;
+        if (bCodeMatch && !aCodeMatch) return 1;
+
+        const aAvail = a.status === 'Available';
+        const bAvail = b.status === 'Available';
+        if (aAvail && !bAvail) return -1;
+        if (bAvail && !aAvail) return 1;
+
+        const aLaptop = a.category === 'Laptop';
+        const bLaptop = b.category === 'Laptop';
+        if (aLaptop && !bLaptop) return -1;
+        if (bLaptop && !aLaptop) return 1;
+
+        return codeA.localeCompare(codeB);
+      })
+      .slice(0, 12);
+  }, [db.assets, query, categoryFilter]);
+
+  // Check if current value matches an exact asset
+  const matchedAsset = useMemo(() => {
+    if (!query) return null;
+    return (db.assets || []).find(
+      (a) => String(a.code || '').trim().toLowerCase() === query.toLowerCase()
+    );
+  }, [db.assets, query]);
+
+  // Check if the query itself is not an existing asset code (so we offer "Use custom")
+  const hasExactMatch = matches.some(
+    (m) => String(m.code || '').toLowerCase() === query.toLowerCase()
+  );
+
+  const totalOptions = matches.length + (query && !hasExactMatch ? 1 : 0);
+
+  const handleSelect = (asset) => {
+    onChange(asset.code);
+    if (onSelectAsset) onSelectAsset(asset);
+    setIsOpen(false);
+  };
+
+  const handleSelectCustom = () => {
+    onChange(query);
+    setIsOpen(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      setIsOpen(true);
+      return;
+    }
+
+    if (!isOpen) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightIndex((prev) => (prev + 1) % Math.max(1, totalOptions));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightIndex((prev) => (prev - 1 + totalOptions) % Math.max(1, totalOptions));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightIndex < matches.length) {
+        handleSelect(matches[highlightIndex]);
+      } else if (query && !hasExactMatch) {
+        handleSelectCustom();
+      }
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
+
+  const statusBadgeClass = (status) => {
+    const s = String(status || '').toLowerCase();
+    if (s === 'available') return 'status-avail';
+    if (s === 'on loan') return 'status-loan';
+    if (s === 'assigned') return 'status-assigned';
+    if (s === 'under repair') return 'status-repair';
+    return 'status-other';
+  };
+
+  return (
+    <div className="asset-autocomplete-container" ref={containerRef}>
+      <div className="asset-autocomplete-input-wrap">
+        <span className="asset-input-search-icon" aria-hidden="true">
+          🔍
+        </span>
+        <input
+          id={id}
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setIsOpen(true);
+            setHighlightIndex(0);
+          }}
+          onFocus={() => {
+            setIsOpen(true);
+            setHighlightIndex(0);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          required={required}
+          autoComplete="off"
+          className="asset-autocomplete-input"
+        />
+        {value && (
+          <button
+            type="button"
+            className="asset-input-clear-btn"
+            onClick={() => {
+              onChange('');
+              inputRef.current?.focus();
+            }}
+            title="Clear asset code"
+            aria-label="Clear asset code"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="asset-autocomplete-dropdown" role="listbox">
+          <div className="asset-dropdown-header">
+            {query ? (
+              <span>
+                Matching equipment for "<strong>{query}</strong>" ({matches.length})
+              </span>
+            ) : (
+              <span>Assignable equipment ready for loan ({matches.length})</span>
+            )}
+            <span className="asset-dropdown-hint">↑↓ to navigate, Enter to select</span>
+          </div>
+
+          <div className="asset-dropdown-list">
+            {matches.map((asset, idx) => {
+              const isSelected = highlightIndex === idx;
+              return (
+                <div
+                  key={asset.id || asset.code}
+                  role="option"
+                  aria-selected={isSelected}
+                  className={`asset-dropdown-item ${isSelected ? 'highlighted' : ''}`}
+                  onMouseEnter={() => setHighlightIndex(idx)}
+                  onClick={() => handleSelect(asset)}
+                >
+                  <div className="asset-item-top">
+                    <span className="asset-item-code">
+                      {highlightMatch(asset.code, query)}
+                    </span>
+                    <span className={`asset-status-pill ${statusBadgeClass(asset.status)}`}>
+                      ● {asset.status}
+                    </span>
+                  </div>
+                  <div className="asset-item-bottom">
+                    <span className="asset-item-name">
+                      {asset.category && <span className="asset-cat-tag">{asset.category}</span>}
+                      {highlightMatch(asset.name || asset.model || 'Unnamed device', query)}
+                      {asset.model && asset.model !== asset.name && (
+                        <span className="asset-item-model"> ({highlightMatch(asset.model, query)})</span>
+                      )}
+                    </span>
+                    {asset.location && (
+                      <span className="asset-item-location" title="Current location">
+                        📍 {asset.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Custom Code Entry option */}
+            {query && !hasExactMatch && (
+              <div
+                role="option"
+                aria-selected={highlightIndex === matches.length}
+                className={`asset-dropdown-item custom-entry ${
+                  highlightIndex === matches.length ? 'highlighted' : ''
+                }`}
+                onMouseEnter={() => setHighlightIndex(matches.length)}
+                onClick={handleSelectCustom}
+              >
+                <div className="asset-item-top">
+                  <span className="asset-item-code custom-code">
+                    ➕ Use "<strong>{query}</strong>"
+                  </span>
+                  <span className="asset-status-pill status-new">New / Custom</span>
+                </div>
+                <div className="asset-item-bottom">
+                  <span className="asset-item-hint">
+                    Enter as new asset code. A registry stub will be auto-created on loan save.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {matches.length === 0 && !query && (
+              <div className="asset-dropdown-empty">
+                No assignable assets currently marked as "Available".
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Matched Asset Preview Chip */}
+      {matchedAsset && (
+        <div className="asset-selected-chip">
+          <span className="asset-chip-icon">✓</span>
+          <span className="asset-chip-text">
+            <strong>{matchedAsset.code}</strong> — {matchedAsset.name || matchedAsset.model || 'Device'} (
+            <span className={`asset-chip-status ${statusBadgeClass(matchedAsset.status)}`}>
+              {matchedAsset.status}
+            </span>
+            {matchedAsset.location ? ` • ${matchedAsset.location}` : ''})
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
