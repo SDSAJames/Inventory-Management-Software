@@ -3800,79 +3800,17 @@ tbody tr:hover { background: #f8fafc; }
 .asset-chip-status.status-loan { color: #1d4ed8; }
 .asset-chip-status.status-assigned { color: #6d28d9; }
 
-/* ── Loan Handout Status Toggle ──────────────────────────── */
-.loan-status-toggle-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 14px;
-}
-
-.toggle-label-header {
-  display: block;
-  font-size: 11px;
+.asset-it-pool-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
   font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin-bottom: 6px;
-}
-
-.loan-status-toggle-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-@media (max-width: 640px) {
-  .loan-status-toggle-options {
-    grid-template-columns: 1fr;
-  }
-}
-
-.loan-status-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-  transition: all .15s ease;
-}
-
-.loan-status-option input[type="radio"] {
-  margin-top: 2px;
-  accent-color: var(--blue);
-  cursor: pointer;
-}
-
-.loan-status-option .option-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.loan-status-option .option-text strong {
-  font-size: 11.5px;
-  color: var(--ink);
-}
-
-.loan-status-option .option-text span {
-  font-size: 10px;
-  color: #64748b;
-  line-height: 1.3;
-}
-
-.loan-status-option.active {
-  border-color: var(--blue);
-  background: #f0f7ff;
-  box-shadow: 0 1px 4px rgba(10, 37, 71, 0.08);
-}
-
-.loan-status-option.active .option-text strong {
-  color: var(--blue);
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  padding: 0.5px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
 }
 
 .equipment-header-row {

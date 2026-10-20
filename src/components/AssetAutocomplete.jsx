@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useDb } from '../hooks/useDb';
+import { isAssetAssignable, isItDepartment } from '../lib/assetIntegrity';
 
 function highlightMatch(text, query) {
   if (!query || !text) return text;
@@ -51,36 +52,38 @@ export default function AssetAutocomplete({
     const all = db.assets || [];
     const q = query.toLowerCase();
 
-    // If query is empty, show available assignable assets (prioritizing Laptops)
+    // If query is empty, show all assignable equipment (Available or held by IT department)
     if (!q) {
       return all
         .filter((a) => {
           if (categoryFilter && a.category?.toLowerCase() !== categoryFilter.toLowerCase()) {
             return false;
           }
-          return a.status === 'Available';
+          return isAssetAssignable(a);
         })
         .sort((a, b) => {
           if (a.category === 'Laptop' && b.category !== 'Laptop') return -1;
           if (b.category === 'Laptop' && a.category !== 'Laptop') return 1;
           return (a.code || '').localeCompare(b.code || '');
         })
-        .slice(0, 10);
+        .slice(0, 12);
     }
 
-    // Match query against code, name, model, serial, category
+    // Match query against code, name, model, serial, category, holder
     const filtered = all.filter((a) => {
       const code = String(a.code || '').toLowerCase();
       const name = String(a.name || '').toLowerCase();
       const model = String(a.model || '').toLowerCase();
       const serial = String(a.serial || '').toLowerCase();
       const category = String(a.category || '').toLowerCase();
+      const owner = String(a.owner || '').toLowerCase();
       return (
         code.includes(q) ||
         name.includes(q) ||
         model.includes(q) ||
         serial.includes(q) ||
-        category.includes(q)
+        category.includes(q) ||
+        owner.includes(q)
       );
     });
 
@@ -88,7 +91,7 @@ export default function AssetAutocomplete({
     // 1. Exact code match
     // 2. Code starts with query
     // 3. Code contains query (e.g. '432' in 'SPE-4321')
-    // 4. Status === 'Available'
+    // 4. Assignable status (Available or IT department holder)
     // 5. Category === 'Laptop'
     return filtered
       .sort((a, b) => {
@@ -108,10 +111,10 @@ export default function AssetAutocomplete({
         if (aCodeMatch && !bCodeMatch) return -1;
         if (bCodeMatch && !aCodeMatch) return 1;
 
-        const aAvail = a.status === 'Available';
-        const bAvail = b.status === 'Available';
-        if (aAvail && !bAvail) return -1;
-        if (bAvail && !aAvail) return 1;
+        const aAssignable = isAssetAssignable(a);
+        const bAssignable = isAssetAssignable(b);
+        if (aAssignable && !bAssignable) return -1;
+        if (bAssignable && !aAssignable) return 1;
 
         const aLaptop = a.category === 'Laptop';
         const bLaptop = b.category === 'Laptop';
@@ -120,7 +123,7 @@ export default function AssetAutocomplete({
 
         return codeA.localeCompare(codeB);
       })
-      .slice(0, 12);
+      .slice(0, 15);
   }, [db.assets, query, categoryFilter]);
 
   // Check if current value matches an exact asset
@@ -175,13 +178,22 @@ export default function AssetAutocomplete({
     }
   };
 
-  const statusBadgeClass = (status) => {
-    const s = String(status || '').toLowerCase();
-    if (s === 'available') return 'status-avail';
-    if (s === 'on loan') return 'status-loan';
-    if (s === 'assigned') return 'status-assigned';
-    if (s === 'under repair') return 'status-repair';
-    return 'status-other';
+  const getStatusBadge = (asset) => {
+    const isAvail = asset.status === 'Available';
+    const isItDept = isItDepartment(asset.owner);
+
+    if (isAvail || isItDept) {
+      return {
+        cls: 'status-avail',
+        label: isItDept && !isAvail ? '● Available (IT Pool)' : '● Available',
+      };
+    }
+    const s = String(asset.status || '').toLowerCase();
+    if (s === 'on loan') return { cls: 'status-loan', label: '● On loan' };
+    if (s === 'assigned') return { cls: 'status-assigned', label: '● Assigned' };
+    if (s === 'under repair') return { cls: 'status-repair', label: '● Under repair' };
+    if (s === 'damaged') return { cls: 'status-repair', label: '● Damaged' };
+    return { cls: 'status-other', label: `● ${asset.status || 'Active'}` };
   };
 
   return (
@@ -243,6 +255,10 @@ export default function AssetAutocomplete({
           <div className="asset-dropdown-list">
             {matches.map((asset, idx) => {
               const isSelected = highlightIndex === idx;
+              const badge = getStatusBadge(asset);
+              const isItDept = isItDepartment(asset.owner);
+              const isAssignable = isAssetAssignable(asset);
+
               return (
                 <div
                   key={asset.id || asset.code}
@@ -256,8 +272,8 @@ export default function AssetAutocomplete({
                     <span className="asset-item-code">
                       {highlightMatch(asset.code, query)}
                     </span>
-                    <span className={`asset-status-pill ${statusBadgeClass(asset.status)}`}>
-                      ● {asset.status}
+                    <span className={`asset-status-pill ${badge.cls}`}>
+                      {badge.label}
                     </span>
                   </div>
                   <div className="asset-item-bottom">
@@ -266,6 +282,11 @@ export default function AssetAutocomplete({
                       {highlightMatch(asset.name || asset.model || 'Unnamed device', query)}
                       {asset.model && asset.model !== asset.name && (
                         <span className="asset-item-model"> ({highlightMatch(asset.model, query)})</span>
+                      )}
+                      {isItDept && (
+                        <span className="asset-it-pool-tag" title="Held in IT department pool - ready to assign">
+                          🏛️ IT pool
+                        </span>
                       )}
                     </span>
                     {asset.location && (
@@ -297,7 +318,7 @@ export default function AssetAutocomplete({
                 </div>
                 <div className="asset-item-bottom">
                   <span className="asset-item-hint">
-                    Enter as new asset code. A registry stub will be auto-created on loan save.
+                    Enter as new asset code. Registry stub will be created on loan record.
                   </span>
                 </div>
               </div>
@@ -305,7 +326,7 @@ export default function AssetAutocomplete({
 
             {matches.length === 0 && !query && (
               <div className="asset-dropdown-empty">
-                No assignable assets currently marked as "Available".
+                No assignable assets currently found in inventory.
               </div>
             )}
           </div>
@@ -318,8 +339,8 @@ export default function AssetAutocomplete({
           <span className="asset-chip-icon">✓</span>
           <span className="asset-chip-text">
             <strong>{matchedAsset.code}</strong> — {matchedAsset.name || matchedAsset.model || 'Device'} (
-            <span className={`asset-chip-status ${statusBadgeClass(matchedAsset.status)}`}>
-              {matchedAsset.status}
+            <span className={`asset-chip-status ${getStatusBadge(matchedAsset).cls}`}>
+              {isItDepartment(matchedAsset.owner) ? 'Available (IT pool)' : matchedAsset.status}
             </span>
             {matchedAsset.location ? ` • ${matchedAsset.location}` : ''})
           </span>

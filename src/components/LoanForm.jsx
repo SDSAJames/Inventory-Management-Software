@@ -5,7 +5,7 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import AssetAutocomplete from './AssetAutocomplete';
 
-export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', onSuccess }) {
+export default function LoanForm({ onClose, defaultAssigneeType = 'Business traveler', onSuccess }) {
   const { db, addLoan } = useDb();
   const toast = useToast();
 
@@ -31,8 +31,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
     note: '',
   });
 
-  // Loan state: whether the equipment is issued immediately (Active loan) or scheduled for future pickup
-  const [isImmediatePickup, setIsImmediatePickup] = useState(true);
   const [errors, setErrors] = useState({});
 
   const set = (field) => (e) => {
@@ -59,6 +57,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
     if (!knoxId) newErrors.knoxId = 'Knox ID is required';
     if (!assignee) newErrors.assignee = 'Assignee name is required';
 
+    // Due date is optional. If provided, validate that end date is not earlier than start date
     if (form.startDate && form.endDate && form.endDate < form.startDate) {
       newErrors.endDate = 'Due date cannot be earlier than start date';
     }
@@ -77,9 +76,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
       ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
       : '';
 
-    // If immediate pickup is selected, pickupDate is set to startDate (or today) so the loan is active immediately
-    const effectivePickupDate = isImmediatePickup ? (form.startDate || todayIso()) : '';
-
+    // Recording an internal loan schedules the pickup. Pickup is processed separately from Scheduled Loans.
     const loanData = {
       assetCode,
       assignee,
@@ -90,7 +87,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
       loanDate: form.startDate,
       endDate: form.endDate,
       dueDate: form.endDate,
-      pickupDate: effectivePickupDate,
+      pickupDate: '',
       returnDate: '',
       location: form.location || 'Head Office',
       department: form.department,
@@ -110,9 +107,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
 
     const assetUpdates = {
       code: assetCode,
-      status: isImmediatePickup ? 'On loan' : 'Available',
-      owner: isImmediatePickup ? assignee : 'IT department',
-      department: form.department,
       location: form.location || 'Head Office',
     };
 
@@ -124,12 +118,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
     };
 
     addLoan(loanData, assetUpdates, newEmployee);
-
-    if (isImmediatePickup) {
-      toast('Internal loan recorded successfully (Active loan)');
-    } else {
-      toast('Equipment scheduled for future pickup');
-    }
+    toast('Loan scheduled successfully');
 
     if (onSuccess) {
       onSuccess(loanData);
@@ -137,26 +126,24 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
     onClose();
   };
 
-  const isInternal = form.assigneeType === 'Employee';
-
   return (
     <>
       <div className="modal-header-section">
-        <h2>{isInternal ? 'Record internal loan' : 'Record business traveler loan'}</h2>
+        <h2>Record internal loan</h2>
         <p className="modal-intro">
-          Capture the complete loan-list record for an employee or business traveler.
-          Pickup and return dates can be added or adjusted anytime.
+          Schedule an equipment loan record for an employee or business traveler.
+          Equipment pickup is processed separately from the Scheduled Loans page.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
-          {/* Assignee type */}
+          {/* Assignee type (defaults to Business traveler) */}
           <div className="field">
             <label htmlFor="assigneeType">Assignee type</label>
             <select id="assigneeType" value={form.assigneeType} onChange={set('assigneeType')}>
-              <option value="Employee">Employee (Internal)</option>
               <option value="Business traveler">Business traveler</option>
+              <option value="Employee">Employee (Internal)</option>
             </select>
           </div>
 
@@ -230,7 +217,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
 
           {/* Dates */}
           <div className="field">
-            <label htmlFor="startDate">Start / Loan date</label>
+            <label htmlFor="startDate">Start / Scheduled date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
           </div>
           <div className="field">
@@ -247,37 +234,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
             {errors.endDate && (
               <span className="field-error-msg">{errors.endDate}</span>
             )}
-          </div>
-
-          {/* Handed out status toggle */}
-          <div className="field full loan-status-toggle-card">
-            <label className="toggle-label-header">Loan Handout Status</label>
-            <div className="loan-status-toggle-options">
-              <label className={`loan-status-option ${isImmediatePickup ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="loanPickupStatus"
-                  checked={isImmediatePickup}
-                  onChange={() => setIsImmediatePickup(true)}
-                />
-                <div className="option-text">
-                  <strong>✓ Handed out now (Active loan)</strong>
-                  <span>Marks laptop as picked up today and changes asset status to "On loan". Appears under Loaned tab.</span>
-                </div>
-              </label>
-              <label className={`loan-status-option ${!isImmediatePickup ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="loanPickupStatus"
-                  checked={!isImmediatePickup}
-                  onChange={() => setIsImmediatePickup(false)}
-                />
-                <div className="option-text">
-                  <strong>⏳ Schedule for later pickup (Scheduled)</strong>
-                  <span>Laptop is reserved but not handed out yet. Appears under Scheduled tab until picked up.</span>
-                </div>
-              </label>
-            </div>
           </div>
 
           {/* Location & department */}
@@ -401,7 +357,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Employee', on
             Cancel
           </button>
           <button type="submit" className="button">
-            {isImmediatePickup ? 'Record loan (Hand out now)' : 'Schedule loan'}
+            Schedule loan
           </button>
         </div>
       </form>

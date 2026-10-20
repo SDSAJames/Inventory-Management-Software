@@ -829,14 +829,10 @@ export default function LoansPage() {
       {/* Create loan modal */}
       <Modal open={showCreate} size="wide" onClose={() => setShowCreate(false)}>
         <LoanForm
-          defaultAssigneeType="Employee"
+          defaultAssigneeType="Business traveler"
           onClose={() => setShowCreate(false)}
-          onSuccess={(loan) => {
-            if (loan.pickupDate) {
-              setCategory('loaned');
-            } else {
-              setCategory('scheduled');
-            }
+          onSuccess={() => {
+            setCategory('scheduled');
           }}
         />
       </Modal>

@@ -50,6 +50,23 @@ export function normalizeHolder(name) {
 }
 
 /**
+ * Returns true if the asset can be assigned or loaned to someone else.
+ * Assets held by IT department, in pool, unassigned, or marked 'Available' are all assignable.
+ */
+export function isAssetAssignable(asset) {
+  if (!asset) return false;
+  const status = String(asset.status || '').trim();
+  if (['Damaged', 'Under repair', 'Disposed'].includes(status)) {
+    return false;
+  }
+  // If marked Available, it is assignable
+  if (status === 'Available') return true;
+  // If holder is IT department (or empty), it is in IT custody and assignable to someone else
+  if (!asset.owner || isItDepartment(asset.owner)) return true;
+  return false;
+}
+
+/**
  * Reconciles an asset against all loans in the database to derive its true latest
  * operational status and holder.
  *
