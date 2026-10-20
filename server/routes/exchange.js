@@ -188,6 +188,25 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
       const insertLoanStmt = db.prepare(`
         INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, others, note, purpose, assignee_type, is_archived, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          asset_code = excluded.asset_code,
+          assignee = excluded.assignee,
+          department = excluded.department,
+          knox_id = excluded.knox_id,
+          location = excluded.location,
+          ip = excluded.ip,
+          start_date = excluded.start_date,
+          pickup_date = excluded.pickup_date,
+          end_date = excluded.end_date,
+          return_date = excluded.return_date,
+          returned_date = excluded.returned_date,
+          status = excluded.status,
+          equipment_json = excluded.equipment_json,
+          others = excluded.others,
+          note = excluded.note,
+          purpose = excluded.purpose,
+          assignee_type = excluded.assignee_type,
+          is_archived = excluded.is_archived
       `);
 
       for (const l of loans) {

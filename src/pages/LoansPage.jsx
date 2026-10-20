@@ -246,18 +246,20 @@ export default function LoansPage() {
     }
   };
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!importPreview) return;
-    mergeImportData({
+    const syncRes = await mergeImportData({
       assets: importPreview.synthesizedAssets || [],
       loans: importPreview.loans,
     });
-    toast(
-      `Loan import complete: ${importPreview.newCount} added, ${importPreview.updatedCount} updated` +
-        (importPreview.synthesizedAssets?.length
-          ? `, ${importPreview.synthesizedAssets.length} new laptop${importPreview.synthesizedAssets.length === 1 ? '' : 's'} registered.`
-          : '.'),
-    );
+    let msg = `Loan import complete: ${importPreview.newCount} added, ${importPreview.updatedCount} updated` +
+      (importPreview.synthesizedAssets?.length
+        ? `, ${importPreview.synthesizedAssets.length} new laptop${importPreview.synthesizedAssets.length === 1 ? '' : 's'} registered.`
+        : '.');
+    if (syncRes?.success) {
+      msg += ' (Synced to server)';
+    }
+    toast(msg);
     setImportPreview(null);
   };
 

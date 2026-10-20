@@ -153,7 +153,7 @@ export default function ExchangePage() {
 
   /* ── 4. Apply Import ───────────────────────────────────── */
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!previewData) return;
     const { equipments, loans } = previewData;
 
@@ -170,23 +170,25 @@ export default function ExchangePage() {
     });
 
     if (importMode === 'merge') {
-      mergeImportData({
+      const syncRes = await mergeImportData({
         assets: combinedIncomingAssets,
         loans: loansToApply,
       });
-      toast(`Import complete: ${combinedIncomingAssets.length} assets and ${loansToApply.length} loans synced.`);
+      const syncedText = syncRes?.success ? ' (Synced to server)' : '';
+      toast(`Import complete: ${combinedIncomingAssets.length} assets and ${loansToApply.length} loans synced.${syncedText}`);
     } else {
       // Full database replacement
       const nextAssets = combinedIncomingAssets.length ? combinedIncomingAssets : db.assets;
       const nextLoans = loansToApply.length ? loansToApply : db.loans;
-      importDb({
+      const syncRes = await importDb({
         assets: nextAssets,
         loans: nextLoans,
         employees: db.employees,
         departments: db.departments,
         locations: db.locations,
       });
-      toast(`Database replaced: ${nextAssets.length} assets and ${nextLoans.length} loans.`);
+      const syncedText = syncRes?.success ? ' (Synced to server)' : '';
+      toast(`Database replaced: ${nextAssets.length} assets and ${nextLoans.length} loans.${syncedText}`);
     }
 
     setShowPreview(false);

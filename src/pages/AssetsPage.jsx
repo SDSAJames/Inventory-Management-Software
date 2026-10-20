@@ -129,7 +129,7 @@ export default function AssetsPage() {
 
   const [overwriteDuplicates, setOverwriteDuplicates] = useState(false);
 
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     const freshCount = importPreview.added.length;
     const overwriteCount = overwriteDuplicates ? importPreview.duplicates.length : 0;
     const assetsToImport = overwriteDuplicates
@@ -140,7 +140,7 @@ export default function AssetsPage() {
       saveAssetExportHeaders(importPreview.importedHeaders);
     }
 
-    importAssets(assetsToImport, overwriteDuplicates);
+    const syncRes = await importAssets(assetsToImport, overwriteDuplicates);
 
     let msg = '';
     if (freshCount > 0 && overwriteCount > 0) {
@@ -151,6 +151,9 @@ export default function AssetsPage() {
       msg = `${overwriteCount} existing asset${overwriteCount === 1 ? '' : 's'} overwritten from Excel.`;
     } else {
       msg = 'No assets changed.';
+    }
+    if (syncRes?.success) {
+      msg += ' (Synced to server)';
     }
     toast(msg);
     setImportPreview(null);

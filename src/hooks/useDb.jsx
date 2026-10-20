@@ -97,7 +97,7 @@ export function DbProvider({ children }) {
       if (!token && !authUser) return;
 
       try {
-        const res = await api.exchange.export();
+        const res = await api.exchange.exportData();
         if (!active || !res?.success || !res?.db) return;
         const serverDb = res.db;
 
@@ -335,8 +335,11 @@ export function DbProvider({ children }) {
       return { ...prev, assets: nextAssets, locations };
     });
 
-    api.exchange.importData({ assets: newAssets, overwrite: overwriteAssets })
-      .catch((err) => console.warn('Could not sync imported assets to server:', err.message));
+    return api.exchange.importData({ assets: newAssets, overwrite: overwriteAssets })
+      .catch((err) => {
+        console.warn('Could not sync imported assets to server:', err.message);
+        return { success: false, error: err.message };
+      });
   }, []);
 
   /* ── Loan operations ────────────────────────────── */
@@ -627,7 +630,7 @@ export function DbProvider({ children }) {
 
   /* ── Import / Revert ────────────────────────────── */
 
-  const importDb = useCallback((newDb) => {
+  const importDb = useCallback(async (newDb) => {
     setDb((prev) => {
       saveImportBackup(prev);
       const reconciledAssets = reconcileAllAssets(newDb.assets || [], newDb.loans || []);
@@ -636,6 +639,17 @@ export function DbProvider({ children }) {
         assets: reconciledAssets,
       };
     });
+
+    try {
+      return await api.exchange.importData({
+        assets: newDb.assets || [],
+        loans: newDb.loans || [],
+        overwrite: true,
+      });
+    } catch (err) {
+      console.warn('Could not sync imported database to server:', err.message);
+      return { success: false, error: err.message };
+    }
   }, []);
 
   const mergeImportData = useCallback(({ assets: incomingAssets = [], loans: incomingLoans = [] }) => {
@@ -725,8 +739,11 @@ export function DbProvider({ children }) {
       };
     });
 
-    api.exchange.importData({ assets: incomingAssets, loans: incomingLoans, overwrite: true })
-      .catch((err) => console.warn('Could not sync merge import to server:', err.message));
+    return api.exchange.importData({ assets: incomingAssets, loans: incomingLoans, overwrite: true })
+      .catch((err) => {
+        console.warn('Could not sync merge import to server:', err.message);
+        return { success: false, error: err.message };
+      });
   }, []);
 
   const revertImport = useCallback(() => {

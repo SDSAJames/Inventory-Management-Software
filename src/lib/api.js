@@ -130,9 +130,11 @@ export const api = {
   // ── Exchange / Import / Export / Backup ──
   exchange: {
     exportData: () => request('/exchange/export'),
+    export: () => request('/exchange/export'),
     importData: ({ assets, loans, overwrite = false }) =>
       request('/exchange/import', { method: 'POST', body: { assets, loans, overwrite } }),
     revertData: () => request('/exchange/revert', { method: 'POST' }),
+    revert: () => request('/exchange/revert', { method: 'POST' }),
     getBackupStatus: () => request('/exchange/backup-status'),
   },
 };

@@ -7,6 +7,7 @@ import BarChart from '../components/BarChart';
 import AssetTable from '../components/AssetTable';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
+import AssetForm from '../components/AssetForm';
 import ChangeOwnerModal from '../components/ChangeOwnerModal';
 
 export default function OverviewPage() {
