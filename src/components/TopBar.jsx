@@ -49,8 +49,10 @@ export default function TopBar({ onOpenPatchHistory }) {
     title: 'Asset Management',
   };
 
-  const displayName = user?.fullName || user?.username || 'IT Admin';
+  const displayName = user?.fullName || user?.username || 'IT Staff';
   const role = user?.role || 'OPERATOR';
+  const title = user?.title || role;
+  const knoxId = user?.knoxId || user?.username || '';
   const initials = displayName
     .split(' ')
     .filter(Boolean)
@@ -82,10 +84,10 @@ export default function TopBar({ onOpenPatchHistory }) {
           <span>Corporate Intranet</span>
         </div>
         <div className="topbar-user-control">
-          <div className="profile-chip" title={`Authenticated as ${displayName} (${role})`}>
+          <div className="profile-chip" title={`Authenticated as ${displayName} (${knoxId}) • ${title}`}>
             <span className="profile-chip-name">
               {displayName}
-              <span className="profile-chip-role">{role}</span>
+              <span className="profile-chip-role">{title}</span>
             </span>
             <div className="avatar">{initials}</div>
           </div>

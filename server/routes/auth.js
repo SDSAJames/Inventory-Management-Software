@@ -9,25 +9,26 @@ export const authRouter = Router();
 
 // POST /api/auth/login
 authRouter.post('/login', (req, res) => {
-  const { username, password } = req.body || {};
+  const { knoxId, username, password } = req.body || {};
+  const cleanId = String(knoxId || username || '').trim();
 
-  if (!username || !password) {
+  if (!cleanId || !password) {
     return res.status(400).json({
       success: false,
-      error: 'Username and password are required.',
+      error: 'Knox ID and password are required.',
     });
   }
 
   const user = db.prepare(`
-    SELECT id, username, password_hash, full_name, role, knox_id
+    SELECT id, username, password_hash, full_name, role, knox_id, title
     FROM users
-    WHERE LOWER(username) = LOWER(?)
-  `).get(username.trim());
+    WHERE LOWER(username) = LOWER(?) OR LOWER(knox_id) = LOWER(?)
+  `).get(cleanId, cleanId);
 
   if (!user) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid username or password.',
+      error: 'Invalid Knox ID or password.',
     });
   }
 
@@ -35,7 +36,7 @@ authRouter.post('/login', (req, res) => {
   if (!isMatch) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid username or password.',
+      error: 'Invalid Knox ID or password.',
     });
   }
 
@@ -45,7 +46,7 @@ authRouter.post('/login', (req, res) => {
   // Sign JWT
   const tokenPayload = {
     id: user.id,
-    username: user.username,
+    knoxId: user.knox_id || user.username,
     role: user.role,
   };
 
@@ -64,10 +65,10 @@ authRouter.post('/login', (req, res) => {
     message: 'Login successful.',
     user: {
       id: user.id,
-      username: user.username,
+      knoxId: user.knox_id || user.username,
       fullName: user.full_name,
       role: user.role,
-      knoxId: user.knox_id,
+      title: user.title || '',
     },
     token, // Also returned for API / mobile client flexibility
   });

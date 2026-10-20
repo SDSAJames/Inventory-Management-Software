@@ -35,10 +35,10 @@ export function AuthProvider({ children }) {
         if (mounted && res?.success && res.user) {
           const verifiedUser = {
             id: res.user.id,
-            username: res.user.username,
-            fullName: res.user.full_name || res.user.fullName || res.user.username,
-            role: res.user.role || 'OPERATOR',
             knoxId: res.user.knox_id || res.user.knoxId || '',
+            fullName: res.user.full_name || res.user.fullName || 'Staff',
+            role: res.user.role || 'OPERATOR',
+            title: res.user.title || '',
           };
           setUser(verifiedUser);
           localStorage.setItem(AUTH_USER_KEY, JSON.stringify(verifiedUser));
@@ -64,27 +64,32 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (knoxId, password) => {
     setAuthError('');
-    const cleanUser = String(username || '').trim().toLowerCase();
+    const cleanKnoxId = String(knoxId || '').trim();
     const cleanPass = String(password || '');
 
-    if (!cleanUser || !cleanPass) {
-      const msg = 'Please enter both username and password.';
+    if (!cleanKnoxId || !cleanPass) {
+      const msg = 'Please enter both Knox ID and password.';
       setAuthError(msg);
       throw new Error(msg);
     }
 
     try {
       // Authenticate against centralized corporate intranet server
-      const res = await api.auth.login({ username: cleanUser, password: cleanPass });
+      const res = await api.auth.login({
+        knoxId: cleanKnoxId,
+        username: cleanKnoxId,
+        password: cleanPass,
+      });
+
       if (res?.success && res.user) {
         const authenticatedUser = {
           id: res.user.id,
-          username: res.user.username,
-          fullName: res.user.fullName || res.user.full_name || res.user.username,
+          knoxId: res.user.knoxId || res.user.knox_id || cleanKnoxId,
+          fullName: res.user.fullName || res.user.full_name || 'Staff',
           role: res.user.role || 'OPERATOR',
-          knoxId: res.user.knoxId || res.user.knox_id || '',
+          title: res.user.title || '',
         };
 
         setUser(authenticatedUser);
@@ -97,7 +102,7 @@ export function AuthProvider({ children }) {
       throw new Error(res?.error || 'Authentication failed');
     } catch (err) {
       if (err.status === 401 || err.status === 400) {
-        const message = err.message || 'Invalid username or password.';
+        const message = err.message || 'Invalid Knox ID or password.';
         setAuthError(message);
         throw new Error(message);
       }

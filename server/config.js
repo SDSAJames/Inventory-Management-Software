@@ -1,11 +1,68 @@
-import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function parseOperators() {
+  let raw = process.env.OPERATOR_LIST || '';
+
+  // If unquoted multi-line in .env, dotenv only sees '{'. Read file directly as fallback
+  const envPath = path.join(__dirname, '..', '.env');
+  if (fs.existsSync(envPath)) {
+    try {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const match = envContent.match(/OPERATOR_LIST\s*=\s*(?:["']?\{?)([\s\S]*?)(?:\}?["']?(?:\r?\n[A-Z0-9_]+|\s*$))/);
+      if (match && match[1] && match[1].includes('{')) {
+        raw = match[1];
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const operators = [];
+  const itemRegex = /\{([^{}]+)\}/g;
+  let match;
+  while ((match = itemRegex.exec(raw)) !== null) {
+    const parts = match[1].split(',').map((s) => s.trim());
+    if (parts.length >= 3) {
+      const [knoxId, fullName, password, title] = parts;
+      if (knoxId && fullName && password) {
+        operators.push({
+          knoxId: knoxId.trim(),
+          username: knoxId.trim().toLowerCase(),
+          fullName: fullName.trim(),
+          password: password.trim(),
+          title: title ? title.trim() : 'Operator',
+          role: 'OPERATOR',
+        });
+      }
+    }
+  }
+
+  // Fallback to legacy single operator if no OPERATOR_LIST
+  if (operators.length === 0) {
+    const singleUser = process.env.INITIAL_OPERATOR_USERNAME || process.env.OPERATOR_USERNAME || 'operator';
+    const singlePass = process.env.INITIAL_OPERATOR_PASSWORD || process.env.OPERATOR_PASSWORD || 'operator123';
+    const singleName = process.env.INITIAL_OPERATOR_NAME || process.env.OPERATOR_NAME || 'Field IT Operator';
+    const singleKnox = process.env.INITIAL_OPERATOR_KNOX_ID || process.env.OPERATOR_KNOX_ID || 'KNOX-IT-002';
+    operators.push({
+      knoxId: singleKnox,
+      username: singleUser.toLowerCase(),
+      fullName: singleName,
+      password: singlePass,
+      title: 'Field IT Operator',
+      role: 'OPERATOR',
+    });
+  }
+
+  return operators;
+}
 
 export const config = {
   host: process.env.HOST || '0.0.0.0',
@@ -19,17 +76,14 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN || '*',
   authOptional: process.env.AUTH_OPTIONAL === 'true', // Restricted access system (requires login)
 
-  // Initial user credentials sourced securely from .env
+  // Initial admin credentials sourced securely from .env
   initialAdmin: {
-    username: process.env.INITIAL_ADMIN_USERNAME || 'admin',
-    password: process.env.INITIAL_ADMIN_PASSWORD || 'admin123',
-    fullName: process.env.INITIAL_ADMIN_NAME || 'IT Administrator',
-    knoxId: process.env.INITIAL_ADMIN_KNOX_ID || 'KNOX-IT-001',
+    knoxId: process.env.ADMIN_KNOX_ID || 'KNOX-IT-001',
+    fullName: process.env.ADMIN_NAME || 'IT Administrator',
+    password: process.env.ADMIN_PASSWORD || 'admin123',
+    role: 'ADMIN',
   },
-  initialOperator: {
-    username: process.env.INITIAL_OPERATOR_USERNAME || 'operator',
-    password: process.env.INITIAL_OPERATOR_PASSWORD || 'operator123',
-    fullName: process.env.INITIAL_OPERATOR_NAME || 'Field IT Operator',
-    knoxId: process.env.INITIAL_OPERATOR_KNOX_ID || 'KNOX-IT-002',
-  },
+
+  // Multiple operator accounts sourced from .env OPERATOR_LIST
+  operators: parseOperators(),
 };

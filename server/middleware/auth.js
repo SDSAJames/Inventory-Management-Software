@@ -35,7 +35,7 @@ export function authenticate(req, res, next) {
   try {
     const decoded = jwt.verify(token, config.jwtSecret);
     // Verify user still exists in database
-    const user = db.prepare('SELECT id, username, full_name, role, knox_id FROM users WHERE id = ?').get(decoded.id);
+    const user = db.prepare('SELECT id, username, full_name, role, knox_id, title FROM users WHERE id = ?').get(decoded.id);
 
     if (!user) {
       return res.status(401).json({

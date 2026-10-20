@@ -4,25 +4,25 @@ import { APP_VERSION } from '../lib/constants';
 
 export default function LockScreen() {
   const { login, authError } = useAuth();
-  const [username, setUsername] = useState('');
+  const [knoxId, setKnoxId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const usernameInputRef = useRef(null);
+  const knoxIdInputRef = useRef(null);
 
   useEffect(() => {
-    usernameInputRef.current?.focus();
+    knoxIdInputRef.current?.focus();
   }, []);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setLocalError('');
 
-    if (!username.trim()) {
-      setLocalError('Please enter your Knox ID or Username.');
-      usernameInputRef.current?.focus();
+    if (!knoxId.trim()) {
+      setLocalError('Please enter your Knox ID.');
+      knoxIdInputRef.current?.focus();
       return;
     }
     if (!password) {
@@ -32,7 +32,7 @@ export default function LockScreen() {
 
     try {
       setIsSubmitting(true);
-      await login(username, password);
+      await login(knoxId, password);
     } catch (err) {
       setLocalError(err.message || 'Authentication failed. Please verify credentials.');
     } finally {
@@ -85,20 +85,20 @@ export default function LockScreen() {
         {/* Login Form */}
         <form className="lockscreen-form" onSubmit={handleSubmit} noValidate>
           <div className="lockscreen-field">
-            <label htmlFor="login-username" className="lockscreen-label">
-              Username or Knox ID
+            <label htmlFor="login-knox-id" className="lockscreen-label">
+              Knox ID
             </label>
             <div className="lockscreen-input-wrap">
               <span className="lockscreen-input-icon">👤</span>
               <input
-                id="login-username"
-                ref={usernameInputRef}
+                id="login-knox-id"
+                ref={knoxIdInputRef}
                 type="text"
                 className="lockscreen-input"
-                placeholder="Enter Username or Knox ID"
-                value={username}
+                placeholder="Enter Knox ID (e.g. justcode.kim)"
+                value={knoxId}
                 onChange={(e) => {
-                  setUsername(e.target.value);
+                  setKnoxId(e.target.value);
                   setLocalError('');
                 }}
                 disabled={isSubmitting}

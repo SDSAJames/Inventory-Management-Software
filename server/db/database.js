@@ -38,10 +38,17 @@ export function initDatabase() {
       full_name TEXT,
       role TEXT NOT NULL DEFAULT 'OPERATOR',
       knox_id TEXT,
+      title TEXT,
       created_at TEXT NOT NULL,
       last_login TEXT
     );
   `);
+
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN title TEXT;');
+  } catch {
+    // column already exists
+  }
 
   // 2. Assets table
   db.exec(`
@@ -190,44 +197,84 @@ export function initDatabase() {
 
 function seedDefaultData() {
   const insertUser = db.prepare(`
-    INSERT INTO users (id, username, password_hash, full_name, role, knox_id, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, username, password_hash, full_name, role, knox_id, title, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const updateUser = db.prepare(`
+    UPDATE users
+    SET password_hash = ?, full_name = ?, role = ?, knox_id = ?, title = ?
+    WHERE id = ?
   `);
 
   const salt = bcrypt.genSaltSync(10);
 
   // 1. Initial admin account sourced from .env
   const adminCfg = config.initialAdmin;
-  const existingAdmin = db.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)').get(adminCfg.username);
+  const existingAdmin = db.prepare(`
+    SELECT id FROM users
+    WHERE LOWER(knox_id) = LOWER(?) OR LOWER(username) = LOWER(?) OR LOWER(username) = 'admin'
+  `).get(adminCfg.knoxId, adminCfg.knoxId);
+
+  const adminHash = bcrypt.hashSync(adminCfg.password, salt);
+
   if (!existingAdmin) {
-    const adminHash = bcrypt.hashSync(adminCfg.password, salt);
     insertUser.run(
       'usr-admin-01',
-      adminCfg.username,
+      adminCfg.knoxId.toLowerCase(),
       adminHash,
       adminCfg.fullName,
       'ADMIN',
       adminCfg.knoxId,
+      'IT Administrator',
       new Date().toISOString()
     );
-    console.log(`✓ Seeded admin account '${adminCfg.username}' from .env configuration`);
+    console.log(`✓ Seeded admin account: ${adminCfg.fullName} (Knox ID: ${adminCfg.knoxId}) from .env`);
+  } else {
+    updateUser.run(
+      adminHash,
+      adminCfg.fullName,
+      'ADMIN',
+      adminCfg.knoxId,
+      'IT Administrator',
+      existingAdmin.id
+    );
   }
 
-  // 2. Initial operator account sourced from .env
-  const opCfg = config.initialOperator;
-  const existingOp = db.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)').get(opCfg.username);
-  if (!existingOp) {
-    const opHash = bcrypt.hashSync(opCfg.password, salt);
-    insertUser.run(
-      'usr-op-01',
-      opCfg.username,
-      opHash,
-      opCfg.fullName,
-      'OPERATOR',
-      opCfg.knoxId,
-      new Date().toISOString()
-    );
-    console.log(`✓ Seeded operator account '${opCfg.username}' from .env configuration`);
+  // 2. Multiple operator accounts sourced from .env OPERATOR_LIST
+  if (Array.isArray(config.operators)) {
+    for (const op of config.operators) {
+      const existingOp = db.prepare(`
+        SELECT id FROM users
+        WHERE LOWER(username) = LOWER(?) OR LOWER(knox_id) = LOWER(?)
+      `).get(op.username, op.knoxId);
+
+      const opHash = bcrypt.hashSync(op.password, salt);
+
+      if (!existingOp) {
+        const opId = `usr-${op.knoxId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+        insertUser.run(
+          opId,
+          op.username,
+          opHash,
+          op.fullName,
+          op.role || 'OPERATOR',
+          op.knoxId,
+          op.title || 'Operator',
+          new Date().toISOString()
+        );
+        console.log(`✓ Seeded operator: ${op.fullName} (Knox ID: ${op.knoxId}, Title: ${op.title})`);
+      } else {
+        updateUser.run(
+          opHash,
+          op.fullName,
+          op.role || 'OPERATOR',
+          op.knoxId,
+          op.title || 'Operator',
+          existingOp.id
+        );
+      }
+    }
   }
 
   // Seed initial assets if table is empty
