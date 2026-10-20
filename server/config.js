@@ -18,4 +18,18 @@ export const config = {
   clientDistPath: path.join(__dirname, '..', 'dist'),
   corsOrigin: process.env.CORS_ORIGIN || '*',
   authOptional: process.env.AUTH_OPTIONAL === 'true', // Restricted access system (requires login)
+
+  // Initial user credentials sourced securely from .env
+  initialAdmin: {
+    username: process.env.INITIAL_ADMIN_USERNAME || 'admin',
+    password: process.env.INITIAL_ADMIN_PASSWORD || 'admin123',
+    fullName: process.env.INITIAL_ADMIN_NAME || 'IT Administrator',
+    knoxId: process.env.INITIAL_ADMIN_KNOX_ID || 'KNOX-IT-001',
+  },
+  initialOperator: {
+    username: process.env.INITIAL_OPERATOR_USERNAME || 'operator',
+    password: process.env.INITIAL_OPERATOR_PASSWORD || 'operator123',
+    fullName: process.env.INITIAL_OPERATOR_NAME || 'Field IT Operator',
+    knoxId: process.env.INITIAL_OPERATOR_KNOX_ID || 'KNOX-IT-002',
+  },
 };

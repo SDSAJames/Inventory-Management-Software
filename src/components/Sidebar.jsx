@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
-import { useAuth } from '../hooks/useAuth';
 import { APP_VERSION } from '../lib/constants';
 
 const NAV_ITEMS = [
@@ -74,7 +73,6 @@ export default function Sidebar({ onOpenPatchHistory }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { db } = useDb();
-  const { user, logout } = useAuth();
 
   const activeTravelersCount = useMemo(() => {
     return (db.loans || []).filter((l) => {

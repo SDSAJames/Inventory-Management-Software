@@ -189,41 +189,45 @@ export function initDatabase() {
 }
 
 function seedDefaultData() {
-  // Check if admin user exists
-  const checkUser = db.prepare('SELECT id FROM users WHERE username = ?');
-  const existingAdmin = checkUser.get('admin');
+  const insertUser = db.prepare(`
+    INSERT INTO users (id, username, password_hash, full_name, role, knox_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
 
+  const salt = bcrypt.genSaltSync(10);
+
+  // 1. Initial admin account sourced from .env
+  const adminCfg = config.initialAdmin;
+  const existingAdmin = db.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)').get(adminCfg.username);
   if (!existingAdmin) {
-    const salt = bcrypt.genSaltSync(10);
-    const passwordHash = bcrypt.hashSync('admin123', salt);
-    const insertUser = db.prepare(`
-      INSERT INTO users (id, username, password_hash, full_name, role, knox_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
+    const adminHash = bcrypt.hashSync(adminCfg.password, salt);
     insertUser.run(
       'usr-admin-01',
-      'admin',
-      passwordHash,
-      'IT Administrator',
+      adminCfg.username,
+      adminHash,
+      adminCfg.fullName,
       'ADMIN',
-      'KNOX-IT-001',
+      adminCfg.knoxId,
       new Date().toISOString()
     );
+    console.log(`✓ Seeded admin account '${adminCfg.username}' from .env configuration`);
+  }
 
-    // Also create a standard operator user for testing
-    const opHash = bcrypt.hashSync('operator123', salt);
+  // 2. Initial operator account sourced from .env
+  const opCfg = config.initialOperator;
+  const existingOp = db.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)').get(opCfg.username);
+  if (!existingOp) {
+    const opHash = bcrypt.hashSync(opCfg.password, salt);
     insertUser.run(
       'usr-op-01',
-      'operator',
+      opCfg.username,
       opHash,
-      'Field IT Operator',
+      opCfg.fullName,
       'OPERATOR',
-      'KNOX-IT-002',
+      opCfg.knoxId,
       new Date().toISOString()
     );
-
-    console.log('✓ Seeded default users: admin (password: admin123) and operator (password: operator123)');
+    console.log(`✓ Seeded operator account '${opCfg.username}' from .env configuration`);
   }
 
   // Seed initial assets if table is empty

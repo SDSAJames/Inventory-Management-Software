@@ -4,26 +4,6 @@ import { api } from '../lib/api';
 const AUTH_USER_KEY = 'starplusenergy-auth-user';
 const AUTH_TOKEN_KEY = 'starplusenergy-token';
 
-// Built-in baseline credentials for offline / local workstation resiliency
-const OFFLINE_CREDENTIALS = {
-  admin: {
-    id: 'usr-admin-01',
-    username: 'admin',
-    password: 'admin123',
-    fullName: 'IT Administrator',
-    role: 'ADMIN',
-    knoxId: 'KNOX-IT-001',
-  },
-  operator: {
-    id: 'usr-op-01',
-    username: 'operator',
-    password: 'operator123',
-    fullName: 'Field IT Operator',
-    role: 'OPERATOR',
-    knoxId: 'KNOX-IT-002',
-  },
-};
-
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -72,7 +52,6 @@ export function AuthProvider({ children }) {
             localStorage.removeItem(AUTH_TOKEN_KEY);
           }
         }
-        // If network error (offline or server not started), retain cached session
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -97,7 +76,7 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      // 1. Try server-side authentication
+      // Authenticate against centralized corporate intranet server
       const res = await api.auth.login({ username: cleanUser, password: cleanPass });
       if (res?.success && res.user) {
         const authenticatedUser = {
@@ -117,34 +96,15 @@ export function AuthProvider({ children }) {
       }
       throw new Error(res?.error || 'Authentication failed');
     } catch (err) {
-      // If server explicitly denied credentials (401 / 400), do not allow login
       if (err.status === 401 || err.status === 400) {
         const message = err.message || 'Invalid username or password.';
         setAuthError(message);
         throw new Error(message);
       }
 
-      // If backend server is unreachable (offline / dev mode without backend started),
-      // fallback to offline credential validation
-      const offlineUser = OFFLINE_CREDENTIALS[cleanUser];
-      if (offlineUser && offlineUser.password === cleanPass) {
-        const authenticatedUser = {
-          id: offlineUser.id,
-          username: offlineUser.username,
-          fullName: offlineUser.fullName,
-          role: offlineUser.role,
-          knoxId: offlineUser.knoxId,
-          offlineSession: true,
-        };
-
-        setUser(authenticatedUser);
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authenticatedUser));
-        return authenticatedUser;
-      }
-
-      const failMsg = 'Invalid username or password.';
-      setAuthError(failMsg);
-      throw new Error(failMsg);
+      const networkMsg = 'Unable to connect to the corporate authentication server. Please check your intranet connection.';
+      setAuthError(networkMsg);
+      throw new Error(networkMsg);
     }
   }, []);
 

@@ -4,3 +4,8 @@ node_modules
 dist
 *.local
 !src/data/
+
+# Environment variables & secrets (do not commit to repository)
+.env
+.env.*
+!.env.example

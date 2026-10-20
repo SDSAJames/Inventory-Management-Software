@@ -77,9 +77,9 @@ export default function TopBar({ onOpenPatchHistory }) {
           v{APP_VERSION}
           <span className="version-pill-sub">Patch Notes</span>
         </button>
-        <div className="offline-pill" title="Local browser storage active (100% offline compatible)">
+        <div className="network-pill" title="Connected to StarPlus Energy Corporate Intranet Server">
           <span className="status-indicator-dot" />
-          <span>Offline</span>
+          <span>Corporate Intranet</span>
         </div>
         <div className="topbar-user-control">
           <div className="profile-chip" title={`Authenticated as ${displayName} (${role})`}>
