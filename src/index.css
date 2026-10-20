@@ -1646,20 +1646,73 @@ tbody tr:hover { background: #f8fafc; }
   position: fixed;
   bottom: 25px;
   right: 25px;
-  background: var(--blue-dark);
-  color: white;
-  padding: 13px 18px;
-  border-radius: 6px;
-  font-size: 12px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 13px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
   transform: translateY(20px);
   opacity: 0;
-  transition: .2s;
+  transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1), opacity .2s ease;
   pointer-events: none;
-  z-index: 10;
-  box-shadow: 0 8px 24px rgba(10, 37, 71, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 9999999 !important; /* Critical: Ensure warning toasts are ALWAYS visible and never blurred by modal backdrop */
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 440px;
+  line-height: 1.4;
 }
 .toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── Required fields & Red Square Error Highlight ─────────── */
+.required-asterisk {
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+  font-size: 13px;
+  margin-left: 3px;
+}
+
+.input-error-red,
+input.input-error-red,
+select.input-error-red,
+textarea.input-error-red {
+  border: 2px solid #dc2626 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important;
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+  outline: none !important;
+  animation: shakeInput 0.3s ease-in-out;
+}
+
+@keyframes shakeInput {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
+.modal-warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1.5px solid #f87171;
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  animation: shakeInput 0.3s ease;
+}
+
+.modal-warning-banner .warning-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
 
 /* ── Asset Excel import preview ───────────────────────── */
 .view-header-actions { flex-wrap: wrap; justify-content: flex-end; }

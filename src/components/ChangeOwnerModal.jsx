@@ -13,6 +13,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
   const [reason, setReason] = useState('');
   const [showManageReasons, setShowManageReasons] = useState(false);
   const [newCustomReason, setNewCustomReason] = useState('');
+  const [errors, setErrors] = useState({});
 
   // Datetime-local supporting full seconds: YYYY-MM-DDTHH:mm:ss
   const [timestamp, setTimestamp] = useState(() => nowLocalIsoWithSeconds());
@@ -31,19 +32,22 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
     addTransferReason(newCustomReason.trim());
     setReason(newCustomReason.trim());
     setNewCustomReason('');
+    if (errors.reason) setErrors((prev) => ({ ...prev, reason: null }));
     toast('Transfer reason added to options');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!newOwner.trim()) {
-      toast('Please specify a new owner or select unassigned');
-      return;
-    }
+    const newErrors = {};
+    if (!newOwner.trim()) newErrors.newOwner = 'Please specify a new owner';
+    if (!reason.trim()) newErrors.reason = 'Please enter a transfer reason';
 
-    if (!reason.trim()) {
-      toast('Please enter a transfer reason');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast('Please fill in required fields marked with *');
+      if (newErrors.newOwner) document.getElementById('newOwnerInput')?.focus();
+      else if (newErrors.reason) document.getElementById('transferReason')?.focus();
       return;
     }
 
@@ -116,8 +120,10 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
               list="employeeList"
               placeholder="Select or enter holder name"
               value={newOwner}
+              className={errors.newOwner ? 'input-error-red' : ''}
               onChange={(e) => {
                 setNewOwner(e.target.value);
+                if (errors.newOwner) setErrors((prev) => ({ ...prev, newOwner: null }));
                 const emp = db.employees.find(
                   (em) => em.name.toLowerCase() === e.target.value.toLowerCase()
                 );
@@ -127,6 +133,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
               }}
               required
             />
+            {errors.newOwner && <span className="field-error-msg">⚠️ {errors.newOwner}</span>}
             <datalist id="employeeList">
               {db.employees.map((e, idx) => (
                 <option key={idx} value={e.name}>{e.department ? `(${e.department})` : ''}</option>
@@ -165,7 +172,9 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
           {/* Transfer Reason - Directly typeable with datalist & reason options manager */}
           <div className="field full">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-              <label htmlFor="transferReason">Transfer reason</label>
+              <label htmlFor="transferReason">
+                Transfer reason <span className="required-asterisk">*</span>
+              </label>
               <button
                 type="button"
                 className="text-button"
@@ -182,9 +191,14 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
                 list="transferReasonsList"
                 placeholder="Type transfer reason here (e.g. Reassigned to new staff, Project allocation)"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                className={errors.reason ? 'input-error-red' : ''}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  if (errors.reason) setErrors((prev) => ({ ...prev, reason: null }));
+                }}
                 required
               />
+              {errors.reason && <span className="field-error-msg">⚠️ {errors.reason}</span>}
               <datalist id="transferReasonsList">
                 {transferReasons.map((r, idx) => (
                   <option key={idx} value={r} />

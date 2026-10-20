@@ -33,6 +33,9 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     return makeBlank();
   });
 
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+
   // Re-sync form when assetId changes
   useEffect(() => {
     if (existing) {
@@ -41,6 +44,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       setForm(makeBlank());
       setActiveTab('details');
     }
+    setErrors({});
+    setSubmitError('');
   }, [assetId]);
 
   // Effective ownership history for this asset including all loans and assignments
@@ -49,7 +54,20 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     return getAssetEffectiveOwnershipHistory(existing, db.loans);
   }, [existing, db.loans]);
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const set = (field) => (e) => {
+    const val = e.target.value;
+    setForm((prev) => ({ ...prev, [field]: val }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+    if (submitError) {
+      setSubmitError('');
+    }
+  };
 
   const handleStatusChange = (e) => {
     const nextStatus = e.target.value;
@@ -83,10 +101,31 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.code || !form.name) {
-      toast('Asset code and name are required');
+
+    const code = String(form.code || '').trim();
+    const name = String(form.name || '').trim();
+
+    const newErrors = {};
+    if (!code) newErrors.code = 'Asset code is required';
+    if (!name) newErrors.name = 'Asset name is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const missingList = Object.keys(newErrors)
+        .map((k) => (k === 'code' ? 'Asset code' : 'Asset name'))
+        .join(' and ');
+      setSubmitError(`Please fill in required fields: ${missingList}`);
+      toast(`Required fields missing: ${missingList}`);
+
+      if (newErrors.code) {
+        document.getElementById('code')?.focus();
+      } else if (newErrors.name) {
+        document.getElementById('name')?.focus();
+      }
       return;
     }
+
+    setSubmitError('');
 
     const isItDept = String(form.owner || '').trim().toLowerCase() === 'it department';
     const hasEmployeeHolder = Boolean(form.owner && form.owner.trim() && !isItDept);
@@ -99,6 +138,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
     const payload = {
       ...form,
+      code,
+      name,
       owner: form.owner ? form.owner.trim() : '',
       status: validatedStatus,
     };
@@ -155,16 +196,43 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
       {/* TAB 1: DETAILS FORM */}
       {currentTab === 'details' && (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
+          {submitError && (
+            <div className="modal-warning-banner" role="alert">
+              <span className="warning-icon">⚠️</span>
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <div className="asset-form-grid">
             {/* ROW 1: Hardware Specs & Identity */}
             <div className="field">
-              <label htmlFor="code">Asset code</label>
-              <input id="code" value={form.code} onChange={set('code')} required />
+              <label htmlFor="code">
+                Asset code <span className="required-asterisk">*</span>
+              </label>
+              <input
+                id="code"
+                value={form.code}
+                onChange={set('code')}
+                className={errors.code ? 'input-error-red' : ''}
+                placeholder="e.g. SPE-1001"
+                required
+              />
+              {errors.code && <span className="field-error-msg">⚠️ {errors.code}</span>}
             </div>
             <div className="field">
-              <label htmlFor="name">Asset name</label>
-              <input id="name" value={form.name} onChange={set('name')} />
+              <label htmlFor="name">
+                Asset name <span className="required-asterisk">*</span>
+              </label>
+              <input
+                id="name"
+                value={form.name}
+                onChange={set('name')}
+                className={errors.name ? 'input-error-red' : ''}
+                placeholder="e.g. Dell Latitude 7440, ThinkPad T14"
+                required
+              />
+              {errors.name && <span className="field-error-msg">⚠️ {errors.name}</span>}
             </div>
             <div className="field">
               <label htmlFor="category">Category</label>

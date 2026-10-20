@@ -26,6 +26,7 @@ export default function AssetAutocomplete({
   placeholder = 'Type asset number (e.g. 432, SPE-4321)...',
   id = 'assetCode',
   required = false,
+  hasError = false,
   categoryFilter,
 }) {
   const { db } = useDb();
@@ -220,7 +221,7 @@ export default function AssetAutocomplete({
           placeholder={placeholder}
           required={required}
           autoComplete="off"
-          className="asset-autocomplete-input"
+          className={`asset-autocomplete-input ${hasError ? 'input-error-red' : ''}`}
         />
         {value && (
           <button

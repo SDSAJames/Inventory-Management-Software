@@ -32,12 +32,16 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   });
 
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
 
   const set = (field) => (e) => {
     const val = e.target.value;
     setForm((prev) => ({ ...prev, [field]: val }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+    if (submitError) {
+      setSubmitError('');
     }
   };
 
@@ -69,8 +73,16 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       const firstError = Object.values(newErrors)[0];
-      return toast(firstError);
+      setSubmitError(`Please fill in required fields: ${firstError}`);
+      toast(firstError);
+
+      if (newErrors.assignee) document.getElementById('assignee')?.focus();
+      else if (newErrors.knoxId) document.getElementById('knoxId')?.focus();
+      else if (newErrors.assetCode) document.getElementById('assetCode')?.focus();
+      return;
     }
+
+    setSubmitError('');
 
     const ip = form.ipSubnet && form.ipNumber
       ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
@@ -137,6 +149,13 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
+        {submitError && (
+          <div className="modal-warning-banner" role="alert">
+            <span className="warning-icon">⚠️</span>
+            <span>{submitError}</span>
+          </div>
+        )}
+
         <div className="form-grid">
           {/* Assignee type (defaults to Business traveler) */}
           <div className="field">
@@ -150,36 +169,36 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           {/* Assignee */}
           <div className="field">
             <label htmlFor="assignee">
-              Assignee <span style={{ color: '#be665a' }}>*</span>
+              Assignee <span className="required-asterisk">*</span>
             </label>
             <input
               id="assignee"
               placeholder="Full name or username"
               value={form.assignee}
               onChange={set('assignee')}
-              className={errors.assignee ? 'invalid-input' : ''}
+              className={errors.assignee ? 'input-error-red' : ''}
               required
             />
             {errors.assignee && (
-              <span className="field-error-msg">{errors.assignee}</span>
+              <span className="field-error-msg">⚠️ {errors.assignee}</span>
             )}
           </div>
 
           {/* Knox ID */}
           <div className="field">
             <label htmlFor="knoxId">
-              Knox ID <span style={{ color: '#be665a' }}>*</span>
+              Knox ID <span className="required-asterisk">*</span>
             </label>
             <input
               id="knoxId"
               value={form.knoxId}
               onChange={set('knoxId')}
               placeholder="e.g. wnjef.123 or KNOX-1234"
-              className={errors.knoxId ? 'invalid-input' : ''}
+              className={errors.knoxId ? 'input-error-red' : ''}
               required
             />
             {errors.knoxId && (
-              <span className="field-error-msg">{errors.knoxId}</span>
+              <span className="field-error-msg">⚠️ {errors.knoxId}</span>
             )}
           </div>
 
@@ -283,11 +302,12 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
               {/* Laptop / asset number with searchable autocompletion */}
               <div className="equipment-field asset-autocomplete-wrapper">
                 <label htmlFor="assetCode">
-                  Laptop / asset number <span style={{ color: '#be665a' }}>*</span>
+                  Laptop / asset number <span className="required-asterisk">*</span>
                 </label>
                 <AssetAutocomplete
                   id="assetCode"
                   value={form.assetCode}
+                  hasError={Boolean(errors.assetCode)}
                   onChange={(val) => {
                     setForm((prev) => ({ ...prev, assetCode: val }));
                     if (errors.assetCode) setErrors((prev) => ({ ...prev, assetCode: null }));
@@ -304,7 +324,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                   required
                 />
                 {errors.assetCode && (
-                  <span className="field-error-msg">{errors.assetCode}</span>
+                  <span className="field-error-msg">⚠️ {errors.assetCode}</span>
                 )}
               </div>
 
