@@ -76,16 +76,6 @@ export default function CalendarPage() {
             Unified schedule for equipment checkouts (Out) and returns (In) across all SPE employees and mobile business travelers.
           </p>
         </div>
-        <div className="view-header-actions">
-          <button
-            type="button"
-            className="button"
-            onClick={() => setShowCreateModal(true)}
-            id="record-in-out-schedule-btn"
-          >
-            + Record In/Out Schedule
-          </button>
-        </div>
       </div>
 
       {/* ── Quick KPI Stat Cards ───────────────────────────────── */}

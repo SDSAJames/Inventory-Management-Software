@@ -421,6 +421,7 @@ export default function InOutCalendar({
               className="button small-btn"
               onClick={onRecordLoan}
               title="Record new equipment checkout schedule"
+              id="record-in-out-schedule-btn"
             >
               + Record In/Out Schedule
             </button>
