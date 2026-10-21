@@ -6,7 +6,7 @@ export default function PatchHistoryPage() {
   const [selectedVersion, setSelectedVersion] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
-  const [expandedVersions, setExpandedVersions] = useState(() => new Set(['1.2.1', '1.2.0']));
+  const [expandedVersions, setExpandedVersions] = useState(() => new Set(['1.2.2', '1.2.1']));
 
   const toggleExpand = (ver) => {
     setExpandedVersions((prev) => {

@@ -9,7 +9,7 @@ export default function PatchHistoryModal({ open, onClose }) {
   const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'major' | 'minor' | 'patch'
   const [expandedVersions, setExpandedVersions] = useState(() => {
     // Expand the latest versions by default
-    return new Set(['1.2.1', '1.2.0']);
+    return new Set(['1.2.2', '1.2.1']);
   });
 
   const toggleExpand = (ver) => {

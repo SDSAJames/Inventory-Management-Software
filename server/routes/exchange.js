@@ -53,7 +53,7 @@ exchangeRouter.get('/export', (req, res) => {
 
   return res.json({
     success: true,
-    version: '1.2.1',
+    version: '1.2.2',
     exportedAt: new Date().toISOString(),
     db: {
       assets: enrichedAssets,

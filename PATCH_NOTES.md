@@ -4,6 +4,24 @@ All notable changes, architectural updates, and state engine revisions for the *
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] — 2026-10-21
+
+### Fixed & Improved: Vite Proxy Network Stability & Full-Stack Development Orchestration
+
+#### 🌐 Vite Dev Server HTTP Proxy Stability (`vite.config.js`)
+- **Direct IPv4 Loopback Routing**: Updated the Vite dev server proxy target from `http://localhost:5000` to `http://127.0.0.1:5000`. On modern Node.js and Windows enterprise workstations, `localhost` attempts dual-stack IPv6 (`::1`) resolution before IPv4 (`127.0.0.1`). Because the backend Express server binds to IPv4 (`0.0.0.0:5000`), proxy requests encountered `AggregateError [ECONNREFUSED]` connection drops when attempting IPv6 loopback. Direct IPv4 addressing guarantees instantaneous and reliable proxy routing.
+- **Graceful Proxy Error Interception**: Configured a custom `proxy.on('error')` interceptor in Vite that traps ECONNREFUSED events whenever the backend server is temporarily offline and returns a structured HTTP 503 Service Unavailable JSON payload. This prevents uncaught Node.js stack traces from polluting developer terminal logs during background polling cycles (`/api/auth/me` and `/api/exchange/export`).
+
+#### ⚡ Full-Stack Development Orchestration (`package.json`)
+- **Single-Command Startup (`npm run dev:all`)**: Added `concurrently` to `devDependencies` and introduced `npm run dev:all` to run both the backend Express API server (`node --watch server/index.js`) and the Vite React frontend server (`vite`) simultaneously in a single terminal with distinct colored stream prefixes (`[server]` and `[client]`).
+- **Flexible Workflow Support**: Developers can either use the single-command workflow (`npm run dev:all`) or run components in separate terminals (`npm run server:dev` and `npm run dev`).
+
+#### 📚 Documentation & Versioning Governance
+- **Synchronized Documentation**: Updated [README.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/README.md), [Software Design Document (SDD)](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [Technical Specification](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), and in-app patch history components to `v1.2.2`.
+- **System Endpoints Bumped**: Synchronized version identifiers in `package.json`, `package-lock.json`, `server/index.js` (health check & banner), `server/routes/exchange.js`, and `src/lib/constants.js`.
+
+---
+
 ## [1.2.1] — 2026-10-09
 
 ### Added & Improved: Exclusive Calendar View, Frontend Patch History & Versioning Calibration

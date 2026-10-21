@@ -6,10 +6,51 @@
 
 export const PATCH_HISTORY = [
   {
+    version: '1.2.2',
+    date: '2026-10-21',
+    title: 'Vite Proxy Network Stability & Full-Stack Development Orchestration',
+    tag: 'Latest Patch',
+    type: 'patch',
+    summary:
+      'Resolved Vite HTTP proxy ECONNREFUSED network errors, hardened IPv4 proxy routing to 127.0.0.1, introduced graceful HTTP 503 proxy offline interceptors, and added single-command full-stack development orchestration via concurrently.',
+    highlights: [
+      'Vite HTTP Proxy Stability: Eliminated ECONNREFUSED AggregateError proxy crashes on background polls (/api/auth/me and /api/exchange/export).',
+      'Direct IPv4 Loopback Routing: Configured Vite proxy target to http://127.0.0.1:5000, eliminating Windows dual-stack IPv6 [::1] DNS resolution latency and connection refusal.',
+      'Graceful Backend Offline Handling: Added configure error interceptor in vite.config.js returning a clean HTTP 503 JSON response when the backend server is stopped.',
+      'Single-Command Full-Stack Orchestration: Integrated concurrently and added npm run dev:all to run both the Express API server and Vite frontend dev server simultaneously.',
+    ],
+    sections: [
+      {
+        heading: 'Vite Dev Server & Proxy Configuration',
+        badge: 'Network Stability',
+        items: [
+          'Direct IPv4 Target: Updated proxy target in vite.config.js from http://localhost:5000 to http://127.0.0.1:5000, ensuring immediate connection to Node\'s IPv4 server listener without IPv6 ::1 loopback ambiguity.',
+          'Proxy Error Interception: Configured proxy.on("error") handler to intercept ECONNREFUSED events and respond with HTTP 503 Service Unavailable, preventing uncaught Node.js stack traces in terminal consoles.',
+        ],
+      },
+      {
+        heading: 'Development Workflow & Tooling',
+        badge: 'DevOps & Tooling',
+        items: [
+          'Added npm run dev:all script utilizing concurrently to orchestrate npm run server:dev and npm run dev side-by-side in a single console window.',
+          'Updated project documentation with clear local development workflows (single-command vs dual-terminal options).',
+        ],
+      },
+      {
+        heading: 'System Documentation & Version Governance',
+        badge: 'Governance & Docs',
+        items: [
+          'Bumped project version to v1.2.2 in package.json, server/index.js, exchange router, and client constants.',
+          'Synchronized README.md, Software Design Document (SDD), Technical Specification, and PATCH_NOTES.md.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.2.1',
     date: '2026-10-09',
     title: 'Exclusive Calendar Focus View, Frontend Patch History & Versioning Calibration',
-    tag: 'Latest Patch',
+    tag: 'Patch Release',
     type: 'patch',
     summary:
       'Calibrated Semantic Versioning progression to standard patch increments, added an exclusive Calendar-only view mode for the Business Travelers page, introduced in-app patch history inspection per version, and synchronized all technical documentation.',

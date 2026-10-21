@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.2.1** |
+| **Document Version** | **v1.2.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -238,7 +238,7 @@ The frontend application provides six core operational views accessed via the le
    - Reference-format `.xlsx` OpenXML export maintaining 1:1 column parity.
    - Snapshot restore point management.
 7. **Patch History & Release Notes (`PatchHistoryModal.jsx` & `PatchHistoryPage.jsx`)**:
-   - In-app release notes viewer accessible via the TopBar version pill (`v1.2.1 • Patch Notes`), the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
+   - In-app release notes viewer accessible via the TopBar version pill (`v1.2.2 • Patch Notes`), the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
    - Pinned modal header and filter controls with internal single-scroll stream (`.patch-cards-stream`), preventing clipped headers and double scrollbars.
    - Per-version tabbed navigation, real-time keyword search, change type filtering (`All Types`, `Patches`, `Minor`, `Major`), and structured release highlights.
 
@@ -252,12 +252,17 @@ The frontend application provides six core operational views accessed via the le
 | **Performance** | Instantaneous search and filter response (< 50ms) via in-memory React state indexing. |
 | **Compatibility** | Tested on Chromium (Edge, Chrome) and Firefox across Windows 10/11 enterprise workstations. |
 | **Data Safety** | Synchronous localStorage persistence with error handling and import restore points. |
-| **Zero Setup** | Single production artifact (`dist/`) or local dev server (`npm run dev`) with zero native daemon requirements. |
+| **Zero Setup** | Single production artifact (`dist/`) or local dev server (`npm run dev:all`) with zero native daemon requirements. |
 
 ---
 
 ## 9. Version Control & History
 
+- **v1.2.2** *(Vite Proxy Network Stability & Full-Stack Development Orchestration)*:
+  - Hardened Vite proxy routing by redirecting target from `http://localhost:5000` to explicit `http://127.0.0.1:5000`, resolving dual-stack IPv6 `::1` connection drops on Windows.
+  - Implemented graceful HTTP 503 error interceptor in `vite.config.js` to handle backend downtime cleanly without terminal stack trace spam.
+  - Added `concurrently` orchestration script (`npm run dev:all`) allowing developers to launch both backend API and Vite frontend servers in a single terminal session.
+  - Synchronized documentation, system health endpoints, and release note datasets to `v1.2.2`.
 - **v1.2.1** *(Exclusive Calendar Focus View, Frontend Patch History & Versioning Calibration)*:
   - Added exclusive Calendar View mode on `/business-travelers` hiding KPI cards and location breakdown blocks to display only the monthly schedule calendar.
   - Implemented in-app Patch History Modal (`PatchHistoryModal.jsx`) and dataset (`src/data/patchHistory.js`) triggered via TopBar, sticky bottom-left Sidebar footer pill (`v1.2.1 • Patch Notes`), and direct button in the Business Travelers header.
