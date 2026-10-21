@@ -15,6 +15,14 @@ const PAGE_META = {
     eyebrow: 'DEVICE LOANS & CUSTODY MANAGEMENT',
     title: 'Loans & Custody',
   },
+  '/calendar': {
+    eyebrow: 'EQUIPMENT CHECKOUT & RETURN SCHEDULE',
+    title: 'In & Out Calendar',
+  },
+  '/in-out-calendar': {
+    eyebrow: 'EQUIPMENT CHECKOUT & RETURN SCHEDULE',
+    title: 'In & Out Calendar',
+  },
   '/business-travelers': {
     eyebrow: 'FIELD DEPLOYMENTS & MOBILE WORKFORCE',
     title: 'Business Travelers',

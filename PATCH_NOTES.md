@@ -16,6 +16,14 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **Single-Command Startup (`npm run dev:all`)**: Added `concurrently` to `devDependencies` and introduced `npm run dev:all` to run both the backend Express API server (`node --watch server/index.js`) and the Vite React frontend server (`vite`) simultaneously in a single terminal with distinct colored stream prefixes (`[server]` and `[client]`).
 - **Flexible Workflow Support**: Developers can either use the single-command workflow (`npm run dev:all`) or run components in separate terminals (`npm run server:dev` and `npm run dev`).
 
+#### 📅 Dedicated In & Out Calendar & Requester Filtering (`/calendar`)
+- **Separate In & Out Calendar Sidebar Menu**: Elevated the schedule calendar into its own top-level menu item in the primary navigation sidebar (`/calendar`), distinct from the mobile workforce register.
+- **Universal User Type Request Display**: Expanded schedule indexing to encompass all device custody requests across the entire enterprise, including both standard SPE Employees and mobile Business Travelers.
+- **Multi-Level Requester Filtering**: Integrated dual-layer requester filtering controls on the calendar page:
+  - **Requester Type Pills**: Quick-filter by `All User Types`, `💼 Business Travelers`, or `🏢 SPE Employees` with dynamic record counts.
+  - **Individual Requester Selector**: Select a specific user (`👤 All Individuals` vs individual staff member) to isolate that user's specific checkout/return timeline.
+- **Interactive Day Modal & Direct Custody Actions**: Clicking any calendar cell opens a comprehensive day breakdown with separate Outgoing and Incoming streams, accessories checklist, and direct action triggers (Mark as Picked Up, Return Asset to IT department, and Edit Schedule).
+
 #### 📚 Documentation & Versioning Governance
 - **Synchronized Documentation**: Updated [README.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/README.md), [Software Design Document (SDD)](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [Technical Specification](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), and in-app patch history components to `v1.2.2`.
 - **System Endpoints Bumped**: Synchronized version identifiers in `package.json`, `package-lock.json`, `server/index.js` (health check & banner), `server/routes/exchange.js`, and `src/lib/constants.js`.

@@ -36,6 +36,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    path: '/calendar',
+    label: 'In & Out Calendar',
+    view: 'calendar',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="12" height="11" rx="1.5" />
+        <path d="M5 1.5v3M11 1.5v3M2 6.5h12" />
+        <path d="M5 9.5h2M9 9.5h2M5 12h2" />
+      </svg>
+    ),
+  },
+  {
     path: '/business-travelers',
     label: 'Business Travelers',
     view: 'travelers',
@@ -110,7 +122,10 @@ export default function Sidebar({ onOpenPatchHistory }) {
 
       <nav className="nav-list" aria-label="Main navigation">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.path || (item.path === '/business-travelers' && pathname === '/travelers');
+          const isActive =
+            pathname === item.path ||
+            (item.path === '/business-travelers' && pathname === '/travelers') ||
+            (item.path === '/calendar' && pathname === '/in-out-calendar');
           return (
             <button
               key={item.path}

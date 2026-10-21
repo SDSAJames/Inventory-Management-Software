@@ -70,6 +70,7 @@ Inventory-Management-Software/
 │   │   ├── AppShell.jsx         # Global layout shell (Sidebar + Main panel + PatchHistoryModal + Toast)
 │   │   ├── Sidebar.jsx          # Collapsible navigation, hexagon SVG brand mark, clickable version indicator
 │   │   ├── TopBar.jsx           # High-density ~32px header, title, clickable version pill, offline indicator
+│   │   ├── InOutCalendar.jsx    # Unified in/out schedule calendar with requester filtering & day inspection
 │   │   ├── PatchHistoryModal.jsx# In-app release notes viewer per version with search & filtering
 │   │   ├── TravelerCalendar.jsx # Monthly schedule calendar with location filtering & day inspection
 │   │   ├── Modal.jsx            # Accessible overlay modal dialog with backdrop dismiss
@@ -84,7 +85,8 @@ Inventory-Management-Software/
 │   │   ├── OverviewPage.jsx     # Executive dashboard, KPIs, quick filters, category mix
 │   │   ├── AssetsPage.jsx       # Hardware inventory register, multi-column search, batch operations
 │   │   ├── LoansPage.jsx        # Device custody, checkout/return lifecycle, overdue tracking
-│   │   ├── BusinessTravelersPage.jsx # Exclusive calendar view, roster list, overdue triage, location matrix
+│   │   ├── CalendarPage.jsx     # Dedicated In & Out Calendar with multi-tier requester filtering
+│   │   ├── BusinessTravelersPage.jsx # Mobile workforce roster list, overdue triage, location matrix
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
 │   │   └── ExchangePage.jsx     # TXT import (extracted from Excel) & 1:1 Excel export (.xlsx)
 │   ├── hooks/

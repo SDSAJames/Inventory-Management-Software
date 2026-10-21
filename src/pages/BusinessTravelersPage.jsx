@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { todayIso, readableLoanDate } from '../lib/utils';
@@ -13,6 +14,7 @@ export default function BusinessTravelersPage() {
   const { db, returnLoan } = useDb();
   const toast = useToast();
   const openPatchHistory = usePatchHistoryModal();
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
@@ -257,6 +259,15 @@ export default function BusinessTravelersPage() {
             <span className="version-pill-icon">📋</span>
             v{APP_VERSION}
             <span className="version-pill-sub">Patch Notes</span>
+          </button>
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => navigate('/calendar')}
+            title="Open unified In & Out Calendar displaying all user types"
+            style={{ fontSize: '12px' }}
+          >
+            📅 In & Out Calendar →
           </button>
           <button className="button" onClick={() => setShowCreateModal(true)}>
             + Record Business Traveler

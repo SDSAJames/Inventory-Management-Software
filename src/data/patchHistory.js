@@ -37,6 +37,16 @@ export const PATCH_HISTORY = [
         ],
       },
       {
+        heading: 'In & Out Calendar Module',
+        badge: 'New Module',
+        items: [
+          'Separated In & Out Calendar into a dedicated top-level sidebar menu item (/calendar).',
+          'Displays device loan/custody schedules for all user types, covering both standard SPE employees and business travelers.',
+          'Integrated requester filtering controls: toggle by user type (All, Business Traveler, SPE Employee) or select a specific individual requester.',
+          'Interactive 42-day month grid with visual chips, indicators, and complete day schedule inspection drawers.',
+        ],
+      },
+      {
         heading: 'System Documentation & Version Governance',
         badge: 'Governance & Docs',
         items: [

@@ -122,7 +122,10 @@ export default function EditLoanForm({ loanId, onClose }) {
           </div>
           <div className="field">
             <label htmlFor="assigneeType">Assignee type</label>
-            <input id="assigneeType" value={form.assigneeType} onChange={set('assigneeType')} />
+            <select id="assigneeType" value={form.assigneeType} onChange={set('assigneeType')}>
+              <option value="Business traveler">Business traveler</option>
+              <option value="Employee">Employee (Internal)</option>
+            </select>
           </div>
           <div className="field">
             <label htmlFor="knoxId">Knox ID <span style={{ color: '#be665a' }}>*</span></label>

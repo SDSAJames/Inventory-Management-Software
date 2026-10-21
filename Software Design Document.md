@@ -221,7 +221,12 @@ The frontend application provides six core operational views accessed via the le
    - Active, Scheduled, Overdue, and Returned custody management.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Equipment accessory checklist tracking.
-4. **Business Travelers (`/business-travelers`)**:
+4. **In & Out Calendar (`/calendar`)**:
+   - Universal schedule calendar tracking hardware checkouts (Out / Departure) and returns (In / Return) across all enterprise personnel.
+   - Encompasses all requester types, displaying both standard SPE Employees and mobile Business Travelers.
+   - Multi-tier filtering: filter by Requester Type (`Business traveler` vs `SPE employee`), select an individual requester from a categorized dropdown, filter by flow direction (`Out` vs `In`), or search by keyword.
+   - Interactive day detail modal with complete item cards, accessory checklists, and direct custody action buttons.
+5. **Business Travelers (`/business-travelers`)**:
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
@@ -229,15 +234,15 @@ The frontend application provides six core operational views accessed via the le
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
-5. **Directory (`/directory`)**:
+6. **Directory (`/directory`)**:
    - Personnel directory with Knox IDs, departments, and active equipment counts.
    - Department directory and rental facility locations.
-6. **Data Exchange (`/exchange`)**:
+7. **Data Exchange (`/exchange`)**:
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
    - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
    - Reference-format `.xlsx` OpenXML export maintaining 1:1 column parity.
    - Snapshot restore point management.
-7. **Patch History & Release Notes (`PatchHistoryModal.jsx` & `PatchHistoryPage.jsx`)**:
+8. **Patch History & Release Notes (`PatchHistoryModal.jsx` & `PatchHistoryPage.jsx`)**:
    - In-app release notes viewer accessible via the TopBar version pill (`v1.2.2 • Patch Notes`), the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
    - Pinned modal header and filter controls with internal single-scroll stream (`.patch-cards-stream`), preventing clipped headers and double scrollbars.
    - Per-version tabbed navigation, real-time keyword search, change type filtering (`All Types`, `Patches`, `Minor`, `Major`), and structured release highlights.

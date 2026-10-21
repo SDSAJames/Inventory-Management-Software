@@ -8,6 +8,7 @@ import OverviewPage from './pages/OverviewPage';
 import AssetsPage from './pages/AssetsPage';
 import LoansPage from './pages/LoansPage';
 import BusinessTravelersPage from './pages/BusinessTravelersPage';
+import CalendarPage from './pages/CalendarPage';
 import DirectoryPage from './pages/DirectoryPage';
 import ExchangePage from './pages/ExchangePage';
 import PatchHistoryPage from './pages/PatchHistoryPage';
@@ -54,6 +55,8 @@ function AppContent() {
           <Route path="/" element={<OverviewPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/loans" element={<LoansPage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/in-out-calendar" element={<Navigate to="/calendar" replace />} />
           <Route path="/business-travelers" element={<BusinessTravelersPage />} />
           <Route path="/travelers" element={<Navigate to="/business-travelers" replace />} />
           <Route path="/directory" element={<DirectoryPage />} />
