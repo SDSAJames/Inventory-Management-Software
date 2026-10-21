@@ -199,7 +199,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
   const colNotes = findIdx(['notes', 'note']);
 
   if (colCode < 0) {
-    throw new Error('Equipment file is missing required "Host Name" or "Asset Code" column');
+    throw new Error('Equipment file is missing required "Host Name" or "Asset Number" column');
   }
 
   const existingMap = new Map(
@@ -274,7 +274,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
       parsedAssets.push({
         id: crypto.randomUUID(),
         code,
-        name: 'Laptop',
+        name: code,
         category: category || 'Laptop',
         model,
         serial,
@@ -342,7 +342,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
   const colNote = findIdx(['note', 'notes', 'purpose']);
 
   if (colLaptop < 0) {
-    throw new Error('Loan list file is missing required "Laptop" / "Asset Code" column');
+    throw new Error('Loan list file is missing required "Laptop" / "Asset Number" column');
   }
 
   const assetMap = new Map(

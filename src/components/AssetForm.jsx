@@ -103,25 +103,15 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     e.preventDefault();
 
     const code = String(form.code || '').trim();
-    const name = String(form.name || '').trim();
 
     const newErrors = {};
-    if (!code) newErrors.code = 'Asset code is required';
-    if (!name) newErrors.name = 'Asset name is required';
+    if (!code) newErrors.code = 'Asset number is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      const missingList = Object.keys(newErrors)
-        .map((k) => (k === 'code' ? 'Asset code' : 'Asset name'))
-        .join(' and ');
-      setSubmitError(`Please fill in required fields: ${missingList}`);
-      toast(`Required fields missing: ${missingList}`);
-
-      if (newErrors.code) {
-        document.getElementById('code')?.focus();
-      } else if (newErrors.name) {
-        document.getElementById('name')?.focus();
-      }
+      setSubmitError('Please fill in required field: Asset number');
+      toast('Required field missing: Asset number');
+      document.getElementById('code')?.focus();
       return;
     }
 
@@ -139,7 +129,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     const payload = {
       ...form,
       code,
-      name,
+      name: form.name || code,
       owner: form.owner ? form.owner.trim() : '',
       status: validatedStatus,
     };
@@ -158,7 +148,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     <div className="asset-detail-container">
       <div className="asset-detail-header">
         <div className="asset-title-group">
-          <h2>{existing ? `Asset: ${existing.name}` : 'Add asset'}</h2>
+          <h2>{existing ? `Asset: ${existing.code}` : 'Add asset'}</h2>
           {existing && (
             <span className={`status ${statusClass(existing.status)}`}>
               {existing.status}
@@ -169,7 +159,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
       <p className="modal-intro" style={{ marginBottom: '10px' }}>
         {existing
-          ? `Code: ${existing.code} • Current Holder: ${existing.owner || 'None (Unassigned)'}`
+          ? `Asset Number: ${existing.code} • Current Holder: ${existing.owner || 'None (Unassigned)'}`
           : 'The asset remains the master record through every assignment and return.'}
       </p>
 
@@ -208,7 +198,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             {/* ROW 1: Hardware Specs & Identity */}
             <div className="field">
               <label htmlFor="code">
-                Asset code <span className="required-asterisk">*</span>
+                Asset number <span className="required-asterisk">*</span>
               </label>
               <input
                 id="code"
@@ -219,20 +209,6 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                 required
               />
               {errors.code && <span className="field-error-msg">⚠️ {errors.code}</span>}
-            </div>
-            <div className="field">
-              <label htmlFor="name">
-                Asset name <span className="required-asterisk">*</span>
-              </label>
-              <input
-                id="name"
-                value={form.name}
-                onChange={set('name')}
-                className={errors.name ? 'input-error-red' : ''}
-                placeholder="e.g. Dell Latitude 7440, ThinkPad T14"
-                required
-              />
-              {errors.name && <span className="field-error-msg">⚠️ {errors.name}</span>}
             </div>
             <div className="field">
               <label htmlFor="category">Category</label>

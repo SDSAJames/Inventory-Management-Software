@@ -107,7 +107,7 @@ export default function InOutCalendar({
         userType,
         userTypeLabel,
         isTraveler,
-        assetName: asset?.name || 'Hardware Device',
+        assetName: asset?.name || '',
         assetModel: asset?.model || '',
         location: loan.location || asset?.location || 'Unspecified',
         outIso,
@@ -876,9 +876,9 @@ export default function InOutCalendar({
 
                         <div className="day-card-body">
                           <div className="day-card-info-item">
-                            <span className="info-lbl">Hardware:</span>
+                            <span className="info-lbl">Asset Number:</span>
                             <span className="info-val">
-                              <strong>{loan.assetCode}</strong> ({loan.assetName})
+                              <strong>{loan.assetCode}</strong>{loan.assetModel ? ` (${loan.assetModel})` : ''}
                             </span>
                           </div>
                           <div className="day-card-info-item">
@@ -998,9 +998,9 @@ export default function InOutCalendar({
 
                         <div className="day-card-body">
                           <div className="day-card-info-item">
-                            <span className="info-lbl">Hardware:</span>
+                            <span className="info-lbl">Asset Number:</span>
                             <span className="info-val">
-                              <strong>{loan.assetCode}</strong> ({loan.assetName})
+                              <strong>{loan.assetCode}</strong>{loan.assetModel ? ` (${loan.assetModel})` : ''}
                             </span>
                           </div>
                           <div className="day-card-info-item">

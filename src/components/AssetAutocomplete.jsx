@@ -70,17 +70,15 @@ export default function AssetAutocomplete({
         .slice(0, 12);
     }
 
-    // Match query against code, name, model, serial, category, holder
+    // Match query against code (asset number), model, serial, category, holder
     const filtered = all.filter((a) => {
       const code = String(a.code || '').toLowerCase();
-      const name = String(a.name || '').toLowerCase();
       const model = String(a.model || '').toLowerCase();
       const serial = String(a.serial || '').toLowerCase();
       const category = String(a.category || '').toLowerCase();
       const owner = String(a.owner || '').toLowerCase();
       return (
         code.includes(q) ||
-        name.includes(q) ||
         model.includes(q) ||
         serial.includes(q) ||
         category.includes(q) ||
@@ -231,8 +229,8 @@ export default function AssetAutocomplete({
               onChange('');
               inputRef.current?.focus();
             }}
-            title="Clear asset code"
-            aria-label="Clear asset code"
+            title="Clear asset number"
+            aria-label="Clear asset number"
           >
             ✕
           </button>
@@ -280,9 +278,8 @@ export default function AssetAutocomplete({
                   <div className="asset-item-bottom">
                     <span className="asset-item-name">
                       {asset.category && <span className="asset-cat-tag">{asset.category}</span>}
-                      {highlightMatch(asset.name || asset.model || 'Unnamed device', query)}
-                      {asset.model && asset.model !== asset.name && (
-                        <span className="asset-item-model"> ({highlightMatch(asset.model, query)})</span>
+                      {asset.model && (
+                        <span className="asset-item-model">{highlightMatch(asset.model, query)}</span>
                       )}
                       {isItDept && (
                         <span className="asset-it-pool-tag" title="Held in IT department pool - ready to assign">
@@ -319,7 +316,7 @@ export default function AssetAutocomplete({
                 </div>
                 <div className="asset-item-bottom">
                   <span className="asset-item-hint">
-                    Enter as new asset code. Registry stub will be created on loan record.
+                    Enter as new asset number. Registry stub will be created on loan record.
                   </span>
                 </div>
               </div>
@@ -339,7 +336,7 @@ export default function AssetAutocomplete({
         <div className="asset-selected-chip">
           <span className="asset-chip-icon">✓</span>
           <span className="asset-chip-text">
-            <strong>{matchedAsset.code}</strong> — {matchedAsset.name || matchedAsset.model || 'Device'} (
+            <strong>{matchedAsset.code}</strong>{matchedAsset.model ? ` — ${matchedAsset.model}` : ''} (
             <span className={`asset-chip-status ${getStatusBadge(matchedAsset).cls}`}>
               {isItDepartment(matchedAsset.owner) ? 'Available (IT pool)' : matchedAsset.status}
             </span>

@@ -12,7 +12,7 @@ export default function SearchBar({
     <div className="search-row">
       <input
         className="search"
-        placeholder="Search asset code (e.g. SPE-1234), name, category or holder"
+        placeholder="Search asset number (e.g. SPE-1234), category or holder"
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}
       />

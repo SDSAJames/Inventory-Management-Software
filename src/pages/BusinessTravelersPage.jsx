@@ -88,7 +88,6 @@ export default function BusinessTravelersPage() {
       return {
         ...loan,
         location: loan.location || asset?.location || 'Unspecified',
-        assetName: asset?.name || 'Laptop',
         assetModel: asset?.model || '',
         accessoryCount,
         tripStatus,
@@ -434,7 +433,7 @@ export default function BusinessTravelersPage() {
                     <th style={{ width: '40px' }}>No</th>
                     <th style={{ minWidth: '150px' }}>Traveler</th>
                     <th style={{ minWidth: '130px' }}>Location</th>
-                    <th style={{ minWidth: '150px' }}>Assigned Laptop</th>
+                    <th style={{ minWidth: '150px' }}>Asset Number</th>
                     <th style={{ minWidth: '130px' }}>Due Date</th>
                     <th style={{ minWidth: '120px' }}>Overdue By</th>
                     <th style={{ minWidth: '110px' }}>Knox IP</th>
@@ -458,9 +457,9 @@ export default function BusinessTravelersPage() {
                       </td>
                       <td>
                         <strong>{t.assetCode}</strong>
-                        {t.assetName && (
+                        {t.assetModel && (
                           <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>
-                            {t.assetName} {t.assetModel ? `(${t.assetModel})` : ''}
+                            ({t.assetModel})
                           </span>
                         )}
                       </td>
@@ -633,7 +632,7 @@ export default function BusinessTravelersPage() {
                 <th style={{ minWidth: '150px' }}>Traveler</th>
                 <th style={{ minWidth: '130px' }}>Current Location</th>
                 <th style={{ minWidth: '110px' }}>Department</th>
-                <th style={{ minWidth: '160px' }}>Assigned Hardware</th>
+                <th style={{ minWidth: '160px' }}>Asset Number</th>
                 <th style={{ minWidth: '110px' }}>Knox IP</th>
                 <th style={{ minWidth: '180px' }}>Travel Dates</th>
                 <th style={{ minWidth: '100px' }}>Status</th>
@@ -670,9 +669,9 @@ export default function BusinessTravelersPage() {
                     <td>
                       <div>
                         <strong>{t.assetCode}</strong>
-                        {t.assetName && (
+                        {t.assetModel && (
                           <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>
-                            {t.assetName} {t.assetModel ? `(${t.assetModel})` : ''}
+                            ({t.assetModel})
                           </span>
                         )}
                         {t.accessoryCount > 0 && (
@@ -779,8 +778,8 @@ export default function BusinessTravelersPage() {
               <dl style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '6px 12px', margin: 0 }}>
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Traveler:</dt>
                 <dd style={{ margin: 0, fontWeight: 600 }}>{returnConfirmTarget.assignee}</dd>
-                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Hardware:</dt>
-                <dd style={{ margin: 0 }}>{returnConfirmTarget.assetCode} ({returnConfirmTarget.assetName})</dd>
+                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Asset Number:</dt>
+                <dd style={{ margin: 0 }}>{returnConfirmTarget.assetCode}</dd>
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Rental Location:</dt>
                 <dd style={{ margin: 0 }}>📍 {returnConfirmTarget.location}</dd>
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Due Date:</dt>

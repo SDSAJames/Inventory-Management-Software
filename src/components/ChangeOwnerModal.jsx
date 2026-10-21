@@ -93,14 +93,14 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
       </div>
 
       <p className="modal-intro" style={{ marginBottom: '16px' }}>
-        Transfer ownership for <strong>{asset.name}</strong> (<code>{asset.code}</code>).
+        Transfer ownership for Asset number <strong>{asset.code}</strong>.
         All changes are permanently logged to this asset's history log with minute &amp; second timestamps.
       </p>
 
       <div className="timestamp-dialog-card">
         <dl>
-          <dt>Asset:</dt>
-          <dd><strong>{asset.name}</strong> <code>{asset.code}</code></dd>
+          <dt>Asset number:</dt>
+          <dd><strong>{asset.code}</strong></dd>
           <dt>Current holder:</dt>
           <dd>{asset.owner || '— None (Unassigned)'}</dd>
           <dt>Current status:</dt>

@@ -653,7 +653,7 @@ export default function TravelerCalendar({
                             <strong className="detail-value">📍 {t.location}</strong>
                           </div>
                           <div>
-                            <span className="detail-label">Laptop Assigned:</span>
+                            <span className="detail-label">Asset Number:</span>
                             <strong className="detail-value">{t.assetCode}</strong>
                           </div>
                           <div>
@@ -761,7 +761,7 @@ export default function TravelerCalendar({
                             <strong className="detail-value">📍 {t.location}</strong>
                           </div>
                           <div>
-                            <span className="detail-label">Laptop to Return:</span>
+                            <span className="detail-label">Asset Number to Return:</span>
                             <strong className="detail-value">{t.assetCode}</strong>
                           </div>
                           <div>

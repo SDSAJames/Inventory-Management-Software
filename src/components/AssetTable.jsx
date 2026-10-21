@@ -32,7 +32,7 @@ export default function AssetTable({
                 />
               </th>
             )}
-            <th>Asset</th>
+            <th>Asset number</th>
             <th>Category</th>
             <th>Status</th>
             <th>Location</th>
@@ -65,8 +65,7 @@ export default function AssetTable({
                   </td>
                 )}
                 <td>
-                  <div className="asset-name">{asset.name}</div>
-                  <div className="asset-code">{asset.code}</div>
+                  <strong className="asset-code" style={{ fontSize: '13px', fontWeight: 700 }}>{asset.code}</strong>
                 </td>
                 <td>{asset.category}</td>
                 <td>

@@ -478,10 +478,9 @@ export default function LoanTable({
                           <div className="detail-section">
                             <h5>💻 Laptop & equipment</h5>
                             <dl>
-                              <dt>Laptop number:</dt>
+                              <dt>Laptop / Asset number:</dt>
                               <dd>
-                                <strong>{loan.assetCode || eq.Laptop || '—'}</strong>{' '}
-                                {asset?.name ? <span className="asset-subname">({asset.name})</span> : ''}
+                                <strong>{loan.assetCode || eq.Laptop || '—'}</strong>
                               </dd>
                               <dt>Charging Adapter:</dt>
                               <dd>{eq.Adapter || '0'}</dd>

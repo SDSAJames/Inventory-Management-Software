@@ -180,14 +180,16 @@ assetsRouter.post('/', authenticate, (req, res) => {
     notes = '',
   } = req.body || {};
 
-  if (!code || !name) {
-    return res.status(400).json({ success: false, error: 'Asset code and name are required.' });
+  const trimmedCode = (code || '').trim();
+  const effectiveName = (name || trimmedCode || '').trim();
+
+  if (!trimmedCode) {
+    return res.status(400).json({ success: false, error: 'Asset number is required.' });
   }
 
-  const trimmedCode = code.trim();
   const existing = db.prepare('SELECT id FROM assets WHERE LOWER(code) = LOWER(?)').get(trimmedCode);
   if (existing) {
-    return res.status(409).json({ success: false, error: `Asset with code ${trimmedCode} already exists.` });
+    return res.status(409).json({ success: false, error: `Asset with number ${trimmedCode} already exists.` });
   }
 
   const id = req.body.id || `ast-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -209,7 +211,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     insert.run(
       id,
       trimmedCode,
-      name.trim(),
+      effectiveName,
       category,
       model,
       serial,

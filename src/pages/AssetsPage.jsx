@@ -17,7 +17,7 @@ import ChangeOwnerModal from '../components/ChangeOwnerModal';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-const SEARCH_FIELDS = ['All fields', 'Asset code', 'Asset name', 'Category', 'Holder', 'Location', 'Serial number'];
+const SEARCH_FIELDS = ['All fields', 'Asset number', 'Category', 'Holder', 'Location', 'Serial number'];
 
 export default function AssetsPage() {
   const { db, deleteAsset, importAssets, verifyAndSyncAssets } = useDb();
@@ -50,9 +50,8 @@ export default function AssetsPage() {
   const filtered = useMemo(() => {
     return db.assets.filter((asset) => {
       const searchable = {
-        'All fields': `${asset.name} ${asset.code} ${asset.category} ${asset.location} ${asset.owner} ${asset.serial}`,
-        'Asset code': asset.code,
-        'Asset name': asset.name,
+        'All fields': `${asset.code} ${asset.category} ${asset.location} ${asset.owner} ${asset.serial}`,
+        'Asset number': asset.code,
         Category: asset.category,
         Holder: asset.owner,
         Location: asset.location,
@@ -274,7 +273,7 @@ export default function AssetsPage() {
             <ul className="bulk-delete-list">
               {selectedAssets.map((a) => (
                 <li key={a.id}>
-                  <strong>{a.name}</strong> <code>{a.code}</code>
+                  <strong>{a.code}</strong>
                   <span className="bulk-delete-meta"> — {a.category}, {a.status}</span>
                 </li>
               ))}
@@ -321,7 +320,7 @@ export default function AssetsPage() {
               </div>
               <div className="import-stat muted">
                 <strong>{importPreview.invalid}</strong>
-                <span>missing code (skipped)</span>
+                <span>missing asset number (skipped)</span>
               </div>
             </div>
 
@@ -329,7 +328,7 @@ export default function AssetsPage() {
               <div className="import-conflict-box">
                 <div className="conflict-header">
                   <strong>⚠️ Existing Assets Detected ({importPreview.duplicates.length})</strong>
-                  <p>Some asset codes in this file already exist in your inventory.</p>
+                  <p>Some asset numbers in this file already exist in your inventory.</p>
                 </div>
                 <div className="conflict-options">
                   <label className="conflict-radio-label">

@@ -199,7 +199,7 @@ loansRouter.post('/', authenticate, (req, res) => {
 
   const effectiveAssetCode = (assetCode || equipment?.Laptop || '').trim();
   if (!effectiveAssetCode || !assignee) {
-    return res.status(400).json({ success: false, error: 'Asset code / Laptop and assignee are required.' });
+    return res.status(400).json({ success: false, error: 'Asset number / Laptop and assignee are required.' });
   }
 
   const mergedEquipment = {

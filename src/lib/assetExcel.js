@@ -13,7 +13,7 @@ import { todayIso } from './utils';
 
 // field -> accepted header names (case-insensitive). First entry is used on export.
 const COLUMNS = [
-  ['code', ['Host Name', 'Asset code', 'Code', 'Asset number']],
+  ['code', ['Asset number', 'Host Name', 'Asset code', 'Code']],
   ['serial', ['Serial Number', 'Serial', 'S/N']],
   ['status', ['Status']],
   ['owner', ['Issued Knox ID', 'Knox ID', 'Holder', 'Current holder', 'Owner']],
@@ -124,7 +124,7 @@ export function parseAssetRows(rows, existingAssets) {
     const category = get('category') || 'Laptop';
     const parsedAsset = {
       code,
-      name: get('name') || category,
+      name: get('name') || code,
       category,
       model: get('model'),
       serial: get('serial'),

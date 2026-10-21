@@ -294,7 +294,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                 Equipment Checklist
               </label>
               <span className="equipment-header-hint">
-                Type <strong>432</strong> or asset code for instant assignable equipment auto-completion
+                Type <strong>432</strong> or asset number for instant assignable equipment auto-completion
               </span>
             </div>
 
