@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { todayIso, readableLoanDate } from '../lib/utils';
-import { APP_VERSION } from '../lib/constants';
-import { usePatchHistoryModal } from '../components/AppShell';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
@@ -12,7 +10,6 @@ import InOutCalendar from '../components/InOutCalendar';
 export default function CalendarPage() {
   const { db, returnLoan, pickupLoan } = useDb();
   const toast = useToast();
-  const openPatchHistory = usePatchHistoryModal();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editLoanId, setEditLoanId] = useState(null);
@@ -80,17 +77,6 @@ export default function CalendarPage() {
           </p>
         </div>
         <div className="view-header-actions">
-          <button
-            type="button"
-            className="version-pill clickable"
-            onClick={openPatchHistory}
-            title={`StarPlus Energy v${APP_VERSION} • Click to view patch notes`}
-            style={{ padding: '6px 12px', fontSize: '11.5px', fontWeight: 700, height: '34px' }}
-          >
-            <span className="version-pill-icon">📋</span>
-            v{APP_VERSION}
-            <span className="version-pill-sub">Patch Notes</span>
-          </button>
           <button
             type="button"
             className="button"

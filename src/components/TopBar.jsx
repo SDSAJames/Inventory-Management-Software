@@ -1,5 +1,4 @@
 import { useLocation } from 'react-router-dom';
-import { APP_VERSION } from '../lib/constants';
 import { useAuth } from '../hooks/useAuth';
 
 const PAGE_META = {
@@ -49,7 +48,7 @@ const PAGE_META = {
   },
 };
 
-export default function TopBar({ onOpenPatchHistory }) {
+export default function TopBar() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const current = PAGE_META[pathname] ?? {
@@ -76,17 +75,6 @@ export default function TopBar({ onOpenPatchHistory }) {
         <span className="topbar-tag">{current.eyebrow}</span>
       </div>
       <div className="top-actions">
-        <button
-          type="button"
-          className="version-pill clickable"
-          onClick={onOpenPatchHistory}
-          title={`StarPlus Energy Asset Management System v${APP_VERSION} • Click to view patch notes`}
-          aria-label={`Version ${APP_VERSION}, view patch history`}
-        >
-          <span className="version-pill-icon">📋</span>
-          v{APP_VERSION}
-          <span className="version-pill-sub">Patch Notes</span>
-        </button>
         <div className="network-pill" title="Connected to StarPlus Energy Corporate Intranet Server">
           <span className="status-indicator-dot" />
           <span>Corporate Intranet</span>

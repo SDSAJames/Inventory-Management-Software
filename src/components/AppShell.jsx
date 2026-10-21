@@ -15,7 +15,7 @@ export default function AppShell({ children }) {
       <div className="app-shell">
         <Sidebar onOpenPatchHistory={openPatchHistory} />
         <main className="main-content">
-          <TopBar onOpenPatchHistory={openPatchHistory} />
+          <TopBar />
           <div id="appView">{children}</div>
         </main>
 
