@@ -76,7 +76,7 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **Batch Multi-File Ingestion**: Allows administrators to drag & drop or select both `SPE_Equipments_example.txt` and `SPE_IT_Equipment_Loan_List_Example.txt` simultaneously. The engine parses both files in tandem, cross-referencing borrower Knox IDs with laptop custody records.
 
 #### 👁️ Interactive Import Preview Modal
-- **Live Pre-Flight Inspection**: Inspects extracted rows and presents a tabbed preview (`Equipment Assets` vs `Loan Records`) before writing to storage.
+- **Live Pre-Flight Inspection**: Inspects extracted rows and presents a tabbed preview (`Equipment Assets` vs `Loan Records`) before synchronizing to the shared database and client cache.
 - **Flexible Ingestion Modes**:
   - **Merge & Sync (Recommended)**: Intelligently updates matching assets and loans, appending new records while safeguarding existing unmentioned entries.
   - **Full Database Replacement**: Performs a clean database replacement with automated pre-import restore snapshots.
@@ -154,7 +154,7 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 #### 🔒 100% Air-Gapped Offline Operation
 - **Zero Remote Dependencies**: Completely eliminated external Google Fonts (`Outfit`, `Space Grotesk`) and external CDN links from `index.html`.
 - **Native OS Font Stack**: Configured a high-performance system typography stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif`), guaranteeing instant rendering in air-gapped corporate environments.
-- **Client-Side Storage**: All operations, data persistence, and audit logging execute purely inside workstation browser storage (LocalStorage / IndexedDB) with zero remote telemetry.
+- **Shared Intranet & Client Persistence**: Corporate intranet architecture with shared native SQLite persistence (`node:sqlite`) in WAL mode hosted on the Express 5 server (`0.0.0.0:5000`), paired with client-side LocalStorage caching for instant paint and offline resilience.
 
 #### ⚙️ States Version 1.0.0 & State Machine Engine
 - **Formalized Operational States**: Standardized six mutually exclusive asset states:

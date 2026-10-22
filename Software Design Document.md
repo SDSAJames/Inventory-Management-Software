@@ -57,22 +57,83 @@ The application incorporates the formal StarPlus Energy corporate brand guidelin
 
 ```mermaid
 graph TD
-    UI[React 19 + React Router 7 Presentation Layer] --> Context[DbContext & useDb Hook]
-    Context --> Integrity[assetIntegrity.js State Engine]
-    Context --> Storage[lib/db.js Storage Adapter]
-    Storage --> LocalStore[(Browser LocalStorage / IndexedDB)]
-    Context --> Excel[lib/xlsx.js Native OpenXML Engine]
-    Excel --> SheetFiles[(SPE_IT_Equipment_Loan_List.xlsx)]
+    subgraph Workstations [Corporate Intranet Workstations]
+        UI[React 19 + React Router 7 Presentation Layer]
+        Context[DbContext & useDb Hook]
+        APIClient[lib/api.js REST API Client]
+        Integrity[assetIntegrity.js State Engine]
+        ClientCache[lib/db.js LocalStorage Cache]
+        ExcelEngine[lib/xlsx.js Native OpenXML Engine]
+        TxtParser[lib/txtImport.js Delimited Text Parser]
+
+        UI --> Context
+        Context --> Integrity
+        Context --> ClientCache
+        Context --> APIClient
+        Context --> ExcelEngine
+        Context --> TxtParser
+    end
+
+    subgraph CentralServer [Central Intranet Server: Node.js 22+ & Express 5 on 0.0.0.0:5000]
+        Server[Express Server & LAN CORS Middleware]
+        StaticSPA[Static Client Dist & SPA Fallback]
+        AuthMiddleware[middleware/auth.js JWT Auth]
+
+        subgraph APIRouters [REST API Routers]
+            AssetsRoute[/api/assets]
+            LoansRoute[/api/loans]
+            DirectoryRoute[/api/directory]
+            StatsRoute[/api/stats]
+            ExchangeRoute[/api/exchange: Import, Export, Revert]
+            AuthRoute[/api/auth]
+        end
+
+        ServerStateEngine[reconcileAllAssetsInDb State Engine]
+        SnapshotEngine[createSnapshot Transaction Engine]
+        AuditEngine[logAudit & Audit Logger]
+
+        subgraph SQLitePersistence [Shared Native SQLite Database: node:sqlite in WAL Mode]
+            DB[(server/data/inventory.db)]
+            T_Assets[(assets)]
+            T_Loans[(loans)]
+            T_History[(ownership_history)]
+            T_Backups[(import_backups)]
+            T_Audit[(audit_logs)]
+            T_Ref[(employees, departments, locations, users)]
+
+            DB --- T_Assets
+            DB --- T_Loans
+            DB --- T_History
+            DB --- T_Backups
+            DB --- T_Audit
+            DB --- T_Ref
+        end
+    end
+
+    APIClient <-->|HTTP REST / LAN CORS| Server
+    Server --> StaticSPA
+    Server --> AuthMiddleware
+    AuthMiddleware --> APIRouters
+    APIRouters --> ServerStateEngine
+    APIRouters --> SnapshotEngine
+    APIRouters --> AuditEngine
+    ServerStateEngine --> DB
+    SnapshotEngine --> DB
+    AuditEngine --> DB
+    APIRouters --> DB
 ```
 
 | Layer | Component | Specification | Rationale |
 | :--- | :--- | :--- | :--- |
-| **Framework** | React 19 (`react: ^19.0.0`) | Modern component model, hooks, concurrent rendering | Fast client-side rendering with zero server runtime overhead |
-| **Bundler** | Vite 6 (`vite: ^6.0.0`) | Lightning-fast HMR and optimized production bundle | Fast local compilation without complex build tooling |
-| **Routing** | React Router 7 (`react-router-dom: ^7.0.0`) | SPA client-side route handling | Instant view switching across Overview, Assets, Loans, Directory, Exchange |
-| **Styling** | Vanilla CSS Design Tokens | Native CSS variables, zero runtime CSS-in-JS | Complete layout flexibility, no Tailwind dependencies, 100% offline |
-| **Data Engine** | Local Storage Adapter | IndexedDB / LocalStorage with schema migrations | Zero database installation requirement on field workstations |
-| **Spreadsheet Engine** | Pure JS OpenXML Engine | Native ZIP/DEFLATE OpenXML parser & generator | 1:1 workbook compatibility with zero third-party cloud or npm binary dependencies |
+| **Backend & Web Server** | Node.js 22+ & Express 5 (`express: ^5.3.0`) | High-performance HTTP API & static SPA server binding to `0.0.0.0:5000` | Multi-host intranet connectivity, LAN CORS, JWT auth, and centralized REST endpoints (`/api/assets`, `/api/loans`, `/api/directory`, `/api/stats`, `/api/exchange`). |
+| **Shared Database Engine** | SQLite (`node:sqlite`) | Native Node.js embedded database in WAL mode (`server/data/inventory.db`) | Central single source of truth across all intranet workstations with ACID compliance, transaction rollback snapshots (`import_backups`), and zero external database server daemons. |
+| **Frontend Framework** | React 19 (`react: ^19.0.0`) | Modern component model, hooks, concurrent rendering & optimistic UI | Fast client-side rendering with real-time background synchronization (15s polling and focus re-sync) against the central Express server. |
+| **Bundler & Dev Proxy** | Vite 6 (`vite: ^6.0.0`) | Lightning-fast HMR and optimized production bundle | Dev proxy targeting `http://127.0.0.1:5000` with graceful 503 error interception when the backend server is offline. |
+| **Routing** | React Router 7 (`react-router-dom: ^7.0.0`) | SPA client-side route handling with Express wildcard fallback | Instant view switching across Overview, Assets, Loans, Calendar, Business Travelers, Directory, Exchange. |
+| **Styling** | Vanilla CSS Design Tokens | Native CSS variables, zero runtime CSS-in-JS | Complete layout flexibility, no Tailwind dependencies, 100% offline air-gapped styling. |
+| **Client Cache & Resilience** | Browser Web Storage (`lib/db.js`) | LocalStorage snapshot cache | Sub-millisecond initial paint, local snapshot buffering, and seamless offline fallback during network disconnections. |
+| **Spreadsheet & TXT Engine** | Pure JS OpenXML & Delimited Text Parser | Native ZIP/DEFLATE generator (`lib/xlsx.js`) & TXT parser (`lib/txtImport.js`) | In-browser Excel TXT extraction parser and 1:1 `.xlsx` workbook generation with zero third-party cloud or binary dependencies. |
+| **Dev Orchestration** | Concurrently (`concurrently: ^10.0.6`) | Single-command full-stack startup (`npm run dev:all`) | Simultaneously launches Express API server and Vite dev server with colored prefix logging. |
 
 ---
 
@@ -128,7 +189,9 @@ stateDiagram-v2
      - The status transitions to **`Available`** (unless flagged as damaged).
      - An immutable entry is appended to the asset's `ownershipHistory`, recording the previous borrower as `previousOwner`, `IT department` as `newOwner`, the return timestamp, and the reason `"Returned to IT department"`.
 3. **Passive Verification & Sync Service**:
-   - Rather than requiring manual administrative triggers, a passive background integrity service runs automatically during database initialization and state mutations.
+   - Rather than requiring manual administrative triggers, a passive background integrity service runs automatically during database initialization and state mutations across both client and server tiers:
+     - **Frontend Client (`src/lib/assetIntegrity.js` via `useDb.jsx`)**: `reconcileAllAssets()` continuously reconciles local state upon initialization, loan pickup/return, periodic polling (every 15s), and window focus.
+     - **Shared Backend Server (`server/db/database.js`)**: `reconcileAllAssetsInDb()` runs directly against the SQLite database during server boot, loan checkout/pickup, return processing, and data exchange imports (`/api/exchange/import`), committing synchronized state updates across all connected intranet hosts.
    - It continuously reconciles loan records against the asset register:
      - If an active loan is picked up and unreturned, the asset status is enforced as `On loan`, and its location and holder reflect the loan record.
      - When all loans for an asset are returned, the asset is automatically freed from `On loan` status and restored to `Available` held by `IT department`.
@@ -193,21 +256,31 @@ The client-side parser (`src/lib/txtImport.js`) runs 100% offline and automatica
    - Accurately parses multiline quoted fields (e.g. `"Charging \r\nAdapter"`), BOM marks, and normalizes Excel null dates (`1/0/1900`).
    - Automatically correlates laptop asset codes with equipment holder records to ensure borrower identities remain consistent.
 3. **Batch Multi-File Ingestion**:
-   - Allows administrators to upload both files in tandem; the engine cross-references equipment serials and active loans before writing to local storage.
+   - Allows administrators to upload both files in tandem; the engine cross-references equipment serials and active loans before synchronizing to the shared Express/SQLite database via `/api/exchange/import` and updating the local client cache.
 
 ### 6.2 1:1 Reference Excel Exports
 Export functionality continues to generate native OpenXML `.xlsx` workbooks:
 - `SPE_IT_Equipment_Loan_List_YYYY-MM-DD.xlsx` with exact 1:1 column parity matching the corporate loan register.
 - `SPE_Equipments_YYYY-MM-DD.xlsx` matching the equipment master structure.
 
-### 6.3 Pre-Import Snapshot & One-Click Revert
-Prior to importing external text files that modify the active database, the system automatically saves a serialized snapshot of the local database to `IMPORT_BACKUP_KEY`. If an accidental or malformed import occurs, the user can click **"Revert last import"** on the Data Exchange view to instantly restore the previous dataset.
+### 6.3 Shared Database Snapshot & One-Click Revert Architecture
+To safeguard corporate records against accidental overwrites or malformed text files during data imports, the system implements a dual-layer transactional snapshot and rollback mechanism:
+1. **Server-Side Transactional Snapshot (`createSnapshot` & `import_backups`)**:
+   - Prior to executing import mutations via `POST /api/exchange/import`, the Express exchange router automatically calls `createSnapshot()`, generating an immutable JSON snapshot of all current assets, loans, ownership histories, employees, departments, and locations, stamped with a unique snapshot ID (`snap-<timestamp>`) and stored in the SQLite `import_backups` table.
+   - The import is executed within a strict database transaction (`BEGIN TRANSACTION ... COMMIT`). If an unhandled exception or parsing error occurs, the server rolls back (`ROLLBACK`) with zero data corruption.
+   - An audit record is logged to `audit_logs` capturing the snapshot ID, number of imported assets, updated records, and loans.
+2. **Client-Side Snapshot Buffering (`IMPORT_BACKUP_KEY`)**:
+   - Concurrently, the frontend client caches a pre-import snapshot to `localStorage` under `IMPORT_BACKUP_KEY` via `saveImportBackup()`.
+3. **One-Click Rollback (`POST /api/exchange/revert`)**:
+   - When the operator clicks **"Revert last import"** on the Data Exchange view, the client calls `api.exchange.revert()`.
+   - The Express server retrieves the latest snapshot from `import_backups`, clears working tables, restores all records and ownership histories transactionally (`BEGIN TRANSACTION ... COMMIT`), deletes the consumed snapshot, and logs the `REVERT_IMPORT` event to `audit_logs`.
+   - The client simultaneously restores its local cache from `IMPORT_BACKUP_KEY` and broadcasts a toast notification, instantly reflecting the restored state across all connected intranet workstations.
 
 ---
 
 ## 7. User Interface Layout & Views
 
-The frontend application provides six core operational views accessed via the left navigation sidebar:
+The frontend application provides eight core operational views accessed via the left navigation sidebar:
 
 1. **Operations Dashboard (`/`)**:
    - High-level KPI stat cards (Total Fleet, Available for Deployment, In Active Custody, Under Maintenance/Repair, Overdue Loans).
@@ -254,10 +327,10 @@ The frontend application provides six core operational views accessed via the le
 | Requirement | Implementation & Standard |
 | :--- | :--- |
 | **Air-Gap Compliance** | 100% offline. No telemetry, no external CSS/JS CDNs, no Google Fonts, no remote analytics. |
-| **Performance** | Instantaneous search and filter response (< 50ms) via in-memory React state indexing. |
+| **Performance** | Instantaneous search and filter response (< 50ms) via in-memory React state indexing and SQLite WAL indexing (`idx_assets_code`, `idx_loans_asset_code`, etc.). |
 | **Compatibility** | Tested on Chromium (Edge, Chrome) and Firefox across Windows 10/11 enterprise workstations. |
-| **Data Safety** | Synchronous localStorage persistence with error handling and import restore points. |
-| **Zero Setup** | Single production artifact (`dist/`) or local dev server (`npm run dev:all`) with zero native daemon requirements. |
+| **Data Safety & Shared Persistence** | Centralized ACID transaction persistence via native SQLite (`node:sqlite`) in WAL mode with server-side rollback snapshots (`import_backups` table), foreign key enforcement, audit logging (`audit_logs`), and local browser cache resilience. |
+| **Deployment & Orchestration** | Central intranet server (`npm start` or `npm run server` on `0.0.0.0:5000`) hosting both static SPA bundles (`dist/`) and shared SQLite database, or single-command local development (`npm run dev:all`). |
 
 ---
 

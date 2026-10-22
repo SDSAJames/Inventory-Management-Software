@@ -61,7 +61,21 @@ graph TD
 Inventory-Management-Software/
 ├── index.html                   # HTML entry point (clean system typography, zero CDNs)
 ├── package.json                 # Project manifest (v1.2.2, scripts, dependencies)
-├── vite.config.js               # Vite 6 configuration with React plugin
+├── vite.config.js               # Vite 6 configuration with React plugin & loopback IPv4 proxy
+├── server/                      # Shared Corporate Intranet Express & SQLite Backend
+│   ├── index.js                 # Express 5 server binding to 0.0.0.0:5000, LAN CORS, SPA fallback
+│   ├── config.js                # Server configuration (port, host, dbPath, admin & operator accounts)
+│   ├── db/
+│   │   └── database.js          # Native SQLite (node:sqlite) setup, WAL mode, schema, seed, audit & snapshots
+│   ├── middleware/
+│   │   └── auth.js              # Authentication & JWT/cookie token verification
+│   └── routes/
+│       ├── assets.js            # Hardware inventory CRUD, batch operations, ownership transfer
+│       ├── loans.js             # Custody checkouts, pickups, returns, accessory tracking
+│       ├── directory.js         # Employees, departments, locations, transfer reasons
+│       ├── stats.js             # Fleet KPIs and audit logs
+│       ├── exchange.js          # Full DB export, TXT import with rollback snapshot, and revert
+│       └── auth.js              # User login, logout, profile, and user management
 ├── src/
 │   ├── main.jsx                 # Application entry point, mounts AppShell inside BrowserRouter
 │   ├── App.jsx                  # Top-level route switch & context providers
@@ -90,15 +104,17 @@ Inventory-Management-Software/
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
 │   │   └── ExchangePage.jsx     # TXT import (extracted from Excel) & 1:1 Excel export (.xlsx)
 │   ├── hooks/
-│   │   ├── useDb.jsx            # Database context hook providing data access & mutations
+│   │   ├── useDb.jsx            # Database context hook providing data access, sync & mutations
 │   │   └── useToast.jsx         # Toast notification dispatch hook
 │   ├── lib/
+│   │   ├── api.js               # Enterprise REST API client (Fetch wrapper with Bearer token & cookies)
+│   │   ├── assetExcel.js        # Equipment register column mapping & row serialization
+│   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
 │   │   ├── constants.js         # APP_VERSION ('1.2.2'), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
-│   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
 │   │   ├── txtImport.js         # Delimited text parser & format detector for TXT extracted from Excel
-│   │   ├── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser
-│   │   └── utils.js             # Date formatters (ISO, readable), ID generators, sanitizers
+│   │   ├── utils.js             # Date formatters (ISO, readable), ID generators, sanitizers
+│   │   └── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser
 │   └── data/
 │       ├── patchHistory.js      # Structured release notes data per version (SemVer 2.0.0)
 │       └── seed.js              # Initial seed database (assets, loans, employees, locations)
@@ -201,7 +217,9 @@ interface EquipmentChecklist {
 
 ### 4.2 Passive Verification & Sync Service Algorithm
 
-The application does not depend on manual user triggers to reconcile data consistency. Instead, `reconcileAllAssets()` runs passively whenever the database mounts or mutates.
+The application does not depend on manual user triggers to reconcile data consistency. Instead, integrity reconciliation executes across both architectural tiers:
+- **Client Tier (`src/lib/assetIntegrity.js`)**: `reconcileAllAssets()` runs passively whenever the client mounts, mutates local state, regains window focus, or completes a 15-second background sync.
+- **Server Tier (`server/db/database.js`)**: `reconcileAllAssetsInDb()` runs directly within the shared SQLite database during server boot, loan checkout/pickup, return processing, and data exchange imports (`/api/exchange/import`), writing normalized states directly to the database.
 
 ```mermaid
 flowchart TD
@@ -232,7 +250,7 @@ flowchart TD
     NormIT --> NextAsset
     FixAssigned --> NextAsset
     FixAvailable --> NextAsset
-    NextAsset --> Finish[Commit Reconciled State to LocalStorage]
+    NextAsset --> Finish[Commit Reconciled State to Shared SQLite DB & Local Cache]
 ```
 
 ### 4.3 Return Workflow Specification
@@ -273,7 +291,7 @@ The Assets table allows instantaneous ownership reassignment by clicking directl
    - If `newOwner === 'IT department'`, enforces `status: 'Available'`.
    - If `newOwner !== 'IT department'`, enforces `status: 'Assigned'`.
    - Appends audit entry to `asset.ownershipHistory` retaining `previousOwner`.
-   - Persists state to storage and broadcasts toast notification.
+   - Persists state to the shared SQLite database via `api.assets.transfer` (recording audit entry in `ownership_history` and logging to `audit_logs`), updates local storage cache, and broadcasts toast notification.
 
 ---
 
@@ -315,16 +333,40 @@ The engine constructs valid ZIP-compressed OpenXML packages containing:
 | `others` | String | `loan.others` | `""` |
 | `Note` | String | `loan.note` | `""` |
 
+### 6.3 Shared Data Exchange & Transactional Backup Engine (`server/routes/exchange.js`)
+
+The system implements a centralized data exchange engine backed by transactional SQLite operations and audit logging:
+
+1. **Full Database Export (`GET /api/exchange/export`)**:
+   - Queries and packages all master records (`assets`, `ownership_history`, `loans`, `employees`, `departments`, `locations`, `transfer_reasons`) into a structured JSON payload.
+   - Powers the client's automated multi-host synchronization (15-second polling interval and window focus events in `useDb.jsx`).
+
+2. **Transactional Ingestion with Automated Snapshot (`POST /api/exchange/import`)**:
+   - Accepts parsed asset and loan datasets extracted from `.txt` or `.xlsx` files.
+   - Before executing writes, triggers `createSnapshot()` to serialize the current database state into the `import_backups` table with a unique timestamped identifier (`snap-<timestamp>`).
+   - Executes mutations inside a SQLite transaction (`BEGIN TRANSACTION ... COMMIT`):
+     - Inserts or updates assets based on code parity.
+     - Automatically creates and records initial or overwrite history entries in `ownership_history`.
+     - Upserts loans with JSON accessory checklists and soft-archive flags.
+   - Automatically invokes `reconcileAllAssetsInDb()` immediately after commit to validate and enforce all States v1.0.0 rules.
+   - Records an `IMPORT_DATA` event in `audit_logs` tracking snapshot ID, imported counts, and actor identity. If an error is encountered, the transaction triggers an automatic `ROLLBACK`.
+
+3. **One-Click Transactional Revert (`POST /api/exchange/revert`)**:
+   - Locates the latest restorable snapshot from `import_backups`.
+   - Executes an atomic rollback within `BEGIN TRANSACTION ... COMMIT`: wipes working tables (`ownership_history`, `assets`, `loans`, `employees`, `departments`, `locations`) and re-populates them with the exact snapshot dataset.
+   - Deletes the consumed snapshot entry and records a `REVERT_IMPORT` audit event.
+   - Accompanied by client-side local cache restoration (`IMPORT_BACKUP_KEY`) to ensure instant consistency across all intranet workstations.
+
 ---
 
 ## 7. Performance & Build Metrics
 
 Production build execution via `npm run build`:
-- **Modules Transformed**: 70 modules.
+- **Modules Transformed**: 81 modules.
 - **HTML Bundle**: `dist/index.html` (~0.92 kB).
-- **CSS Bundle**: `dist/assets/index-[hash].css` (~29.6 kB, ~6.6 kB gzip).
-- **JS Bundle**: `dist/assets/index-[hash].js` (~367 kB, ~111 kB gzip) — includes full OpenXML parser, DEFLATE compressor, seed database, and React 19 runtime.
-- **Build Duration**: ~1.0 second.
+- **CSS Bundle**: `dist/assets/index-[hash].css` (~72.0 kB, ~14.0 kB gzip).
+- **JS Bundle**: `dist/assets/index-[hash].js` (~515.5 kB, ~148.3 kB gzip) — includes full OpenXML parser, DEFLATE compressor, client API client, calendar engine, seed database, and React 19 runtime.
+- **Build Duration**: ~1.2 seconds.
 - **Initial Paint**: < 100ms in modern browsers.
 
 ---
