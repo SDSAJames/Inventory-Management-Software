@@ -57,14 +57,14 @@ The application incorporates the formal StarPlus Energy corporate brand guidelin
 
 ```mermaid
 graph TD
-    subgraph Workstations [Corporate Intranet Workstations]
-        UI[React 19 + React Router 7 Presentation Layer]
-        Context[DbContext & useDb Hook]
-        APIClient[lib/api.js REST API Client]
-        Integrity[assetIntegrity.js State Engine]
-        ClientCache[lib/db.js LocalStorage Cache]
-        ExcelEngine[lib/xlsx.js Native OpenXML Engine]
-        TxtParser[lib/txtImport.js Delimited Text Parser]
+    subgraph Workstations ["Corporate Intranet Workstations"]
+        UI["React 19 + React Router 7 Presentation Layer"]
+        Context["DbContext & useDb Hook"]
+        APIClient["lib/api.js REST API Client"]
+        Integrity["assetIntegrity.js State Engine"]
+        ClientCache["lib/db.js LocalStorage Cache"]
+        ExcelEngine["lib/xlsx.js Native OpenXML Engine"]
+        TxtParser["lib/txtImport.js Delimited Text Parser"]
 
         UI --> Context
         Context --> Integrity
@@ -74,32 +74,32 @@ graph TD
         Context --> TxtParser
     end
 
-    subgraph CentralServer [Central Intranet Server: Node.js 22+ & Express 5 on 0.0.0.0:5000]
-        Server[Express Server & LAN CORS Middleware]
-        StaticSPA[Static Client Dist & SPA Fallback]
-        AuthMiddleware[middleware/auth.js JWT Auth]
+    subgraph CentralServer ["Central Intranet Server: Node.js 22+ & Express 5 on 0.0.0.0:5000"]
+        Server["Express Server & LAN CORS Middleware"]
+        StaticSPA["Static Client Dist & SPA Fallback"]
+        AuthMiddleware["middleware/auth.js JWT Auth"]
 
-        subgraph APIRouters [REST API Routers]
-            AssetsRoute[/api/assets]
-            LoansRoute[/api/loans]
-            DirectoryRoute[/api/directory]
-            StatsRoute[/api/stats]
-            ExchangeRoute[/api/exchange: Import, Export, Revert]
-            AuthRoute[/api/auth]
+        subgraph APIRouters ["REST API Routers"]
+            AssetsRoute["/api/assets"]
+            LoansRoute["/api/loans"]
+            DirectoryRoute["/api/directory"]
+            StatsRoute["/api/stats"]
+            ExchangeRoute["/api/exchange (Import, Export, Revert)"]
+            AuthRoute["/api/auth"]
         end
 
-        ServerStateEngine[reconcileAllAssetsInDb State Engine]
-        SnapshotEngine[createSnapshot Transaction Engine]
-        AuditEngine[logAudit & Audit Logger]
+        ServerStateEngine["reconcileAllAssetsInDb State Engine"]
+        SnapshotEngine["createSnapshot Transaction Engine"]
+        AuditEngine["logAudit & Audit Logger"]
 
-        subgraph SQLitePersistence [Shared Native SQLite Database: node:sqlite in WAL Mode]
-            DB[(server/data/inventory.db)]
-            T_Assets[(assets)]
-            T_Loans[(loans)]
-            T_History[(ownership_history)]
-            T_Backups[(import_backups)]
-            T_Audit[(audit_logs)]
-            T_Ref[(employees, departments, locations, users)]
+        subgraph SQLitePersistence ["Shared Native SQLite Database: node:sqlite in WAL Mode"]
+            DB[("server/data/inventory.db")]
+            T_Assets[("assets")]
+            T_Loans[("loans")]
+            T_History[("ownership_history")]
+            T_Backups[("import_backups")]
+            T_Audit[("audit_logs")]
+            T_Ref[("employees, departments, locations, users")]
 
             DB --- T_Assets
             DB --- T_Loans
@@ -168,11 +168,11 @@ stateDiagram-v2
     Assigned --> Damaged: Defect Reported
     Assigned --> Under_repair: Maintenance
     
-    On_loan --> Available: Loan Returned (Holder -> IT department)
+    On_loan --> Available: Loan Returned (Holder to IT department)
     On_loan --> Damaged: Defect on Return
     
     Damaged --> Under_repair: Sent for Servicing
-    Under_repair --> Available: Repair Completed (Holder -> IT department)
+    Under_repair --> Available: Repair Completed (Holder to IT department)
     Under_repair --> Retired: Beyond Economic Repair
     
     Retired --> [*]

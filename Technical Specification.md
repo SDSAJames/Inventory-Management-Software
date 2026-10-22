@@ -18,16 +18,16 @@ The system is engineered as a **Corporate Intranet Client-Server Application**, 
 
 ```mermaid
 graph TD
-    subgraph Corporate Network Workstations
-        ClientA[Intranet Workstation A]
-        ClientB[Intranet Workstation B]
+    subgraph Corporate Network Workstations ["Corporate Network Workstations"]
+        ClientA["Intranet Workstation A"]
+        ClientB["Intranet Workstation B"]
     end
 
-    subgraph Central Intranet Server Node.js / Express 5
-        Server[Express Server on 0.0.0.0:5000]
-        SPAFallback[Static Client Dist & SPA Fallback]
-        APIRouter[REST API Routes /api/*]
-        SQLite[(Native SQLite DB inventory.db)]
+    subgraph CentralServerTier ["Central Intranet Server: Node.js / Express 5"]
+        Server["Express Server on 0.0.0.0:5000"]
+        SPAFallback["Static Client Dist & SPA Fallback"]
+        APIRouter["REST API Routes /api/*"]
+        SQLite[("Native SQLite DB inventory.db")]
     end
 
     ClientA <-->|HTTP / CORS LAN| Server
@@ -223,26 +223,26 @@ The application does not depend on manual user triggers to reconcile data consis
 
 ```mermaid
 flowchart TD
-    Start[Passive Sync Triggered] --> Iterate[Iterate Through All Assets]
-    Iterate --> CheckLoan{Asset has Active Loan?}
+    Start["Passive Sync Triggered"] --> Iterate["Iterate Through All Assets"]
+    Iterate --> CheckLoan{"Asset has Active Loan?"}
     
-    CheckLoan -- Yes (Picked up, unreturned) --> SetOnLoan[Set Status: 'On loan'<br>Holder: Loan Assignee<br>Location: Loan Location]
-    CheckLoan -- No --> CheckCurrentStatus{Current Status == 'On loan'?}
+    CheckLoan -- Yes (Picked up, unreturned) --> SetOnLoan["Set Status: On loan<br>Holder: Loan Assignee<br>Location: Loan Location"]
+    CheckLoan -- No --> CheckCurrentStatus{"Current Status == On loan?"}
     
-    CheckCurrentStatus -- Yes --> FreeFromLoan[Check if Asset has Employee Holder]
-    FreeFromLoan -- Has Employee Holder --> SetAssigned[Set Status: 'Assigned']
-    FreeFromLoan -- No Employee Holder --> SetAvailable[Set Status: 'Available'<br>Holder: 'IT department']
+    CheckCurrentStatus -- Yes --> FreeFromLoan["Check if Asset has Employee Holder"]
+    FreeFromLoan -- Has Employee Holder --> SetAssigned["Set Status: Assigned"]
+    FreeFromLoan -- No Employee Holder --> SetAvailable["Set Status: Available<br>Holder: IT department"]
     
-    CheckCurrentStatus -- No --> CheckReturnedLoan{Asset Loan was Returned?}
-    CheckReturnedLoan -- Yes --> CheckHolder{Holder is empty or pool?}
-    CheckHolder -- Yes --> NormIT[Set Holder: 'IT department'<br>Set Status: 'Available']
+    CheckCurrentStatus -- No --> CheckReturnedLoan{"Asset Loan was Returned?"}
+    CheckReturnedLoan -- Yes --> CheckHolder{"Holder is empty or pool?"}
+    CheckHolder -- Yes --> NormIT["Set Holder: IT department<br>Set Status: Available"]
     CheckHolder -- No --> CheckHolderInvariant
     
-    CheckReturnedLoan -- No --> CheckHolderInvariant{Asset has Employee Holder<br>AND Status == 'Available'?}
-    CheckHolderInvariant -- Yes --> FixAssigned[Enforce Status: 'Assigned']
-    CheckHolderInvariant -- No --> CheckAssignedWithoutHolder{Status == 'Assigned'<br>AND No Holder?}
-    CheckAssignedWithoutHolder -- Yes --> FixAvailable[Set Status: 'Available'<br>Holder: 'IT department']
-    CheckAssignedWithoutHolder -- No --> NextAsset[Proceed to Next Asset]
+    CheckReturnedLoan -- No --> CheckHolderInvariant{"Asset has Employee Holder<br>AND Status == Available?"}
+    CheckHolderInvariant -- Yes --> FixAssigned["Enforce Status: Assigned"]
+    CheckHolderInvariant -- No --> CheckAssignedWithoutHolder{"Status == Assigned<br>AND No Holder?"}
+    CheckAssignedWithoutHolder -- Yes --> FixAvailable["Set Status: Available<br>Holder: IT department"]
+    CheckAssignedWithoutHolder -- No --> NextAsset["Proceed to Next Asset"]
     
     SetOnLoan --> NextAsset
     SetAssigned --> NextAsset
@@ -250,7 +250,7 @@ flowchart TD
     NormIT --> NextAsset
     FixAssigned --> NextAsset
     FixAvailable --> NextAsset
-    NextAsset --> Finish[Commit Reconciled State to Shared SQLite DB & Local Cache]
+    NextAsset --> Finish["Commit Reconciled State to Shared SQLite DB & Local Cache"]
 ```
 
 ### 4.3 Return Workflow Specification
