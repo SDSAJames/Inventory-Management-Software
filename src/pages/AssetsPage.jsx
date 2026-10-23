@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
@@ -86,6 +86,20 @@ export default function AssetsPage() {
       setSelectedIds(new Set(assets.map((a) => a.id)));
     }
   };
+
+  const handleRangeSelect = useCallback((ids, adding) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (adding) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  }, []);
 
   /* ── Bulk delete handlers ────────────────────── */
 
@@ -231,6 +245,7 @@ export default function AssetsPage() {
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
+          onRangeSelect={handleRangeSelect}
         />
       </section>
 

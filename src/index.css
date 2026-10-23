@@ -846,6 +846,15 @@ tbody tr:hover { background: #f8fafc; }
   background: #dbeafe;
 }
 
+/* ── Drag-to-select state ──────────────────── */
+.table-wrap.drag-selecting {
+  user-select: none;
+  cursor: crosshair;
+}
+.table-wrap.drag-selecting * {
+  cursor: crosshair !important;
+}
+
 /* ── Current Holder Clickable Transfer Trigger ────────── */
 .holder-badge-btn {
   display: inline-flex;
