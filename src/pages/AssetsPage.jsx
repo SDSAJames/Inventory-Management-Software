@@ -141,6 +141,11 @@ export default function AssetsPage() {
 
     const syncRes = await importAssets(assetsToImport, overwriteDuplicates);
 
+    if (!syncRes?.success) {
+      toast(`Import is saved in this browser but was not synced to the server: ${syncRes?.error || 'Server unavailable'}`);
+      return;
+    }
+
     let msg = '';
     if (freshCount > 0 && overwriteCount > 0) {
       msg = `${freshCount} added, ${overwriteCount} updated from Excel.`;
@@ -151,9 +156,7 @@ export default function AssetsPage() {
     } else {
       msg = 'No assets changed.';
     }
-    if (syncRes?.success) {
-      msg += ' (Synced to server)';
-    }
+    msg += ' (Synced to server)';
     toast(msg);
     setImportPreview(null);
     setOverwriteDuplicates(false);
@@ -431,8 +434,8 @@ export default function AssetsPage() {
               >
                 {overwriteDuplicates && importPreview.duplicates.length > 0
                   ? (importPreview.added.length > 0
-                      ? `Add ${importPreview.added.length} & Overwrite ${importPreview.duplicates.length}`
-                      : `Overwrite ${importPreview.duplicates.length} asset${importPreview.duplicates.length === 1 ? '' : 's'}`)
+                    ? `Add ${importPreview.added.length} & Overwrite ${importPreview.duplicates.length}`
+                    : `Overwrite ${importPreview.duplicates.length} asset${importPreview.duplicates.length === 1 ? '' : 's'}`)
                   : `Add ${importPreview.added.length} new asset${importPreview.added.length === 1 ? '' : 's'}`}
               </button>
             </div>

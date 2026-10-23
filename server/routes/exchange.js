@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
@@ -134,7 +135,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 
             if (a.owner && a.owner !== existing.owner) {
               insertHistoryStmt.run(
-                `hist-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                `hist-${randomUUID()}`,
                 codeTrimmed,
                 existing.owner || 'None',
                 a.owner,
@@ -168,7 +169,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 
           if (a.owner) {
             insertHistoryStmt.run(
-              `hist-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              `hist-${randomUUID()}`,
               codeTrimmed,
               'None',
               a.owner,
@@ -322,7 +323,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
         if (Array.isArray(a.ownershipHistory)) {
           for (const h of a.ownershipHistory) {
             insertHistory.run(
-              h.id || `hist-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+              h.id || `hist-${randomUUID()}`,
               a.code,
               h.previous_owner || h.previousOwner || 'None',
               h.new_owner || h.newOwner || 'None',
