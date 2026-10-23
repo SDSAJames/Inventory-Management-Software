@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
@@ -431,17 +432,50 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
     return res.status(404).json({ success: false, error: 'Loan not found.' });
   }
 
-  const { pickupDate = todayIso() } = req.body || {};
+  const {
+    pickupDate = todayIso(),
+    startDate,
+    endDate,
+    equipment,
+    note,
+    others,
+    location,
+  } = req.body || {};
+
   const now = new Date().toISOString();
-  const nextStatus = loan.end_date && loan.end_date < todayIso() ? 'Overdue' : 'Active';
+  const effectiveEndDate = endDate !== undefined ? endDate : loan.end_date;
+  const effectiveStartDate = startDate !== undefined ? startDate : loan.start_date;
+  const nextStatus = effectiveEndDate && effectiveEndDate < todayIso() ? 'Overdue' : 'Active';
+
+  let nextEquipmentJson = loan.equipment_json;
+  if (equipment) {
+    const prevEq = loan.equipment_json ? JSON.parse(loan.equipment_json) : {};
+    nextEquipmentJson = JSON.stringify({ ...prevEq, ...equipment });
+  }
+
+  const nextNote = note !== undefined ? note : loan.note;
+  const nextOthers = others !== undefined ? others : loan.others;
+  const nextLocation = location !== undefined ? location : (loan.location || 'Head Office');
 
   db.exec('BEGIN TRANSACTION;');
   try {
     db.prepare(`
       UPDATE loans
-      SET pickup_date = ?, status = ?, return_date = '', returned_date = '', is_archived = 0
+      SET pickup_date = ?, start_date = ?, end_date = ?, status = ?,
+          equipment_json = ?, note = ?, others = ?, location = ?,
+          return_date = '', returned_date = '', is_archived = 0
       WHERE id = ?
-    `).run(pickupDate, nextStatus, loan.id);
+    `).run(
+      pickupDate,
+      effectiveStartDate,
+      effectiveEndDate,
+      nextStatus,
+      nextEquipmentJson,
+      nextNote,
+      nextOthers,
+      nextLocation,
+      loan.id
+    );
 
     // Update asset to 'On loan' and owner to assignee
     const asset = db.prepare('SELECT id, owner FROM assets WHERE code = ?').get(loan.asset_code);
@@ -450,13 +484,13 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
         UPDATE assets
         SET status = 'On loan', owner = ?, location = ?, updated = ?
         WHERE code = ?
-      `).run(loan.assignee, loan.location || 'Head Office', todayIso(), loan.asset_code);
+      `).run(loan.assignee, nextLocation, todayIso(), loan.asset_code);
 
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        `hist-${Date.now()}`,
+        `hist-${randomUUID()}`,
         loan.asset_code,
         asset.owner || 'None',
         loan.assignee,
@@ -535,17 +569,40 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     return res.status(404).json({ success: false, error: 'Loan not found.' });
   }
 
-  const { returnDate = todayIso() } = req.body || {};
+  const {
+    returnDate = todayIso(),
+    equipment,
+    note,
+    others,
+  } = req.body || {};
+
   const now = new Date().toISOString();
+
+  let nextEquipmentJson = loan.equipment_json;
+  if (equipment) {
+    const prevEq = loan.equipment_json ? JSON.parse(loan.equipment_json) : {};
+    nextEquipmentJson = JSON.stringify({ ...prevEq, ...equipment });
+  }
+
+  const nextNote = note !== undefined ? note : loan.note;
+  const nextOthers = others !== undefined ? others : loan.others;
 
   db.exec('BEGIN TRANSACTION;');
   try {
     // 1. Mark loan as Returned and archived
     db.prepare(`
       UPDATE loans
-      SET status = 'Returned', return_date = ?, returned_date = ?, is_archived = 1
+      SET status = 'Returned', return_date = ?, returned_date = ?,
+          equipment_json = ?, note = ?, others = ?, is_archived = 1
       WHERE id = ?
-    `).run(returnDate, returnDate, loan.id);
+    `).run(
+      returnDate,
+      returnDate,
+      nextEquipmentJson,
+      nextNote,
+      nextOthers,
+      loan.id
+    );
 
     // 2. Return asset to IT department with status 'Available'
     const asset = db.prepare('SELECT id, owner, status FROM assets WHERE code = ?').get(loan.asset_code);
@@ -563,13 +620,13 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        `hist-${Date.now()}`,
+        `hist-${randomUUID()}`,
         loan.asset_code,
         loan.assignee,
         'IT department',
         returnDate,
         'Returned to IT department',
-        `Device returned & checked back into IT custody by ${req.user.username}`,
+        nextNote ? `Device returned: ${nextNote}` : `Device returned & checked back into IT custody by ${req.user.username}`,
         now
       );
     }

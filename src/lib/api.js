@@ -84,9 +84,17 @@ export const api = {
     getById: (id) => request(`/loans/${id}`),
     create: (loan) => request('/loans', { method: 'POST', body: loan }),
     update: (id, changes) => request(`/loans/${id}`, { method: 'PUT', body: changes }),
-    pickup: (id, pickupDate) => request(`/loans/${id}/pickup`, { method: 'POST', body: { pickupDate } }),
+    pickup: (id, payload) =>
+      request(`/loans/${id}/pickup`, {
+        method: 'POST',
+        body: typeof payload === 'string' ? { pickupDate: payload } : (payload || {}),
+      }),
     revertPickup: (id) => request(`/loans/${id}/revert-pickup`, { method: 'POST' }),
-    returnLoan: (id, returnDate) => request(`/loans/${id}/return`, { method: 'POST', body: { returnDate } }),
+    returnLoan: (id, payload) =>
+      request(`/loans/${id}/return`, {
+        method: 'POST',
+        body: typeof payload === 'string' ? { returnDate: payload } : (payload || {}),
+      }),
     unarchive: (id) => request(`/loans/${id}/unarchive`, { method: 'POST' }),
     batchReturn: (ids, returnDate) => request('/loans/batch-return', { method: 'POST', body: { ids, returnDate } }),
     batchDelete: (ids) => request('/loans/batch-delete', { method: 'POST', body: { ids } }),

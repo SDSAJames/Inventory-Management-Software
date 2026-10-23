@@ -465,27 +465,38 @@ export function DbProvider({ children }) {
     api.loans.update(id, changes).catch((err) => console.warn('Could not sync loan update to server:', err.message));
   }, []);
 
-  const pickupLoan = useCallback((id, pickupDate) => {
+  const pickupLoan = useCallback((id, pickupDate, details = {}) => {
     const timestamp = pickupDate || todayIso();
     setDb((prev) => {
       const loan = prev.loans.find((l) => l.id === id);
       if (!loan) return prev;
+      const merged = {
+        ...loan,
+        ...details,
+        pickupDate: timestamp,
+      };
+      if (details.equipment) {
+        merged.equipment = {
+          ...(loan.equipment || {}),
+          ...details.equipment,
+        };
+      }
       const nextLoans = prev.loans.map((l) =>
         l.id === id
           ? {
-              ...l,
-              pickupDate: timestamp,
-              status: isLoanOverdue({ ...l, pickupDate: timestamp, returnDate: '', returnedDate: '' }) ? 'Overdue' : 'Active',
+              ...merged,
+              status: isLoanOverdue({ ...merged, pickupDate: timestamp, returnDate: '', returnedDate: '' }) ? 'Overdue' : 'Active',
             }
           : l,
       );
+      const effectiveAssetCode = details.assetCode || loan.assetCode;
       const nextAssets = prev.assets.map((a) =>
-        a.code === loan.assetCode
+        a.code === effectiveAssetCode
           ? {
               ...a,
               status: 'On loan',
-              owner: loan.assignee || a.owner,
-              location: loan.location || a.location,
+              owner: details.assignee || loan.assignee || a.owner,
+              location: details.location || loan.location || a.location,
               updated: todayIso(),
             }
           : a,
@@ -493,7 +504,7 @@ export function DbProvider({ children }) {
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
-    api.loans.pickup(id, timestamp).catch((err) => console.warn('Could not sync loan pickup to server:', err.message));
+    api.loans.pickup(id, { pickupDate: timestamp, ...details }).catch((err) => console.warn('Could not sync loan pickup to server:', err.message));
   }, []);
 
   const revertPickup = useCallback((id) => {
@@ -525,31 +536,38 @@ export function DbProvider({ children }) {
     api.loans.revertPickup(id).catch((err) => console.warn('Could not sync revert pickup to server:', err.message));
   }, []);
 
-  const returnLoan = useCallback((id, returnDate) => {
+  const returnLoan = useCallback((id, returnDate, details = {}) => {
     const timestamp = returnDate || todayIso();
     setDb((prev) => {
       const loan = prev.loans.find((l) => l.id === id);
       if (!loan) return prev;
+      const merged = {
+        ...loan,
+        ...details,
+        returnDate: timestamp,
+        returnedDate: timestamp,
+        status: 'Returned',
+        isArchived: true,
+      };
+      if (details.equipment) {
+        merged.equipment = {
+          ...(loan.equipment || {}),
+          ...details.equipment,
+        };
+      }
       const nextLoans = prev.loans.map((l) =>
-        l.id === id
-          ? {
-              ...l,
-              returnDate: timestamp,
-              returnedDate: timestamp,
-              status: 'Returned',
-              isArchived: true,
-            }
-          : l,
+        l.id === id ? merged : l,
       );
+      const effectiveAssetCode = details.assetCode || loan.assetCode;
       const nextAssets = prev.assets.map((a) => {
-        if (a.code !== loan.assetCode) return a;
+        if (a.code !== effectiveAssetCode) return a;
         const returnEntry = createOwnershipEntry({
-          previousOwner: loan.assignee || 'Borrower',
+          previousOwner: details.assignee || loan.assignee || 'Borrower',
           newOwner: 'IT department',
           department: 'IT',
-          location: loan.location || a.location || 'IT Store',
+          location: details.location || loan.location || a.location || 'IT Store',
           reason: 'Loan Returned',
-          notes: `Returned to IT department (was borrowed by ${loan.assignee || 'borrower'})`,
+          notes: details.note || `Returned to IT department (was borrowed by ${details.assignee || loan.assignee || 'borrower'})`,
           date: timestamp.replace('T', ' '),
         });
         return {
@@ -564,7 +582,7 @@ export function DbProvider({ children }) {
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
-    api.loans.returnLoan(id, timestamp).catch((err) => console.warn('Could not sync loan return to server:', err.message));
+    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).catch((err) => console.warn('Could not sync loan return to server:', err.message));
   }, []);
 
   const unarchiveLoan = useCallback((id) => {
