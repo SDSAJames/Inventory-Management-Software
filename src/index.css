@@ -958,6 +958,14 @@ tbody tr:hover { background: #f8fafc; }
 .directory-edit-state.ready { color: #176b43; background: #e8f6ee; }
 .directory-edit-state.locked { color: #8b5a11; background: #fff3dc; }
 .directory-location-name small { display: block; color: var(--muted); margin-top: 3px; }
+.btn-ready-toggle { background: #edf5ff; color: #2459a8; border: 1px solid #cfe0fb; }
+.btn-ready { background: #e6f6ed; color: #176b43; border: 1px solid #bfe6cf; }
+.partial-return-badge { display: inline-block; margin: 4px 0 0 5px; padding: 3px 7px; border-radius: 999px; background: #fff0dd; color: #97530d; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.partial-return-warning, .complete-return-note { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 12px; padding: 10px 12px; border-radius: 8px; font-size: 12px; }
+.partial-return-warning { background: #fff3e3; border: 1px solid #f2d5aa; color: #754511; }
+.complete-return-note { background: #eaf7ee; border: 1px solid #c9e8d2; color: #276244; }
+.partial-return-detail { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; padding: 10px; border-radius: 7px; background: #fff3e3; color: #754511; font-size: 12px; }
+.return-equipment-details { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 11px; color: var(--muted); }
 .category-directory-actions { display: flex; gap: 12px; }
 .category-directory-actions .text-button:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
 .directory-location-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

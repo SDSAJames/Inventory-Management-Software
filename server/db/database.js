@@ -91,6 +91,9 @@ export function initDatabase() {
       note TEXT,
       purpose TEXT,
       assignee_type TEXT DEFAULT 'Business traveler',
+      ready_for_pickup INTEGER DEFAULT 0,
+      returned_equipment_json TEXT,
+      return_status TEXT,
       is_archived INTEGER DEFAULT 0,
       created_at TEXT NOT NULL
     );
@@ -104,6 +107,13 @@ export function initDatabase() {
     }
   } catch (e) {
     console.warn('Note checking loans schema:', e.message);
+  }
+  for (const [column, definition] of [
+    ['ready_for_pickup', 'INTEGER DEFAULT 0'],
+    ['returned_equipment_json', 'TEXT'],
+    ['return_status', 'TEXT'],
+  ]) {
+    try { db.exec(`ALTER TABLE loans ADD COLUMN ${column} ${definition};`); } catch { /* Column already exists. */ }
   }
 
   // 4. Ownership history table

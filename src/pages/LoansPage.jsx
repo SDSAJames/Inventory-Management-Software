@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
+import { buildReturnedEquipment, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIso, readableLoanDate, todayIso, statusClass, isLoanOverdue, getLoanStatus } from '../lib/utils';
 import { readXlsx, makeXlsx, downloadBlob } from '../lib/xlsx';
@@ -62,7 +63,8 @@ function filterLoan(loan, term, field) {
             .join(' ')
         : '';
       const status = getLoanStatus(loan);
-      searchable = `${loan.assignee || ''} ${loan.knoxId || ''} ${laptop} ${loan.location || ''} ${loan.ip || ''} ${loan.department || ''} ${loan.note || ''} ${loan.purpose || ''} ${loan.others || ''} ${loan.assigneeType || ''} ${status} ${accessories}`;
+      const missingEquipment = getMissingReturnItems(loan.equipment || {}, loan.returnedEquipment || {}).join(' ');
+      searchable = `${loan.assignee || ''} ${loan.knoxId || ''} ${laptop} ${loan.location || ''} ${loan.ip || ''} ${loan.department || ''} ${loan.note || ''} ${loan.purpose || ''} ${loan.others || ''} ${loan.assigneeType || ''} ${status} ${accessories} ${loan.returnStatus || ''} ${missingEquipment}`;
       break;
     }
   }
@@ -72,7 +74,7 @@ function filterLoan(loan, term, field) {
 }
 
 export default function LoansPage() {
-  const { db, updateLoan, pickupLoan, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
+  const { db, updateLoan, pickupLoan, setLoanReadyForPickup, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
   const toast = useToast();
   const fileRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -179,6 +181,12 @@ export default function LoansPage() {
     [db.loans],
   );
 
+  // Partial returns with equipment still outstanding, regardless of due date.
+  const unreturnedLoans = useMemo(
+    () => db.loans.filter((loan) => loan.returnStatus === 'Partial'),
+    [db.loans],
+  );
+
   const filteredScheduledLoans = useMemo(
     () => scheduledLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
     [scheduledLoans, searchTerm, searchField],
@@ -199,6 +207,11 @@ export default function LoansPage() {
     [returnedLoans, searchTerm, searchField],
   );
 
+  const filteredUnreturnedLoans = useMemo(
+    () => unreturnedLoans.filter((loan) => filterLoan(loan, searchTerm, searchField)),
+    [unreturnedLoans, searchTerm, searchField],
+  );
+
   const filteredAllLoans = useMemo(
     () => db.loans.filter((l) => filterLoan(l, searchTerm, searchField)),
     [db.loans, searchTerm, searchField],
@@ -211,6 +224,7 @@ export default function LoansPage() {
     if (category === 'loaned') return filteredLoanedLoans;
     if (category === 'overdue') return filteredOverdueLoans;
     if (category === 'returned') return filteredReturnedLoans;
+    if (category === 'unreturned') return filteredUnreturnedLoans;
     return filteredAllLoans;
   }, [
     category,
@@ -218,6 +232,7 @@ export default function LoansPage() {
     filteredLoanedLoans,
     filteredOverdueLoans,
     filteredReturnedLoans,
+    filteredUnreturnedLoans,
     filteredAllLoans,
   ]);
 
@@ -226,6 +241,7 @@ export default function LoansPage() {
     if (category === 'loaned') return loanedLoans.length;
     if (category === 'overdue') return overdueLoans.length;
     if (category === 'returned') return returnedLoans.length;
+    if (category === 'unreturned') return unreturnedLoans.length;
     return db.loans.length;
   }, [
     category,
@@ -233,6 +249,7 @@ export default function LoansPage() {
     loanedLoans.length,
     overdueLoans.length,
     returnedLoans.length,
+    unreturnedLoans.length,
     db.loans.length,
   ]);
 
@@ -340,6 +357,12 @@ export default function LoansPage() {
     toast(`Pickup reverted for ${loan.assignee || 'loan'}. Record moved back to Scheduled.`);
   };
 
+  const handleToggleReady = (loan) => {
+    const ready = !loan.readyForPickup;
+    setLoanReadyForPickup(loan.id, ready);
+    toast(ready ? `${loan.assetCode} is marked ready for pickup` : `${loan.assetCode} is no longer marked ready`);
+  };
+
   /* ── Return & Archive flow ──────────────────────── */
 
   // Accepts a single loan or an array of loans
@@ -353,16 +376,17 @@ export default function LoansPage() {
     if (list.length === 1) {
       const loan = list[0];
       const eq = loan.equipment || {};
+      const returned = loan.returnedEquipment || eq;
       setReturnForm({
         returnDate: nowTime,
-        adapter: String(eq.Adapter ?? '1'),
-        cable: String(eq.Cable ?? '1'),
-        dongle: String(eq.Dongle ?? '0'),
-        keyboard: String(eq.Keyboard ?? '0'),
-        mouse: String(eq.Mouse ?? '0'),
-        monitor: String(eq.Monitor ?? '0'),
-        ethernetCable: String(eq['Ethernet cable'] ?? '0'),
-        others: loan.others || '',
+        adapter: String(returned.Adapter ?? eq.Adapter ?? '0'),
+        cable: String(returned.Cable ?? eq.Cable ?? '0'),
+        dongle: String(returned.Dongle ?? eq.Dongle ?? '0'),
+        keyboard: String(returned.Keyboard ?? eq.Keyboard ?? '0'),
+        mouse: String(returned.Mouse ?? eq.Mouse ?? '0'),
+        monitor: String(returned.Monitor ?? eq.Monitor ?? '0'),
+        ethernetCable: String(returned['Ethernet cable'] ?? eq['Ethernet cable'] ?? '0'),
+        others: returned.Others ?? loan.others ?? '',
         note: loan.note || '',
       });
     }
@@ -377,23 +401,17 @@ export default function LoansPage() {
     if (returnTargets.length === 1) {
       const loan = returnTargets[0];
       const timestamp = returnForm.returnDate || returnTime || nowLocalIso();
+      const returnedEquipment = buildReturnedEquipment(returnForm);
+      const missingItems = getMissingReturnItems(loan.equipment || {}, returnedEquipment);
+      const returnStatus = getReturnStatus(loan.equipment || {}, returnedEquipment);
       const details = {
-        equipment: {
-          ...(loan.equipment || {}),
-          Laptop: loan.assetCode,
-          Adapter: returnForm.adapter,
-          Cable: returnForm.cable,
-          Dongle: returnForm.dongle,
-          Keyboard: returnForm.keyboard,
-          Mouse: returnForm.mouse,
-          Monitor: returnForm.monitor,
-          'Ethernet cable': returnForm.ethernetCable,
-        },
+        returnedEquipment,
+        returnStatus,
         others: returnForm.others,
         note: returnForm.note,
       };
       returnLoan(loan.id, timestamp, details);
-      toast(`Laptop and accessories returned & archived (${loan.assetCode})`);
+      toast(missingItems.length ? `Return recorded with missing items: ${missingItems.join(', ')}` : `Laptop and accessories returned & archived (${loan.assetCode})`);
     } else {
       const timestamp = returnTime || nowLocalIso();
       returnTargets.forEach((loan) => returnLoan(loan.id, timestamp));
@@ -606,7 +624,7 @@ export default function LoansPage() {
         </div>
       </div>
 
-      {/* 4 Categories: Scheduled, Loaned, Overdue, Returned (+ All) */}
+      {/* Loan lifecycle tabs, including outstanding equipment returns */}
       <div className="loan-tabs">
         <button
           className={`loan-tab ${category === 'scheduled' ? 'active' : ''}`}
@@ -659,6 +677,17 @@ export default function LoansPage() {
           </span>
         </button>
         <button
+          className={`loan-tab ${category === 'unreturned' ? 'active overdue-tab' : ''} ${unreturnedLoans.length > 0 ? 'tab-has-alert' : ''}`}
+          onClick={() => setCategory('unreturned')}
+          title={hasSearch ? `${filteredUnreturnedLoans.length} matching of ${unreturnedLoans.length} partial returns` : `${unreturnedLoans.length} partial return${unreturnedLoans.length === 1 ? '' : 's'} with equipment outstanding`}
+        >
+          <span className="category-dot overdue-dot">●</span>
+          Unreturned
+          <span className={`loan-tab-count ${unreturnedLoans.length > 0 ? 'overdue-tab-count' : ''}`}>
+            {hasSearch ? filteredUnreturnedLoans.length : unreturnedLoans.length}
+          </span>
+        </button>
+        <button
           className={`loan-tab ${category === 'all' ? 'active' : ''}`}
           onClick={() => setCategory('all')}
           title={hasSearch ? `${filteredAllLoans.length} matching of ${db.loans.length} total records` : undefined}
@@ -682,6 +711,9 @@ export default function LoansPage() {
         )}
         {category === 'returned' && (
           <span>📦 <strong>Returned & archived:</strong> Completed laptop loans. Click <strong>↶ Revert</strong> if returned by mistake to move back to Loaned.</span>
+        )}
+        {category === 'unreturned' && (
+          <span>⚠️ <strong>Equipment outstanding:</strong> Returned loans with accessories still missing. Expand a row to see which items were not returned.</span>
         )}
         {category === 'all' && (
           <span>🗂️ <strong>All records:</strong> Complete schedule and loan history with full status management.</span>
@@ -759,6 +791,15 @@ export default function LoansPage() {
                   Returned ({filteredReturnedLoans.length})
                 </button>
               )}
+              {filteredUnreturnedLoans.length > 0 && category !== 'unreturned' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('unreturned')}
+                >
+                  Unreturned ({filteredUnreturnedLoans.length})
+                </button>
+              )}
               {category !== 'all' && (
                 <button
                   type="button"
@@ -816,6 +857,7 @@ export default function LoansPage() {
           editMode={editMode}
           onSaveLoan={handleInlineSave}
           onPickupLoan={handleOpenPickup}
+          onToggleReady={handleToggleReady}
           onRevertPickup={handleRevertPickup}
           onReturnLoan={handleOpenReturn}
           onRevertReturn={handleRevertReturn}
@@ -841,7 +883,7 @@ export default function LoansPage() {
                   Clear search
                 </button>
               </div>
-            ) : undefined
+            ) : category === 'unreturned' ? 'No equipment is currently marked as unreturned.' : undefined
           }
         />
       </section>
@@ -1339,6 +1381,10 @@ export default function LoansPage() {
                 <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
                   Verify that keyboard, mouse, and cables were returned. Adjust quantities if any item is retained or missing.
                 </p>
+                {(() => {
+                  const missing = getMissingReturnItems(returnTargets[0].equipment || {}, buildReturnedEquipment(returnForm));
+                  return missing.length ? <div className="partial-return-warning"><strong>Partial return</strong><span>Still outstanding: {missing.join(', ')}</span></div> : <div className="complete-return-note">All issued accessories are marked returned.</div>;
+                })()}
 
                 <div className="equipment-accessory-list">
                   {/* Keyboard - Highlighted */}

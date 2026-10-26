@@ -90,6 +90,7 @@ export const api = {
         body: typeof payload === 'string' ? { pickupDate: payload } : (payload || {}),
       }),
     revertPickup: (id) => request(`/loans/${id}/revert-pickup`, { method: 'POST' }),
+    setReadyForPickup: (id, ready) => request(`/loans/${id}/ready`, { method: 'POST', body: { ready } }),
     returnLoan: (id, payload) =>
       request(`/loans/${id}/return`, {
         method: 'POST',

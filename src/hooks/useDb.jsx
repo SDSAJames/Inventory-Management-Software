@@ -488,6 +488,7 @@ export function DbProvider({ children }) {
         l.id === id
           ? {
               ...merged,
+              readyForPickup: false,
               status: isLoanOverdue({ ...merged, pickupDate: timestamp, returnDate: '', returnedDate: '' }) ? 'Overdue' : 'Active',
             }
           : l,
@@ -508,6 +509,14 @@ export function DbProvider({ children }) {
     });
 
     api.loans.pickup(id, { pickupDate: timestamp, ...details }).catch((err) => console.warn('Could not sync loan pickup to server:', err.message));
+  }, []);
+
+  const setLoanReadyForPickup = useCallback((id, ready) => {
+    setDb((prev) => ({
+      ...prev,
+      loans: prev.loans.map((loan) => loan.id === id ? { ...loan, readyForPickup: Boolean(ready) } : loan),
+    }));
+    api.loans.setReadyForPickup(id, ready).catch((err) => console.warn('Could not sync pickup readiness:', err.message));
   }, []);
 
   const revertPickup = useCallback((id) => {
@@ -552,6 +561,8 @@ export function DbProvider({ children }) {
         status: 'Returned',
         isArchived: true,
       };
+      if (details.returnedEquipment) merged.returnedEquipment = details.returnedEquipment;
+      if (details.returnStatus) merged.returnStatus = details.returnStatus;
       if (details.equipment) {
         merged.equipment = {
           ...(loan.equipment || {}),
@@ -598,6 +609,9 @@ export function DbProvider({ children }) {
               ...l,
               returnDate: '',
               returnedDate: '',
+              returnedEquipment: null,
+              returnStatus: '',
+              readyForPickup: false,
               status: isLoanOverdue({ ...l, returnDate: '', returnedDate: '' })
                 ? 'Overdue'
                 : l.pickupDate ? 'Active' : 'Scheduled',
@@ -866,6 +880,7 @@ export function DbProvider({ children }) {
     addLoan,
     updateLoan,
     pickupLoan,
+    setLoanReadyForPickup,
     revertPickup,
     returnLoan,
     unarchiveLoan,
@@ -898,6 +913,7 @@ export function DbProvider({ children }) {
     addLoan,
     updateLoan,
     pickupLoan,
+    setLoanReadyForPickup,
     revertPickup,
     returnLoan,
     unarchiveLoan,

@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { readableLoanDate, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
+import { getMissingReturnItems } from '../lib/loanEquipment';
 
 const STATUS_ORDER = { Scheduled: 0, Loaned: 1, Overdue: 2, Returned: 3 };
 
@@ -32,6 +33,7 @@ export default function LoanTable({
   editMode,
   onSaveLoan,
   onPickupLoan,
+  onToggleReady,
   onRevertPickup,
   onReturnLoan,
   onRevertReturn,
@@ -179,6 +181,9 @@ export default function LoanTable({
               loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived,
             );
             const isPickedUp = Boolean(loan.pickupDate);
+            const missingReturnItems = loan.returnStatus === 'Partial'
+              ? getMissingReturnItems(loan.equipment || {}, loan.returnedEquipment || {})
+              : [];
 
             // Compute current lifecycle status label (accurately reflecting Overdue if end date is over today)
             const statusLabel = isEditing && draft ? getLoanStatus(draft) : getLoanStatus(loan);
@@ -334,16 +339,21 @@ export default function LoanTable({
                           </button>
                         </>
                       ) : (
-                        <button
-                          className="btn-action btn-pickup"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onPickupLoan && onPickupLoan(loan);
-                          }}
-                          title="Record pickup"
-                        >
-                          Pickup
-                        </button>
+                        <>
+                          <button type="button" className={`btn-action ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={(e) => { e.stopPropagation(); onToggleReady && onToggleReady(loan); }} title={loan.readyForPickup ? 'Mark as not ready for pickup' : 'Mark laptop as ready for pickup'}>
+                            {loan.readyForPickup ? '✓ Ready' : 'Mark ready'}
+                          </button>
+                          <button
+                            className="btn-action btn-pickup"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPickupLoan && onPickupLoan(loan);
+                            }}
+                            title="Record pickup"
+                          >
+                            Pickup
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -379,6 +389,7 @@ export default function LoanTable({
                     <span className={`status ${statusClass(statusLabel)}`}>
                       {statusLabel}
                     </span>
+                    {loan.returnStatus === 'Partial' && <span className="partial-return-badge" title={`Not returned: ${missingReturnItems.join(', ')}`}>Unreturned: {missingReturnItems.join(', ') || 'items outstanding'}</span>}
                   </td>
                 </tr>
 
@@ -399,13 +410,13 @@ export default function LoanTable({
                           </div>
                           <div className="loan-detail-actions">
                             {/* Revert / Pickup / Return actions */}
-                            {!loan.pickupDate && (
-                              <button
-                                className="button small-btn"
-                                onClick={() => onPickupLoan && onPickupLoan(loan)}
-                              >
-                                ↗ Confirm pickup
-                              </button>
+                            {!loan.pickupDate && !isReturned && (
+                              <>
+                                <button className={`button small-btn ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={() => onToggleReady && onToggleReady(loan)}>
+                                  {loan.readyForPickup ? '✓ Ready for pickup' : 'Mark ready for pickup'}
+                                </button>
+                                <button className="button small-btn" onClick={() => onPickupLoan && onPickupLoan(loan)}>↗ Confirm pickup</button>
+                              </>
                             )}
                             {loan.pickupDate && !isReturned && (
                               <>
@@ -504,6 +515,18 @@ export default function LoanTable({
                                 </>
                               )}
                             </dl>
+                            {loan.returnStatus === 'Partial' && (
+                              <div className="partial-return-detail">
+                                <strong>Items not returned</strong>
+                                <span>{missingReturnItems.join(', ') || 'Some equipment is outstanding'}</span>
+                              </div>
+                            )}
+                            {loan.returnStatus === 'Partial' && loan.returnedEquipment && (
+                              <div className="return-equipment-details">
+                                <strong>Returned quantities</strong>
+                                <span>Keyboard: {loan.returnedEquipment.Keyboard ?? '0'} · Mouse: {loan.returnedEquipment.Mouse ?? '0'} · Adapter: {loan.returnedEquipment.Adapter ?? '0'} · Cable: {loan.returnedEquipment.Cable ?? '0'}</span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Schedule & Notes */}

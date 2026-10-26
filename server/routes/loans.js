@@ -39,6 +39,9 @@ function formatLoanRow(l) {
     returnedDate: l.returned_date || '',
     status: dynamicStatus,
     equipment: l.equipment_json ? JSON.parse(l.equipment_json) : { Adapter: 1, Cable: 1 },
+    returnedEquipment: l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null,
+    returnStatus: l.return_status || '',
+    readyForPickup: Boolean(l.ready_for_pickup),
     others: l.others || '',
     note: l.note || '',
     purpose: l.purpose || '',
@@ -99,6 +102,20 @@ loansRouter.get('/', (req, res) => {
     total: loans.length,
     loans,
   });
+});
+
+// POST /api/loans/:id/ready — mark an upcoming scheduled loan as ready for pickup
+loansRouter.post('/:id/ready', authenticate, (req, res) => {
+  const loan = db.prepare('SELECT * FROM loans WHERE id = ?').get(req.params.id);
+  if (!loan) return res.status(404).json({ success: false, error: 'Loan not found.' });
+  if (computeLoanStatus(loan) !== 'Scheduled') {
+    return res.status(409).json({ success: false, error: 'Only scheduled loans can be marked ready for pickup.' });
+  }
+  const ready = Boolean(req.body?.ready);
+  db.prepare('UPDATE loans SET ready_for_pickup = ? WHERE id = ?').run(ready ? 1 : 0, loan.id);
+  logAudit(ready ? 'MARK_LOAN_READY' : 'UNMARK_LOAN_READY', 'loans', loan.id, { readyForPickup: ready }, req.user);
+  const updated = db.prepare('SELECT * FROM loans WHERE id = ?').get(loan.id);
+  return res.json({ success: true, loan: formatLoanRow(updated) });
 });
 
 // GET /api/loans/overdue (Dedicated overdue triage)
@@ -463,7 +480,8 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
       UPDATE loans
       SET pickup_date = ?, start_date = ?, end_date = ?, status = ?,
           equipment_json = ?, note = ?, others = ?, location = ?,
-          return_date = '', returned_date = '', is_archived = 0
+          return_date = '', returned_date = '', is_archived = 0,
+          ready_for_pickup = 0, returned_equipment_json = NULL, return_status = NULL
       WHERE id = ?
     `).run(
       pickupDate,
@@ -529,7 +547,7 @@ loansRouter.post('/:id/revert-pickup', authenticate, (req, res) => {
   try {
     db.prepare(`
       UPDATE loans
-      SET pickup_date = '', status = 'Scheduled', is_archived = 0
+      SET pickup_date = '', status = 'Scheduled', is_archived = 0, ready_for_pickup = 0
       WHERE id = ?
     `).run(loan.id);
 
@@ -572,6 +590,8 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
   const {
     returnDate = todayIso(),
     equipment,
+    returnedEquipment,
+    returnStatus = '',
     note,
     others,
   } = req.body || {};
@@ -579,10 +599,11 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
   const now = new Date().toISOString();
 
   let nextEquipmentJson = loan.equipment_json;
-  if (equipment) {
+  if (equipment && !returnedEquipment) {
     const prevEq = loan.equipment_json ? JSON.parse(loan.equipment_json) : {};
     nextEquipmentJson = JSON.stringify({ ...prevEq, ...equipment });
   }
+  const nextReturnedEquipmentJson = returnedEquipment ? JSON.stringify(returnedEquipment) : loan.returned_equipment_json;
 
   const nextNote = note !== undefined ? note : loan.note;
   const nextOthers = others !== undefined ? others : loan.others;
@@ -593,12 +614,15 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     db.prepare(`
       UPDATE loans
       SET status = 'Returned', return_date = ?, returned_date = ?,
-          equipment_json = ?, note = ?, others = ?, is_archived = 1
+          equipment_json = ?, returned_equipment_json = ?, return_status = ?,
+          ready_for_pickup = 0, note = ?, others = ?, is_archived = 1
       WHERE id = ?
     `).run(
       returnDate,
       returnDate,
       nextEquipmentJson,
+      nextReturnedEquipmentJson,
+      returnStatus,
       nextNote,
       nextOthers,
       loan.id
@@ -632,7 +656,7 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     }
 
     db.exec('COMMIT;');
-    logAudit('RETURN_LOAN', 'loans', loan.id, { returnDate }, req.user);
+    logAudit('RETURN_LOAN', 'loans', loan.id, { returnDate, returnStatus, returnedEquipment: returnedEquipment || null }, req.user);
 
     const updated = db.prepare('SELECT * FROM loans WHERE id = ?').get(loan.id);
     return res.json({
@@ -661,7 +685,8 @@ loansRouter.post('/:id/unarchive', authenticate, (req, res) => {
   try {
     db.prepare(`
       UPDATE loans
-      SET return_date = '', returned_date = '', status = ?, is_archived = 0
+      SET return_date = '', returned_date = '', status = ?, is_archived = 0,
+          returned_equipment_json = NULL, return_status = NULL
       WHERE id = ?
     `).run(nextStatus, loan.id);
 

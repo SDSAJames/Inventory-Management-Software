@@ -40,6 +40,9 @@ exchangeRouter.get('/export', (req, res) => {
     returnedDate: l.returned_date,
     status: l.status,
     equipment: l.equipment_json ? JSON.parse(l.equipment_json) : {},
+    returnedEquipment: l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null,
+    returnStatus: l.return_status || '',
+    readyForPickup: Boolean(l.ready_for_pickup),
     others: l.others,
     note: l.note,
     purpose: l.purpose,
@@ -187,8 +190,8 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
     // 2. Process Loans
     if (loans.length > 0) {
       const insertLoanStmt = db.prepare(`
-        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, others, note, purpose, assignee_type, is_archived, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, returned_equipment_json, return_status, ready_for_pickup, others, note, purpose, assignee_type, is_archived, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           asset_code = excluded.asset_code,
           assignee = excluded.assignee,
@@ -203,6 +206,9 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           returned_date = excluded.returned_date,
           status = excluded.status,
           equipment_json = excluded.equipment_json,
+          returned_equipment_json = excluded.returned_equipment_json,
+          return_status = excluded.return_status,
+          ready_for_pickup = excluded.ready_for_pickup,
           others = excluded.others,
           note = excluded.note,
           purpose = excluded.purpose,
@@ -228,6 +234,9 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           l.returnedDate || '',
           l.status || 'Active',
           JSON.stringify(l.equipment || { Adapter: 1, Cable: 1 }),
+          l.returnedEquipment ? JSON.stringify(l.returnedEquipment) : null,
+          l.returnStatus || '',
+          l.readyForPickup ? 1 : 0,
           l.others || '',
           l.note || '',
           l.purpose || '',
@@ -340,8 +349,8 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     // 3. Restore Loans
     if (Array.isArray(snapshot.loans)) {
       const insertLoan = db.prepare(`
-        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, others, note, purpose, assignee_type, is_archived, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, returned_equipment_json, return_status, ready_for_pickup, others, note, purpose, assignee_type, is_archived, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const l of snapshot.loans) {
         insertLoan.run(
@@ -359,6 +368,9 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           l.returned_date || l.returnedDate,
           l.status,
           l.equipment_json || JSON.stringify(l.equipment || {}),
+          l.returned_equipment_json || (l.returnedEquipment ? JSON.stringify(l.returnedEquipment) : null),
+          l.return_status || l.returnStatus || '',
+          l.ready_for_pickup !== undefined ? l.ready_for_pickup : (l.readyForPickup ? 1 : 0),
           l.others,
           l.note,
           l.purpose,
