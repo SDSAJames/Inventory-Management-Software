@@ -121,6 +121,11 @@ export const api = {
     addLocation: (name) => request('/directory/locations', { method: 'POST', body: { name } }),
     deleteLocation: (name) => request(`/directory/locations/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 
+    getCategories: () => request('/directory/categories'),
+    addCategory: (name) => request('/directory/categories', { method: 'POST', body: { name } }),
+    renameCategory: (id, name) => request(`/directory/categories/${encodeURIComponent(id)}`, { method: 'PUT', body: { name } }),
+    deleteCategory: (id) => request(`/directory/categories/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
     getTransferReasons: () => request('/directory/transfer-reasons'),
     addTransferReason: (reason) => request('/directory/transfer-reasons', { method: 'POST', body: { reason } }),
     deleteTransferReason: (id) => request(`/directory/transfer-reasons/${encodeURIComponent(id)}`, { method: 'DELETE' }),

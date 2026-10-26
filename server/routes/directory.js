@@ -1,8 +1,53 @@
 import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 export const directoryRouter = Router();
+
+// Asset categories are shared reference data managed by administrators.
+directoryRouter.get('/categories', (req, res) => {
+  const categories = db.prepare('SELECT id, name FROM asset_categories ORDER BY name COLLATE NOCASE ASC').all();
+  return res.json({ success: true, categories });
+});
+
+directoryRouter.post('/categories', authenticate, requireRole('ADMIN', 'OPERATOR'), (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  if (!name) return res.status(400).json({ success: false, error: 'Category name is required.' });
+  if (db.prepare('SELECT id FROM asset_categories WHERE LOWER(name) = LOWER(?)').get(name)) {
+    return res.status(409).json({ success: false, error: 'That category already exists.' });
+  }
+  const id = `cat-${Date.now()}`;
+  db.prepare('INSERT INTO asset_categories (id, name) VALUES (?, ?)').run(id, name);
+  logAudit('CREATE_ASSET_CATEGORY', 'asset_categories', id, { name }, req.user);
+  return res.status(201).json({ success: true, category: { id, name } });
+});
+
+directoryRouter.put('/categories/:id', authenticate, requireRole('ADMIN'), (req, res) => {
+  const category = db.prepare('SELECT id, name FROM asset_categories WHERE id = ?').get(req.params.id);
+  if (!category) return res.status(404).json({ success: false, error: 'Category not found.' });
+  const name = String(req.body?.name || '').trim();
+  if (!name) return res.status(400).json({ success: false, error: 'Category name is required.' });
+  if (db.prepare('SELECT id FROM asset_categories WHERE LOWER(name) = LOWER(?) AND id <> ?').get(name, category.id)) {
+    return res.status(409).json({ success: false, error: 'That category already exists.' });
+  }
+  const rename = db.transaction(() => {
+    db.prepare('UPDATE asset_categories SET name = ? WHERE id = ?').run(name, category.id);
+    db.prepare('UPDATE assets SET category = ? WHERE category = ?').run(name, category.name);
+  });
+  rename();
+  logAudit('RENAME_ASSET_CATEGORY', 'asset_categories', category.id, { from: category.name, to: name }, req.user);
+  return res.json({ success: true, category: { id: category.id, name } });
+});
+
+directoryRouter.delete('/categories/:id', authenticate, requireRole('ADMIN'), (req, res) => {
+  const category = db.prepare('SELECT id, name FROM asset_categories WHERE id = ?').get(req.params.id);
+  if (!category) return res.status(404).json({ success: false, error: 'Category not found.' });
+  const used = db.prepare('SELECT COUNT(*) as count FROM assets WHERE category = ?').get(category.name).count;
+  if (used) return res.status(409).json({ success: false, error: `Cannot remove ${category.name}; ${used} asset${used === 1 ? ' uses' : 's use'} it.` });
+  db.prepare('DELETE FROM asset_categories WHERE id = ?').run(category.id);
+  logAudit('DELETE_ASSET_CATEGORY', 'asset_categories', category.id, { name: category.name }, req.user);
+  return res.json({ success: true });
+});
 
 /* ── 1. Employees Directory ───────────────────────────── */
 

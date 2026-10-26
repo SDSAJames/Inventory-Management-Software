@@ -132,6 +132,19 @@ export function initDatabase() {
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS asset_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL
+    );
+  `);
+  const existingCategories = db.prepare('SELECT COUNT(*) as count FROM asset_categories').get().count;
+  if (!existingCategories) {
+    const categories = db.prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND TRIM(category) <> ''").all();
+    const insertCategory = db.prepare('INSERT OR IGNORE INTO asset_categories (id, name) VALUES (?, ?)');
+    categories.forEach((row, index) => insertCategory.run(`cat-${index + 1}`, row.category));
+  }
+
   // 6. Employees directory table
   db.exec(`
     CREATE TABLE IF NOT EXISTS employees (
@@ -324,6 +337,16 @@ function seedDefaultData() {
     }
     console.log(`✓ Seeded ${seed.assets.length} baseline inventory assets into SQLite`);
   }
+
+  const knownCategories = new Set(db.prepare('SELECT name FROM asset_categories').all().map((row) => row.name.toLowerCase()));
+  const categoryRows = db.prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND TRIM(category) <> ''").all();
+  const addCategory = db.prepare('INSERT OR IGNORE INTO asset_categories (id, name) VALUES (?, ?)');
+  categoryRows.forEach((row) => {
+    if (!knownCategories.has(row.category.toLowerCase())) {
+      addCategory.run(`cat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, row.category);
+      knownCategories.add(row.category.toLowerCase());
+    }
+  });
 
   // Seed initial loans if table is empty
   const countLoans = db.prepare('SELECT COUNT(*) as count FROM loans').get();

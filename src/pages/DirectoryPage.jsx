@@ -1,9 +1,16 @@
 import { useDb } from '../hooks/useDb';
 import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { statusClass } from '../lib/utils';
 
 export default function DirectoryPage() {
-  const { db } = useDb();
+  const { db, addCategory, renameCategory, deleteCategory } = useDb();
+  const { user } = useAuth();
+  const toast = useToast();
+  const [newCategory, setNewCategory] = useState('');
+  const canAddCategory = ['ADMIN', 'OPERATOR'].includes(user?.role);
+  const canManageCategories = user?.role === 'ADMIN';
   const [selectedLocation, setSelectedLocation] = useState(null);
   const locations = db.locations || [];
   const assets = db.assets || [];
@@ -18,6 +25,36 @@ export default function DirectoryPage() {
       </div>
 
       <div className="directory-columns">
+        <section className="panel">
+          <h3>Asset categories</h3>
+          <ul className="directory-list">
+            {(db.categories || []).map((category) => (
+              <li key={category.id} className="category-directory-row">
+                <span>{category.name}</span>
+                {canManageCategories && <span className="category-directory-actions">
+                  <button type="button" className="text-button" onClick={async () => {
+                    const name = window.prompt('Rename category', category.name);
+                    if (name === null || !name.trim()) return;
+                    try { await renameCategory(category.id, name); toast('Category renamed'); }
+                    catch (error) { toast(error.message); }
+                  }}>Rename</button>
+                  <button type="button" className="text-button" onClick={async () => {
+                    try { await deleteCategory(category.id); toast('Category removed'); }
+                    catch (error) { toast(error.message); }
+                  }}>Remove</button>
+                </span>}
+              </li>
+            ))}
+          </ul>
+          {canAddCategory && <form className="category-add-form" onSubmit={async (event) => {
+            event.preventDefault();
+            try { await addCategory(newCategory); setNewCategory(''); toast('Category added'); }
+            catch (error) { toast(error.message); }
+          }}>
+            <input aria-label="New asset category" placeholder="New category name" value={newCategory} onChange={(event) => setNewCategory(event.target.value)} />
+            <button type="submit" className="button" disabled={!newCategory.trim()}>Add</button>
+          </form>}
+        </section>
         <section className="panel">
           <h3>Departments</h3>
           <ul className="directory-list">

@@ -933,7 +933,7 @@ tbody tr:hover { background: #f8fafc; }
 .import-backup-panel p { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
 
 /* ── Directory ────────────────────────────────────────── */
-.directory-columns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.directory-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .directory-columns h3 { font-family: inherit; font-weight: 700; font-size: 16px; margin-top: 0; color: var(--ink); }
 .directory-list { list-style: none; padding: 0; margin: 0; }
 .directory-list li { padding: 12px 0; border-top: 1px solid #edf2f7; font-size: 12px; }
@@ -945,6 +945,12 @@ tbody tr:hover { background: #f8fafc; }
 .directory-assets-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 .directory-assets-heading h3 { margin: 0; }
 .directory-assets-heading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.category-directory-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.category-directory-actions { display: flex; gap: 12px; }
+.category-add-form { display: flex; gap: 8px; margin-top: 14px; }
+.category-add-form input { min-width: 0; flex: 1; }
+.asset-category-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.asset-category-label .text-button { margin-bottom: 4px; font-size: 11px; }
 
 /* ── Asset table ──────────────────────────────────────── */
 .asset-table { width: 100%; }

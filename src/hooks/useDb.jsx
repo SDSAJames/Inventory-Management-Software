@@ -52,10 +52,11 @@ export function DbProvider({ children }) {
 
       return {
         ...raw,
+        categories: raw.categories || [...new Set([...(seed.assets || []).map((a) => a.category), ...raw.assets.map((a) => a.category)].filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
         assets: reconcileAllAssets(assetsWithHistory, raw.loans),
       };
     }
-    return raw;
+    return raw ? { ...raw, categories: raw.categories || [...new Set((seed.assets || []).map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })) } : raw;
   });
 
   const [transferReasons, setTransferReasons] = useState(() => {
@@ -98,6 +99,7 @@ export function DbProvider({ children }) {
 
       try {
         const res = await api.exchange.exportData();
+        const categoryRes = await api.directory.getCategories().catch(() => null);
         if (!active || !res?.success || !res?.db) return;
         const serverDb = res.db;
 
@@ -109,6 +111,7 @@ export function DbProvider({ children }) {
             employees: serverDb.employees?.length ? serverDb.employees : prev.employees,
             departments: serverDb.departments?.length ? serverDb.departments : prev.departments,
             locations: serverDb.locations?.length ? serverDb.locations : prev.locations,
+            categories: categoryRes?.categories?.length ? categoryRes.categories : prev.categories,
           }));
         } else {
           // If server database is newly created, seed it with initial baseline data
@@ -783,9 +786,35 @@ export function DbProvider({ children }) {
     });
   }, []);
 
+  const addCategory = useCallback(async (name) => {
+    const result = await api.directory.addCategory(String(name || '').trim());
+    setDb((prev) => ({ ...prev, categories: [...(prev.categories || []), result.category] }));
+    return result.category;
+  }, []);
+
+  const renameCategory = useCallback(async (id, name) => {
+    const result = await api.directory.renameCategory(id, String(name || '').trim());
+    setDb((prev) => {
+      const oldName = prev.categories?.find((category) => category.id === id)?.name;
+      return {
+        ...prev,
+        categories: (prev.categories || []).map((category) => category.id === id ? result.category : category),
+        assets: prev.assets.map((asset) => asset.category === oldName ? { ...asset, category: result.category.name } : asset),
+      };
+    });
+  }, []);
+
+  const deleteCategory = useCallback(async (id) => {
+    await api.directory.deleteCategory(id);
+    setDb((prev) => ({ ...prev, categories: (prev.categories || []).filter((category) => category.id !== id) }));
+  }, []);
+
   const value = useMemo(() => ({
     db,
     setDb,
+    addCategory,
+    renameCategory,
+    deleteCategory,
     addAsset,
     updateAsset,
     changeAssetOwner,
@@ -809,6 +838,9 @@ export function DbProvider({ children }) {
     hasBackup: checkBackup,
   }), [
     db,
+    addCategory,
+    renameCategory,
+    deleteCategory,
     addAsset,
     updateAsset,
     changeAssetOwner,

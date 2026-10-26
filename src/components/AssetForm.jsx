@@ -4,10 +4,13 @@ import { nextAssetCode, statusClass } from '../lib/utils';
 import { getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
-  const { db, addAsset, updateAsset } = useDb();
+  const { db, addAsset, updateAsset, addCategory } = useDb();
   const toast = useToast();
+  const { user } = useAuth();
+  const canAddCategory = ['ADMIN', 'OPERATOR'].includes(user?.role);
 
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'loans' | 'ownership'
 
@@ -97,6 +100,18 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       }
       return { ...prev, owner: nextOwner, status: nextStatus };
     });
+  };
+
+  const handleAddCategory = async () => {
+    const name = window.prompt('Enter a name for the new asset category');
+    if (name === null || !name.trim()) return;
+    try {
+      const category = await addCategory(name);
+      setForm((prev) => ({ ...prev, category: category.name }));
+      toast(`Category “${category.name}” added`);
+    } catch (error) {
+      toast(error.message || 'Could not add category');
+    }
   };
 
   const handleSubmit = (e) => {
@@ -211,8 +226,15 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               {errors.code && <span className="field-error-msg">⚠️ {errors.code}</span>}
             </div>
             <div className="field">
-              <label htmlFor="category">Category</label>
-              <input id="category" value={form.category} onChange={set('category')} />
+              <div className="asset-category-label">
+                <label htmlFor="category">Category</label>
+                {canAddCategory && <button type="button" className="text-button" onClick={handleAddCategory}>+ Add</button>}
+              </div>
+              <select id="category" value={form.category} onChange={set('category')}>
+                {[...new Set([...(db.categories || []).map((category) => category.name), form.category].filter(Boolean))].map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
             </div>
             <div className="field">
               <label htmlFor="model">Model</label>
