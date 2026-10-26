@@ -809,12 +809,50 @@ export function DbProvider({ children }) {
     setDb((prev) => ({ ...prev, categories: (prev.categories || []).filter((category) => category.id !== id) }));
   }, []);
 
+  const addLocation = useCallback(async (name) => {
+    const result = await api.directory.addLocation(String(name || '').trim());
+    setDb((prev) => ({ ...prev, locations: [...new Set([...(prev.locations || []), result.location.name])] }));
+    return result.location.name;
+  }, []);
+
+  const addDepartment = useCallback(async (name) => {
+    const result = await api.directory.addDepartment(String(name || '').trim());
+    setDb((prev) => ({ ...prev, departments: [...new Set([...(prev.departments || []), result.department.name])] }));
+    return result.department.name;
+  }, []);
+
+  const renameDepartment = useCallback(async (currentName, name) => {
+    const result = await api.directory.renameDepartment(currentName, String(name || '').trim());
+    setDb((prev) => ({ ...prev, departments: (prev.departments || []).map((item) => item === currentName ? result.department.name : item) }));
+  }, []);
+
+  const deleteDepartment = useCallback(async (name) => {
+    await api.directory.deleteDepartment(name);
+    setDb((prev) => ({ ...prev, departments: (prev.departments || []).filter((item) => item !== name) }));
+  }, []);
+
+  const renameLocation = useCallback(async (currentName, name) => {
+    const result = await api.directory.renameLocation(currentName, String(name || '').trim());
+    setDb((prev) => ({ ...prev, locations: (prev.locations || []).map((item) => item === currentName ? result.location.name : item) }));
+  }, []);
+
+  const deleteLocation = useCallback(async (name) => {
+    await api.directory.deleteLocation(name);
+    setDb((prev) => ({ ...prev, locations: (prev.locations || []).filter((item) => item !== name) }));
+  }, []);
+
   const value = useMemo(() => ({
     db,
     setDb,
     addCategory,
     renameCategory,
     deleteCategory,
+    addLocation,
+    addDepartment,
+    renameDepartment,
+    deleteDepartment,
+    renameLocation,
+    deleteLocation,
     addAsset,
     updateAsset,
     changeAssetOwner,
@@ -841,6 +879,12 @@ export function DbProvider({ children }) {
     addCategory,
     renameCategory,
     deleteCategory,
+    addLocation,
+    addDepartment,
+    renameDepartment,
+    deleteDepartment,
+    renameLocation,
+    deleteLocation,
     addAsset,
     updateAsset,
     changeAssetOwner,

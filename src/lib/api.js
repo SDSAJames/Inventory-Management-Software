@@ -115,10 +115,12 @@ export const api = {
 
     getDepartments: () => request('/directory/departments'),
     addDepartment: (name) => request('/directory/departments', { method: 'POST', body: { name } }),
+    renameDepartment: (currentName, name) => request(`/directory/departments/${encodeURIComponent(currentName)}`, { method: 'PUT', body: { name } }),
     deleteDepartment: (name) => request(`/directory/departments/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 
     getLocations: () => request('/directory/locations'),
     addLocation: (name) => request('/directory/locations', { method: 'POST', body: { name } }),
+    renameLocation: (currentName, name) => request(`/directory/locations/${encodeURIComponent(currentName)}`, { method: 'PUT', body: { name } }),
     deleteLocation: (name) => request(`/directory/locations/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 
     getCategories: () => request('/directory/categories'),

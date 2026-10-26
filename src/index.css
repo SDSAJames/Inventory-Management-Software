@@ -946,9 +946,29 @@ tbody tr:hover { background: #f8fafc; }
 .directory-assets-heading h3 { margin: 0; }
 .directory-assets-heading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
 .category-directory-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.directory-value-button { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.directory-value-button:not(:disabled):hover { color: var(--primary); text-decoration: underline; }
+.directory-value-button:disabled { cursor: default; }
+.directory-clickable-row { cursor: pointer; border-radius: 4px; }
+.directory-clickable-row:hover { background: #f7faff; }
+.directory-clickable-row.in-use { cursor: default; }
+.directory-clickable-row.in-use:hover { background: transparent; }
+.directory-clickable-row:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.directory-edit-state { flex: 0 0 auto; border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 700; }
+.directory-edit-state.ready { color: #176b43; background: #e8f6ee; }
+.directory-edit-state.locked { color: #8b5a11; background: #fff3dc; }
+.directory-location-name small { display: block; color: var(--muted); margin-top: 3px; }
 .category-directory-actions { display: flex; gap: 12px; }
-.category-add-form { display: flex; gap: 8px; margin-top: 14px; }
-.category-add-form input { min-width: 0; flex: 1; }
+.category-directory-actions .text-button:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
+.directory-location-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.directory-location-row .directory-location { flex: 1; }
+.directory-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.directory-panel-heading h3 { margin: 0; }
+.directory-panel-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+.directory-add-button { padding: 6px 10px; font-size: 12px; }
+.directory-selection-count { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.directory-clickable-row.selected { background: #eef4ff; }
+.directory-clickable-row input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; margin: 0 2px 0 0; accent-color: var(--primary); }
 .asset-category-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .asset-category-label .text-button { margin-bottom: 4px; font-size: 11px; }
 

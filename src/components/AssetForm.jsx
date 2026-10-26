@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
-  const { db, addAsset, updateAsset, addCategory } = useDb();
+  const { db, addAsset, updateAsset, addCategory, addLocation, addDepartment } = useDb();
   const toast = useToast();
   const { user } = useAuth();
   const canAddCategory = ['ADMIN', 'OPERATOR'].includes(user?.role);
@@ -111,6 +111,18 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       toast(`Category “${category.name}” added`);
     } catch (error) {
       toast(error.message || 'Could not add category');
+    }
+  };
+
+  const handleAddDirectoryOption = async (label, addOption, field) => {
+    const name = window.prompt(`Enter a name for the new ${label.toLowerCase()}`);
+    if (name === null || !name.trim()) return;
+    try {
+      const value = await addOption(name);
+      setForm((prev) => ({ ...prev, [field]: value }));
+      toast(`${label} “${value}” added`);
+    } catch (error) {
+      toast(error.message || `Could not add ${label.toLowerCase()}`);
     }
   };
 
@@ -253,9 +265,12 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               </select>
             </div>
             <div className="field">
-              <label htmlFor="location">Location</label>
+              <div className="asset-category-label">
+                <label htmlFor="location">Location</label>
+                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('Location', addLocation, 'location')}>+ Add</button>}
+              </div>
               <select id="location" value={form.location} onChange={set('location')}>
-                {db.locations.map((l) => <option key={l}>{l}</option>)}
+                {[...new Set([...(db.locations || []), form.location].filter(Boolean))].map((location) => <option key={location} value={location}>{location}</option>)}
               </select>
             </div>
             <div className="field">
@@ -277,8 +292,14 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
             {/* ROW 3: Department, Issued Date & Notes */}
             <div className="field">
-              <label htmlFor="department">Department</label>
-              <input id="department" value={form.department} onChange={set('department')} />
+              <div className="asset-category-label">
+                <label htmlFor="department">Department</label>
+                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('Department', addDepartment, 'department')}>+ Add</button>}
+              </div>
+              <select id="department" value={form.department || ''} onChange={set('department')}>
+                <option value="">Select department</option>
+                {[...new Set([...(db.departments || []), form.department].filter(Boolean))].map((department) => <option key={department} value={department}>{department}</option>)}
+              </select>
             </div>
             <div className="field">
               <label htmlFor="issuedDate">Issued date</label>
