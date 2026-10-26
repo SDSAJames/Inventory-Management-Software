@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIso, readableLoanDate, todayIso, statusClass, isLoanOverdue, getLoanStatus } from '../lib/utils';
@@ -6,19 +7,84 @@ import { readXlsx, makeXlsx, downloadBlob } from '../lib/xlsx';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
 import { LOAN_HEADERS } from '../lib/constants';
 import LoanTable from '../components/LoanTable';
+import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+const LOAN_SEARCH_FIELDS = [
+  'All fields',
+  'Assignee / Name',
+  'Knox ID',
+  'Laptop / Asset #',
+  'Location',
+  'IP address',
+  'Department',
+  'Note / Purpose',
+];
+
+function filterLoan(loan, term, field) {
+  if (!term || !term.trim()) return true;
+  const q = term.toLowerCase().trim();
+  const terms = q.split(/\s+/);
+
+  let searchable = '';
+  switch (field) {
+    case 'Assignee / Name':
+      searchable = loan.assignee || '';
+      break;
+    case 'Knox ID':
+      searchable = loan.knoxId || '';
+      break;
+    case 'Laptop / Asset #':
+      searchable = `${loan.assetCode || ''} ${loan.equipment?.Laptop || ''}`;
+      break;
+    case 'Location':
+      searchable = loan.location || '';
+      break;
+    case 'IP address':
+      searchable = loan.ip || '';
+      break;
+    case 'Department':
+      searchable = loan.department || '';
+      break;
+    case 'Note / Purpose':
+      searchable = `${loan.note || ''} ${loan.purpose || ''}`;
+      break;
+    case 'All fields':
+    default: {
+      const laptop = loan.assetCode || loan.equipment?.Laptop || '';
+      const accessories = loan.equipment
+        ? Object.entries(loan.equipment)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(' ')
+        : '';
+      const status = getLoanStatus(loan);
+      searchable = `${loan.assignee || ''} ${loan.knoxId || ''} ${laptop} ${loan.location || ''} ${loan.ip || ''} ${loan.department || ''} ${loan.note || ''} ${loan.purpose || ''} ${loan.others || ''} ${loan.assigneeType || ''} ${status} ${accessories}`;
+      break;
+    }
+  }
+
+  const lower = searchable.toLowerCase();
+  return terms.every((t) => lower.includes(t));
+}
+
 export default function LoansPage() {
   const { db, updateLoan, pickupLoan, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
   const toast = useToast();
   const fileRef = useRef(null);
+  const [searchParams] = useSearchParams();
 
   // 4 Process categories: 'scheduled' | 'loaned' | 'overdue' | 'returned' | 'all'
-  const [category, setCategory] = useState('scheduled');
+  const [category, setCategory] = useState(
+    () => searchParams.get('tab') || searchParams.get('category') || 'scheduled',
+  );
+  const [searchTerm, setSearchTerm] = useState(
+    () => searchParams.get('q') || searchParams.get('search') || '',
+  );
+  const [searchField, setSearchField] = useState('All fields');
   const [showCreate, setShowCreate] = useState(false);
   const [editLoanId, setEditLoanId] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -113,13 +179,62 @@ export default function LoansPage() {
     [db.loans],
   );
 
+  const filteredScheduledLoans = useMemo(
+    () => scheduledLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
+    [scheduledLoans, searchTerm, searchField],
+  );
+
+  const filteredLoanedLoans = useMemo(
+    () => loanedLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
+    [loanedLoans, searchTerm, searchField],
+  );
+
+  const filteredOverdueLoans = useMemo(
+    () => overdueLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
+    [overdueLoans, searchTerm, searchField],
+  );
+
+  const filteredReturnedLoans = useMemo(
+    () => returnedLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
+    [returnedLoans, searchTerm, searchField],
+  );
+
+  const filteredAllLoans = useMemo(
+    () => db.loans.filter((l) => filterLoan(l, searchTerm, searchField)),
+    [db.loans, searchTerm, searchField],
+  );
+
+  const hasSearch = Boolean(searchTerm && searchTerm.trim());
+
   const displayedLoans = useMemo(() => {
-    if (category === 'scheduled') return scheduledLoans;
-    if (category === 'loaned') return loanedLoans;
-    if (category === 'overdue') return overdueLoans;
-    if (category === 'returned') return returnedLoans;
-    return db.loans;
-  }, [category, scheduledLoans, loanedLoans, overdueLoans, returnedLoans, db.loans]);
+    if (category === 'scheduled') return filteredScheduledLoans;
+    if (category === 'loaned') return filteredLoanedLoans;
+    if (category === 'overdue') return filteredOverdueLoans;
+    if (category === 'returned') return filteredReturnedLoans;
+    return filteredAllLoans;
+  }, [
+    category,
+    filteredScheduledLoans,
+    filteredLoanedLoans,
+    filteredOverdueLoans,
+    filteredReturnedLoans,
+    filteredAllLoans,
+  ]);
+
+  const totalCategoryCount = useMemo(() => {
+    if (category === 'scheduled') return scheduledLoans.length;
+    if (category === 'loaned') return loanedLoans.length;
+    if (category === 'overdue') return overdueLoans.length;
+    if (category === 'returned') return returnedLoans.length;
+    return db.loans.length;
+  }, [
+    category,
+    scheduledLoans.length,
+    loanedLoans.length,
+    overdueLoans.length,
+    returnedLoans.length,
+    db.loans.length,
+  ]);
 
   /* ── Selection & Bulk operations (Loaned & Overdue tabs) ── */
 
@@ -496,44 +611,62 @@ export default function LoansPage() {
         <button
           className={`loan-tab ${category === 'scheduled' ? 'active' : ''}`}
           onClick={() => setCategory('scheduled')}
+          title={hasSearch ? `${filteredScheduledLoans.length} matching of ${scheduledLoans.length} scheduled` : undefined}
         >
           <span className="category-dot scheduled-dot">●</span>
           Scheduled
-          <span className="loan-tab-count">{scheduledLoans.length}</span>
+          <span className="loan-tab-count">
+            {hasSearch ? filteredScheduledLoans.length : scheduledLoans.length}
+          </span>
         </button>
         <button
           className={`loan-tab ${category === 'loaned' ? 'active' : ''}`}
           onClick={() => setCategory('loaned')}
+          title={hasSearch ? `${filteredLoanedLoans.length} matching of ${loanedLoans.length} loaned` : undefined}
         >
           <span className="category-dot loaned-dot">●</span>
           Loaned
-          <span className="loan-tab-count">{loanedLoans.length}</span>
+          <span className="loan-tab-count">
+            {hasSearch ? filteredLoanedLoans.length : loanedLoans.length}
+          </span>
         </button>
         <button
           className={`loan-tab ${category === 'overdue' ? 'active overdue-tab' : ''} ${overdueLoans.length > 0 ? 'tab-has-alert' : ''}`}
           onClick={() => setCategory('overdue')}
-          title={overdueLoans.length > 0 ? `${overdueLoans.length} overdue loan${overdueLoans.length === 1 ? '' : 's'}` : 'No overdue loans'}
+          title={
+            hasSearch
+              ? `${filteredOverdueLoans.length} matching of ${overdueLoans.length} overdue`
+              : overdueLoans.length > 0
+              ? `${overdueLoans.length} overdue loan${overdueLoans.length === 1 ? '' : 's'}`
+              : 'No overdue loans'
+          }
         >
           <span className="category-dot overdue-dot">●</span>
           Overdue
           <span className={`loan-tab-count ${overdueLoans.length > 0 ? 'overdue-tab-count' : ''}`}>
-            {overdueLoans.length}
+            {hasSearch ? filteredOverdueLoans.length : overdueLoans.length}
           </span>
         </button>
         <button
           className={`loan-tab ${category === 'returned' ? 'active' : ''}`}
           onClick={() => setCategory('returned')}
+          title={hasSearch ? `${filteredReturnedLoans.length} matching of ${returnedLoans.length} returned` : undefined}
         >
           <span className="category-dot returned-dot">●</span>
           Returned
-          <span className="loan-tab-count">{returnedLoans.length}</span>
+          <span className="loan-tab-count">
+            {hasSearch ? filteredReturnedLoans.length : returnedLoans.length}
+          </span>
         </button>
         <button
           className={`loan-tab ${category === 'all' ? 'active' : ''}`}
           onClick={() => setCategory('all')}
+          title={hasSearch ? `${filteredAllLoans.length} matching of ${db.loans.length} total records` : undefined}
         >
           All records
-          <span className="loan-tab-count">{db.loans.length}</span>
+          <span className="loan-tab-count">
+            {hasSearch ? filteredAllLoans.length : db.loans.length}
+          </span>
         </button>
       </div>
 
@@ -556,6 +689,89 @@ export default function LoansPage() {
       </div>
 
       <section className="panel">
+        <SearchBar
+          id="loan-search-input"
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchField={searchField}
+          onSearchFieldChange={setSearchField}
+          searchFieldOptions={LOAN_SEARCH_FIELDS}
+          placeholder="Search Knox ID, assignee name, laptop asset #, location, IP address, note..."
+        />
+
+        {hasSearch && (
+          <div className="loan-search-meta">
+            <span>
+              Showing <strong>{displayedLoans.length}</strong> of <strong>{totalCategoryCount}</strong> loan{totalCategoryCount === 1 ? '' : 's'}
+              {searchField !== 'All fields' ? ` matching in ${searchField}` : ''}
+              {` under ${category === 'all' ? 'All records' : category}`}
+            </span>
+            <button
+              type="button"
+              className="loan-search-clear-link"
+              onClick={() => setSearchTerm('')}
+            >
+              Clear search
+            </button>
+          </div>
+        )}
+
+        {displayedLoans.length === 0 && hasSearch && filteredAllLoans.length > 0 && (
+          <div className="loan-search-cross-category-hint">
+            <span>
+              💡 No matches in <strong>{category === 'all' ? 'current filter' : category}</strong>, but found{' '}
+              <strong>{filteredAllLoans.length}</strong> matching record{filteredAllLoans.length === 1 ? '' : 's'} across other categories:
+            </span>
+            <div className="cross-category-links">
+              {filteredScheduledLoans.length > 0 && category !== 'scheduled' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('scheduled')}
+                >
+                  Scheduled ({filteredScheduledLoans.length})
+                </button>
+              )}
+              {filteredLoanedLoans.length > 0 && category !== 'loaned' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('loaned')}
+                >
+                  Loaned ({filteredLoanedLoans.length})
+                </button>
+              )}
+              {filteredOverdueLoans.length > 0 && category !== 'overdue' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('overdue')}
+                >
+                  Overdue ({filteredOverdueLoans.length})
+                </button>
+              )}
+              {filteredReturnedLoans.length > 0 && category !== 'returned' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('returned')}
+                >
+                  Returned ({filteredReturnedLoans.length})
+                </button>
+              )}
+              {category !== 'all' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('all')}
+                >
+                  All records ({filteredAllLoans.length})
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {isSelectableTab && displayedLoans.length > 0 && (
           <div className={`loan-bulk-toolbar ${selectedLoans.length ? 'has-selection' : ''}`}>
             <span className="loan-bulk-toolbar-info">
@@ -609,6 +825,24 @@ export default function LoansPage() {
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
+          emptyMessage={
+            hasSearch ? (
+              <div className="loan-search-empty">
+                <p>
+                  No loans match &ldquo;<strong>{searchTerm}</strong>&rdquo;
+                  {searchField !== 'All fields' ? ` in ${searchField}` : ''} under{' '}
+                  <strong>{category === 'all' ? 'All records' : category}</strong>.
+                </p>
+                <button
+                  type="button"
+                  className="button ghost small-btn"
+                  onClick={() => setSearchTerm('')}
+                >
+                  Clear search
+                </button>
+              </div>
+            ) : undefined
+          }
         />
       </section>
 

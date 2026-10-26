@@ -42,6 +42,7 @@ export default function LoanTable({
   selectedIds = new Set(),
   onToggleSelect,
   onToggleSelectAll,
+  emptyMessage,
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -117,7 +118,7 @@ export default function LoanTable({
   };
 
   if (!loans.length) {
-    return <div className="empty">No loan records in this category.</div>;
+    return <div className="empty">{emptyMessage || 'No loan records in this category.'}</div>;
   }
 
   return (

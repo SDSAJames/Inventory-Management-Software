@@ -581,6 +581,128 @@ tbody tr:hover { background: #f8fafc; }
 }
 .empty { padding: 35px; color: var(--muted); text-align: center; font-size: 13px; }
 
+/* ── Search box with icon and clear button ────────────── */
+.search-box {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.search-box .search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 11px;
+  pointer-events: none;
+  opacity: 0.55;
+  user-select: none;
+}
+.search-box .search {
+  width: 100%;
+}
+.search-box .search.search-has-icon {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+.search-box .search-clear-btn {
+  position: absolute;
+  right: 7px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+.search-box .search-clear-btn:hover {
+  color: var(--ink);
+  background: #f1f5f9;
+}
+
+/* ── Loans Search Feedback ────────────────────────────── */
+.loan-search-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #f8fafc;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  margin-bottom: 11px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.loan-search-meta strong {
+  color: var(--ink);
+}
+.loan-search-clear-link {
+  background: none;
+  border: none;
+  color: var(--blue);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-decoration: underline;
+}
+.loan-search-clear-link:hover {
+  color: #1d4ed8;
+}
+.loan-search-cross-category-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #1e40af;
+}
+.loan-search-cross-category-hint strong {
+  color: #1e3a8a;
+}
+.cross-category-links {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.btn-hint-category {
+  background: #ffffff;
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-hint-category:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+.loan-search-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.loan-search-empty p {
+  margin-bottom: 12px;
+}
+.loan-search-empty strong {
+  color: var(--ink);
+}
+
 /* ── Bar chart ────────────────────────────────────────── */
 .bar-row { margin: 17px 0; }
 .bar-meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 7px; }
