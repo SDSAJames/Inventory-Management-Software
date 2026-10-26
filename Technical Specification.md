@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.2.2** |
+| **Specification Version** | **v1.3.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
@@ -60,7 +60,7 @@ graph TD
 ```
 Inventory-Management-Software/
 ├── index.html                   # HTML entry point (clean system typography, zero CDNs)
-├── package.json                 # Project manifest (v1.2.2, scripts, dependencies)
+├── package.json                 # Project manifest (v1.3.0, scripts, dependencies)
 ├── vite.config.js               # Vite 6 configuration with React plugin & loopback IPv4 proxy
 ├── server/                      # Shared Corporate Intranet Express & SQLite Backend
 │   ├── index.js                 # Express 5 server binding to 0.0.0.0:5000, LAN CORS, SPA fallback
@@ -88,7 +88,7 @@ Inventory-Management-Software/
 │   │   ├── PatchHistoryModal.jsx# In-app release notes viewer per version with search & filtering
 │   │   ├── TravelerCalendar.jsx # Monthly schedule calendar with location filtering & day inspection
 │   │   ├── Modal.jsx            # Accessible overlay modal dialog with backdrop dismiss
-│   │   ├── AssetTable.jsx       # Interactive data grid, batch checkboxes, click-to-transfer badges
+│   │   ├── AssetTable.jsx       # Interactive data grid, drag selection, batch actions, click-to-transfer badges
 │   │   ├── AssetForm.jsx        # Asset registration and editing modal form
 │   │   ├── ChangeOwnerModal.jsx # Direct ownership transfer dialog with custom reasons
 │   │   ├── LoanForm.jsx         # Internal loan checkout form with equipment checklist
@@ -98,7 +98,7 @@ Inventory-Management-Software/
 │   ├── pages/
 │   │   ├── OverviewPage.jsx     # Executive dashboard, KPIs, quick filters, category mix
 │   │   ├── AssetsPage.jsx       # Hardware inventory register, multi-column search, batch operations
-│   │   ├── LoansPage.jsx        # Device custody, checkout/return lifecycle, overdue tracking
+│   │   ├── LoansPage.jsx        # Searchable custody records, editable pickup/return details, overdue tracking
 │   │   ├── CalendarPage.jsx     # Dedicated In & Out Calendar with multi-tier requester filtering
 │   │   ├── BusinessTravelersPage.jsx # Mobile workforce roster list, overdue triage, location matrix
 │   │   ├── DirectoryPage.jsx    # Employees with Knox IDs, departments, facility locations
@@ -110,7 +110,7 @@ Inventory-Management-Software/
 │   │   ├── api.js               # Enterprise REST API client (Fetch wrapper with Bearer token & cookies)
 │   │   ├── assetExcel.js        # Equipment register column mapping & row serialization
 │   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
-│   │   ├── constants.js         # APP_VERSION ('1.2.2'), status enums, Excel headers, default reasons
+│   │   ├── constants.js         # APP_VERSION ('1.3.0'), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
 │   │   ├── txtImport.js         # Delimited text parser & format detector for TXT extracted from Excel
 │   │   ├── utils.js             # Date formatters (ISO, readable), ID generators, sanitizers
@@ -376,7 +376,7 @@ Production build execution via `npm run build`:
 ### 8.1 Access Pattern
 The patch history system is accessible via:
 1. **Interactive Global Modal (`PatchHistoryModal.jsx`)**:
-   - Triggered from any page via the TopBar `v1.2.2 • Patch Notes` button or the sticky bottom-left Sidebar footer pill (`v1.2.2 • Patch Notes`), keeping the main sidebar menu clean and uncluttered.
+   - Triggered from any page via the TopBar version button or the sticky bottom-left Sidebar footer pill, keeping the main sidebar menu clean and uncluttered.
    - Direct button in the Business Travelers view header (`view-header-actions`), ensuring instant visibility alongside view mode toggles.
    - Pinned header and filter controls with internal scrolling stream (`.patch-cards-stream`).
    - Anchored from the top (`margin: 12px auto !important; align-items: flex-start; z-index: 100000;`) to prevent header clipping in all viewport heights.
@@ -384,7 +384,7 @@ The patch history system is accessible via:
    - Routed at `/patch-history` and `/changelog` for direct deep-linking when needed.
 
 ### 8.2 Layout Overflow & Obscurity Prevention
-- **Sticky Sidebar Positioning**: `.sidebar` is styled with `position: sticky; top: 0; height: 100vh; max-height: 100vh; flex-shrink: 0; overflow-y: auto;`. This ensures that on tall pages (such as Business Travelers), the bottom-left version info (`v1.2.2 • Patch Notes`) remains permanently pinned in the viewport without scrolling out of sight.
+- **Sticky Sidebar Positioning**: `.sidebar` is styled with `position: sticky; top: 0; height: 100vh; max-height: 100vh; flex-shrink: 0; overflow-y: auto;`. This ensures that on tall pages (such as Business Travelers), the bottom-left version info remains permanently pinned in the viewport without scrolling out of sight.
 - **Card Flex-Shrink Prevention**: `.patch-card`, `.patch-card-header`, and `.patch-card-body` are configured with `flex-shrink: 0 !important; min-height: min-content !important;`. This prevents CSS flexbox from squishing cards into flat horizontal lines when multiple versions are expanded, allowing the cards to render at full natural height with an active vertical scrollbar on `.patch-cards-stream`.
 - **Container Constraints**: `.main-content` is styled with `max-width: calc(100vw - 252px); overflow-x: hidden; min-width: 0;` to ensure wide tabular or calendar content never expands the viewport horizontally.
 - **Component Horizontal Scrollers**: `TravelerCalendar` and tables are wrapped in containers with `overflow-x: auto; max-width: 100%;`, preserving the visibility of `.top-actions` and TopBar version pills regardless of display resolution.

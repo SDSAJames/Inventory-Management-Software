@@ -72,7 +72,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     system: 'StarPlus Energy Asset Management System (SPE-AMS)',
-    version: '1.2.2',
+    version: '1.3.0',
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.floor(process.uptime()),
     database: {
@@ -132,7 +132,7 @@ app.listen(config.port, config.host, () => {
   }
 
   console.log('──────────────────────────────────────────────────────────');
-  console.log(`⚡ StarPlus Energy Asset Management Server v1.2.2`);
+  console.log(`⚡ StarPlus Energy Asset Management Server v1.3.0`);
   console.log(`🏢 Network:              Corporate Intranet (Multi-Host Environment)`);
   console.log(`🚀 Local Access:         http://localhost:${config.port}`);
   if (intranetIps.length > 0) {

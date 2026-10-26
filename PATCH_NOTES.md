@@ -4,6 +4,27 @@ All notable changes, architectural updates, and state engine revisions for the *
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] — 2026-10-26
+
+### Added: Loan Search, Flexible Custody Updates & Asset Multi-Selection
+
+#### 🔎 Loan Search & Filtering (`/loans`)
+- Added field-selectable search across all loan fields, assignee, Knox ID, laptop/asset number, location, IP address, department, and note/purpose.
+- Added status filtering so operators can quickly isolate scheduled, active, overdue, or returned loans.
+
+#### 📦 Editable Pickup & Return Details
+- Pickup and return workflows now allow operators to adjust the equipment checklist and supporting loan details during custody handover.
+- Persisted those edits through the loans API while retaining existing loan state transitions and asset custody history.
+
+#### 🖱️ Asset Register Drag Selection
+- Added drag-to-select interaction across asset rows, making existing batch operations faster for multi-record updates.
+
+#### 📚 Documentation & Versioning
+- Bumped package metadata, client version, server health response, and exchange export metadata to `v1.3.0`.
+- Synchronized the README, Software Design Document, Technical Specification, and in-app patch history.
+
+---
+
 ## [1.2.2] — 2026-10-21
 
 ### Fixed & Improved: Vite Proxy Network Stability & Full-Stack Development Orchestration

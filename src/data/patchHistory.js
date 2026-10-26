@@ -6,6 +6,54 @@
 
 export const PATCH_HISTORY = [
   {
+    version: '1.3.0',
+    date: '2026-10-26',
+    title: 'Loan Search, Flexible Custody Updates & Asset Multi-Selection',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary:
+      'Expanded loan management with searchable and filterable records, editable equipment details during pickup and return, and drag selection for faster asset register batch operations.',
+    highlights: [
+      'Loan Search & Filters: Search loan records across all fields or target assignee, Knox ID, asset, location, IP address, department, and notes; narrow results by loan status.',
+      'Pickup & Return Updates: Review and edit accessory counts and loan details as equipment is handed over or returned, with changes persisted by the server.',
+      'Asset Register Drag Selection: Select multiple asset rows with a drag gesture to streamline existing batch actions.',
+      'Version Governance: Bumped the application, server health/export metadata, and documentation to v1.3.0.',
+    ],
+    sections: [
+      {
+        heading: 'Loan Search & Filtering',
+        badge: 'Workflow Enhancement',
+        items: [
+          'Added a loan search bar with selectable search fields for assignee, Knox ID, laptop/asset number, location, IP address, department, and note/purpose, plus an all-fields option.',
+          'Added loan status filtering to help operators isolate scheduled, active, overdue, and returned records.',
+        ],
+      },
+      {
+        heading: 'Pickup & Return Details',
+        badge: 'Custody Workflow',
+        items: [
+          'Pickup and return workflows can update the itemized equipment checklist and supporting loan details alongside their respective custody dates.',
+          'Persisted pickup and return edits through the loans API while retaining the existing asset custody and audit-history workflows.',
+        ],
+      },
+      {
+        heading: 'Asset Register Selection',
+        badge: 'Usability Enhancement',
+        items: [
+          'Added drag-to-select interaction across asset table rows for efficient multi-record batch operations.',
+        ],
+      },
+      {
+        heading: 'Documentation & Versioning',
+        badge: 'Governance & Docs',
+        items: [
+          'Bumped package metadata, client version, server health response, and exchange export metadata to v1.3.0.',
+          'Synchronized the README, Software Design Document, Technical Specification, and patch notes with this release.',
+        ],
+      },
+    ],
+  },
+  {
     version: '1.2.2',
     date: '2026-10-21',
     title: 'Vite Proxy Network Stability & Full-Stack Development Orchestration',

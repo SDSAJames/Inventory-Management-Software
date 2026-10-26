@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.2.2** |
+| **Document Version** | **v1.3.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -288,12 +288,13 @@ The frontend application provides eight core operational views accessed via the 
    - Interactive quick-filtered asset view (Recently updated, Available, Assigned, Needs Attention).
 2. **Asset Register (`/assets`)**:
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
-   - Batch selection with bulk status updates and bulk deletion.
+   - Click and drag row selection with bulk status updates and bulk deletion.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
 3. **Loans & Custody (`/loans`)**:
    - Active, Scheduled, Overdue, and Returned custody management.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
-   - Equipment accessory checklist tracking.
+   - Search across loan fields with selectable field and status filters.
+   - Editable accessory checklist and supporting loan details during pickup and return.
 4. **In & Out Calendar (`/calendar`)**:
    - Universal schedule calendar tracking hardware checkouts (Out / Departure) and returns (In / Return) across all enterprise personnel.
    - Encompasses all requester types, displaying both standard SPE Employees and mobile Business Travelers.
@@ -316,7 +317,7 @@ The frontend application provides eight core operational views accessed via the 
    - Reference-format `.xlsx` OpenXML export maintaining 1:1 column parity.
    - Snapshot restore point management.
 8. **Patch History & Release Notes (`PatchHistoryModal.jsx` & `PatchHistoryPage.jsx`)**:
-   - In-app release notes viewer accessible via the TopBar version pill (`v1.2.2 • Patch Notes`), the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
+   - In-app release notes viewer accessible via the TopBar version pill, the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
    - Pinned modal header and filter controls with internal single-scroll stream (`.patch-cards-stream`), preventing clipped headers and double scrollbars.
    - Per-version tabbed navigation, real-time keyword search, change type filtering (`All Types`, `Patches`, `Minor`, `Major`), and structured release highlights.
 
@@ -336,6 +337,11 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
+- **v1.3.0** *(Loan Search, Flexible Custody Updates & Asset Multi-Selection)*:
+   - Added field-selectable loan search and status filtering for assignee, Knox ID, asset, location, IP address, department, and note/purpose.
+   - Added editable equipment checklist and supporting loan details during pickup and return, persisted through the loans API.
+   - Added drag-to-select interaction in the asset register for multi-record batch operations.
+   - Synchronized application metadata and release documentation to `v1.3.0`.
 - **v1.2.2** *(Vite Proxy Network Stability & Full-Stack Development Orchestration)*:
   - Hardened Vite proxy routing by redirecting target from `http://localhost:5000` to explicit `http://127.0.0.1:5000`, resolving dual-stack IPv6 `::1` connection drops on Windows.
   - Implemented graceful HTTP 503 error interceptor in `vite.config.js` to handle backend downtime cleanly without terminal stack trace spam.

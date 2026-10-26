@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.2.2)
+# StarPlus Energy Asset Management System (v1.3.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -13,7 +13,7 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 - **Corporate Intranet Multi-Host Network Architecture**: Hosted centrally on the intranet server and accessible from any workstation or host on the corporate network (`http://<server-ip>:5000`). Zero external cloud dependencies, no remote CDN scripts, and zero telemetry. All fonts use the native operating system typography stack.
 - **Centralized SQLite Database**: Uses Node.js's native high-performance SQLite engine (`node:sqlite`) in WAL mode (`server/data/inventory.db`). All client workstations share the exact same synchronized database in real time with client-side offline cache resilience.
 - **Corporate Brand Identity**: Built in accordance with StarPlus Energy design standards featuring Corporate Blue (`#1449d6`), Deep Navy (`#0a2547`), Slate (`#141519`), and the geometric SVG hexagon brand mark.
-- **Frontend Patch History & Versioning Governance**: In-app Patch History modal displaying full release notes per version, accessible directly via the TopBar version pill, the sticky bottom-left Sidebar footer pill (`v1.2.2 • Patch Notes`), and the Business Travelers header button. Adheres strictly to Semantic Versioning (SemVer 2.0.0) with paced patch increments (`1.2.x`).
+- **Frontend Patch History & Versioning Governance**: In-app Patch History modal displaying full release notes per version, accessible directly via the TopBar version pill, the sticky bottom-left Sidebar footer pill, and the Business Travelers header button. Adheres to Semantic Versioning (SemVer 2.0.0), with patch increments for refinements and minor increments for additive features.
 - **Dedicated Calendar-Only Focus View**: Operators can toggle the Business Travelers module into an exclusive Calendar View that omits KPI stat cards and location panels to display solely the monthly schedule calendar.
 - **Tab-Delimited TXT Import Engine**: Fast, robust client-side parser specifically designed for text files extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`). Supports multiline quoted headers, BOM stripping, date normalization (handling Excel serials and `1/0/1900` nulls), and auto-detecting file signatures.
 - **1:1 Excel OpenXML Export Parity**: Pure client-side `.xlsx` generator maintaining exact 19-column parity with corporate loan spreadsheets (`SPE_IT_Equipment_Loan_List.xlsx`) and equipment registers (`SPE_Equipments.xlsx`), backed by automated pre-import restore snapshots.
@@ -44,13 +44,13 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 ## Application Views
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
-2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
-3. **Loans & Custody (`/loans`)**: Checkouts, pickups, accessory checklists (Adapter, Cable, Dongle, Keyboard, Mouse, Monitor, Ethernet cable), and return processing.
+2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
+3. **Loans & Custody (`/loans`)**: Searchable and status-filterable custody records, checkouts, editable pickup/return details, accessory checklists (Adapter, Cable, Dongle, Keyboard, Mouse, Monitor, Ethernet cable), and return processing.
 4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, and keyword search.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
 6. **Directory (`/directory`)**: Personnel directory with Knox IDs, department rosters, and rental facility locations.
 7. **Data Exchange (`/exchange`)**: Tab-delimited TXT file import extracted from Excel, 1:1 reference-format `.xlsx` export, interactive pre-flight preview modal, and one-click database rollback.
-8. **Patch History & Changelog (`/patch-history` & `/changelog`)**: Dedicated release notes view with version filtering, keyword search, type toggles, and detailed per-version changelogs. Also accessible anywhere via the TopBar `v1.2.2 • Patch Notes` button and bottom-left Sidebar footer.
+8. **Patch History & Changelog (`/patch-history` & `/changelog`)**: Dedicated release notes view with version filtering, keyword search, type toggles, and detailed per-version changelogs. Also accessible anywhere via the TopBar version button and bottom-left Sidebar footer.
 
 ---
 
