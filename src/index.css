@@ -938,6 +938,13 @@ tbody tr:hover { background: #f8fafc; }
 .directory-list { list-style: none; padding: 0; margin: 0; }
 .directory-list li { padding: 12px 0; border-top: 1px solid #edf2f7; font-size: 12px; }
 .directory-list small { display: block; color: var(--muted); margin-top: 3px; }
+.directory-location { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.directory-location:hover span, .directory-location.selected span { color: var(--primary); }
+.directory-location:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 3px; }
+.directory-assets-panel { margin-top: 18px; }
+.directory-assets-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.directory-assets-heading h3 { margin: 0; }
+.directory-assets-heading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
 
 /* ── Asset table ──────────────────────────────────────── */
 .asset-table { width: 100%; }
