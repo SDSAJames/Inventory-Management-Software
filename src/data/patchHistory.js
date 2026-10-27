@@ -1,10 +1,59 @@
 /**
  * patchHistory.js
- * Structured changelog data powering the in-app Patch History Modal.
- * Mirrors PATCH_NOTES.md with Semantic Versioning (SemVer 2.0.0).
+ * Canonical structured changelog for the in-app release history and generated PATCH_NOTES.md.
+ * Uses Semantic Versioning (SemVer 2.0.0).
  */
+import { APP_VERSION } from '../lib/constants.js';
 
 export const PATCH_HISTORY = [
+  {
+    version: APP_VERSION,
+    date: '2026-10-27',
+    title: 'Partial Return Tracking, Pickup Readiness & Directory Management',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary:
+      'Track missing equipment after a partial return, mark scheduled equipment ready for pickup, and manage asset categories, departments, and locations from the Directory page.',
+    highlights: [
+      'Unreturned Loans: Review partial returns in a dedicated Loans section and see which issued accessories remain outstanding.',
+      'Ready for Pickup: Mark scheduled loan equipment as prepared for incoming personnel.',
+      'Directory Management: Add, select, edit, and bulk-delete categories, departments, and locations; values in use by assets are protected.',
+      `Version Governance: Application metadata is sourced from package.json (v${APP_VERSION}).`,
+    ],
+    sections: [
+      {
+        heading: 'Partial Return Tracking',
+        badge: 'Custody Workflow',
+        items: [
+          'Added a dedicated Unreturned section in Loans for partial returns, including loans that are not overdue.',
+          'Record actual returned accessory counts separately from the issued equipment checklist and display outstanding items in the loan list and details.',
+        ],
+      },
+      {
+        heading: 'Scheduled Pickup Readiness',
+        badge: 'Operations Workflow',
+        items: [
+          'Operators can mark scheduled equipment ready for pickup by an incoming employee and clear the flag when the equipment is picked up.',
+        ],
+      },
+      {
+        heading: 'Directory Management',
+        badge: 'Administration',
+        items: [
+          'Added selection, select-all, edit, and bulk-delete controls for asset categories, departments, and locations.',
+          'Values referenced by assets are visibly marked in use and protected from editing or deletion.',
+        ],
+      },
+      {
+        heading: 'Documentation & Versioning',
+        badge: 'Governance & Docs',
+        items: [
+          `Updated package metadata and synchronized documentation to v${APP_VERSION}.`,
+          'Updated README, Software Design Document, Technical Specification, and patch notes for this release.',
+        ],
+      },
+    ],
+  },
   {
     version: '1.3.0',
     date: '2026-10-26',

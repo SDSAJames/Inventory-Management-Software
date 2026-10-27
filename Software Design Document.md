@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.3.0** |
+| **Document Version** | **v1.4.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | October 2026 |
@@ -291,10 +291,11 @@ The frontend application provides eight core operational views accessed via the 
    - Click and drag row selection with bulk status updates and bulk deletion.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
 3. **Loans & Custody (`/loans`)**:
-   - Active, Scheduled, Overdue, and Returned custody management.
+   - Active, Scheduled, Overdue, Returned, and Unreturned (partial return) custody management.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Search across loan fields with selectable field and status filters.
    - Editable accessory checklist and supporting loan details during pickup and return.
+   - Mark scheduled incomer equipment as ready for pickup; track returned accessory quantities separately and list outstanding items in the Unreturned section.
 4. **In & Out Calendar (`/calendar`)**:
    - Universal schedule calendar tracking hardware checkouts (Out / Departure) and returns (In / Return) across all enterprise personnel.
    - Encompasses all requester types, displaying both standard SPE Employees and mobile Business Travelers.
@@ -309,8 +310,8 @@ The frontend application provides eight core operational views accessed via the 
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
 6. **Directory (`/directory`)**:
-   - Personnel directory with Knox IDs, departments, and active equipment counts.
-   - Department directory and rental facility locations.
+   - Manage asset categories, departments, and locations using selection, select-all, edit, and bulk-delete controls.
+   - Items referenced by assets are marked in use and cannot be edited or deleted; unused values remain manageable.
 7. **Data Exchange (`/exchange`)**:
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
    - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
@@ -337,43 +338,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-- **v1.3.0** *(Loan Search, Flexible Custody Updates & Asset Multi-Selection)*:
-   - Added field-selectable loan search and status filtering for assignee, Knox ID, asset, location, IP address, department, and note/purpose.
-   - Added editable equipment checklist and supporting loan details during pickup and return, persisted through the loans API.
-   - Added drag-to-select interaction in the asset register for multi-record batch operations.
-   - Synchronized application metadata and release documentation to `v1.3.0`.
-- **v1.2.2** *(Vite Proxy Network Stability & Full-Stack Development Orchestration)*:
-  - Hardened Vite proxy routing by redirecting target from `http://localhost:5000` to explicit `http://127.0.0.1:5000`, resolving dual-stack IPv6 `::1` connection drops on Windows.
-  - Implemented graceful HTTP 503 error interceptor in `vite.config.js` to handle backend downtime cleanly without terminal stack trace spam.
-  - Added `concurrently` orchestration script (`npm run dev:all`) allowing developers to launch both backend API and Vite frontend servers in a single terminal session.
-  - Synchronized documentation, system health endpoints, and release note datasets to `v1.2.2`.
-- **v1.2.1** *(Exclusive Calendar Focus View, Frontend Patch History & Versioning Calibration)*:
-  - Added exclusive Calendar View mode on `/business-travelers` hiding KPI cards and location breakdown blocks to display only the monthly schedule calendar.
-  - Implemented in-app Patch History Modal (`PatchHistoryModal.jsx`) and dataset (`src/data/patchHistory.js`) triggered via TopBar, sticky bottom-left Sidebar footer pill (`v1.2.1 • Patch Notes`), and direct button in the Business Travelers header.
-  - Made sidebar sticky (`position: sticky; top: 0; height: 100vh`) ensuring the bottom-left version info is permanently pinned in view on tall pages.
-  - Resolved modal clipping, horizontal blowout, and card flex-shrink compression (`flex-shrink: 0; min-height: min-content`) ensuring patch history renders full release notes and scrolls smoothly without squishing.
-  - Calibrated Semantic Versioning policy to restrained patch increments (`1.2.x`) for UI refinements, bug fixes, and documentation synchronizations.
-  - Updated all technical and design documentation.
-- **v1.2.0** *(TXT Import Extracted from Excel & 1:1 Excel Export)*:
-  - Standardized on tab-delimited `.txt` import format for Equipment Inventory (`SPE_Equipments_example.txt`) and IT Loan Lists (`SPE_IT_Equipment_Loan_List_Example.txt`).
-  - Added multiline quoted field parser and automatic header format detection (`src/lib/txtImport.js`).
-  - Interactive import preview modal with Merge & Sync vs Full Replace modes.
-  - Preserved 1:1 OpenXML `.xlsx` exports for both loans and equipment masters.
-- **v1.1.1** *(Full Screen Roster Mode & Specific URL Routing)*:
-  - Upgraded route from `/travelers` to specific `/business-travelers` with backward-compatible redirect.
-  - Added 1-click Full Screen Roster mode (`roster-fullscreen`) with full-body viewport layout, sticky table headers, and Escape key dismissal.
-  - Migrated component to `BusinessTravelersPage.jsx`.
-- **v1.1.0** *(Business Travelers Management & Location Matrix)*:
-  - Dedicated Business Travelers management view (`/travelers`) with real-time active field badge in the sidebar.
-  - "How many they are": KPI counters for active in field, travel locations, scheduled trips, and total unique travelers.
-  - "Where they are": Interactive location distribution matrix grouping travelers by destination/plant with one-click filtering.
-  - Integrated mobile workforce roster with countdown badges, trip editing, and return-to-IT workflow.
-- **v1.0.0** *(Official Production Baseline)*:
-  - Production architecture in React 19 + Vite 6 + React Router 7.
-  - StarPlus Energy corporate design language (Blue `#1449d6`, Navy `#0a2547`, Slate `#141519`, geometric SVG logo).
-  - High-density compact topbar (~32px) and scroll-free 4-column compact modal forms.
-  - States Version 1.0.0 state machine and continuous passive verification & sync engine.
-  - Return to IT department workflow with unbroken ownership history.
-  - Direct holder click-to-transfer modal with custom transfer reasons.
-  - 100% offline air-gapped system font stack (zero external Google Fonts / CDNs).
-  - 1:1 Excel column header preservation and rollback engine.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.4.0**.

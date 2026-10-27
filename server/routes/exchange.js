@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
+import packageMetadata from '../../package.json' with { type: 'json' };
 
 export const exchangeRouter = Router();
 
@@ -57,7 +58,7 @@ exchangeRouter.get('/export', (req, res) => {
 
   return res.json({
     success: true,
-    version: '1.3.0',
+    version: packageMetadata.version,
     exportedAt: new Date().toISOString(),
     db: {
       assets: enrichedAssets,
@@ -423,3 +424,4 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+import packageMetadata from '../../package.json' with { type: 'json' };

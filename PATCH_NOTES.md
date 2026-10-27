@@ -2,234 +2,266 @@
 
 All notable changes, architectural updates, and state engine revisions for the **StarPlus Energy Asset Management System (SPE-AMS)** are documented in this file.
 
+This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.js). Update that release history and `package.json`, then run `npm run docs:sync`.
+
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.4.0] — 2026-10-27
+
+### Partial Return Tracking, Pickup Readiness & Directory Management
+
+Track missing equipment after a partial return, mark scheduled equipment ready for pickup, and manage asset categories, departments, and locations from the Directory page.
+
+#### Highlights
+- Unreturned Loans: Review partial returns in a dedicated Loans section and see which issued accessories remain outstanding.
+- Ready for Pickup: Mark scheduled loan equipment as prepared for incoming personnel.
+- Directory Management: Add, select, edit, and bulk-delete categories, departments, and locations; values in use by assets are protected.
+- Version Governance: Application metadata is sourced from package.json (v1.4.0).
+
+#### Partial Return Tracking
+
+- Added a dedicated Unreturned section in Loans for partial returns, including loans that are not overdue.
+- Record actual returned accessory counts separately from the issued equipment checklist and display outstanding items in the loan list and details.
+
+#### Scheduled Pickup Readiness
+
+- Operators can mark scheduled equipment ready for pickup by an incoming employee and clear the flag when the equipment is picked up.
+
+#### Directory Management
+
+- Added selection, select-all, edit, and bulk-delete controls for asset categories, departments, and locations.
+- Values referenced by assets are visibly marked in use and protected from editing or deletion.
+
+#### Documentation & Versioning
+
+- Updated package metadata and synchronized documentation to v1.4.0.
+- Updated README, Software Design Document, Technical Specification, and patch notes for this release.
+
+---
 
 ## [1.3.0] — 2026-10-26
 
-### Added: Loan Search, Flexible Custody Updates & Asset Multi-Selection
+### Loan Search, Flexible Custody Updates & Asset Multi-Selection
 
-#### 🔎 Loan Search & Filtering (`/loans`)
-- Added field-selectable search across all loan fields, assignee, Knox ID, laptop/asset number, location, IP address, department, and note/purpose.
-- Added status filtering so operators can quickly isolate scheduled, active, overdue, or returned loans.
+Expanded loan management with searchable and filterable records, editable equipment details during pickup and return, and drag selection for faster asset register batch operations.
 
-#### 📦 Editable Pickup & Return Details
-- Pickup and return workflows now allow operators to adjust the equipment checklist and supporting loan details during custody handover.
-- Persisted those edits through the loans API while retaining existing loan state transitions and asset custody history.
+#### Highlights
+- Loan Search & Filters: Search loan records across all fields or target assignee, Knox ID, asset, location, IP address, department, and notes; narrow results by loan status.
+- Pickup & Return Updates: Review and edit accessory counts and loan details as equipment is handed over or returned, with changes persisted by the server.
+- Asset Register Drag Selection: Select multiple asset rows with a drag gesture to streamline existing batch actions.
+- Version Governance: Bumped the application, server health/export metadata, and documentation to v1.3.0.
 
-#### 🖱️ Asset Register Drag Selection
-- Added drag-to-select interaction across asset rows, making existing batch operations faster for multi-record updates.
+#### Loan Search & Filtering
 
-#### 📚 Documentation & Versioning
-- Bumped package metadata, client version, server health response, and exchange export metadata to `v1.3.0`.
-- Synchronized the README, Software Design Document, Technical Specification, and in-app patch history.
+- Added a loan search bar with selectable search fields for assignee, Knox ID, laptop/asset number, location, IP address, department, and note/purpose, plus an all-fields option.
+- Added loan status filtering to help operators isolate scheduled, active, overdue, and returned records.
+
+#### Pickup & Return Details
+
+- Pickup and return workflows can update the itemized equipment checklist and supporting loan details alongside their respective custody dates.
+- Persisted pickup and return edits through the loans API while retaining the existing asset custody and audit-history workflows.
+
+#### Asset Register Selection
+
+- Added drag-to-select interaction across asset table rows for efficient multi-record batch operations.
+
+#### Documentation & Versioning
+
+- Bumped package metadata, client version, server health response, and exchange export metadata to v1.3.0.
+- Synchronized the README, Software Design Document, Technical Specification, and patch notes with this release.
 
 ---
 
 ## [1.2.2] — 2026-10-21
 
-### Fixed & Improved: Vite Proxy Network Stability & Full-Stack Development Orchestration
+### Vite Proxy Network Stability & Full-Stack Development Orchestration
 
-#### 🌐 Vite Dev Server HTTP Proxy Stability (`vite.config.js`)
-- **Direct IPv4 Loopback Routing**: Updated the Vite dev server proxy target from `http://localhost:5000` to `http://127.0.0.1:5000`. On modern Node.js and Windows enterprise workstations, `localhost` attempts dual-stack IPv6 (`::1`) resolution before IPv4 (`127.0.0.1`). Because the backend Express server binds to IPv4 (`0.0.0.0:5000`), proxy requests encountered `AggregateError [ECONNREFUSED]` connection drops when attempting IPv6 loopback. Direct IPv4 addressing guarantees instantaneous and reliable proxy routing.
-- **Graceful Proxy Error Interception**: Configured a custom `proxy.on('error')` interceptor in Vite that traps ECONNREFUSED events whenever the backend server is temporarily offline and returns a structured HTTP 503 Service Unavailable JSON payload. This prevents uncaught Node.js stack traces from polluting developer terminal logs during background polling cycles (`/api/auth/me` and `/api/exchange/export`).
+Resolved Vite HTTP proxy ECONNREFUSED network errors, hardened IPv4 proxy routing to 127.0.0.1, introduced graceful HTTP 503 proxy offline interceptors, and added single-command full-stack development orchestration via concurrently.
 
-#### ⚡ Full-Stack Development Orchestration (`package.json`)
-- **Single-Command Startup (`npm run dev:all`)**: Added `concurrently` to `devDependencies` and introduced `npm run dev:all` to run both the backend Express API server (`node --watch server/index.js`) and the Vite React frontend server (`vite`) simultaneously in a single terminal with distinct colored stream prefixes (`[server]` and `[client]`).
-- **Flexible Workflow Support**: Developers can either use the single-command workflow (`npm run dev:all`) or run components in separate terminals (`npm run server:dev` and `npm run dev`).
+#### Highlights
+- Vite HTTP Proxy Stability: Eliminated ECONNREFUSED AggregateError proxy crashes on background polls (/api/auth/me and /api/exchange/export).
+- Direct IPv4 Loopback Routing: Configured Vite proxy target to http://127.0.0.1:5000, eliminating Windows dual-stack IPv6 [::1] DNS resolution latency and connection refusal.
+- Graceful Backend Offline Handling: Added configure error interceptor in vite.config.js returning a clean HTTP 503 JSON response when the backend server is stopped.
+- Single-Command Full-Stack Orchestration: Integrated concurrently and added npm run dev:all to run both the Express API server and Vite frontend dev server simultaneously.
 
-#### 📅 Dedicated In & Out Calendar & Requester Filtering (`/calendar`)
-- **Separate In & Out Calendar Sidebar Menu**: Elevated the schedule calendar into its own top-level menu item in the primary navigation sidebar (`/calendar`), distinct from the mobile workforce register.
-- **Universal User Type Request Display**: Expanded schedule indexing to encompass all device custody requests across the entire enterprise, including both standard SPE Employees and mobile Business Travelers.
-- **Multi-Level Requester Filtering**: Integrated dual-layer requester filtering controls on the calendar page:
-  - **Requester Type Pills**: Quick-filter by `All User Types`, `💼 Business Travelers`, or `🏢 SPE Employees` with dynamic record counts.
-  - **Individual Requester Selector**: Select a specific user (`👤 All Individuals` vs individual staff member) to isolate that user's specific checkout/return timeline.
-- **Interactive Day Modal & Direct Custody Actions**: Clicking any calendar cell opens a comprehensive day breakdown with separate Outgoing and Incoming streams, accessories checklist, and direct action triggers (Mark as Picked Up, Return Asset to IT department, and Edit Schedule).
+#### Vite Dev Server & Proxy Configuration
 
-#### 📚 Documentation & Versioning Governance
-- **Synchronized Documentation**: Updated [README.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/README.md), [Software Design Document (SDD)](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [Technical Specification](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), and in-app patch history components to `v1.2.2`.
-- **System Endpoints Bumped**: Synchronized version identifiers in `package.json`, `package-lock.json`, `server/index.js` (health check & banner), `server/routes/exchange.js`, and `src/lib/constants.js`.
+- Direct IPv4 Target: Updated proxy target in vite.config.js from http://localhost:5000 to http://127.0.0.1:5000, ensuring immediate connection to Node's IPv4 server listener without IPv6 ::1 loopback ambiguity.
+- Proxy Error Interception: Configured proxy.on("error") handler to intercept ECONNREFUSED events and respond with HTTP 503 Service Unavailable, preventing uncaught Node.js stack traces in terminal consoles.
+
+#### Development Workflow & Tooling
+
+- Added npm run dev:all script utilizing concurrently to orchestrate npm run server:dev and npm run dev side-by-side in a single console window.
+- Updated project documentation with clear local development workflows (single-command vs dual-terminal options).
+
+#### In & Out Calendar Module
+
+- Separated In & Out Calendar into a dedicated top-level sidebar menu item (/calendar).
+- Displays device loan/custody schedules for all user types, covering both standard SPE employees and business travelers.
+- Integrated requester filtering controls: toggle by user type (All, Business Traveler, SPE Employee) or select a specific individual requester.
+- Interactive 42-day month grid with visual chips, indicators, and complete day schedule inspection drawers.
+
+#### System Documentation & Version Governance
+
+- Bumped project version to v1.2.2 in package.json, server/index.js, exchange router, and client constants.
+- Synchronized README.md, Software Design Document (SDD), Technical Specification, and PATCH_NOTES.md.
 
 ---
 
 ## [1.2.1] — 2026-10-09
 
-### Added & Improved: Exclusive Calendar View, Frontend Patch History & Versioning Calibration
+### Exclusive Calendar Focus View, Frontend Patch History & Versioning Calibration
 
-#### 📅 Exclusive Calendar View Mode (`/business-travelers`)
-- **Focused Calendar Display**: When the operator selects **"Calendar View"**, the system now exclusively displays the monthly schedule calendar (`TravelerCalendar.jsx`), cleanly omitting the KPI stat cards, "Where They Are" location distribution matrix, overdue alert panels, and the roster table.
-- **De-cluttered Workspace**: Maximizes viewport real estate for inspecting month-by-month traveler dispatches, returns, and daily scheduled events without vertical page scrolling or visual distraction.
-- **Persistent View Switcher**: Operators can seamlessly toggle between **"Calendar View"** (calendar only), **"Roster List"** (KPIs, locations & table), **"Overdue Only"** (urgent overdue travelers), and **"All Sections"** (complete combined dashboard).
+Calibrated Semantic Versioning progression to standard patch increments, added an exclusive Calendar-only view mode for the Business Travelers page, introduced in-app patch history inspection per version, and synchronized all technical documentation.
 
-#### 📋 Frontend Patch History & Release Notes Modal (`PatchHistoryModal.jsx`)
-- **Direct Frontend Access**: Integrated an interactive Patch History modal accessible anywhere in the application by clicking the **`v1.2.1` version pill** in the TopBar or clicking the **`v1.2.1 • Patch Notes`** footer in the Sidebar.
-- **Per-Version Inspection**: Organizes release notes per version with quick selector tabs (`All Versions`, `v1.2.1`, `v1.2.0`, `v1.1.1`, `v1.1.0`, `v1.0.0`, `v0.2.0`, `v0.1.0`).
-- **Interactive Search & Type Filtering**: Real-time keyword search across all version summaries, highlights, and change items, accompanied by type filter pills (`All Types`, `Patches`, `Minor`, `Major`).
-- **Detailed Categorized Breakdown**: Displays release dates, active version indicators, categorized change badges (`UI Enhancement`, `New Feature`, `Governance & Docs`), and expand/collapse controls.
-- **Structured Dataset (`src/data/patchHistory.js`)**: Backed by a clean, typed changelog data module mirroring `PATCH_NOTES.md` for offline intranet use.
+#### Highlights
+- Exclusive Calendar View: When calendar view is selected, KPI cards and location distribution panels are hidden to dedicate full screen exclusively to the schedule calendar.
+- Frontend Patch History Modal: In-app release notes viewer per version accessible directly via the TopBar version pill and Sidebar footer.
+- Semantic Versioning Calibration: Restrained minor version jumps by adhering to SemVer patch increments (1.2.x) for iterative UI polish and view state refinements.
+- System Documentation Sync: Synchronized PATCH_NOTES.md, README.md, Technical Specification, and Software Design Document.
 
-#### ⚖️ Semantic Versioning Calibration & Governance
-- **Paced Version Increments**: Addressed version inflation where minor versions advanced too quickly for iterative feature refinements. Calibrated version increments strictly to Semantic Versioning (SemVer 2.0.0):
-  - **Patch Increments (`1.2.x`)**: Reserved for UI refinements, view focus controls, bug fixes, changelog displays, and documentation synchronization.
-  - **Minor Increments (`1.x.0`)**: Reserved for major new standalone modules or external data exchange formats.
-  - **Major Increments (`x.0.0`)**: Reserved for breaking architectural shifts or master database schema overhauls.
+#### Business Travelers Module
 
-#### 🛡️ Layout Overflow & Modal Clipping Fixes (Patch History Visibility)
-- **Modal Header Anchoring & Elevated Z-Index**: Corrected modal positioning by pinning `.modal.patch-history-modal-wrapper` to an explicit top offset (`margin: 12px auto !important; align-items: flex-start; z-index: 100000;`), preventing the top header, release tags, and close button from being clipped off in tall or zoomed viewports or obscured by full-screen overlays.
-- **Card Flex Shrinkage Prevention**: Fixed critical flex compression issue by setting `flex-shrink: 0 !important; min-height: min-content !important;` on `.patch-card`, `.patch-card-header`, and `.patch-card-body`. This prevents cards from being crushed into flattened horizontal stripes when multiple versions or "Expand All" are active, guaranteeing each card renders at full natural height with a smooth, dedicated vertical scrollbar.
-- **Dedicated Single-Scroll Cards Stream**: Encapsulated release cards within an internal scroll container (`.patch-cards-stream`) with custom thin scrollbar while keeping the modal header, search filters, and footer permanently pinned.
-- **Sticky Sidebar & Pinned Bottom-Left Footer**: Made `.sidebar` sticky (`position: sticky; top: 0; height: 100vh; max-height: 100vh; overflow-y: auto;`). The bottom-left `v1.2.1 • Patch Notes` footer pill is now permanently pinned to the viewport, never scrolling out of sight on tall pages such as Business Travelers.
-- **Business Travelers Direct Patch Notes Button**: Integrated an explicit `📋 v1.2.1 Patch Notes` button directly into the Business Travelers view header (`view-header-actions`), making release notes immediately accessible when viewing the calendar or roster.
-- **Horizontal Viewport Overflow Prevention**: Constrained `.main-content` (`max-width: calc(100vw - 252px); overflow-x: hidden;`) and wide components (such as `TravelerCalendar`'s 7-column grid) with `overflow-x: auto;`, preventing layout blowouts that pushed the TopBar `v1.2.1 • Patch Notes` button off-screen.
-- **Global Context Provider**: Introduced `PatchHistoryContext` in `AppShell` with `usePatchHistoryModal` hook, allowing any view to trigger the release notes modal cleanly.
+- Exclusive Calendar View Mode: When "Calendar View" is active, the KPI stat cards, Location Distribution matrix, and Roster tables are cleanly omitted, presenting solely the monthly schedule calendar.
+- Maintained view toggle controls so operators can seamlessly switch between "Calendar View", "Roster List", "Overdue Only", and "All Sections".
+- Preserved all calendar interactions: month navigation, location filtering, search, and day assignment inspection drawers.
+
+#### Frontend Patch History Viewer
+
+- Added interactive Patch History Modal with multi-version tabs, per-version inspection, change categorization, and keyword search.
+- Integrated clickable trigger into the TopBar version pill (v1.2.1) with hover micro-animations.
+- Integrated clickable trigger into the Sidebar footer for convenient global access from any application page.
+- Included full release notes history from initial prototype v0.1.0 through current v1.2.1.
+
+#### Versioning Policy & Documentation
+
+- Calibrated version increment cadence to strictly follow Semantic Versioning (Major.Minor.Patch) so version numbers do not advance prematurely for incremental refinements.
+- Updated project README.md, Software Design Document (SDD), and Technical Specification to v1.2.1.
 
 ---
 
 ## [1.2.0] — 2026-10-07
 
-### Added: TXT File Import Extracted from Excel & Preserved 1:1 Excel Export
+### TXT File Import Extracted from Excel & Preserved 1:1 Excel Export
 
-#### 📥 Primary TXT File Import Architecture (`src/lib/txtImport.js`)
-- **Extracted from Excel Support**: Standardized the system import engine to ingest tab-delimited text (`.txt`) files exported directly from Excel:
-  - **Equipment Master Register (`SPE_Equipments_example.txt`)**: Parses `Host Name`, `Serial Number`, `Status`, `Issued Knox ID`, and `Issued Date`, updating or creating master inventory records and ownership lineage.
-  - **IT Equipment Loan List (`SPE_IT_Equipment_Loan_List_Example.txt`)**: Parses `Start Date`, `Pickup Date`, `End Date`, `Return Date`, `Laptop`, accessories (`Adapter`, `Cable`, `Dongle`, `Keyboard`, `Mouse`, `Monitor`, `Ethernet cable`), and notes.
-- **Universal Multiline & Quote Delimited Parser**: Handles multiline Excel quoted fields (e.g., `"Charging \r\nAdapter"`), BOM headers (`\uFEFF`), CRLF/LF line breaks, and auto-detects tab vs comma delimiters completely client-side.
-- **Automatic Format Detection**: Automatically inspects header signatures to identify whether an uploaded text file is an Equipment Master Register or a Loan List.
-- **Batch Multi-File Ingestion**: Allows administrators to drag & drop or select both `SPE_Equipments_example.txt` and `SPE_IT_Equipment_Loan_List_Example.txt` simultaneously. The engine parses both files in tandem, cross-referencing borrower Knox IDs with laptop custody records.
+Standardized system import engine to ingest tab-delimited text (.txt) files exported directly from Excel for both Equipment Master Register and IT Equipment Loan List, while maintaining 1:1 Excel OpenXML export capabilities.
 
-#### 👁️ Interactive Import Preview Modal
-- **Live Pre-Flight Inspection**: Inspects extracted rows and presents a tabbed preview (`Equipment Assets` vs `Loan Records`) before synchronizing to the shared database and client cache.
-- **Flexible Ingestion Modes**:
-  - **Merge & Sync (Recommended)**: Intelligently updates matching assets and loans, appending new records while safeguarding existing unmentioned entries.
-  - **Full Database Replacement**: Performs a clean database replacement with automated pre-import restore snapshots.
+#### Highlights
+- Primary TXT File Import Architecture for SPE_Equipments_example.txt and SPE_IT_Equipment_Loan_List_Example.txt
+- Universal client-side multiline and quoted field delimited parser
+- Interactive pre-flight import preview modal with tabbed inspection
+- Preserved 1:1 reference Excel exports with full OpenXML schema parity
 
-#### 📊 Preserved 1:1 Reference Excel Exports
-- **Excel Export Parity**: Retained exact `.xlsx` OpenXML export capabilities:
-  - `SPE_IT_Equipment_Loan_List_YYYY-MM-DD.xlsx` with all 19 corporate standard columns.
-  - `SPE_Equipments_YYYY-MM-DD.xlsx` with official equipment columns (`Host Name`, `Serial Number`, `Status`, `Issued Knox ID`, `Issued Date`).
-- **Assets Page TXT Support**: Extended the Quick Import button on the Assets table (`/assets`) to seamlessly accept `.txt` equipment files.
+#### Data Ingestion Architecture
+
+- Ingests tab-delimited text files (.txt) extracted from Excel, supporting BOM headers, CRLF linebreaks, and multiline quotes.
+- Automatic signature detection recognizes Equipment Master vs Loan List files.
+- Batch multi-file ingestion parses equipment registers and loan records in tandem.
+- Pre-flight preview modal supports Merge & Sync or Full Database Replacement modes.
+
+#### Spreadsheet Interoperability
+
+- Maintained client-side OpenXML .xlsx export with 19-column loan schema and equipment master schema.
+- Quick import buttons on Assets and Loans tables accept .txt files natively.
 
 ---
 
 ## [1.1.1] — 2026-10-07
 
-### Improved: Full Screen Roster Mode & Specific URL Routing
+### Full Screen Roster Mode & Specific URL Routing
 
-#### 🖥️ Business Traveler Roster Full Screen Mode
-- **Full-Body Expanded View**: Added a 1-click **"Full Screen Roster"** toggle to the Business Traveler Roster panel, allowing administrators to view the complete mobile workforce roster across the entire viewport (`roster-fullscreen`).
-- **Sticky Column Headers**: Table headers remain anchored at the top during vertical scrolling to maintain clear column reference across high-density lists.
-- **Persistent Management Controls**: Fullscreen mode preserves quick search, status filtering tabs, and the `+ Record Traveler` dispatch button directly in view.
-- **Escape Key & Scroll Lock**: Added automatic keyboard support for the `Escape` key to instantly exit full-screen mode, along with background page scroll locking.
+Enhanced Business Traveler roster tracking with 1-click full-screen mode, sticky column headers, and explicit /business-travelers route naming.
 
-#### 🔗 Explicit & Specific URL Routing (`/business-travelers`)
-- **Route Renaming**: Upgraded the URL from the generic `/travelers` to `/business-travelers` for clear, descriptive navigation.
-- **Backward Compatibility**: Configured automatic redirection from `/travelers` to `/business-travelers` so any cached links or bookmarks resolve smoothly.
-- **Component Standard**: Refactored the view to `BusinessTravelersPage.jsx`.
+#### Highlights
+- Full-body expanded roster mode with Escape key and background scroll locking
+- Sticky column headers maintaining reference during deep vertical scrolling
+- Specific URL routing to /business-travelers with backward compatibility redirection
+
+#### Business Traveler Usability
+
+- Added 1-click "Full Screen Roster" toggle expanding the roster table across the entire viewport.
+- Persistent search, status filters, and + Record Traveler dispatch button in full screen.
+- Refactored route path from /travelers to /business-travelers with seamless redirect.
 
 ---
 
 ## [1.1.0] — 2026-10-07
 
-### Added: Dedicated Business Travelers Management Module & Location Matrix
+### Dedicated Business Travelers Management Module & Location Matrix
 
-#### ✈️ Dedicated Business Travelers Management (`/travelers`)
-- **Sidebar Integration**: Added a dedicated **Business Travelers** navigation item to the sidebar with an enterprise briefcase icon and an active count badge showing unreturned travelers in real time.
-- **"How Many They Are" Fleet Metrics**:
-  - **Active in Field**: Total travelers holding IT hardware on active or overdue assignments outside IT custody.
-  - **Travel Locations**: Count of active remote plant/office deployment sites.
-  - **Scheduled Trips**: Upcoming equipment pickups awaiting dispatch.
-  - **Total Travelers**: Count of unique personnel who have undertaken travel assignments.
-- **"Where They Are" Location Distribution Grid**:
-  - Interactive cards grouped by deployment location (e.g., Kokomo Plant, Regional Office, Detroit Center, Head Office).
-  - Displays headcount of travelers deployed per site, active/overdue breakdown, and lists assigned staff names.
-  - One-click location filtering: clicking any location card instantly filters the roster table to that site.
-- **Mobile Workforce Roster & Return Actions**:
-  - Searchable by traveler name, Knox ID, location, asset code, or IP.
-  - Filterable by status (Active in Field, Scheduled, Overdue, Returned, All).
-  - Direct **"Return"** action button launching a dedicated return confirmation modal that routes equipment directly back to the IT department as `Available`.
-  - Direct **"Edit"** trip button opening the full loan editor modal.
-  - Direct **"+ Record Business Traveler"** workflow for quick deployment registration.
-- **Header & Navigation Metadata**:
-  - Integrated `/travelers` in TopBar with eyebrow `FIELD DEPLOYMENTS & MOBILE WORKFORCE` and title `Business Travelers`.
+Launched dedicated Business Travelers management module tracking mobile personnel, field deployments, location distribution matrix, and custody return workflows.
+
+#### Highlights
+- Sidebar navigation item for Business Travelers with live active count badge
+- Fleet metrics: Active in Field, Travel Locations, Scheduled Trips, Total Travelers
+- Where They Are location distribution matrix with 1-click site filtering
+- One-click return confirmation flow routing equipment back to IT as Available
+
+#### Mobile Workforce Management
+
+- Dedicated /business-travelers page with enterprise briefcase navigation icon.
+- Location distribution cards tracking custody across deployment facilities.
+- Direct return flow updating asset custody back to IT department.
 
 ---
 
-## [1.0.0] — 2026-10-07 (Official Production Release)
+## [1.0.0] — 2026-10-07
 
-### Baseline Release: StarPlus Energy Rebrand, States Engine v1.0.0, and 100% Offline Air-Gap Architecture
+### Official Production Baseline Release
 
-#### 🎨 Corporate Branding & High-Density UI
-- **StarPlus Energy Corporate Palette**: Implemented official brand colors:
-  - **Corporate Blue (`#1449d6`)**: Primary brand accents, active navigation, buttons, and status highlights.
-  - **Deep Navy (`#0a2547`)**: Contrast headers, card titles, and high-emphasis elements.
-  - **Neutral Canvas (`#f8fafc`)**: Crisp, modern background replacing dark/low-contrast tones.
-  - **Clean Borders (`#e2e8f0`)**: Subtle, crisp dividers and structural outlines.
-  - **Slate Ink (`#141519`)**: High-contrast, legible typography.
-- **Geometric Hexagon SVG Brand Mark**: Replaced placeholder symbols with an inline vector hexagon logo mark aligned with StarPlus Energy's battery and clean energy engineering identity.
-- **Ultra-Compact Topbar (~32px)**: Redesigned the global header into a slim, single-line bar (~32px height), recovering over 100px of vertical space for the primary asset and loan data tables.
-- **Professional Enterprise Layout**:
-  - Eliminated informal greeting banners (*"Good morning, James"*) in favor of a clean, structured operational interface.
-  - Removed redundant `<h2>` section headers above data tables to maximize vertical data density.
-  - Added visible **v1.0.0 Version Pills** in both the TopBar action cluster and the Sidebar footer.
-  - **Scroll-Free Compact Modal Forms**: Re-engineered the Asset Form from a tall 2-column layout (6 rows) into an ultra-compact 4-column x 3-row responsive grid (`.asset-form-grid`) with proportional column widths (`1fr 1.15fr 1fr 1.35fr`), reducing modal height by over 45% (~300px reduction) and completely eliminating the vertical scrollbar. Equipment checklists in loan forms were similarly consolidated into a 4-column subgrid.
+Official baseline release featuring StarPlus Energy rebrand, compact UI architecture, state machine engine, and corporate intranet multi-host deployment.
 
-#### 🔒 100% Air-Gapped Offline Operation
-- **Zero Remote Dependencies**: Completely eliminated external Google Fonts (`Outfit`, `Space Grotesk`) and external CDN links from `index.html`.
-- **Native OS Font Stack**: Configured a high-performance system typography stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif`), guaranteeing instant rendering in air-gapped corporate environments.
-- **Shared Intranet & Client Persistence**: Corporate intranet architecture with shared native SQLite persistence (`node:sqlite`) in WAL mode hosted on the Express 5 server (`0.0.0.0:5000`), paired with client-side LocalStorage caching for instant paint and offline resilience.
+#### Highlights
+- StarPlus Energy corporate palette and geometric hexagon brand mark
+- Corporate intranet operation with zero external cloud dependencies or remote fonts
+- Reconciled lifecycle state machine engine across assets and loans
+- High-density UI with ~32px compact topbar and scroll-free modal forms
+- Direct click-to-transfer ownership badges on asset register
 
-#### ⚙️ States Version 1.0.0 & State Machine Engine
-- **Formalized Operational States**: Standardized six mutually exclusive asset states:
-  - `Available`: Asset is in storage/fleet ready for deployment. Current holder is strictly `IT department` or unassigned.
-  - `Assigned`: Asset is deployed to a designated employee or department.
-  - `On loan`: Asset is actively checked out under a temporary custody loan agreement.
-  - `Damaged`: Hardware fault recorded; awaiting evaluation.
-  - `Under repair`: Active internal or external vendor maintenance.
-  - `Retired`: Asset decommissioned and permanently archived.
-- **Active Holder Invariant**: Enforced rule where any asset with an assigned employee holder cannot have status `Available`; the engine automatically validates and normalizes the status to `Assigned` (or `On loan`).
-- **Return to IT Department Workflow**:
-  - Returning an asset from a loan or assignment automatically sets the current holder to **`IT department`**.
-  - Status transitions automatically to **`Available`** (unless flagged as damaged).
-  - Appends an immutable record to `ownershipHistory` preserving the prior borrower as `previousOwner`, `IT department` as `newOwner`, timestamp, and reason `"Returned to IT department"`.
-- **Passive Verification & Sync Background Service**:
-  - Eliminated the need for manual administrative sync triggers.
-  - Continuous, non-intrusive background service reconciles loan checkouts and returns against the master asset index upon database mount and every state mutation.
-  - Normalizes legacy pool strings (`"pool"`, `"returned to pool"`) directly to `"IT department"`.
+#### Branding & Architecture
 
-#### 🔄 Direct Ownership Transfer & Table Usability
-- **Click-to-Transfer Interaction**: Removed the cluttered `ACTIONS` column from the Assets table. Users can now click directly on the current holder badge to open the **Change Ownership Modal**.
-- **Spacious Transfer Modal**: Expanded modal layout with comfortable padding and distinct input zones.
-- **Customizable Transfer Reasons**: Added quick-select standardized reasons (*"Reassigned to new staff"*, *"New Hire onboarding"*, *"Department Transfer"*, *"Returned to IT department"*, *"Temporary Handover"*, *"Repaired & Reassigned"*) alongside arbitrary custom reasons stored persistently.
-- **Historical Continuity**: Fixed edge cases where transferring a laptop to IT department caused previous holder data to be lost. The system strictly records the transition from the previous holder to `IT department`.
-
-#### 📊 Excel Exchange Engine (1:1 Schema Parity)
-- **Zero-Dependency OpenXML Parser/Generator**: Pure client-side JavaScript engine constructing valid ZIP/OpenXML packages without third-party npm libraries.
-- **1:1 Column & Header Parity**: Exported `.xlsx` files exactly match the structure and column order of the reference workbook (`SPE_IT_Equipment_Loan_List.xlsx`):
-  `no`, `Name`, `Knox ID`, `Rental Location`, `IP`, `Start Date`, `Pickup Date`, `End Date`, `Return Date`, `Laptop`, `Charging Adapter`, `Charging Cable`, `Dongle`, `Keyboard`, `Mouse`, `Monitor`, `Ethernet cable`, `others`, `Note`.
-- **Pre-Import Restore Snapshot**: Automatically serializes and caches the active database before any Excel replacement import, enabling immediate one-click rollback via **"Revert last import"**.
-
-#### ⚡ Modernized Core Tech Stack
-- Upgraded to **React 19** (`^19.0.0`) for modern concurrent rendering and performance.
-- Upgraded to **Vite 6** (`^6.0.0`) for sub-second build times and streamlined HMR.
-- Upgraded to **React Router 7** (`^7.0.0`) for declarative client-side SPA routing.
+- Implemented official brand colors (#1449d6, #0a2547, #f8fafc, #e2e8f0, #141519).
+- Eliminated all remote CDN and external font dependencies in favor of native system font stack.
+- Reconciled asset and loan lifecycle state reconciliation engine.
+- Pure client-side zero-dependency OpenXML export generator.
 
 ---
 
-## [0.2.0] — 2026-09-18 (Prototype Iteration)
+## [0.2.0] — 2026-09-18
 
-### Added
-- **Knox ID Integration**: Integrated Knox directory identification into employee records and device loan entries.
-- **IP Address Tracking**: Added IP address assignment field (`105.101.x.x`) for laptop loan records.
-- **Equipment Checklist**: Expanded loan checkouts to track itemized accessories (Adapter, Cable, Dongle, Keyboard, Mouse, Monitor, Ethernet cable).
-- **Ownership History Timeline**: Added initial history tracking table to the asset editing modal.
-- **Basic Excel Import/Export**: Added initial client-side XLSX generation and workbook ingestion.
+### Prototype Iteration: Knox ID & Custody Tracking
+
+Prototype iteration adding corporate directory Knox ID integration, IP address tracking, accessory checklists, and ownership audit history.
+
+#### Highlights
+- Knox ID integration across employee records and device loan entries
+- IP address assignment field (105.101.x.x) for laptop custody
+- Itemized equipment accessory checklist (adapters, cables, dongles, peripherals)
+- Initial asset ownership history audit timeline
+
+#### Prototype Extensions
+
+- Integrated Knox ID fields into custody records.
+- Added IP prefix validation and accessory tracking.
+- Built initial client-side XLSX generation.
 
 ---
 
-## [0.1.0] — 2026-08-10 (Initial Prototype)
+## [0.1.0] — 2026-08-10
 
-### Pre-release Prototype
-- **Asset Index Register**: Core table for managing company hardware (laptops, monitors, peripherals).
-- **Internal Loan Tracking**: Basic checkout and return workflows for employee hardware.
-- **Executive Dashboard**: High-level counters for available, assigned, and damaged assets.
-- **Directory**: Basic employee and department listings.
-- **Workstation Local Storage**: Browser-based persistence without server dependencies.
+### Initial Concept Prototype
+
+Initial concept prototype establishing the local asset index register, basic checkout/return tracking, and browser local storage persistence.
+
+#### Highlights
+- Asset index register for laptops, monitors, and peripherals
+- Basic internal checkout and return custody workflows
+- Executive dashboard counters and organization directory
+- Local workstation browser storage persistence
+
+#### Foundation
+
+- Initial local data model and storage schema.
+- Prototype dashboard and asset catalog.
+
+---

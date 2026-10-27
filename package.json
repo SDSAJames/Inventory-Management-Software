@@ -1,12 +1,13 @@
 {
   "name": "starplusenergy-asset-index",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:all": "concurrently -n \"server,client\" -c \"blue,cyan\" \"npm run server:dev\" \"npm run dev\"",
     "build": "vite build",
+    "docs:sync": "node scripts/sync-release-docs.js",
     "preview": "vite preview",
     "server": "node server/index.js",
     "server:dev": "node --watch server/index.js",

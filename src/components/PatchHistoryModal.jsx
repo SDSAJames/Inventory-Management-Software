@@ -4,12 +4,12 @@ import { PATCH_HISTORY } from '../data/patchHistory';
 import { APP_VERSION } from '../lib/constants';
 
 export default function PatchHistoryModal({ open, onClose }) {
-  const [selectedVersion, setSelectedVersion] = useState('ALL'); // 'ALL' | '1.3.0' | ...
+  const [selectedVersion, setSelectedVersion] = useState('ALL'); // 'ALL' | release versions
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'major' | 'minor' | 'patch'
   const [expandedVersions, setExpandedVersions] = useState(() => {
     // Expand the latest versions by default
-    return new Set(['1.3.0', '1.2.2']);
+    return new Set([APP_VERSION, '1.3.0']);
   });
 
   const toggleExpand = (ver) => {

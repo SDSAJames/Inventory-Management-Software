@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.3.0)
+# StarPlus Energy Asset Management System (v1.4.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -45,10 +45,10 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
-3. **Loans & Custody (`/loans`)**: Searchable and status-filterable custody records, checkouts, editable pickup/return details, accessory checklists (Adapter, Cable, Dongle, Keyboard, Mouse, Monitor, Ethernet cable), and return processing.
+3. **Loans & Custody (`/loans`)**: Searchable and status-filterable custody records, ready-for-pickup tracking for scheduled incomers, editable pickup/return details, itemized return records, and an Unreturned section for partial returns with outstanding equipment.
 4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, and keyword search.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
-6. **Directory (`/directory`)**: Personnel directory with Knox IDs, department rosters, and rental facility locations.
+6. **Directory (`/directory`)**: Manage asset categories, departments, and locations with add, select-all, edit, and bulk-delete actions. Values currently used by assets are clearly marked and protected from editing or deletion.
 7. **Data Exchange (`/exchange`)**: Tab-delimited TXT file import extracted from Excel, 1:1 reference-format `.xlsx` export, interactive pre-flight preview modal, and one-click database rollback.
 8. **Patch History & Changelog (`/patch-history` & `/changelog`)**: Dedicated release notes view with version filtering, keyword search, type toggles, and detailed per-version changelogs. Also accessible anywhere via the TopBar version button and bottom-left Sidebar footer.
 
@@ -102,6 +102,7 @@ npm run dev
 
 ## Documentation
 
+- **Release source of truth**: `package.json` owns the application version and `src/data/patchHistory.js` owns release notes. After changing either, run `npm run docs:sync` to update generated patch notes and documentation version metadata.
 - **[Software Design Document (SDD)](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md)**: Product scope, business rules, corporate palette, state transitions, and user workflows.
 - **[Technical Specification](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md)**: Component architecture, data schemas, passive reconciliation algorithm, and OpenXML mapping.
 - **[Patch Notes](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md)**: Comprehensive release history and changelog.

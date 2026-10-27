@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.3.0** |
+| **Specification Version** | **v1.4.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | October 2026 |
@@ -60,7 +60,7 @@ graph TD
 ```
 Inventory-Management-Software/
 ├── index.html                   # HTML entry point (clean system typography, zero CDNs)
-├── package.json                 # Project manifest (v1.3.0, scripts, dependencies)
+├── package.json                 # Project manifest (version sourced from package.json)
 ├── vite.config.js               # Vite 6 configuration with React plugin & loopback IPv4 proxy
 ├── server/                      # Shared Corporate Intranet Express & SQLite Backend
 │   ├── index.js                 # Express 5 server binding to 0.0.0.0:5000, LAN CORS, SPA fallback
@@ -110,7 +110,7 @@ Inventory-Management-Software/
 │   │   ├── api.js               # Enterprise REST API client (Fetch wrapper with Bearer token & cookies)
 │   │   ├── assetExcel.js        # Equipment register column mapping & row serialization
 │   │   ├── assetIntegrity.js    # States Version 1.0.0 state machine, passive sync, history engine
-│   │   ├── constants.js         # APP_VERSION ('1.3.0'), status enums, Excel headers, default reasons
+│   │   ├── constants.js         # APP_VERSION (derived from package.json), status enums, Excel headers, default reasons
 │   │   ├── db.js                # LocalStorage engine, import backup snapshots, transfer reasons cache
 │   │   ├── txtImport.js         # Delimited text parser & format detector for TXT extracted from Excel
 │   │   ├── utils.js             # Date formatters (ISO, readable), ID generators, sanitizers
@@ -178,6 +178,9 @@ interface Loan {
   returnDate?: string;             // Actual date hardware was returned to IT
   status: LoanStatus;              // "Scheduled" | "Active" | "Returned" | "Overdue"
   equipment: EquipmentChecklist;   // Itemized accessories
+  returnedEquipment?: EquipmentChecklist; // Actual returned quantities; present for partial returns
+  returnStatus?: 'Partial' | 'Complete'; // Return completeness independently of loan due date/status
+  readyForPickup?: boolean;        // Scheduled loan preparation flag
   others?: string;                 // Miscellaneous items
   note?: string;                   // Custody instructions
   isArchived?: boolean;            // Soft-archive flag for returned loans
