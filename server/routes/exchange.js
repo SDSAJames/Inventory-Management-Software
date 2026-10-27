@@ -424,4 +424,3 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
-import packageMetadata from '../../package.json' with { type: 'json' };
