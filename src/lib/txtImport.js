@@ -7,7 +7,8 @@
  * 1. Equipment Inventory Master Lists (SPE_Equipments_example.txt)
  *    Columns: Host Name | Serial Number | Status | Issued Knox ID | Issued Date
  * 2. IT Equipment Loan Lists (SPE_IT_Equipment_Loan_List_Example.txt)
- *    Columns: Start Date | Pickup Date | End Date | Return Date | Laptop |
+ *    Columns: Name | Knox ID | Business Traveler | Location | IP | Start Date |
+ *             Pickup Date | End Date | Return Date | Laptop |
  *             Charging Adapter | Charging Cable | Dongle | Keyboard | Mouse |
  *             Monitor | Ethernet cable | others | Note
  */
@@ -321,9 +322,10 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     return normHeaders.findIndex((h) => candidates.includes(h));
   };
 
-  const colNo = findIdx(['no', 'number', 'seq', 'id', 'colno']);
+  const colNo = findIdx(['index', 'no', 'number', 'seq', 'id', 'colno']);
   const colName = findIdx(['name', 'assignee', 'borrower']);
   const colKnoxId = findIdx(['knoxid', 'issuedknoxid']);
+  const colBusinessTraveler = findIdx(['businesstraveler', 'businesstraveller']);
   const colLocation = findIdx(['rentallocation', 'location', 'facility']);
   const colIp = findIdx(['ip', 'ipaddress']);
   const colStartDate = findIdx(['startdate', 'loandate']);
@@ -362,7 +364,11 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     const no = colNo >= 0 ? String(row[colNo] || '').trim() : String(i);
     const startDate = colStartDate >= 0 ? normalizeTextDate(row[colStartDate]) : '';
     const pickupDate = colPickupDate >= 0 ? normalizeTextDate(row[colPickupDate]) : '';
-    const endDate = colEndDate >= 0 ? normalizeTextDate(row[colEndDate]) : '';
+    const isBusinessTraveler = colBusinessTraveler < 0 ||
+      String(row[colBusinessTraveler] || '').trim() === '1';
+    const endDate = isBusinessTraveler && colEndDate >= 0
+      ? normalizeTextDate(row[colEndDate])
+      : '';
     const returnDate = colReturnDate >= 0 ? normalizeTextDate(row[colReturnDate]) : '';
 
     const associatedAsset = assetMap.get(assetCode.toLowerCase());
@@ -420,7 +426,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
       no: no || String(i),
       assetCode,
       assignee,
-      assigneeType: 'Business traveler',
+      assigneeType: isBusinessTraveler ? 'Business traveler' : 'Employee',
       knoxId,
       location,
       ip,

@@ -3,7 +3,8 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { LOAN_HEADERS } from '../lib/constants';
 import { DEFAULT_ASSET_HEADERS, assetsToRows } from '../lib/assetExcel';
-import { todayIso } from '../lib/utils';
+import { loansToRows } from '../lib/loanExcel';
+import { statusClass, todayIso } from '../lib/utils';
 import { makeXlsx, readXlsx, downloadBlob } from '../lib/xlsx';
 import { parseDelimitedText, detectFileType, parseEquipmentsText, parseLoansText } from '../lib/txtImport';
 import Modal from '../components/Modal';
@@ -25,31 +26,7 @@ export default function ExchangePage() {
   /* ── 1. Export Handlers (Exact 1:1 Excel .xlsx Format) ─── */
 
   const handleExportLoans = async () => {
-    const rows = db.loans.map((loan, index) => {
-      const asset = db.assets.find((a) => a.code === loan.assetCode) || {};
-      const eq = loan.equipment || {};
-      return [
-        index + 1,
-        loan.assignee || loan.borrower || '',
-        loan.knoxId || '',
-        asset.location || loan.location || '',
-        loan.ip || '',
-        loan.startDate || loan.loanDate || '',
-        loan.pickupDate || loan.loanDate || '',
-        loan.endDate || loan.dueDate || '',
-        loan.returnDate || loan.returnedDate || '',
-        loan.assetCode || '',
-        eq.Adapter ?? 1,
-        eq.Cable ?? 1,
-        eq.Dongle ?? 0,
-        eq.Keyboard ?? 0,
-        eq.Mouse ?? 0,
-        eq.Monitor ?? 0,
-        eq['Ethernet cable'] ?? 0,
-        loan.others || '',
-        loan.note || loan.purpose || '',
-      ];
-    });
+    const rows = loansToRows(db.loans, db.assets);
 
     const workbook = await makeXlsx([LOAN_HEADERS, ...rows]);
     downloadBlob(
@@ -78,6 +55,7 @@ export default function ExchangePage() {
     try {
       let parsedEquipments = null;
       let parsedLoans = null;
+      let loanSourceRows = null;
       const fileNames = [];
 
       for (const file of files) {
@@ -96,11 +74,13 @@ export default function ExchangePage() {
         if (type === 'equipments') {
           parsedEquipments = parseEquipmentsText(rows, db.assets);
         } else if (type === 'loans') {
+          loanSourceRows = rows;
           const refAssets = parsedEquipments ? [...parsedEquipments.assets, ...db.assets] : db.assets;
           parsedLoans = parseLoansText(rows, refAssets, db.loans);
         } else {
           // Fallback detection
           if (rows[0]?.some((h) => String(h).toLowerCase().includes('laptop') || String(h).toLowerCase().includes('pickup'))) {
+            loanSourceRows = rows;
             const refAssets = parsedEquipments ? [...parsedEquipments.assets, ...db.assets] : db.assets;
             parsedLoans = parseLoansText(rows, refAssets, db.loans);
           } else if (rows[0]?.some((h) => String(h).toLowerCase().includes('host') || String(h).toLowerCase().includes('serial'))) {
@@ -115,6 +95,7 @@ export default function ExchangePage() {
         fileNames,
         equipments: parsedEquipments,
         loans: parsedLoans,
+        loanSourceRows,
       });
 
       setImportMode('merge');
@@ -260,7 +241,8 @@ export default function ExchangePage() {
           <p>
             Import <code>SPE_IT_Equipment_Loan_List_Example.txt</code> extracted from Excel with columns:
             <br />
-            <code>Start Date</code> • <code>Pickup Date</code> • <code>Return Date</code> • <code>Laptop</code> • Accessories • <code>Note</code>
+            <code>Knox ID</code> • <code>Business Traveler</code> (1/0) • <code>Start Date</code> • <code>Pickup Date</code> • <code>End Date</code> • <code>Return Date</code> • <code>Laptop</code> • Accessories • <code>Note</code>
+            <br />End Date is used only for business travelers.
           </p>
           <div className="exchange-card-actions">
             <button
@@ -325,7 +307,7 @@ export default function ExchangePage() {
             <h3 style={{ margin: 0 }}>Export Loan List (Excel .xlsx)</h3>
           </div>
           <p>
-            Downloads the complete loan register in exact 1:1 parity with <code>SPE_IT_Equipment_Loan_List_Example.xlsx</code> (all 19 standard columns).
+            Downloads the complete loan register in exact 1:1 parity with <code>SPE_IT_Equipment_Loan_List_Example.xlsx</code> (all 20 standard columns).
           </p>
           <div className="exchange-card-actions">
             <button className="button secondary" onClick={handleExportLoans}>
@@ -462,62 +444,19 @@ export default function ExchangePage() {
                 <table className="loan-table" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
                   <thead>
                     <tr>
-                      <th>No</th>
-                      <th>Name</th>
-                      <th>Knox ID</th>
-                      <th>Rental Location</th>
-                      <th>IP</th>
-                      <th>Start Date</th>
-                      <th>Pickup Date</th>
-                      <th>End Date</th>
-                      <th>Return Date</th>
-                      <th>Laptop</th>
-                      <th>Charging Adapter</th>
-                      <th>Charging Cable</th>
-                      <th>Dongle</th>
-                      <th>Keyboard</th>
-                      <th>Mouse</th>
-                      <th>Monitor</th>
-                      <th>Ethernet cable</th>
-                      <th>others</th>
-                      <th>Note</th>
-                      <th>Status</th>
+                      {(previewData.loanSourceRows?.[0] || []).map((header, index) => (
+                        <th key={`${header}-${index}`}>{header}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {previewData.loans.loans.map((l, i) => {
-                      const eq = l.equipment || {};
-                      const isReturned = Boolean(l.returnDate);
-                      const statusLabel = isReturned ? 'Returned' : l.pickupDate ? 'Loaned' : 'Scheduled';
-                      return (
-                        <tr key={i}>
-                          <td>{l.no || i + 1}</td>
-                          <td><strong>{l.assignee || '—'}</strong></td>
-                          <td><code>{l.knoxId || '—'}</code></td>
-                          <td>{l.location || '—'}</td>
-                          <td><code>{l.ip || '—'}</code></td>
-                          <td>{readableLoanDate(l.startDate) || '—'}</td>
-                          <td>{readableLoanDate(l.pickupDate) || '—'}</td>
-                          <td>{readableLoanDate(l.endDate) || '—'}</td>
-                          <td>{readableLoanDate(l.returnDate) || '—'}</td>
-                          <td><strong>{l.assetCode}</strong></td>
-                          <td>{eq.Adapter ?? '1'}</td>
-                          <td>{eq.Cable ?? '1'}</td>
-                          <td>{eq.Dongle ?? '0'}</td>
-                          <td>{eq.Keyboard ?? '0'}</td>
-                          <td>{eq.Mouse ?? '0'}</td>
-                          <td>{eq.Monitor ?? '0'}</td>
-                          <td>{eq['Ethernet cable'] ?? '0'}</td>
-                          <td>{l.others || '—'}</td>
-                          <td>{l.note || '—'}</td>
-                          <td>
-                            <span className={`status ${statusClass(statusLabel)}`}>
-                              {statusLabel}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {(previewData.loanSourceRows || []).slice(1).map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {(previewData.loanSourceRows[0] || []).map((_, columnIndex) => (
+                          <td key={columnIndex}>{row[columnIndex] ?? ''}</td>
+                        ))}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               ) : null}

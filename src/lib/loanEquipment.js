@@ -8,6 +8,44 @@ const RETURN_ITEMS = [
   ['Ethernet cable', 'Ethernet cable'],
 ];
 
+export const LOAN_EQUIPMENT_FIELDS = [
+  ['Charging Adapter', 'adapter', 'e.g. 65W USB-C'],
+  ['Charging Cable', 'cable', 'e.g. USB-C Cable'],
+  ['Dongle', 'dongle', 'e.g. HDMI/USB-C Multiport'],
+  ['Keyboard', 'keyboard', 'e.g. Wireless keyboard'],
+  ['Mouse', 'mouse', 'e.g. Optical mouse'],
+  ['Monitor asset number', 'monitor', 'e.g. SPE-MON-01'],
+  ['Ethernet Cable', 'ethernetCable', 'e.g. Cat6 cable'],
+];
+
+export function isBusinessTraveler(assigneeType) {
+  return String(assigneeType || 'Business traveler').trim().toLowerCase() === 'business traveler';
+}
+
+export function getLoanEndDate(loan) {
+  if (!loan || !isBusinessTraveler(loan.assigneeType)) return '';
+  return loan.endDate || loan.dueDate || '';
+}
+
+export function normalizeLoanEndDate(loan) {
+  return isBusinessTraveler(loan?.assigneeType)
+    ? loan
+    : { ...loan, endDate: '', dueDate: '' };
+}
+
+export function buildLoanEquipment(form, assetCode) {
+  return {
+    Laptop: assetCode,
+    Adapter: form.adapter,
+    Cable: form.cable,
+    Dongle: form.dongle,
+    Keyboard: form.keyboard,
+    Mouse: form.mouse,
+    Monitor: form.monitor,
+    'Ethernet cable': form.ethernetCable,
+  };
+}
+
 function itemCount(value) {
   const text = String(value ?? '').trim();
   if (!text) return 0;

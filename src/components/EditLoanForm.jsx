@@ -3,6 +3,7 @@ import { IP_PREFIX } from '../lib/constants';
 import { validOctet, nowLocalIso } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
+import { buildLoanEquipment, isBusinessTraveler, LOAN_EQUIPMENT_FIELDS } from '../lib/loanEquipment';
 import AssetAutocomplete from './AssetAutocomplete';
 
 export default function EditLoanForm({ loanId, onClose }) {
@@ -24,7 +25,7 @@ export default function EditLoanForm({ loanId, onClose }) {
     ipSubnet: ipParts[0] || '',
     ipNumber: ipParts[1] || '',
     startDate: (loan.startDate || loan.loanDate || '').slice(0, 10),
-    endDate: (loan.endDate || loan.dueDate || '').slice(0, 10),
+    endDate: isBusinessTraveler(loan.assigneeType) ? (loan.endDate || loan.dueDate || '').slice(0, 10) : '',
     pickupDate: loan.pickupDate || '',
     returnDate: loan.returnDate || loan.returnedDate || '',
     location: loan.location || '',
@@ -40,7 +41,14 @@ export default function EditLoanForm({ loanId, onClose }) {
     note: loan.note || loan.purpose || '',
   });
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const set = (field) => (e) => {
+    const value = e.target.value;
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
+    }));
+  };
 
   const stampNow = (field) => () => setForm((prev) => ({ ...prev, [field]: nowLocalIso() }));
 
@@ -59,7 +67,7 @@ export default function EditLoanForm({ loanId, onClose }) {
       return toast('IP subnet and number must each be between 0 and 255');
     }
 
-    if (form.startDate && form.endDate && form.endDate < form.startDate) {
+    if (isBusinessTraveler(form.assigneeType) && form.startDate && form.endDate && form.endDate < form.startDate) {
       return toast('End date cannot be earlier than start date');
     }
 
@@ -76,24 +84,15 @@ export default function EditLoanForm({ loanId, onClose }) {
       location: form.location,
       startDate: form.startDate,
       loanDate: form.startDate,
-      endDate: form.endDate,
-      dueDate: form.endDate,
+      endDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
+      dueDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
       pickupDate: form.pickupDate,
       returnDate: form.returnDate,
       returnedDate: form.returnDate,
       department: form.department,
       others: form.others,
       note: form.note,
-      equipment: {
-        Laptop: form.assetCode,
-        Adapter: form.adapter,
-        Cable: form.cable,
-        Dongle: form.dongle,
-        Keyboard: form.keyboard,
-        Mouse: form.mouse,
-        Monitor: form.monitor,
-        'Ethernet cable': form.ethernetCable,
-      },
+      equipment: buildLoanEquipment(form, form.assetCode),
     };
 
     const assetUpdates = {
@@ -175,8 +174,14 @@ export default function EditLoanForm({ loanId, onClose }) {
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
           </div>
           <div className="field">
-            <label htmlFor="endDate">Due date</label>
-            <input id="endDate" type="date" value={form.endDate} onChange={set('endDate')} />
+            <label htmlFor="endDate">Due date (Business travelers only)</label>
+            <input
+              id="endDate"
+              type="date"
+              value={form.endDate}
+              onChange={set('endDate')}
+              disabled={!isBusinessTraveler(form.assigneeType)}
+            />
           </div>
 
           {/* Pickup timestamp */}
@@ -258,15 +263,7 @@ export default function EditLoanForm({ loanId, onClose }) {
                   placeholder="e.g. 432 or SPE-4321..."
                 />
               </div>
-              {[
-                ['Charging Adapter', 'adapter'],
-                ['Charging Cable', 'cable'],
-                ['Dongle', 'dongle'],
-                ['Keyboard', 'keyboard'],
-                ['Mouse', 'mouse'],
-                ['Monitor asset number', 'monitor'],
-                ['Ethernet cable', 'ethernetCable'],
-              ].map(([label, key]) => (
+              {LOAN_EQUIPMENT_FIELDS.map(([label, key]) => (
                 <div className="equipment-field" key={key}>
                   <label htmlFor={`edit-${key}`}>{label}</label>
                   <input id={`edit-${key}`} value={form[key]} onChange={set(key)} />

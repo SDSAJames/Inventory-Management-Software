@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
+import { tracksEndDate } from '../loanRules.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 
 export const exchangeRouter = Router();
@@ -36,7 +37,7 @@ exchangeRouter.get('/export', (req, res) => {
     ip: l.ip,
     startDate: l.start_date,
     pickupDate: l.pickup_date,
-    endDate: l.end_date,
+    endDate: tracksEndDate(l.assignee_type) ? l.end_date : '',
     returnDate: l.return_date,
     returnedDate: l.returned_date,
     status: l.status,
@@ -220,6 +221,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
       for (const l of loans) {
         if (!l.assetCode) continue;
         const newLoanId = l.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const assigneeType = l.assigneeType || 'Business traveler';
         insertLoanStmt.run(
           newLoanId,
           String(l.assetCode).trim(),
@@ -230,7 +232,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           l.ip || '',
           l.startDate || todayIso(),
           l.pickupDate || '',
-          l.endDate || '',
+          tracksEndDate(assigneeType) ? (l.endDate || '') : '',
           l.returnDate || '',
           l.returnedDate || '',
           l.status || 'Active',
@@ -241,7 +243,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           l.others || '',
           l.note || '',
           l.purpose || '',
-          l.assigneeType || 'Business traveler',
+          assigneeType,
           l.returnDate || l.returnedDate ? 1 : 0,
           now
         );
@@ -354,6 +356,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const l of snapshot.loans) {
+        const assigneeType = l.assignee_type || l.assigneeType || 'Business traveler';
         insertLoan.run(
           l.id,
           l.asset_code || l.assetCode,
@@ -364,7 +367,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           l.ip,
           l.start_date || l.startDate,
           l.pickup_date || l.pickupDate,
-          l.end_date || l.endDate,
+          tracksEndDate(assigneeType) ? (l.end_date || l.endDate || '') : '',
           l.return_date || l.returnDate,
           l.returned_date || l.returnedDate,
           l.status,
@@ -375,7 +378,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           l.others,
           l.note,
           l.purpose,
-          l.assignee_type || l.assigneeType,
+          assigneeType,
           l.is_archived !== undefined ? l.is_archived : (l.isArchived ? 1 : 0),
           l.created_at || new Date().toISOString()
         );

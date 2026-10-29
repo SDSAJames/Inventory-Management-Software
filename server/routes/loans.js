@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
+import { tracksEndDate } from '../loanRules.js';
 
 export const loansRouter = Router();
 
@@ -15,7 +16,7 @@ function computeLoanStatus(loan) {
 
   const hasPickedUp = Boolean(loan.pickup_date || loan.status === 'Active');
   const today = todayIso();
-  const isOverdue = Boolean(loan.end_date && loan.end_date < today);
+  const isOverdue = Boolean(tracksEndDate(loan.assignee_type) && loan.end_date && loan.end_date < today);
 
   if (isOverdue) return 'Overdue';
   if (hasPickedUp) return 'Active';
@@ -34,7 +35,7 @@ function formatLoanRow(l) {
     ip: l.ip || '',
     startDate: l.start_date || '',
     pickupDate: l.pickup_date || '',
-    endDate: l.end_date || '',
+    endDate: tracksEndDate(l.assignee_type) ? (l.end_date || '') : '',
     returnDate: l.return_date || '',
     returnedDate: l.returned_date || '',
     status: dynamicStatus,
@@ -225,9 +226,10 @@ loansRouter.post('/', authenticate, (req, res) => {
     Laptop: effectiveAssetCode,
   };
 
+  const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const id = req.body.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
-  const initialStatus = pickupDate ? (endDate && endDate < todayIso() ? 'Overdue' : 'Active') : 'Scheduled';
+  const initialStatus = pickupDate ? (effectiveEndDate && effectiveEndDate < todayIso() ? 'Overdue' : 'Active') : 'Scheduled';
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -245,7 +247,7 @@ loansRouter.post('/', authenticate, (req, res) => {
       ip.trim(),
       startDate,
       pickupDate,
-      endDate,
+      effectiveEndDate,
       '',
       '',
       initialStatus,
@@ -353,6 +355,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
   } = req.body || {};
 
   const effectiveAssetCode = (assetCode || equipment?.Laptop || existing.asset_code || '').trim();
+  const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const mergedEquipment = {
     ...equipment,
     Laptop: effectiveAssetCode,
@@ -369,7 +372,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     computedStatus = 'Returned';
     isArchived = 1;
   } else if (hasPickup) {
-    computedStatus = endDate && endDate < today ? 'Overdue' : 'Active';
+    computedStatus = effectiveEndDate && effectiveEndDate < today ? 'Overdue' : 'Active';
     isArchived = 0;
   }
 
@@ -390,7 +393,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       ip.trim(),
       startDate,
       pickupDate,
-      endDate,
+      effectiveEndDate,
       returnDate,
       returnDate,
       computedStatus,
@@ -460,7 +463,9 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
   } = req.body || {};
 
   const now = new Date().toISOString();
-  const effectiveEndDate = endDate !== undefined ? endDate : loan.end_date;
+  const effectiveEndDate = tracksEndDate(loan.assignee_type)
+    ? (endDate !== undefined ? endDate : loan.end_date)
+    : '';
   const effectiveStartDate = startDate !== undefined ? startDate : loan.start_date;
   const nextStatus = effectiveEndDate && effectiveEndDate < todayIso() ? 'Overdue' : 'Active';
 

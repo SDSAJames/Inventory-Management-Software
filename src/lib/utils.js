@@ -1,3 +1,5 @@
+import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
+
 /** Escape special chars for safe XML attribute/element content. */
 export function xmlEscape(value = '') {
   return String(value).replace(/[&<>"']/g, (c) =>
@@ -97,9 +99,10 @@ export function isLoanOverdue(loan) {
     loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived,
   );
   if (isReturned) return false;
+  if (!isBusinessTraveler(loan.assigneeType)) return false;
   if (loan.status === 'Overdue') return true;
 
-  const rawEnd = loan.endDate || loan.dueDate || '';
+  const rawEnd = getLoanEndDate(loan);
   const endIso = normalizeDateToIso(rawEnd);
   if (!endIso) return false;
 

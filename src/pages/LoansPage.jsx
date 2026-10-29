@@ -7,6 +7,8 @@ import { nowLocalIso, readableLoanDate, todayIso, statusClass, isLoanOverdue, ge
 import { readXlsx, makeXlsx, downloadBlob } from '../lib/xlsx';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
 import { LOAN_HEADERS } from '../lib/constants';
+import { getLoanEndDate } from '../lib/loanEquipment';
+import { loansToRows } from '../lib/loanExcel';
 import LoanTable from '../components/LoanTable';
 import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
@@ -305,7 +307,7 @@ export default function LoansPage() {
     setPickupForm({
       pickupDate: nowLocalIso(),
       startDate: (loan.startDate || loan.loanDate || todayIso()).slice(0, 10),
-      endDate: (loan.endDate || loan.dueDate || '').slice(0, 10),
+      endDate: getLoanEndDate(loan).slice(0, 10),
       location: loan.location || 'Head Office',
       adapter: String(eq.Adapter ?? '1'),
       cable: String(eq.Cable ?? '1'),
@@ -511,31 +513,7 @@ export default function LoansPage() {
       toast('No loans to export');
       return;
     }
-    const rows = db.loans.map((loan, index) => {
-      const asset = db.assets.find((a) => a.code === loan.assetCode) || {};
-      const eq = loan.equipment || {};
-      return [
-        index + 1,
-        loan.assignee || loan.borrower || '',
-        loan.knoxId || '',
-        asset.location || loan.location || '',
-        loan.ip || '',
-        loan.startDate || loan.loanDate || '',
-        loan.pickupDate || loan.loanDate || '',
-        loan.endDate || loan.dueDate || '',
-        loan.returnDate || loan.returnedDate || '',
-        loan.assetCode || '',
-        eq.Adapter ?? 1,
-        eq.Cable ?? 1,
-        eq.Dongle ?? 0,
-        eq.Keyboard ?? 0,
-        eq.Mouse ?? 0,
-        eq.Monitor ?? 0,
-        eq['Ethernet cable'] ?? 0,
-        loan.others || '',
-        loan.note || loan.purpose || '',
-      ];
-    });
+    const rows = loansToRows(db.loans, db.assets);
 
     const workbook = await makeXlsx([LOAN_HEADERS, ...rows]);
     downloadBlob(
@@ -557,8 +535,8 @@ export default function LoansPage() {
       location: draft.location,
       startDate: draft.startDate,
       loanDate: draft.startDate || draft.loanDate,
-      endDate: draft.endDate,
-      dueDate: draft.endDate || draft.dueDate,
+      endDate: getLoanEndDate(draft),
+      dueDate: getLoanEndDate(draft),
       pickupDate: draft.pickupDate,
       returnDate: draft.returnDate,
       returnedDate: draft.returnDate || draft.returnedDate,
@@ -1323,7 +1301,7 @@ export default function LoansPage() {
               </div>
               <div className="loan-summary-item">
                 <span className="summary-label">Scheduled Due</span>
-                <span className="summary-val">{readableLoanDate(returnTargets[0].endDate || returnTargets[0].dueDate) || '—'}</span>
+                <span className="summary-val">{readableLoanDate(getLoanEndDate(returnTargets[0])) || '—'}</span>
               </div>
             </div>
 
@@ -1841,7 +1819,7 @@ export default function LoansPage() {
                         <td><code>{l.ip || '—'}</code></td>
                         <td>{readableLoanDate(l.startDate) || '—'}</td>
                         <td>{readableLoanDate(l.pickupDate) || '—'}</td>
-                        <td>{readableLoanDate(l.endDate) || '—'}</td>
+                        <td>{readableLoanDate(getLoanEndDate(l)) || '—'}</td>
                         <td>{readableLoanDate(l.returnDate) || '—'}</td>
                         <td><strong>{l.assetCode}</strong></td>
                         <td>{eq.Adapter ?? '1'}</td>

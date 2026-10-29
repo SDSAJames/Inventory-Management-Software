@@ -3,6 +3,7 @@ import { IP_PREFIX } from '../lib/constants';
 import { todayIso, validOctet } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
+import { buildLoanEquipment, isBusinessTraveler, LOAN_EQUIPMENT_FIELDS } from '../lib/loanEquipment';
 import AssetAutocomplete from './AssetAutocomplete';
 
 export default function LoanForm({ onClose, defaultAssigneeType = 'Business traveler', onSuccess }) {
@@ -36,7 +37,11 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
   const set = (field) => (e) => {
     const val = e.target.value;
-    setForm((prev) => ({ ...prev, [field]: val }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: val,
+      ...(field === 'assigneeType' && !isBusinessTraveler(val) ? { endDate: '' } : {}),
+    }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
@@ -62,7 +67,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     if (!assignee) newErrors.assignee = 'Assignee name is required';
 
     // Due date is optional. If provided, validate that end date is not earlier than start date
-    if (form.startDate && form.endDate && form.endDate < form.startDate) {
+    if (isBusinessTraveler(form.assigneeType) && form.startDate && form.endDate && form.endDate < form.startDate) {
       newErrors.endDate = 'Due date cannot be earlier than start date';
     }
 
@@ -97,22 +102,13 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       ip,
       startDate: form.startDate,
       loanDate: form.startDate,
-      endDate: form.endDate,
-      dueDate: form.endDate,
+      endDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
+      dueDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
       pickupDate: '',
       returnDate: '',
       location: form.location || 'Head Office',
       department: form.department,
-      equipment: {
-        Laptop: assetCode,
-        Adapter: form.adapter,
-        Cable: form.cable,
-        Dongle: form.dongle,
-        Keyboard: form.keyboard,
-        Mouse: form.mouse,
-        Monitor: form.monitor,
-        'Ethernet cable': form.ethernetCable,
-      },
+      equipment: buildLoanEquipment(form, assetCode),
       others: form.others,
       note: form.note,
     };
@@ -241,13 +237,14 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>
           <div className="field">
             <label htmlFor="endDate">
-              Due date <span className="field-hint">(Optional)</span>
+              Due date <span className="field-hint">(Business travelers only)</span>
             </label>
             <input
               id="endDate"
               type="date"
               value={form.endDate}
               onChange={set('endDate')}
+              disabled={!isBusinessTraveler(form.assigneeType)}
               className={errors.endDate ? 'invalid-input' : ''}
             />
             {errors.endDate && (
@@ -328,20 +325,12 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                 )}
               </div>
 
-              {[
-                ['Charging Adapter', 'adapter', 'e.g. 65W USB-C'],
-                ['Charging Cable', 'cable', 'e.g. USB-C Cable'],
-                ['Dongle', 'dongle', 'e.g. HDMI/USB-C Multiport'],
-                ['Keyboard', 'keyboard', 'e.g. Wireless keyboard'],
-                ['Mouse', 'mouse', 'e.g. Optical mouse'],
-                ['Monitor asset number', 'monitor', 'e.g. SPE-MON-01'],
-                ['Ethernet cable', 'ethernetCable', 'e.g. Cat6 cable'],
-              ].map(([label, key, ph]) => (
+              {LOAN_EQUIPMENT_FIELDS.map(([label, key, placeholder]) => (
                 <div className="equipment-field" key={key}>
                   <label htmlFor={key}>{label}</label>
                   <input
                     id={key}
-                    placeholder={ph}
+                    placeholder={placeholder}
                     value={form[key]}
                     onChange={set(key)}
                   />

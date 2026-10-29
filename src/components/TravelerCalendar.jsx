@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
+import { getLoanEndDate } from '../lib/loanEquipment';
 import Modal from './Modal';
 
 const MONTH_NAMES = [
@@ -72,8 +73,8 @@ export default function TravelerCalendar({
 
       // 2. Returning schedule: Due date, end date, or actual return date
       const endIso = t.isReturned
-        ? normalizeDateToIso(t.returnDate || t.returnedDate || t.endDate || t.dueDate)
-        : normalizeDateToIso(t.endDate || t.dueDate);
+        ? normalizeDateToIso(t.returnDate || t.returnedDate || getLoanEndDate(t))
+        : normalizeDateToIso(getLoanEndDate(t));
       if (endIso) {
         if (!retMap.has(endIso)) retMap.set(endIso, []);
         retMap.get(endIso).push(t);
@@ -665,7 +666,7 @@ export default function TravelerCalendar({
                           <div>
                             <span className="detail-label">Scheduled Due:</span>
                             <span className="detail-value">
-                              {readableLoanDate(t.endDate || t.dueDate)}
+                              {readableLoanDate(getLoanEndDate(t))}
                             </span>
                           </div>
                           {t.ip && (
@@ -767,7 +768,7 @@ export default function TravelerCalendar({
                           <div>
                             <span className="detail-label">Due Date:</span>
                             <span className="detail-value">
-                              {readableLoanDate(t.endDate || t.dueDate)}
+                              {readableLoanDate(getLoanEndDate(t))}
                             </span>
                           </div>
                           <div>

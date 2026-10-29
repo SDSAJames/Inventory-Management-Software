@@ -13,6 +13,7 @@ import { seed } from '../data/seed';
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
+import { normalizeLoanEndDate } from '../lib/loanEquipment';
 import { api } from '../lib/api';
 
 const DbContext = createContext(null);
@@ -49,14 +50,20 @@ export function DbProvider({ children }) {
         }
         return assetWithNorm;
       });
+      const loans = raw.loans.map(normalizeLoanEndDate);
 
       return {
         ...raw,
         categories: raw.categories || [...new Set([...(seed.assets || []).map((a) => a.category), ...raw.assets.map((a) => a.category)].filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
-        assets: reconcileAllAssets(assetsWithHistory, raw.loans),
+        loans,
+        assets: reconcileAllAssets(assetsWithHistory, loans),
       };
     }
-    return raw ? { ...raw, categories: raw.categories || [...new Set((seed.assets || []).map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })) } : raw;
+    return raw ? {
+      ...raw,
+      loans: (raw.loans || []).map(normalizeLoanEndDate),
+      categories: raw.categories || [...new Set((seed.assets || []).map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
+    } : raw;
   });
 
   const [transferReasons, setTransferReasons] = useState(() => {
@@ -349,12 +356,12 @@ export function DbProvider({ children }) {
 
   const addLoan = useCallback((loanData, assetUpdates, newEmployee) => {
     const loanId = loanData.id || crypto.randomUUID();
-    const effectiveLoan = {
+    const effectiveLoan = normalizeLoanEndDate({
       id: loanId,
       ...loanData,
       status: loanData.status || (isLoanOverdue(loanData) ? 'Overdue' : (loanData.pickupDate ? 'Active' : 'Scheduled')),
       isArchived: Boolean(loanData.returnDate || loanData.returnedDate),
-    };
+    });
 
     setDb((prev) => {
       const nextAssets = prev.assets.map((a) =>
@@ -398,7 +405,7 @@ export function DbProvider({ children }) {
       const existing = prev.loans.find((l) => l.id === id);
       if (!existing) return prev;
 
-      const merged = { ...existing, ...changes };
+      const merged = normalizeLoanEndDate({ ...existing, ...changes });
 
       // Automatic lifecycle state detection:
       // If return date is removed -> reverts to Loaned (if pickupDate exists) or Scheduled
@@ -666,11 +673,13 @@ export function DbProvider({ children }) {
   /* ── Import / Revert ────────────────────────────── */
 
   const importDb = useCallback(async (newDb) => {
+    const incomingLoans = (newDb.loans || []).map(normalizeLoanEndDate);
     setDb((prev) => {
       saveImportBackup(prev);
-      const reconciledAssets = reconcileAllAssets(newDb.assets || [], newDb.loans || []);
+      const reconciledAssets = reconcileAllAssets(newDb.assets || [], incomingLoans);
       return {
         ...newDb,
+        loans: incomingLoans,
         assets: reconciledAssets,
       };
     });
@@ -678,7 +687,7 @@ export function DbProvider({ children }) {
     try {
       return await api.exchange.importData({
         assets: newDb.assets || [],
-        loans: newDb.loans || [],
+        loans: incomingLoans,
         overwrite: true,
       });
     } catch (err) {
@@ -688,6 +697,7 @@ export function DbProvider({ children }) {
   }, []);
 
   const mergeImportData = useCallback(({ assets: incomingAssets = [], loans: incomingLoans = [] }) => {
+    const normalizedLoans = incomingLoans.map(normalizeLoanEndDate);
     setDb((prev) => {
       saveImportBackup(prev);
       let nextAssets = [...prev.assets];
@@ -733,8 +743,8 @@ export function DbProvider({ children }) {
       }
 
       // 2. Merge Loans
-      if (incomingLoans && incomingLoans.length) {
-        incomingLoans.forEach((incLoan) => {
+      if (normalizedLoans.length) {
+        normalizedLoans.forEach((incLoan) => {
           const existingIdx = nextLoans.findIndex(
             (l) =>
               l.assetCode.toLowerCase() === incLoan.assetCode.toLowerCase() &&
@@ -757,7 +767,11 @@ export function DbProvider({ children }) {
           }
           if (incLoan.location) nextLocations.add(incLoan.location);
           if (incLoan.assignee && incLoan.assignee !== 'IT department' && !nextEmployees.some((e) => e.name === incLoan.assignee)) {
-            nextEmployees.push({ name: incLoan.assignee, department: '', position: 'Business traveler' });
+            nextEmployees.push({
+              name: incLoan.assignee,
+              department: incLoan.department || '',
+              position: incLoan.assigneeType || 'Business traveler',
+            });
           }
         });
       }
@@ -774,7 +788,7 @@ export function DbProvider({ children }) {
       };
     });
 
-    return api.exchange.importData({ assets: incomingAssets, loans: incomingLoans, overwrite: true })
+    return api.exchange.importData({ assets: incomingAssets, loans: normalizedLoans, overwrite: true })
       .catch((err) => {
         console.warn('Could not sync merge import to server:', err.message);
         return { success: false, error: err.message };

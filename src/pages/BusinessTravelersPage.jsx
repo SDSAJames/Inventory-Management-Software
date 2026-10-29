@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { todayIso, readableLoanDate } from '../lib/utils';
+import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
@@ -43,10 +44,7 @@ export default function BusinessTravelersPage() {
 
   /* ── 1. Calculate Traveler Records ────────────────────────── */
   const allTravelers = useMemo(() => {
-    // A loan is considered a business travel assignment if assigneeType is 'Business traveler'
-    const travelLoans = (db.loans || []).filter(
-      (l) => (l.assigneeType || 'Business traveler') === 'Business traveler'
-    );
+    const travelLoans = (db.loans || []).filter((loan) => isBusinessTraveler(loan.assigneeType));
 
     return travelLoans.map((loan) => {
       const asset = (db.assets || []).find(
@@ -54,7 +52,7 @@ export default function BusinessTravelersPage() {
       );
       const isReturned = Boolean(loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived);
       const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
-      const dueDate = loan.endDate || loan.dueDate || '';
+      const dueDate = getLoanEndDate(loan);
       const isOverdue = !isReturned && dueDate && dueDate < todayIso();
 
       let tripStatus = 'Scheduled';
@@ -465,7 +463,7 @@ export default function BusinessTravelersPage() {
                       </td>
                       <td>
                         <strong style={{ color: '#b91c1c', fontSize: '12px' }}>
-                          {readableLoanDate(t.endDate || t.dueDate)}
+                          {readableLoanDate(getLoanEndDate(t))}
                         </strong>
                       </td>
                       <td>
@@ -690,7 +688,7 @@ export default function BusinessTravelersPage() {
                     </td>
                     <td>
                       <div style={{ fontSize: '12px' }}>
-                        <div>{readableLoanDate(t.startDate || t.loanDate)} → {readableLoanDate(t.endDate || t.dueDate)}</div>
+                        <div>{readableLoanDate(t.startDate || t.loanDate)} → {readableLoanDate(getLoanEndDate(t))}</div>
                         {t.remainingText && (
                           <span
                             className={`status ${t.isOverdue ? 'status-danger' : 'status-info'}`}
@@ -783,7 +781,7 @@ export default function BusinessTravelersPage() {
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Rental Location:</dt>
                 <dd style={{ margin: 0 }}>📍 {returnConfirmTarget.location}</dd>
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Due Date:</dt>
-                <dd style={{ margin: 0 }}>{readableLoanDate(returnConfirmTarget.endDate || returnConfirmTarget.dueDate)}</dd>
+                <dd style={{ margin: 0 }}>{readableLoanDate(getLoanEndDate(returnConfirmTarget))}</dd>
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Next Status:</dt>
                 <dd style={{ margin: 0, color: '#10b981', fontWeight: 700 }}>Available (Held by IT department)</dd>
               </dl>

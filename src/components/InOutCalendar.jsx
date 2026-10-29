@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
+import { normalizeDateToIso, todayIso, readableLoanDate, isLoanOverdue } from '../lib/utils';
+import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from './Modal';
 
 const MONTH_NAMES = [
@@ -72,12 +73,11 @@ export default function InOutCalendar({
       const asset = assetMap.get(String(loan.assetCode || '').toLowerCase());
       const isReturned = Boolean(loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived);
       const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
-      const dueDate = loan.endDate || loan.dueDate || '';
-      const isOverdue = !isReturned && dueDate && dueDate < todayIso();
+      const dueDate = getLoanEndDate(loan);
+      const isOverdue = !isReturned && isLoanOverdue(loan);
 
       // Normalize requester type
-      const rawType = String(loan.assigneeType || '').trim();
-      const isTraveler = rawType.toLowerCase() === 'business traveler';
+      const isTraveler = isBusinessTraveler(loan.assigneeType);
       const userType = isTraveler ? 'Business traveler' : 'Employee';
       const userTypeLabel = isTraveler ? 'Business Traveler' : 'SPE Employee';
 
@@ -98,8 +98,8 @@ export default function InOutCalendar({
 
       // Due / Incoming date (Return / Due back)
       const inIso = isReturned
-        ? normalizeDateToIso(loan.returnDate || loan.returnedDate || loan.endDate || loan.dueDate)
-        : normalizeDateToIso(loan.endDate || loan.dueDate);
+        ? normalizeDateToIso(loan.returnDate || loan.returnedDate || dueDate)
+        : normalizeDateToIso(dueDate);
 
       return {
         ...loan,
@@ -891,7 +891,7 @@ export default function InOutCalendar({
                           </div>
                           <div className="day-card-info-item">
                             <span className="info-lbl">Expected Return:</span>
-                            <span className="info-val">{readableLoanDate(loan.endDate || loan.dueDate) || 'Indefinite'}</span>
+                            <span className="info-val">{readableLoanDate(getLoanEndDate(loan)) || 'Indefinite'}</span>
                           </div>
 
                           {loan.accessoryCount > 0 && (
@@ -1009,7 +1009,7 @@ export default function InOutCalendar({
                           </div>
                           <div className="day-card-info-item">
                             <span className="info-lbl">Scheduled Due Date:</span>
-                            <span className="info-val">{readableLoanDate(loan.endDate || loan.dueDate)}</span>
+                            <span className="info-val">{readableLoanDate(getLoanEndDate(loan))}</span>
                           </div>
                           {loan.isReturned && (
                             <div className="day-card-info-item">

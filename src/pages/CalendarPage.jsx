@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { todayIso, readableLoanDate } from '../lib/utils';
+import { todayIso, readableLoanDate, isLoanOverdue } from '../lib/utils';
+import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
@@ -29,10 +30,9 @@ export default function CalendarPage() {
     loans.forEach((l) => {
       const isReturned = Boolean(l.returnDate || l.returnedDate || l.status === 'Returned' || l.isArchived);
       const hasPickup = Boolean(l.pickupDate || l.status === 'Active');
-      const dueDate = l.endDate || l.dueDate || '';
-      const isOverdue = !isReturned && dueDate && dueDate < todayIso();
+      const isOverdue = !isReturned && isLoanOverdue(l);
 
-      const isTraveler = String(l.assigneeType || '').toLowerCase() === 'business traveler';
+      const isTraveler = isBusinessTraveler(l.assigneeType);
       if (isTraveler) travelers += 1;
       else employees += 1;
 

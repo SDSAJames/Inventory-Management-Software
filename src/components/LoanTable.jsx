@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { readableLoanDate, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
+import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import { getMissingReturnItems } from '../lib/loanEquipment';
 
 const STATUS_ORDER = { Scheduled: 0, Loaned: 1, Overdue: 2, Returned: 3 };
@@ -22,7 +23,7 @@ const COLUMNS = [
   { key: 'knoxId', label: 'Knox ID', className: 'col-knox', getValue: (l) => String(l.knoxId || '').toLowerCase() },
   { key: 'startDate', label: 'Start date', getValue: (l) => dateSortKey(l.startDate || l.loanDate) },
   { key: 'pickupDate', label: 'Pickup date', getValue: (l) => dateSortKey(l.pickupDate) },
-  { key: 'endDate', label: 'End date', getValue: (l) => dateSortKey(l.endDate || l.dueDate) },
+  { key: 'endDate', label: 'End date', getValue: (l) => dateSortKey(getLoanEndDate(l)) },
   { key: 'returnDate', label: 'Return date', getValue: (l) => dateSortKey(l.returnDate || l.returnedDate) },
   { key: 'status', label: 'Status', getValue: (l) => STATUS_ORDER[getLoanStatus(l)] },
 ];
@@ -240,8 +241,9 @@ export default function LoanTable({
                     <input
                       className="inline-input"
                       type="date"
-                      value={(draft.endDate || draft.dueDate || '').slice(0, 10)}
+                      value={getLoanEndDate(draft).slice(0, 10)}
                       onChange={(e) => update('endDate', e.target.value)}
+                      disabled={!isBusinessTraveler(draft.assigneeType)}
                     />
                   </td>
                   <td>
@@ -375,7 +377,7 @@ export default function LoanTable({
                       <span className="text-muted-badge">Not picked up</span>
                     )}
                   </td>
-                  <td>{readableLoanDate(loan.endDate || loan.dueDate) || '—'}</td>
+                  <td>{readableLoanDate(getLoanEndDate(loan)) || '—'}</td>
                   <td>
                     {loan.returnDate || loan.returnedDate ? (
                       <span className="timestamp-badge">
@@ -546,7 +548,7 @@ export default function LoanTable({
                                 )}
                               </dd>
                               <dt>Due / End date:</dt>
-                              <dd>{readableLoanDate(loan.endDate || loan.dueDate) || '—'}</dd>
+                              <dd>{readableLoanDate(getLoanEndDate(loan)) || '—'}</dd>
                               <dt>Return time:</dt>
                               <dd>
                                 {(loan.returnDate || loan.returnedDate) ? (

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
+import { isBusinessTraveler } from '../lib/loanEquipment';
 import { APP_VERSION } from '../lib/constants';
 
 const NAV_ITEMS = [
@@ -88,7 +89,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
 
   const activeTravelersCount = useMemo(() => {
     return (db.loans || []).filter((l) => {
-      const isTraveler = (l.assigneeType || 'Business traveler') === 'Business traveler';
+      const isTraveler = isBusinessTraveler(l.assigneeType);
       const isOngoing = !l.returnDate && !l.returnedDate && l.status !== 'Returned' && !l.isArchived;
       return isTraveler && isOngoing;
     }).length;

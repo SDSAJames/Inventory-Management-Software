@@ -7,12 +7,12 @@ export const IMPORT_BACKUP_KEY = 'starplusenergy-last-import-backup-v1';
 export const STATUSES = ['Available', 'Assigned', 'On loan', 'Damaged', 'Under repair', 'Retired'];
 
 export const LOAN_HEADERS = [
-  'no', 'Name', 'Knox ID', 'Rental Location', 'IP',
+  'Index', 'Name', 'Knox ID', 'Business Traveler', 'Location', 'IP',
   'Start Date', 'Pickup Date', 'End Date', 'Return Date',
   'Laptop',
   'Charging Adapter', 'Charging Cable',
-  'Dongle', 'Keyboard', 'Mouse', 'Monitor', 'Ethernet cable',
-  'others', 'Note',
+  'Dongle', 'Keyboard', 'Mouse', 'Monitor', 'Ethernet Cable',
+  'Others', 'Note',
 ];
 
 export const IP_PREFIX = '105.101.';
