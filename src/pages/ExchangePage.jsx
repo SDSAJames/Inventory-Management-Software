@@ -8,6 +8,35 @@ import { statusClass, todayIso } from '../lib/utils';
 import { parseDelimitedText, detectFileType, parseEquipmentsText, parseLoansText } from '../lib/txtImport';
 import Modal from '../components/Modal';
 
+const EQUIPMENT_PREVIEW_FIELDS = {
+  assetnumber: 'code',
+  assetcode: 'code',
+  code: 'code',
+  hostname: 'code',
+  assettype: 'category',
+  category: 'category',
+  type: 'category',
+  serialnumber: 'serial',
+  serial: 'serial',
+  sn: 'serial',
+  purchasedate: 'purchaseDate',
+  datepurchased: 'purchaseDate',
+  status: 'status',
+  issuedknoxid: 'owner',
+  knoxid: 'owner',
+  holder: 'owner',
+  currentholder: 'owner',
+  owner: 'owner',
+  issueddate: 'issuedDate',
+  department: 'department',
+  dept: 'department',
+  location: 'location',
+  facility: 'location',
+  notes: 'notes',
+  note: 'notes',
+  model: 'model',
+};
+
 export default function ExchangePage() {
   const { db, importDb, mergeImportData, revertImport, hasBackup } = useDb();
   const toast = useToast();
@@ -55,6 +84,7 @@ export default function ExchangePage() {
 
     try {
       let parsedEquipments = null;
+      let equipmentSourceHeaders = null;
       let parsedLoans = null;
       let loanSourceRows = null;
       const fileNames = [];
@@ -74,6 +104,7 @@ export default function ExchangePage() {
         const type = detectFileType(rows);
 
         if (type === 'equipments') {
+          equipmentSourceHeaders = rows[0];
           parsedEquipments = parseEquipmentsText(rows, db.assets);
         } else if (type === 'loans') {
           loanSourceRows = rows;
@@ -86,6 +117,7 @@ export default function ExchangePage() {
             const refAssets = parsedEquipments ? [...parsedEquipments.assets, ...db.assets] : db.assets;
             parsedLoans = parseLoansText(rows, refAssets, db.loans);
           } else if (rows[0]?.some((h) => String(h).toLowerCase().includes('host') || String(h).toLowerCase().includes('serial'))) {
+            equipmentSourceHeaders = rows[0];
             parsedEquipments = parseEquipmentsText(rows, db.assets);
           } else {
             throw new Error(`Unrecognized file structure in "${file.name}". Expected SPE_Equipments_example.txt or SPE_IT_Equipment_Loan_List_Example.txt format.`);
@@ -96,6 +128,7 @@ export default function ExchangePage() {
       setPreviewData({
         fileNames,
         equipments: parsedEquipments,
+        equipmentSourceHeaders,
         loans: parsedLoans,
         loanSourceRows,
       });
@@ -215,7 +248,7 @@ export default function ExchangePage() {
           <p>
             Import <code>SPE_Equipments_example.txt</code> extracted from Excel with columns:
             <br />
-            <code>Host Name</code> • <code>Serial Number</code> • <code>Status</code> • <code>Issued Knox ID</code> • <code>Issued Date</code>
+            <code>Asset Number</code> • <code>Asset Type</code> • <code>Serial Number</code> • <code>Purchase Date</code> • <code>Status</code> • <code>Issued Knox ID</code> • <code>Issued Date</code> • <code>Department</code> • <code>Location</code> • <code>Notes</code>
           </p>
           <div className="exchange-card-actions">
             <button
@@ -416,28 +449,36 @@ export default function ExchangePage() {
             {/* Table Preview */}
             <div className="table-wrap" style={{ maxHeight: '280px', overflow: 'auto', marginBottom: '16px', border: '1px solid var(--line)', borderRadius: '6px' }}>
               {activeTab === 'equipments' && previewData.equipments ? (
-                <table className="loan-table" style={{ fontSize: '11px' }}>
+                <table className="loan-table" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
                   <thead>
                     <tr>
-                      <th>Host Name</th>
-                      <th>Serial Number</th>
-                      <th>Status</th>
-                      <th>Issued Knox ID</th>
-                      <th>Issued Date</th>
+                      {(previewData.equipmentSourceHeaders || []).map((header, index) => (
+                        <th key={`${header}-${index}`}>{header}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {previewData.equipments.assets.map((a, i) => (
                       <tr key={i}>
-                        <td><strong>{a.code}</strong></td>
-                        <td><code>{a.serial || '—'}</code></td>
-                        <td>
-                          <span className={`status status-${a.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                            {a.status}
-                          </span>
-                        </td>
-                        <td>{a.owner || '—'}</td>
-                        <td>{a.issuedDate || '—'}</td>
+                        {(previewData.equipmentSourceHeaders || []).map((header, columnIndex) => {
+                          const field = EQUIPMENT_PREVIEW_FIELDS[String(header).toLowerCase().replace(/[^a-z0-9]/g, '')];
+                          const value = field ? a[field] : '';
+                          return (
+                            <td key={`${header}-${columnIndex}`}>
+                              {field === 'status' ? (
+                                <span className={`status status-${a.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                                  {a.status}
+                                </span>
+                              ) : field === 'code' ? (
+                                <strong>{value || '—'}</strong>
+                              ) : field === 'serial' ? (
+                                <code>{value || '—'}</code>
+                              ) : (
+                                value || '—'
+                              )}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>

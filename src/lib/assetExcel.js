@@ -1,7 +1,6 @@
 /**
  * Asset register <-> Excel mapping.
- * Compatible with the SPE_Equipments_example.xlsx layout:
- *   Host Name | Serial Number | Status | Issued Knox ID | Issued Date
+ * Compatible with the SPE_Equipments equipment register layout.
  * Extra register columns are appended on export and picked up again on import,
  * so an exported file can be re-imported without losing information.
  */
@@ -19,7 +18,8 @@ const COLUMNS = [
   ['owner', ['Issued Knox ID', 'Knox ID', 'Holder', 'Current holder', 'Owner']],
   ['issuedDate', ['Issued Date', 'Issue date']],
   ['name', ['Asset Name', 'Name']],
-  ['category', ['Category']],
+  ['category', ['Category', 'Asset Type']],
+  ['purchaseDate', ['Purchase Date', 'Date Purchased']],
   ['model', ['Model']],
   ['location', ['Location']],
   ['department', ['Department']],
@@ -28,11 +28,16 @@ const COLUMNS = [
 ];
 
 export const DEFAULT_ASSET_HEADERS = [
-  'Host Name',
+  'Asset Number',
+  'Asset Type',
   'Serial Number',
+  'Purchase Date',
   'Status',
   'Issued Knox ID',
   'Issued Date',
+  'Department',
+  'Location',
+  'Notes',
 ];
 
 export const ASSET_EXPORT_HEADERS = DEFAULT_ASSET_HEADERS;
@@ -133,6 +138,7 @@ export function parseAssetRows(rows, existingAssets) {
       owner: get('owner'),
       department: get('department'),
       notes: get('notes'),
+      purchaseDate: normalizeDate(get('purchaseDate')),
       issuedDate: normalizeDate(get('issuedDate')),
       updated: todayIso(),
     };
@@ -146,6 +152,7 @@ export function parseAssetRows(rows, existingAssets) {
         name: parsedAsset.name || existing.name,
         category: parsedAsset.category || existing.category,
         location: parsedAsset.location || existing.location,
+        purchaseDate: parsedAsset.purchaseDate || existing.purchaseDate || '',
         existingRecord: existing,
       });
     } else {
@@ -163,7 +170,7 @@ export function parseAssetRows(rows, existingAssets) {
 
 /**
  * Format assets into tabular rows with columns matching the imported Excel format.
- * Defaults to the 5 standard columns: Host Name | Serial Number | Status | Issued Knox ID | Issued Date.
+ * Defaults to the SPE equipment register columns.
  * If custom headers from an imported file are provided, uses those exact columns.
  */
 export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS) {
@@ -184,12 +191,15 @@ export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS) {
       return asset.owner || '';
     }
     if (['issued date', 'issue date'].includes(h)) {
-      return asset.issuedDate || asset.updated || '';
+      return asset.issuedDate || '';
+    }
+    if (['purchase date', 'date purchased'].includes(h)) {
+      return asset.purchaseDate || '';
     }
     if (['asset name', 'name'].includes(h)) {
       return asset.name || '';
     }
-    if (['category'].includes(h)) {
+    if (['category', 'asset type', 'type'].includes(h)) {
       return asset.category || '';
     }
     if (['model'].includes(h)) {

@@ -63,12 +63,22 @@ export function initDatabase() {
       location TEXT,
       owner TEXT,
       department TEXT,
+      purchase_date TEXT,
       condition TEXT,
       notes TEXT,
       updated TEXT,
       created_at TEXT NOT NULL
     );
   `);
+
+  try {
+    const assetCols = db.prepare('PRAGMA table_info(assets)').all().map((c) => c.name);
+    if (!assetCols.includes('purchase_date')) {
+      db.exec('ALTER TABLE assets ADD COLUMN purchase_date TEXT;');
+    }
+  } catch (e) {
+    console.warn('Note checking assets schema:', e.message);
+  }
 
   // 3. Loans table
   db.exec(`

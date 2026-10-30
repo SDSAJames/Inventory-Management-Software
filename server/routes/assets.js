@@ -57,6 +57,7 @@ assetsRouter.get('/', (req, res) => {
 
   const assets = rows.map((a) => ({
     ...a,
+    purchaseDate: a.purchase_date || '',
     ownershipHistory: getHistory.all(a.code).map((h) => ({
       id: h.id,
       previousOwner: h.previous_owner,
@@ -152,6 +153,7 @@ assetsRouter.get('/:id', (req, res) => {
     success: true,
     asset: {
       ...asset,
+      purchaseDate: asset.purchase_date || '',
       ownershipHistory: history.map((h) => ({
         id: h.id,
         previousOwner: h.previous_owner,
@@ -176,6 +178,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     location = 'Head Office',
     owner = '',
     department = '',
+    purchaseDate = '',
     condition = 'Good',
     notes = '',
   } = req.body || {};
@@ -204,8 +207,8 @@ assetsRouter.post('/', authenticate, (req, res) => {
   db.exec('BEGIN TRANSACTION;');
   try {
     const insert = db.prepare(`
-      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, condition, notes, updated, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, condition, notes, updated, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     insert.run(
@@ -219,6 +222,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
       location,
       owner,
       department,
+      purchaseDate,
       condition,
       notes,
       todayIso(),
@@ -256,7 +260,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     logAudit('CREATE_ASSET', 'assets', id, { code: trimmedCode, name }, req.user);
 
     const newAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
-    return res.status(201).json({ success: true, message: 'Asset created successfully.', asset: newAsset });
+    return res.status(201).json({ success: true, message: 'Asset created successfully.', asset: { ...newAsset, purchaseDate: newAsset.purchase_date || '' } });
   } catch (err) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ success: false, error: err.message });
@@ -279,6 +283,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
     location = asset.location,
     owner = asset.owner,
     department = asset.department,
+    purchaseDate = req.body?.purchaseDate ?? asset.purchase_date ?? '',
     condition = asset.condition,
     notes = asset.notes,
   } = req.body || {};
@@ -290,7 +295,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
   try {
     db.prepare(`
       UPDATE assets
-      SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, condition = ?, notes = ?, updated = ?
+      SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, condition = ?, notes = ?, updated = ?
       WHERE id = ?
     `).run(
       name,
@@ -301,6 +306,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
       location,
       owner,
       department,
+      purchaseDate,
       condition,
       notes,
       todayIso(),
@@ -337,7 +343,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
     logAudit('UPDATE_ASSET', 'assets', asset.id, { code: asset.code, ownerChanged }, req.user);
 
     const updatedAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(asset.id);
-    return res.json({ success: true, message: 'Asset updated successfully.', asset: updatedAsset });
+    return res.json({ success: true, message: 'Asset updated successfully.', asset: { ...updatedAsset, purchaseDate: updatedAsset.purchase_date || '' } });
   } catch (err) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ success: false, error: err.message });

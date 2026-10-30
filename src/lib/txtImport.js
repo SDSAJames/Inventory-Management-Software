@@ -5,7 +5,8 @@
  *
  * Specifically tuned for:
  * 1. Equipment Inventory Master Lists (SPE_Equipments_example.txt)
- *    Columns: Host Name | Serial Number | Status | Issued Knox ID | Issued Date
+ *    Columns: Asset Number | Asset Type | Serial Number | Purchase Date | Status |
+ *             Issued Knox ID | Issued Date | Department | Location | Notes
  * 2. IT Equipment Loan Lists (SPE_IT_Equipment_Loan_List_Example.txt)
  *    Columns: Name | Knox ID | Business Traveler | Location | IP | Start Date |
  *             Pickup Date | End Date | Return Date | Laptop |
@@ -141,7 +142,7 @@ export function normalizeTextDate(raw) {
 export function detectFileType(rows) {
   if (!rows || rows.length < 1) return 'unknown';
   const headers = rows[0].map((h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
-  if (headers.includes('hostname') || headers.includes('issuedknoxid')) {
+  if (headers.includes('hostname') || headers.includes('assetnumber') || headers.includes('issuedknoxid')) {
     return 'equipments';
   }
   if (
@@ -192,8 +193,9 @@ export function parseEquipmentsText(rows, existingAssets = []) {
   const colSerial = findIdx(['serialnumber', 'serial', 'sn']);
   const colStatus = findIdx(['status']);
   const colOwner = findIdx(['issuedknoxid', 'knoxid', 'holder', 'currentholder', 'owner']);
+  const colPurchaseDate = findIdx(['purchasedate', 'datepurchased']);
   const colIssuedDate = findIdx(['issueddate', 'issuedate', 'date']);
-  const colCategory = findIdx(['category', 'type']);
+  const colCategory = findIdx(['category', 'assettype', 'type']);
   const colModel = findIdx(['model']);
   const colLocation = findIdx(['location', 'facility']);
   const colDept = findIdx(['department', 'dept']);
@@ -220,6 +222,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
     const rawStatus = colStatus >= 0 ? row[colStatus] : 'Available';
     const status = normalizeEquipmentStatus(rawStatus);
     const owner = colOwner >= 0 ? String(row[colOwner] || '').trim() : '';
+    const purchaseDate = colPurchaseDate >= 0 ? normalizeTextDate(row[colPurchaseDate]) : '';
     const issuedDate = colIssuedDate >= 0 ? normalizeTextDate(row[colIssuedDate]) : '';
     const category = colCategory >= 0 ? String(row[colCategory] || '').trim() : 'Laptop';
     const model = colModel >= 0 ? String(row[colModel] || '').trim() : '';
@@ -249,7 +252,9 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         ...existing,
         serial: serial || existing.serial,
         status: status || existing.status,
+        category: category || existing.category,
         owner: owner || existing.owner,
+        purchaseDate: purchaseDate || existing.purchaseDate || '',
         issuedDate: issuedDate || existing.issuedDate || '',
         location: location || existing.location,
         department: department || existing.department,
@@ -282,6 +287,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         status,
         location,
         owner,
+        purchaseDate,
         department,
         issuedDate,
         condition: status === 'Damaged' ? 'Damaged' : 'Good',

@@ -4,7 +4,7 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { STATUSES } from '../lib/constants';
 import { todayIso, statusClass } from '../lib/utils';
-import { parseAssetRows, assetsToRows } from '../lib/assetExcel';
+import { DEFAULT_ASSET_HEADERS, parseAssetRows, assetsToRows } from '../lib/assetExcel';
 import { parseDelimitedText } from '../lib/txtImport';
 import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
 import AssetTable from '../components/AssetTable';
@@ -181,7 +181,12 @@ export default function AssetsPage() {
       toast('No assets to export');
       return;
     }
-    const headers = loadAssetExportHeaders();
+    const savedHeaders = loadAssetExportHeaders();
+    const legacyHeaders = ['Host Name', 'Serial Number', 'Status', 'Issued Knox ID', 'Issued Date'];
+    const isLegacyFormat = Array.isArray(savedHeaders)
+      && savedHeaders.length === legacyHeaders.length
+      && savedHeaders.every((header, index) => String(header).trim().toLowerCase() === legacyHeaders[index].toLowerCase());
+    const headers = isLegacyFormat ? DEFAULT_ASSET_HEADERS : (savedHeaders || DEFAULT_ASSET_HEADERS);
     const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx(assetsToRows(filtered, headers));
     downloadBlob(new Blob([workbook], { type: XLSX_MIME }), `SPE_Equipments_${todayIso()}.xlsx`);
