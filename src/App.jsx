@@ -1,17 +1,18 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { DbProvider } from './hooks/useDb';
 import { ToastProvider } from './hooks/useToast';
 import AppShell from './components/AppShell';
 import LockScreen from './components/LockScreen';
-import OverviewPage from './pages/OverviewPage';
-import AssetsPage from './pages/AssetsPage';
-import LoansPage from './pages/LoansPage';
-import BusinessTravelersPage from './pages/BusinessTravelersPage';
-import CalendarPage from './pages/CalendarPage';
-import DirectoryPage from './pages/DirectoryPage';
-import ExchangePage from './pages/ExchangePage';
-import PatchHistoryPage from './pages/PatchHistoryPage';
+const OverviewPage = lazy(() => import('./pages/OverviewPage'));
+const AssetsPage = lazy(() => import('./pages/AssetsPage'));
+const LoansPage = lazy(() => import('./pages/LoansPage'));
+const BusinessTravelersPage = lazy(() => import('./pages/BusinessTravelersPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const DirectoryPage = lazy(() => import('./pages/DirectoryPage'));
+const ExchangePage = lazy(() => import('./pages/ExchangePage'));
+const PatchHistoryPage = lazy(() => import('./pages/PatchHistoryPage'));
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -51,7 +52,8 @@ function AppContent() {
   return (
     <HashRouter>
       <AppShell>
-        <Routes>
+          <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}>
+          <Routes>
           <Route path="/" element={<OverviewPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/loans" element={<LoansPage />} />
@@ -65,6 +67,7 @@ function AppContent() {
           <Route path="/changelog" element={<Navigate to="/patch-history" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+          </Suspense>
       </AppShell>
     </HashRouter>
   );

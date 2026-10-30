@@ -4,7 +4,6 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { STATUSES } from '../lib/constants';
 import { todayIso, statusClass } from '../lib/utils';
-import { makeXlsx, readXlsx, downloadBlob } from '../lib/xlsx';
 import { parseAssetRows, assetsToRows } from '../lib/assetExcel';
 import { parseDelimitedText } from '../lib/txtImport';
 import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
@@ -127,6 +126,7 @@ export default function AssetsPage() {
         const text = await file.text();
         rows = parseDelimitedText(text);
       } else {
+        const { readXlsx } = await import('../lib/xlsx');
         rows = await readXlsx(file);
       }
       const result = parseAssetRows(rows, db.assets);
@@ -182,6 +182,7 @@ export default function AssetsPage() {
       return;
     }
     const headers = loadAssetExportHeaders();
+    const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx(assetsToRows(filtered, headers));
     downloadBlob(new Blob([workbook], { type: XLSX_MIME }), `SPE_Equipments_${todayIso()}.xlsx`);
     toast(`${filtered.length} asset${filtered.length === 1 ? '' : 's'} exported.`);

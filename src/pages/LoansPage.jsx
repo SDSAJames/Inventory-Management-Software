@@ -4,7 +4,6 @@ import { useDb } from '../hooks/useDb';
 import { buildReturnedEquipment, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIso, readableLoanDate, todayIso, statusClass, isLoanOverdue, getLoanStatus } from '../lib/utils';
-import { readXlsx, makeXlsx, downloadBlob } from '../lib/xlsx';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
 import { LOAN_HEADERS } from '../lib/constants';
 import { getLoanEndDate } from '../lib/loanEquipment';
@@ -449,9 +448,13 @@ export default function LoansPage() {
     e.target.value = '';
     if (!file) return;
     try {
-      const rows = file.name.toLowerCase().endsWith('.xlsx')
-        ? await readXlsx(file)
-        : parseDelimitedText(await file.text());
+      let rows;
+      if (file.name.toLowerCase().endsWith('.xlsx')) {
+        const { readXlsx } = await import('../lib/xlsx');
+        rows = await readXlsx(file);
+      } else {
+        rows = parseDelimitedText(await file.text());
+      }
 
       const type = detectFileType(rows);
       if (type === 'equipments') {
@@ -515,6 +518,7 @@ export default function LoansPage() {
     }
     const rows = loansToRows(db.loans, db.assets);
 
+    const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx([LOAN_HEADERS, ...rows]);
     downloadBlob(
       new Blob([workbook], { type: XLSX_MIME }),

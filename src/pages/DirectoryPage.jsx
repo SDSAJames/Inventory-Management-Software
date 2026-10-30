@@ -119,14 +119,14 @@ export default function DirectoryPage() {
     <>
       <div className="view-header">
         <div>
-          <p className="view-subtitle">Departments and facility locations registered in the system.</p>
+          <p className="view-subtitle">Manage the shared lists used by asset records: statuses, categories, departments, and locations.</p>
         </div>
       </div>
 
       <div className="directory-columns">
         <section className="panel">
           <div className="directory-panel-heading">
-            <h3>Asset statuses</h3>
+            <div><h3>Asset statuses</h3><p className="directory-panel-description">Lifecycle state shown on every asset record.</p></div>
             {canAddCategory && <button type="button" className="button ghost directory-add-button" onClick={() => handleAddOption('Asset status', addStatus)}>+ Add</button>}
           </div>
           <ul className="directory-list">
@@ -138,7 +138,7 @@ export default function DirectoryPage() {
         </section>
         <section className="panel">
           <div className="directory-panel-heading">
-            <h3>Asset categories</h3>
+            <div><h3>Asset categories</h3><p className="directory-panel-description">Equipment type, such as Laptop or Printer.</p></div>
             {renderPanelActions('Category', addCategory)}
           </div>
           <ul className="directory-list">
@@ -147,7 +147,7 @@ export default function DirectoryPage() {
         </section>
         <section className="panel">
           <div className="directory-panel-heading">
-            <h3>Departments</h3>
+            <div><h3>Departments</h3><p className="directory-panel-description">Teams assigned to company assets.</p></div>
             {renderPanelActions('Department', addDepartment)}
           </div>
           <ul className="directory-list">
@@ -157,7 +157,7 @@ export default function DirectoryPage() {
 
         <section className="panel">
           <div className="directory-panel-heading">
-            <h3>Locations</h3>
+            <div><h3>Locations</h3><p className="directory-panel-description">Sites where company assets are held.</p></div>
             {renderPanelActions('Location', addLocation)}
           </div>
           <ul className="directory-list">

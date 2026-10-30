@@ -31,8 +31,8 @@ const PAGE_META = {
     title: 'Business Travelers',
   },
   '/directory': {
-    eyebrow: 'ORGANIZATION DIRECTORY',
-    title: 'Personnel & Locations',
+    eyebrow: 'REFERENCE LISTS & ORGANIZATION DATA',
+    title: 'Asset & Organization Directory',
   },
   '/exchange': {
     eyebrow: 'DATA INTEGRATION & BACKUP',

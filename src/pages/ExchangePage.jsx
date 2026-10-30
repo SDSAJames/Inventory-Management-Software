@@ -5,7 +5,6 @@ import { LOAN_HEADERS } from '../lib/constants';
 import { DEFAULT_ASSET_HEADERS, assetsToRows } from '../lib/assetExcel';
 import { loansToRows } from '../lib/loanExcel';
 import { statusClass, todayIso } from '../lib/utils';
-import { makeXlsx, readXlsx, downloadBlob } from '../lib/xlsx';
 import { parseDelimitedText, detectFileType, parseEquipmentsText, parseLoansText } from '../lib/txtImport';
 import Modal from '../components/Modal';
 
@@ -28,6 +27,7 @@ export default function ExchangePage() {
   const handleExportLoans = async () => {
     const rows = loansToRows(db.loans, db.assets);
 
+    const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx([LOAN_HEADERS, ...rows]);
     downloadBlob(
       new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
@@ -38,6 +38,7 @@ export default function ExchangePage() {
 
   const handleExportEquipments = async () => {
     const rows = assetsToRows(db.assets, DEFAULT_ASSET_HEADERS);
+    const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx(rows);
     downloadBlob(
       new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
@@ -63,6 +64,7 @@ export default function ExchangePage() {
         let rows;
 
         if (file.name.toLowerCase().endsWith('.xlsx')) {
+          const { readXlsx } = await import('../lib/xlsx');
           rows = await readXlsx(file);
         } else {
           const text = await file.text();
