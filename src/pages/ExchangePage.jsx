@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { LOAN_HEADERS } from '../lib/constants';
 import { DEFAULT_ASSET_HEADERS, assetsToRows } from '../lib/assetExcel';
 import { loansToRows } from '../lib/loanExcel';
 import { statusClass, todayIso } from '../lib/utils';
+import { api } from '../lib/api';
 import { parseDelimitedText, detectFileType, parseEquipmentsText, parseLoansText } from '../lib/txtImport';
 import Modal from '../components/Modal';
 
@@ -38,7 +39,7 @@ const EQUIPMENT_PREVIEW_FIELDS = {
 };
 
 export default function ExchangePage() {
-  const { db, importDb, mergeImportData, revertImport, hasBackup } = useDb();
+  const { db, setDb, importDb, mergeImportData } = useDb();
   const toast = useToast();
 
   const fileRefEquipments = useRef(null);
@@ -50,6 +51,19 @@ export default function ExchangePage() {
   const [showPreview, setShowPreview] = useState(false);
   const [importMode, setImportMode] = useState('merge'); // 'merge' | 'replace'
   const [activeTab, setActiveTab] = useState('equipments'); // 'equipments' | 'loans'
+  const [backupHistory, setBackupHistory] = useState([]);
+  const [restoringSnapshotId, setRestoringSnapshotId] = useState(null);
+
+  const refreshBackupHistory = async () => {
+    try {
+      const result = await api.exchange.getBackupStatus();
+      setBackupHistory(result.history || (result.latestBackup ? [result.latestBackup] : []));
+    } catch {
+      setBackupHistory([]);
+    }
+  };
+
+  useEffect(() => { refreshBackupHistory(); }, []);
 
   /* ── 1. Export Handlers (Exact 1:1 Excel .xlsx Format) ─── */
 
@@ -209,19 +223,29 @@ export default function ExchangePage() {
 
     setShowPreview(false);
     setPreviewData(null);
+    await refreshBackupHistory();
   };
 
   /* ── 5. Revert Import ──────────────────────────────────── */
 
-  const handleRevert = () => {
-    if (revertImport()) {
-      toast('Previous database restored successfully');
-    } else {
-      toast('No import backup point is available');
+  const handleRestoreSnapshot = async (snapshot) => {
+    const date = new Date(snapshot.created_at).toLocaleString();
+    if (!window.confirm(`Restore the database from ${date}? The current database will also be saved as a restore point.`)) return;
+    setRestoringSnapshotId(snapshot.id);
+    try {
+      await api.exchange.revertData(snapshot.id);
+      const exportResult = await api.exchange.exportData();
+      if (exportResult?.success && exportResult.db) {
+        setDb((prev) => ({ ...prev, ...exportResult.db }));
+      }
+      await refreshBackupHistory();
+      toast('Database restored successfully');
+    } catch (error) {
+      toast(error.message || 'Could not restore database');
+    } finally {
+      setRestoringSnapshotId(null);
     }
   };
-
-  const backupAvailable = typeof hasBackup === 'function' ? hasBackup() : false;
 
   return (
     <>
@@ -376,18 +400,23 @@ export default function ExchangePage() {
         <div>
           <strong>Database Restore Point</strong>
           <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--muted)' }}>
-            {backupAvailable
-              ? 'A safe snapshot was preserved before your last import. You can roll back anytime.'
-              : 'No import restore point is currently cached.'}
+            {backupHistory.length ? `${backupHistory.length} recent restore point${backupHistory.length === 1 ? '' : 's'} saved before imports or restores.` : 'No restore point history is available yet.'}
           </p>
         </div>
-        <button
-          className={`button ${backupAvailable ? 'secondary' : 'ghost'}`}
-          disabled={!backupAvailable}
-          onClick={handleRevert}
-        >
-          ↶ Revert last import
-        </button>
+        <span className="directory-selection-count">Newest first · up to 50</span>
+      </div>
+      <div className="panel import-backup-history">
+        {backupHistory.length ? backupHistory.map((snapshot) => (
+          <div className="import-backup-history-row" key={snapshot.id}>
+            <div>
+              <strong>{snapshot.description || 'Database snapshot'}</strong>
+              <small>{new Date(snapshot.created_at).toLocaleString()}</small>
+            </div>
+            <button type="button" className="button ghost" disabled={restoringSnapshotId !== null} onClick={() => handleRestoreSnapshot(snapshot)}>
+              {restoringSnapshotId === snapshot.id ? 'Restoring…' : 'Restore'}
+            </button>
+          </div>
+        )) : <p className="empty">Restore points are saved automatically before imports.</p>}
       </div>
 
       {/* ── 4. Import Preview Modal ─────────────────────────── */}

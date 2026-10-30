@@ -976,6 +976,12 @@ tbody tr:hover { background: #f8fafc; }
 .directory-panel-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
 .directory-add-button { padding: 6px 10px; font-size: 12px; }
 .directory-selection-count { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.import-backup-history { margin-top: -12px; padding: 0 16px; }
+.import-backup-history-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.import-backup-history-row:last-child { border-bottom: 0; }
+.import-backup-history-row > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.import-backup-history-row strong { font-size: 12px; overflow-wrap: anywhere; }
+.import-backup-history-row small { color: var(--muted); font-size: 11px; }
 .directory-clickable-row.selected { background: #eef4ff; }
 .directory-clickable-row input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; margin: 0 2px 0 0; accent-color: var(--primary); }
 .asset-category-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

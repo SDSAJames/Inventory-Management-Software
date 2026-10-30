@@ -75,11 +75,13 @@ exchangeRouter.get('/export', (req, res) => {
 
 // GET /api/exchange/backup-status
 exchangeRouter.get('/backup-status', (req, res) => {
-  const latest = db.prepare('SELECT id, description, created_at FROM import_backups ORDER BY created_at DESC LIMIT 1').get();
+  const history = db.prepare('SELECT id, description, created_at FROM import_backups ORDER BY created_at DESC LIMIT 50').all();
+  const latest = history[0] || null;
   return res.json({
     success: true,
     hasBackup: Boolean(latest),
     latestBackup: latest || null,
+    history,
   });
 });
 
@@ -285,7 +287,10 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 
 // POST /api/exchange/revert (Protected: Rollback to previous snapshot)
 exchangeRouter.post('/revert', authenticate, (req, res) => {
-  const latestSnapshot = db.prepare('SELECT * FROM import_backups ORDER BY created_at DESC LIMIT 1').get();
+  const requestedId = String(req.body?.snapshotId || '').trim();
+  const latestSnapshot = requestedId
+    ? db.prepare('SELECT * FROM import_backups WHERE id = ?').get(requestedId)
+    : db.prepare('SELECT * FROM import_backups ORDER BY created_at DESC LIMIT 1').get();
   if (!latestSnapshot) {
     return res.status(404).json({ success: false, error: 'No backup snapshot available to revert.' });
   }
@@ -299,6 +304,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
 
   db.exec('BEGIN TRANSACTION;');
   try {
+    createSnapshot(`Before restoring ${latestSnapshot.description || latestSnapshot.id}`);
     // 1. Clear existing working tables
     db.exec('DELETE FROM ownership_history;');
     db.exec('DELETE FROM assets;');

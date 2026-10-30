@@ -151,8 +151,8 @@ export const api = {
     export: () => request('/exchange/export'),
     importData: ({ assets, loans, overwrite = false }) =>
       request('/exchange/import', { method: 'POST', body: { assets, loans, overwrite } }),
-    revertData: () => request('/exchange/revert', { method: 'POST' }),
-    revert: () => request('/exchange/revert', { method: 'POST' }),
+    revertData: (snapshotId) => request('/exchange/revert', { method: 'POST', body: snapshotId ? { snapshotId } : {} }),
+    revert: (snapshotId) => request('/exchange/revert', { method: 'POST', body: snapshotId ? { snapshotId } : {} }),
     getBackupStatus: () => request('/exchange/backup-status'),
   },
 };
