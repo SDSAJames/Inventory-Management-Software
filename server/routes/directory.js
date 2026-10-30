@@ -4,6 +4,27 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 
 export const directoryRouter = Router();
 
+directoryRouter.get('/statuses', (req, res) => {
+  const statuses = db.prepare(`
+    SELECT s.id, s.name, COUNT(a.id) AS assetCount
+    FROM asset_statuses s LEFT JOIN assets a ON LOWER(a.status) = LOWER(s.name)
+    GROUP BY s.id ORDER BY s.name COLLATE NOCASE ASC
+  `).all();
+  return res.json({ success: true, statuses });
+});
+
+directoryRouter.post('/statuses', authenticate, requireRole('ADMIN', 'OPERATOR'), (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  if (!name) return res.status(400).json({ success: false, error: 'Status name is required.' });
+  if (db.prepare('SELECT id FROM asset_statuses WHERE LOWER(name) = LOWER(?)').get(name)) {
+    return res.status(409).json({ success: false, error: 'That status already exists.' });
+  }
+  const id = `status-${Date.now()}`;
+  db.prepare('INSERT INTO asset_statuses (id, name) VALUES (?, ?)').run(id, name);
+  logAudit('CREATE_ASSET_STATUS', 'asset_statuses', id, { name }, req.user);
+  return res.status(201).json({ success: true, status: { id, name, assetCount: 0 } });
+});
+
 // Asset categories are shared reference data managed by administrators.
 directoryRouter.get('/categories', (req, res) => {
   const categories = db.prepare(`

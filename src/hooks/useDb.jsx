@@ -107,6 +107,7 @@ export function DbProvider({ children }) {
       try {
         const res = await api.exchange.exportData();
         const categoryRes = await api.directory.getCategories().catch(() => null);
+        const statusRes = await api.directory.getStatuses().catch(() => null);
         if (!active || !res?.success || !res?.db) return;
         const serverDb = res.db;
 
@@ -119,6 +120,7 @@ export function DbProvider({ children }) {
             departments: serverDb.departments?.length ? serverDb.departments : prev.departments,
             locations: serverDb.locations?.length ? serverDb.locations : prev.locations,
             categories: categoryRes?.categories?.length ? categoryRes.categories : prev.categories,
+            statuses: statusRes?.statuses?.length ? statusRes.statuses : prev.statuses,
           }));
         } else {
           // If server database is newly created, seed it with initial baseline data
@@ -820,6 +822,12 @@ export function DbProvider({ children }) {
     return result.category;
   }, []);
 
+  const addStatus = useCallback(async (name) => {
+    const result = await api.directory.addStatus(String(name || '').trim());
+    setDb((prev) => ({ ...prev, statuses: [...(prev.statuses || []), result.status] }));
+    return result.status;
+  }, []);
+
   const renameCategory = useCallback(async (id, name) => {
     const result = await api.directory.renameCategory(id, String(name || '').trim());
     setDb((prev) => {
@@ -873,6 +881,7 @@ export function DbProvider({ children }) {
     db,
     setDb,
     addCategory,
+    addStatus,
     renameCategory,
     deleteCategory,
     addLocation,
@@ -906,6 +915,7 @@ export function DbProvider({ children }) {
   }), [
     db,
     addCategory,
+    addStatus,
     renameCategory,
     deleteCategory,
     addLocation,

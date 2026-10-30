@@ -235,7 +235,7 @@ export default function AssetsPage() {
           onSearchFieldChange={setSearchField}
           filterStatus={filterStatus}
           onFilterStatusChange={setFilterStatus}
-          statuses={STATUSES}
+          statuses={[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])]}
           searchFieldOptions={SEARCH_FIELDS}
         />
         <AssetTable

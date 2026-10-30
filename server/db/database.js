@@ -147,7 +147,14 @@ export function initDatabase() {
       id TEXT PRIMARY KEY,
       name TEXT UNIQUE NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS asset_statuses (
+      id TEXT PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL
+    );
   `);
+  const defaultStatuses = ['Available', 'Assigned', 'On loan', 'Damaged', 'Under repair', 'Retired'];
+  const insertStatus = db.prepare('INSERT OR IGNORE INTO asset_statuses (id, name) VALUES (?, ?)');
+  defaultStatuses.forEach((name) => insertStatus.run(`status-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, name));
   const existingCategories = db.prepare('SELECT COUNT(*) as count FROM asset_categories').get().count;
   if (!existingCategories) {
     const categories = db.prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND TRIM(category) <> ''").all();

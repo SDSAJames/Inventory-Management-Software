@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
-  const { db, addAsset, updateAsset, addCategory, addLocation, addDepartment } = useDb();
+  const { db, addAsset, updateAsset, addCategory, addStatus, addLocation, addDepartment } = useDb();
   const toast = useToast();
   const { user } = useAuth();
   const canAddCategory = ['ADMIN', 'OPERATOR'].includes(user?.role);
@@ -123,6 +123,18 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       toast(`${label} “${value}” added`);
     } catch (error) {
       toast(error.message || `Could not add ${label.toLowerCase()}`);
+    }
+  };
+
+  const handleAddStatus = async () => {
+    const name = window.prompt('Enter a name for the new asset status');
+    if (name === null || !name.trim()) return;
+    try {
+      const status = await addStatus(name);
+      setForm((prev) => ({ ...prev, status: status.name }));
+      toast(`Status “${status.name}” added`);
+    } catch (error) {
+      toast(error.message || 'Could not add asset status');
     }
   };
 
@@ -259,9 +271,12 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               <input id="serial" value={form.serial} onChange={set('serial')} />
             </div>
             <div className="field">
-              <label htmlFor="status">Status</label>
+              <div className="asset-category-label">
+                <label htmlFor="status">Status</label>
+                {canAddCategory && <button type="button" className="text-button" onClick={handleAddStatus}>+ Add</button>}
+              </div>
               <select id="status" value={form.status} onChange={handleStatusChange}>
-                {STATUSES.map((s) => <option key={s}>{s}</option>)}
+                {[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])].map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="field">

@@ -67,7 +67,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
       key: 'status',
       label: 'Status',
       type: 'select',
-      options: STATUSES,
+      options: [...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])],
     },
     {
       key: 'location',

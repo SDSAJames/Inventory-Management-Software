@@ -109,6 +109,8 @@ export const api = {
 
   // ── Directory (Employees, Departments, Locations, Reasons) ──
   directory: {
+    getStatuses: () => request('/directory/statuses'),
+    addStatus: (name) => request('/directory/statuses', { method: 'POST', body: { name } }),
     getEmployees: () => request('/directory/employees'),
     createEmployee: (emp) => request('/directory/employees', { method: 'POST', body: emp }),
     updateEmployee: (id, emp) => request(`/directory/employees/${id}`, { method: 'PUT', body: emp }),

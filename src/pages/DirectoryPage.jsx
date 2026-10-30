@@ -6,7 +6,7 @@ import { statusClass } from '../lib/utils';
 import Modal from '../components/Modal';
 
 export default function DirectoryPage() {
-  const { db, addCategory, addDepartment, addLocation, renameCategory, deleteCategory, renameDepartment, deleteDepartment, renameLocation, deleteLocation } = useDb();
+  const { db, addCategory, addStatus, addDepartment, addLocation, renameCategory, deleteCategory, renameDepartment, deleteDepartment, renameLocation, deleteLocation } = useDb();
   const { user } = useAuth();
   const toast = useToast();
   const canAddCategory = ['ADMIN', 'OPERATOR'].includes(user?.role);
@@ -124,6 +124,18 @@ export default function DirectoryPage() {
       </div>
 
       <div className="directory-columns">
+        <section className="panel">
+          <div className="directory-panel-heading">
+            <h3>Asset statuses</h3>
+            {canAddCategory && <button type="button" className="button ghost directory-add-button" onClick={() => handleAddOption('Asset status', addStatus)}>+ Add</button>}
+          </div>
+          <ul className="directory-list">
+            {(db.statuses?.length ? db.statuses.map((item) => item.name) : ['Available', 'Assigned', 'On loan', 'Damaged', 'Under repair', 'Retired']).map((name) => {
+              const used = assets.some((asset) => asset.status?.toLowerCase() === name.toLowerCase());
+              return <li key={name} className="category-directory-row"><span>{name}</span><span className={`directory-edit-state ${used ? 'locked' : 'ready'}`}>{used ? 'In use' : 'Default'}</span></li>;
+            })}
+          </ul>
+        </section>
         <section className="panel">
           <div className="directory-panel-heading">
             <h3>Asset categories</h3>
