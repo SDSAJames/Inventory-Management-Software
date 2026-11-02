@@ -23,7 +23,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     pickupDate: '',
     endDate: '',
     location: '',
-    department: 'Operations',
+    department: (db.departments || []).includes('Operations') ? 'Operations' : '',
     adapter: '',
     cable: '',
     dongle: '',
@@ -280,33 +280,29 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           {/* Location & department */}
           <div className="field">
             <label htmlFor="location">Rental location</label>
-            <input
+            <select
               id="location"
-              list="locationList"
-              placeholder="e.g. Head Office, Plant 1"
               value={form.location}
               onChange={set('location')}
-            />
-            <datalist id="locationList">
+            >
+              <option value="">Select rental location</option>
               {(db.locations || []).map((l) => (
-                <option key={l} value={l} />
+                <option key={l} value={l}>{l}</option>
               ))}
-            </datalist>
+            </select>
           </div>
           <div className="field">
             <label htmlFor="department">Department</label>
-            <input
+            <select
               id="department"
-              list="deptList"
-              placeholder="Operations, IT, Engineering..."
               value={form.department}
               onChange={set('department')}
-            />
-            <datalist id="deptList">
+            >
+              <option value="">Select department</option>
               {(db.departments || []).map((d) => (
-                <option key={d} value={d} />
+                <option key={d} value={d}>{d}</option>
               ))}
-            </datalist>
+            </select>
           </div>
 
           {/* Equipment Checklist */}
@@ -338,8 +334,8 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                     setForm((prev) => ({
                       ...prev,
                       assetCode: asset.code,
-                      location: prev.location || asset.location || 'Head Office',
-                      department: (prev.department === 'Operations' && asset.department) ? asset.department : prev.department,
+                      location: prev.location || ((db.locations || []).includes(asset.location) ? asset.location : ''),
+                      department: ((!prev.department || prev.department === 'Operations') && (db.departments || []).includes(asset.department)) ? asset.department : prev.department,
                     }));
                   }}
                   placeholder="Search laptop or MES PC asset number..."
