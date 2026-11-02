@@ -360,7 +360,12 @@ export default function LoanTable({
                     </div>
                   </td>
                   )}
-                  <td className="col-no"><strong>{loan.assetCode || eq.Laptop || '—'}</strong></td>
+                  <td className="col-no">
+                    <strong>{loan.assetCode || eq.Laptop || '—'}</strong>
+                    {!isPickedUp && !isReturned && (eq.RequestedPC || eq.RequestedMonitor) && (
+                      <span className="loan-request-summary">Requested: {[eq.RequestedPC && 'PC', eq.RequestedMonitor && 'Monitor'].filter(Boolean).join(', ')}</span>
+                    )}
+                  </td>
                   <td className="col-knox">
                     <div className="knox-cell">
                       <span className="expand-indicator">{isExpanded ? '▾' : '▸'}</span>
@@ -496,6 +501,12 @@ export default function LoanTable({
                               <dd>
                                 <strong>{loan.assetCode || eq.Laptop || '—'}</strong>
                               </dd>
+                              {(eq.RequestedPC || eq.RequestedMonitor) && (
+                                <>
+                                  <dt>Equipment requested:</dt>
+                                  <dd>{[eq.RequestedPC && 'Laptop / PC', eq.RequestedMonitor && 'Monitor'].filter(Boolean).join(', ')}</dd>
+                                </>
+                              )}
                               <dt>Charging Adapter:</dt>
                               <dd>{eq.Adapter || '0'}</dd>
                               <dt>Charging Cable:</dt>

@@ -92,7 +92,7 @@ export default function EditLoanForm({ loanId, onClose }) {
       department: form.department,
       others: form.others,
       note: form.note,
-      equipment: buildLoanEquipment(form, form.assetCode),
+      equipment: { ...equipment, ...buildLoanEquipment(form, form.assetCode) },
     };
 
     const assetUpdates = {

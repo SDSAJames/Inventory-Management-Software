@@ -288,7 +288,7 @@ loansRouter.post('/', authenticate, (req, res) => {
           now
         );
       }
-    } else if (effectiveAssetCode) {
+    } else if (effectiveAssetCode && pickupDate) {
       // Auto-create stub asset if asset doesn't exist
       const stubId = `ast-${Date.now()}`;
       db.prepare(`
@@ -427,7 +427,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
           SET status = 'On loan', owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
         `).run(assignee.trim(), location.trim(), department.trim(), today, currentCode);
-      } else {
+      } else if (existing.pickup_date || existing.return_date || existing.returned_date) {
         db.prepare(`
           UPDATE assets
           SET status = 'Available', owner = 'IT department', department = '', updated = ?

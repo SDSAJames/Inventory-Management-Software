@@ -12,6 +12,8 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
   const [form, setForm] = useState({
     assetCode: '',
+    requestPc: false,
+    requestMonitor: false,
     assigneeType: defaultAssigneeType,
     assignee: '',
     knoxId: '',
@@ -124,12 +126,16 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       returnDate: '',
       location: form.location || 'Head Office',
       department: form.department,
-      equipment: buildLoanEquipment(form, assetCode),
+      equipment: {
+        ...buildLoanEquipment(form, assetCode),
+        RequestedPC: form.requestPc || Boolean(assetCode),
+        RequestedMonitor: form.requestMonitor || Boolean(monitorCode),
+      },
       others: form.others,
       note: form.note,
     };
 
-    const assetUpdates = assetCode
+    const assetUpdates = assetCode && form.pickupDate
       ? {
           code: assetCode,
           location: form.location || 'Head Office',
@@ -154,11 +160,11 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   };
 
   return (
-    <>
+    <div className="loan-entry">
       <div className="modal-header-section">
         <h2>Record internal loan</h2>
         <p className="modal-intro">
-          Record a loan with its Knox ID. Enter the pickup date now or leave it blank and record pickup later.
+          Only Knox ID is required. Leave pickup blank to schedule equipment without changing inventory.
         </p>
       </div>
 
@@ -306,12 +312,12 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           {/* Equipment Checklist */}
           <div className="field full">
             <div className="equipment-header-row">
-              <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', margin: 0 }}>
-                Equipment Checklist
-              </label>
-              <span className="equipment-header-hint">
-                Type <strong>432</strong> or asset number for instant assignable equipment auto-completion
-              </span>
+              <fieldset className="loan-equipment-requests">
+                <legend>Equipment requested</legend>
+                <label><input type="checkbox" checked={form.requestPc} onChange={(event) => setForm((prev) => ({ ...prev, requestPc: event.target.checked, ...(!event.target.checked ? { assetCode: '' } : {}) }))} /> Laptop / PC</label>
+                <label><input type="checkbox" checked={form.requestMonitor} onChange={(event) => setForm((prev) => ({ ...prev, requestMonitor: event.target.checked, ...(!event.target.checked ? { monitor: '' } : {}) }))} /> Monitor</label>
+              </fieldset>
+              <span className="equipment-header-hint">Asset numbers can be assigned later.</span>
             </div>
 
             <div className="equipment-grid">
@@ -325,7 +331,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                   value={form.assetCode}
                   hasError={Boolean(errors.assetCode)}
                   onChange={(val) => {
-                    setForm((prev) => ({ ...prev, assetCode: val }));
+                    setForm((prev) => ({ ...prev, assetCode: val, requestPc: val ? true : prev.requestPc }));
                     if (errors.assetCode) setErrors((prev) => ({ ...prev, assetCode: null }));
                   }}
                   onSelectAsset={(asset) => {
@@ -345,7 +351,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
               {LOAN_EQUIPMENT_FIELDS.map(([label, key, placeholder]) => (
                 <div className="equipment-field" key={key}>
-                  <label htmlFor={key}>{label}</label>
+                  <label htmlFor={key === 'monitor' ? 'monitorAssetCode' : key}>{label}</label>
                   {key === 'monitor' ? (
                     <AssetAutocomplete
                       id="monitorAssetCode"
@@ -353,7 +359,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                       categoryFilter={['Monitor', 'Monitors']}
                       hasError={Boolean(errors.monitor)}
                       onChange={(value) => {
-                        setForm((prev) => ({ ...prev, monitor: value }));
+                        setForm((prev) => ({ ...prev, monitor: value, requestMonitor: value ? true : prev.requestMonitor }));
                         if (errors.monitor) setErrors((prev) => ({ ...prev, monitor: null }));
                       }}
                       onSelectAsset={(asset) => {
@@ -387,11 +393,11 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
             />
           </div>
 
-          <div className="field full">
+          <div className="field loan-entry-note">
             <label htmlFor="note">Note / Purpose</label>
             <textarea
               id="note"
-              rows={2}
+              rows={1}
               placeholder="Project purpose, special requirements, or condition notes..."
               value={form.note}
               onChange={set('note')}
@@ -408,6 +414,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }

@@ -368,10 +368,10 @@ export function DbProvider({ children }) {
 
     setDb((prev) => {
       const nextAssets = prev.assets.map((a) =>
-        a.code === assetUpdates?.code ? { ...a, ...assetUpdates, updated: todayIso() } : a,
+        effectiveLoan.pickupDate && a.code === assetUpdates?.code ? { ...a, ...assetUpdates, updated: todayIso() } : a,
       );
       // Auto-create asset if not found
-      if (assetUpdates?.code && !prev.assets.some((a) => a.code === assetUpdates.code)) {
+      if (effectiveLoan.pickupDate && assetUpdates?.code && !prev.assets.some((a) => a.code === assetUpdates.code)) {
         nextAssets.push({
           id: crypto.randomUUID(),
           code: assetUpdates.code,
@@ -449,7 +449,7 @@ export function DbProvider({ children }) {
       let nextAssets = prev.assets;
       const assetCode = merged.assetCode || existing.assetCode;
 
-      if (assetCode) {
+      if (assetCode && (hasPickup || hasReturn || existing.pickupDate || existing.returnDate || existing.returnedDate)) {
         const targetAssetStatus = hasReturn
           ? 'Available'
           : hasPickup

@@ -890,6 +890,37 @@ tbody tr:hover { background: #f8fafc; }
 .modal .form-grid > * { min-width: 0; }
 
 /* ── Equipment fields ─────────────────────────────────── */
+.modal.loan-entry-modal { margin-top: 0; padding: 18px 24px; }
+.loan-entry .modal-header-section { padding-right: 36px; }
+.loan-entry .form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; }
+.loan-entry .field, .loan-entry .ip-field { gap: 4px; align-content: start; }
+.loan-entry .field input:not([type="checkbox"]),
+.loan-entry .field select,
+.loan-entry .field textarea,
+.loan-entry .ip-control input { padding: 7px 9px; min-height: 34px; font-size: 12px; }
+.loan-entry .field textarea { height: 34px; min-height: 34px; }
+.loan-entry .loan-entry-note { grid-column: span 3; }
+.loan-entry .equipment-grid { padding: 8px 10px; gap: 8px 12px; }
+.loan-entry .equipment-field { gap: 4px; align-content: start; }
+.loan-entry .equipment-header-row { margin-bottom: 2px; }
+.loan-entry .form-actions { margin-top: 12px; }
+.loan-entry .asset-selected-chip { margin-top: 3px; padding: 3px 6px; font-size: 10px; }
+.loan-entry .asset-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loan-equipment-requests { display: flex; align-items: center; gap: 14px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.loan-equipment-requests legend { float: left; margin-right: 14px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.loan-entry .loan-equipment-requests label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.loan-entry .loan-equipment-requests input[type="checkbox"] { width: 15px; height: 15px; min-height: 0; margin: 0; padding: 0; accent-color: var(--blue); }
+.loan-request-summary { display: block; margin-top: 4px; font-size: 10px; font-weight: 500; color: var(--muted); }
+@media (max-width: 900px) {
+  .loan-entry .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .loan-entry .loan-entry-note { grid-column: auto; }
+  .loan-entry .equipment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .loan-entry .equipment-header-row { flex-wrap: wrap; }
+}
+@media (max-width: 540px) {
+  .loan-entry .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .loan-equipment-requests { flex-wrap: wrap; gap: 8px; }
+}
 .equipment-field { display: grid; grid-template-columns: 1fr; gap: 6px; min-width: 0; }
 .equipment-field label { white-space: normal; font-size: 11px; color: var(--muted); font-weight: 700; }
 .equipment-field input { width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; color: var(--ink); background: white; font-size: 12px; }
