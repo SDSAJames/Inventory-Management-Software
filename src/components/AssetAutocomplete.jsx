@@ -19,6 +19,13 @@ function highlightMatch(text, query) {
   );
 }
 
+function matchesCategory(assetCategory, categoryFilter) {
+  if (!categoryFilter) return true;
+  const normalize = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const allowed = (Array.isArray(categoryFilter) ? categoryFilter : [categoryFilter]).map(normalize);
+  return allowed.includes(normalize(assetCategory));
+}
+
 export default function AssetAutocomplete({
   value = '',
   onChange,
@@ -28,6 +35,7 @@ export default function AssetAutocomplete({
   required = false,
   hasError = false,
   categoryFilter,
+  allowCustom: allowCustomProp,
 }) {
   const { db } = useDb();
   const [isOpen, setIsOpen] = useState(false);
@@ -57,14 +65,14 @@ export default function AssetAutocomplete({
     if (!q) {
       return all
         .filter((a) => {
-          if (categoryFilter && a.category?.toLowerCase() !== categoryFilter.toLowerCase()) {
-            return false;
-          }
+          if (!matchesCategory(a.category, categoryFilter)) return false;
           return isAssetAssignable(a);
         })
         .sort((a, b) => {
-          if (a.category === 'Laptop' && b.category !== 'Laptop') return -1;
-          if (b.category === 'Laptop' && a.category !== 'Laptop') return 1;
+          const aPc = ['laptop', 'mes pc', 'pc'].includes(String(a.category || '').trim().toLowerCase());
+          const bPc = ['laptop', 'mes pc', 'pc'].includes(String(b.category || '').trim().toLowerCase());
+          if (aPc && !bPc) return -1;
+          if (bPc && !aPc) return 1;
           return (a.code || '').localeCompare(b.code || '');
         })
         .slice(0, 12);
@@ -72,6 +80,7 @@ export default function AssetAutocomplete({
 
     // Match query against code (asset number), model, serial, category, holder
     const filtered = all.filter((a) => {
+      if (!matchesCategory(a.category, categoryFilter)) return false;
       const code = String(a.code || '').toLowerCase();
       const model = String(a.model || '').toLowerCase();
       const serial = String(a.serial || '').toLowerCase();
@@ -115,10 +124,10 @@ export default function AssetAutocomplete({
         if (aAssignable && !bAssignable) return -1;
         if (bAssignable && !aAssignable) return 1;
 
-        const aLaptop = a.category === 'Laptop';
-        const bLaptop = b.category === 'Laptop';
-        if (aLaptop && !bLaptop) return -1;
-        if (bLaptop && !aLaptop) return 1;
+        const aPc = ['laptop', 'mes pc', 'pc'].includes(String(a.category || '').trim().toLowerCase());
+        const bPc = ['laptop', 'mes pc', 'pc'].includes(String(b.category || '').trim().toLowerCase());
+        if (aPc && !bPc) return -1;
+        if (bPc && !aPc) return 1;
 
         return codeA.localeCompare(codeB);
       })
@@ -128,17 +137,19 @@ export default function AssetAutocomplete({
   // Check if current value matches an exact asset
   const matchedAsset = useMemo(() => {
     if (!query) return null;
-    return (db.assets || []).find(
+    return matches.find(
       (a) => String(a.code || '').trim().toLowerCase() === query.toLowerCase()
     );
-  }, [db.assets, query]);
+  }, [matches, query]);
 
   // Check if the query itself is not an existing asset code (so we offer "Use custom")
-  const hasExactMatch = matches.some(
-    (m) => String(m.code || '').toLowerCase() === query.toLowerCase()
+  const hasExactCodeInInventory = (db.assets || []).some(
+    (asset) => String(asset.code || '').trim().toLowerCase() === query.toLowerCase()
   );
 
-  const totalOptions = matches.length + (query && !hasExactMatch ? 1 : 0);
+  const allowCustom = allowCustomProp ?? !categoryFilter;
+  const canUseCustom = allowCustom && !hasExactCodeInInventory;
+  const totalOptions = matches.length + (query && canUseCustom ? 1 : 0);
 
   const handleSelect = (asset) => {
     onChange(asset.code);
@@ -169,7 +180,7 @@ export default function AssetAutocomplete({
       e.preventDefault();
       if (highlightIndex < matches.length) {
         handleSelect(matches[highlightIndex]);
-      } else if (query && !hasExactMatch) {
+      } else if (query && canUseCustom) {
         handleSelectCustom();
       }
     } else if (e.key === 'Escape') {
@@ -298,7 +309,7 @@ export default function AssetAutocomplete({
             })}
 
             {/* Custom Code Entry option */}
-            {query && !hasExactMatch && (
+            {query && canUseCustom && (
               <div
                 role="option"
                 aria-selected={highlightIndex === matches.length}
@@ -325,6 +336,13 @@ export default function AssetAutocomplete({
             {matches.length === 0 && !query && (
               <div className="asset-dropdown-empty">
                 No assignable assets currently found in inventory.
+              </div>
+            )}
+            {matches.length === 0 && query && !canUseCustom && (
+              <div className="asset-dropdown-empty">
+                {hasExactCodeInInventory
+                  ? `This asset is not in the ${Array.isArray(categoryFilter) ? categoryFilter.join(' or ') : categoryFilter} category.`
+                  : `No matching ${Array.isArray(categoryFilter) ? categoryFilter.join(' or ') : categoryFilter} assets found.`}
               </div>
             )}
           </div>

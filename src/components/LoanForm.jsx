@@ -18,6 +18,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     ipSubnet: '',
     ipNumber: '',
     startDate: todayIso(),
+    pickupDate: '',
     endDate: '',
     location: '',
     department: 'Operations',
@@ -62,9 +63,24 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     const knoxId = form.knoxId.trim();
     const assignee = form.assignee.trim();
 
-    if (!assetCode) newErrors.assetCode = 'Please select or enter an asset number';
     if (!knoxId) newErrors.knoxId = 'Knox ID is required';
-    if (!assignee) newErrors.assignee = 'Assignee name is required';
+
+    const existingPcCode = (db.assets || []).find((asset) =>
+      String(asset.code || '').trim().toLowerCase() === assetCode.toLowerCase()
+    );
+    const existingPcCategory = String(existingPcCode?.category || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (existingPcCode && !['laptop', 'mespc', 'pc'].includes(existingPcCategory)) {
+      newErrors.assetCode = 'Select a Laptop or MES PC asset';
+    }
+
+    const monitorCode = form.monitor.trim();
+    if (monitorCode) {
+      const selectedMonitor = (db.assets || []).some((asset) =>
+        String(asset.code || '').trim().toLowerCase() === monitorCode.toLowerCase() &&
+        ['monitor', 'monitors'].includes(String(asset.category || '').trim().toLowerCase())
+      );
+      if (!selectedMonitor) newErrors.monitor = 'Select a monitor from the matching asset list';
+    }
 
     // Due date is optional. If provided, validate that end date is not earlier than start date
     if (isBusinessTraveler(form.assigneeType) && form.startDate && form.endDate && form.endDate < form.startDate) {
@@ -81,9 +97,9 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       setSubmitError(`Please fill in required fields: ${firstError}`);
       toast(firstError);
 
-      if (newErrors.assignee) document.getElementById('assignee')?.focus();
-      else if (newErrors.knoxId) document.getElementById('knoxId')?.focus();
+      if (newErrors.knoxId) document.getElementById('knoxId')?.focus();
       else if (newErrors.assetCode) document.getElementById('assetCode')?.focus();
+      else if (newErrors.monitor) document.getElementById('monitorAssetCode')?.focus();
       return;
     }
 
@@ -93,7 +109,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
       : '';
 
-    // Recording an internal loan schedules the pickup. Pickup is processed separately from Scheduled Loans.
+    // A pickup date records a handover now; leaving it blank keeps this as a scheduled loan.
     const loanData = {
       assetCode,
       assignee,
@@ -104,7 +120,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       loanDate: form.startDate,
       endDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
       dueDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
-      pickupDate: '',
+      pickupDate: form.pickupDate,
       returnDate: '',
       location: form.location || 'Head Office',
       department: form.department,
@@ -113,20 +129,23 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       note: form.note,
     };
 
-    const assetUpdates = {
-      code: assetCode,
-      location: form.location || 'Head Office',
-    };
+    const assetUpdates = assetCode
+      ? {
+          code: assetCode,
+          location: form.location || 'Head Office',
+          ...(form.pickupDate ? { owner: assignee, status: 'On loan' } : {}),
+        }
+      : null;
 
-    const newEmployee = {
+    const newEmployee = assignee ? {
       name: assignee,
       department: form.department,
       position: form.assigneeType,
       knoxId,
-    };
+    } : null;
 
     addLoan(loanData, assetUpdates, newEmployee);
-    toast('Loan scheduled successfully');
+    toast(form.pickupDate ? 'Loan recorded with pickup date' : 'Loan scheduled successfully');
 
     if (onSuccess) {
       onSuccess(loanData);
@@ -139,8 +158,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       <div className="modal-header-section">
         <h2>Record internal loan</h2>
         <p className="modal-intro">
-          Schedule an equipment loan record for an employee or business traveler.
-          Equipment pickup is processed separately from the Scheduled Loans page.
+          Record a loan with its Knox ID. Enter the pickup date now or leave it blank and record pickup later.
         </p>
       </div>
 
@@ -164,16 +182,13 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
           {/* Assignee */}
           <div className="field">
-            <label htmlFor="assignee">
-              Assignee <span className="required-asterisk">*</span>
-            </label>
+            <label htmlFor="assignee">Assignee <span className="field-hint">(Optional)</span></label>
             <input
               id="assignee"
               placeholder="Full name or username"
               value={form.assignee}
               onChange={set('assignee')}
               className={errors.assignee ? 'input-error-red' : ''}
-              required
             />
             {errors.assignee && (
               <span className="field-error-msg">⚠️ {errors.assignee}</span>
@@ -234,6 +249,10 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           <div className="field">
             <label htmlFor="startDate">Start / Scheduled date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
+          </div>
+          <div className="field">
+            <label htmlFor="pickupDate">Pickup date <span className="field-hint">(if already picked up)</span></label>
+            <input id="pickupDate" type="date" value={form.pickupDate} onChange={set('pickupDate')} />
           </div>
           <div className="field">
             <label htmlFor="endDate">
@@ -298,11 +317,11 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
             <div className="equipment-grid">
               {/* Laptop / asset number with searchable autocompletion */}
               <div className="equipment-field asset-autocomplete-wrapper">
-                <label htmlFor="assetCode">
-                  Laptop / asset number <span className="required-asterisk">*</span>
-                </label>
+                <label htmlFor="assetCode">PC asset number <span className="field-hint">(Optional)</span></label>
                 <AssetAutocomplete
                   id="assetCode"
+                  categoryFilter={['Laptop', 'MES PC', 'PC']}
+                  allowCustom
                   value={form.assetCode}
                   hasError={Boolean(errors.assetCode)}
                   onChange={(val) => {
@@ -317,8 +336,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                       department: (prev.department === 'Operations' && asset.department) ? asset.department : prev.department,
                     }));
                   }}
-                  placeholder="e.g. 432 or SPE-4321..."
-                  required
+                  placeholder="Search laptop or MES PC asset number..."
                 />
                 {errors.assetCode && (
                   <span className="field-error-msg">⚠️ {errors.assetCode}</span>
@@ -328,12 +346,32 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
               {LOAN_EQUIPMENT_FIELDS.map(([label, key, placeholder]) => (
                 <div className="equipment-field" key={key}>
                   <label htmlFor={key}>{label}</label>
-                  <input
-                    id={key}
-                    placeholder={placeholder}
-                    value={form[key]}
-                    onChange={set(key)}
-                  />
+                  {key === 'monitor' ? (
+                    <AssetAutocomplete
+                      id="monitorAssetCode"
+                      value={form.monitor}
+                      categoryFilter={['Monitor', 'Monitors']}
+                      hasError={Boolean(errors.monitor)}
+                      onChange={(value) => {
+                        setForm((prev) => ({ ...prev, monitor: value }));
+                        if (errors.monitor) setErrors((prev) => ({ ...prev, monitor: null }));
+                      }}
+                      onSelectAsset={(asset) => {
+                        setForm((prev) => ({ ...prev, monitor: asset.code }));
+                      }}
+                      placeholder="Search monitor asset number..."
+                    />
+                  ) : (
+                    <input
+                      id={key}
+                      placeholder={placeholder}
+                      value={form[key]}
+                      onChange={set(key)}
+                    />
+                  )}
+                  {key === 'monitor' && errors.monitor && (
+                    <span className="field-error-msg">⚠️ {errors.monitor}</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -366,7 +404,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
             Cancel
           </button>
           <button type="submit" className="button">
-            Schedule loan
+            {form.pickupDate ? 'Record loan' : 'Schedule loan'}
           </button>
         </div>
       </form>

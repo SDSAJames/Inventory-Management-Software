@@ -4,6 +4,7 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
 import { seed } from '../../src/data/seed.js';
+import { deduplicateLoanRecords } from '../../shared/loanIdentity.js';
 
 // Ensure data directory exists
 const dbDir = path.dirname(config.dbPath);
@@ -233,6 +234,43 @@ export function initDatabase() {
   `);
 
   seedDefaultData();
+  removeExactDuplicateLoans();
+}
+
+function removeExactDuplicateLoans() {
+  const invalidStartDates = db.prepare(`
+    SELECT id FROM loans
+    WHERE COALESCE(pickup_date, '') = ''
+      AND COALESCE(start_date, '') <> ''
+      AND COALESCE(NULLIF(return_date, ''), NULLIF(returned_date, '')) IS NOT NULL
+      AND substr(start_date, 1, 10) > substr(COALESCE(NULLIF(return_date, ''), NULLIF(returned_date, '')), 1, 10)
+  `).all();
+  const loans = db.prepare('SELECT * FROM loans ORDER BY created_at ASC, id ASC').all();
+  const retainedIds = new Set(deduplicateLoanRecords(loans).map((loan) => loan.id));
+  const duplicateIds = loans.filter((loan) => !retainedIds.has(loan.id)).map((loan) => loan.id);
+  if (!invalidStartDates.length && !duplicateIds.length) return;
+
+  createSnapshot(`Before loan cleanup: ${duplicateIds.length} duplicate records and ${invalidStartDates.length} invalid start dates`);
+  const deleteLoan = db.prepare('DELETE FROM loans WHERE id = ?');
+  db.exec('BEGIN TRANSACTION;');
+  try {
+    if (invalidStartDates.length) {
+      const clearInvalidStartDate = db.prepare("UPDATE loans SET start_date = '' WHERE id = ?");
+      for (const { id } of invalidStartDates) clearInvalidStartDate.run(id);
+    }
+
+    const normalizedLoans = db.prepare('SELECT * FROM loans ORDER BY created_at ASC, id ASC').all();
+    const normalizedRetainedIds = new Set(deduplicateLoanRecords(normalizedLoans).map((loan) => loan.id));
+    const normalizedDuplicateIds = normalizedLoans
+      .filter((loan) => !normalizedRetainedIds.has(loan.id))
+      .map((loan) => loan.id);
+    for (const id of normalizedDuplicateIds) deleteLoan.run(id);
+    db.exec('COMMIT;');
+    console.info(`Loan cleanup removed ${normalizedDuplicateIds.length} exact duplicate record${normalizedDuplicateIds.length === 1 ? '' : 's'} and cleared ${invalidStartDates.length} impossible start date${invalidStartDates.length === 1 ? '' : 's'}.`);
+  } catch (error) {
+    db.exec('ROLLBACK;');
+    console.warn('Could not remove exact duplicate loan records:', error.message);
+  }
 }
 
 function seedDefaultData() {

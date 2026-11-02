@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.4.0** |
+| **Document Version** | **v1.5.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | October 2026 |
+| **Release Date** | November 2, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -249,7 +249,7 @@ To maximize interoperability with corporate spreadsheet workflows, the applicati
 ### 6.1 Supported Import Formats (TXT Extracted from Excel)
 The client-side parser (`src/lib/txtImport.js`) runs 100% offline and automatically recognizes:
 1. **Equipment Inventory Master (`SPE_Equipments_example.txt`)**:
-   - `Host Name` (Asset code), `Serial Number`, `Status`, `Issued Knox ID`, `Issued Date`.
+   - `Asset Number`, `Asset Type`, `Serial Number`, `Purchase Date`, `Status`, `Issued Knox ID`, `Issued Date`, `Department`, `Location`, and `Notes`. Legacy equipment headers remain supported by the parser.
    - Automatically maps statuses (`Issued` ➔ `Assigned`, `Broken` ➔ `Damaged`, `Available` ➔ `Available`).
 2. **IT Equipment Loan List (`SPE_IT_Equipment_Loan_List_Example.txt`)**:
    - `Start Date`, `Pickup Date`, `End Date`, `Return Date`, `Laptop`, itemized accessories (`Adapter`, `Cable`, `Dongle`, `Keyboard`, `Mouse`, `Monitor`, `Ethernet cable`), and notes.
@@ -273,8 +273,14 @@ To safeguard corporate records against accidental overwrites or malformed text f
    - Concurrently, the frontend client caches a pre-import snapshot to `localStorage` under `IMPORT_BACKUP_KEY` via `saveImportBackup()`.
 3. **One-Click Rollback (`POST /api/exchange/revert`)**:
    - When the operator clicks **"Revert last import"** on the Data Exchange view, the client calls `api.exchange.revert()`.
-   - The Express server retrieves the latest snapshot from `import_backups`, clears working tables, restores all records and ownership histories transactionally (`BEGIN TRANSACTION ... COMMIT`), deletes the consumed snapshot, and logs the `REVERT_IMPORT` event to `audit_logs`.
-   - The client simultaneously restores its local cache from `IMPORT_BACKUP_KEY` and broadcasts a toast notification, instantly reflecting the restored state across all connected intranet workstations.
+   - Data Exchange displays up to 50 saved restore points. The operator can select a snapshot ID or restore the latest snapshot.
+   - The Express server saves the current state before restoring the selected snapshot transactionally. Saved snapshots remain in history; the client reloads the restored database.
+
+### 6.4 Loan Identity & Duplicate Repair
+
+The preview, client merge, and server importer use `shared/loanIdentity.js`. Matching first uses an existing record ID, then asset and Knox ID/name with start, pickup, or return dates. If only one side lacks start and pickup dates, matching falls back to an asset/person pair only when a single candidate exists. Imported blank start dates remain blank rather than becoming the import date.
+
+Imports remove exact duplicate records. Startup cleanup creates a restore point before clearing start dates later than a return date on records without pickup dates and removing exact duplicates. Cleanup retains records with differing details; import matching updates the matched row while preserving its database ID.
 
 ---
 
@@ -291,6 +297,8 @@ The frontend application provides eight core operational views accessed via the 
    - Click and drag row selection with bulk status updates and bulk deletion.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
 3. **Loans & Custody (`/loans`)**:
+   - Knox ID is the only required field in the add form; full name and PC assignment are optional. An optional pickup date records a handover directly.
+   - PC search includes Laptop, MES PC, and PC categories; monitor search accepts registered Monitor/Monitors assets. The main table displays PC asset numbers instead of sequence numbers.
    - Active, Scheduled, Overdue, Returned, and Unreturned (partial return) custody management.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Search across loan fields with selectable field and status filters.
@@ -309,8 +317,8 @@ The frontend application provides eight core operational views accessed via the 
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
-6. **Directory (`/directory`)**:
-   - Manage asset categories, departments, and locations using selection, select-all, edit, and bulk-delete controls.
+6. **Asset & Organization Directory (`/directory`)**:
+   - Manage asset categories, statuses, departments, and locations. Custom statuses can also be added from asset forms.
    - Items referenced by assets are marked in use and cannot be edited or deleted; unused values remain manageable.
 7. **Data Exchange (`/exchange`)**:
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
@@ -338,4 +346,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.4.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.5.0**.

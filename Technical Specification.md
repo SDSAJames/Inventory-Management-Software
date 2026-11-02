@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.4.0** |
+| **Specification Version** | **v1.5.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | October 2026 |
+| **Release Date** | November 2, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -166,14 +166,14 @@ interface OwnershipEntry {
 ```typescript
 interface Loan {
   id: string;                      // UUID primary key
-  assetCode: string;               // Foreign reference to Asset.code ("SPE-XXXX")
-  assignee: string;                // Borrower / Custodian employee name
-  knoxId: string;                  // Corporate Knox identity (e.g., "s.connor", "j.smith")
+  assetCode: string;               // Asset.code reference; may be empty when scheduling
+  assignee: string;                // Optional borrower name, stored as an empty string if skipped
+  knoxId: string;                  // Only required field in the add form and create API
   department: string;              // Borrower's department
   location: string;                // Checkout facility / rental location
   ip: string;                      // Assigned static or leased IP ("105.101.x.x")
   startDate: string;               // Agreement start date ("YYYY-MM-DD")
-  pickupDate?: string;             // Date hardware was physically handed over
+  pickupDate?: string;             // May be supplied on creation to record handover directly
   endDate: string;                 // Scheduled return due date ("YYYY-MM-DD")
   returnDate?: string;             // Actual date hardware was returned to IT
   status: LoanStatus;              // "Scheduled" | "Active" | "Returned" | "Overdue"
@@ -192,7 +192,7 @@ interface EquipmentChecklist {
   Dongle: number;                  // USB-C / Display adapter count
   Keyboard: number;                // External keyboard count
   Mouse: number;                   // External mouse count
-  Monitor: number;                 // External monitor count
+  Monitor: number | string;        // Legacy count or registered monitor asset code
   'Ethernet cable': number;        // RJ45 patch cable count
 }
 ```
@@ -350,27 +350,33 @@ The system implements a centralized data exchange engine backed by transactional
    - Executes mutations inside a SQLite transaction (`BEGIN TRANSACTION ... COMMIT`):
      - Inserts or updates assets based on code parity.
      - Automatically creates and records initial or overwrite history entries in `ownership_history`.
-     - Upserts loans with JSON accessory checklists and soft-archive flags.
+     - Resolves loan identity through `shared/loanIdentity.js`, preserving matched IDs before upserting JSON accessory checklists and soft-archive flags. The preview and client merge use the same matcher.
+     - Matches exact IDs first, then asset/person identifiers and start, pickup, or return dates. When only one side lacks start/pickup dates, a single candidate is required for the asset/person fallback.
+     - Preserves blank imported start dates and removes exact duplicates; the response reports imported and updated loan counts separately.
    - Automatically invokes `reconcileAllAssetsInDb()` immediately after commit to validate and enforce all States v1.0.0 rules.
    - Records an `IMPORT_DATA` event in `audit_logs` tracking snapshot ID, imported counts, and actor identity. If an error is encountered, the transaction triggers an automatic `ROLLBACK`.
 
 3. **One-Click Transactional Revert (`POST /api/exchange/revert`)**:
-   - Locates the latest restorable snapshot from `import_backups`.
+   - Accepts an optional `snapshotId`; otherwise locates the latest restorable snapshot from `import_backups`. `GET /api/exchange/backup-status` exposes up to 50 history entries.
    - Executes an atomic rollback within `BEGIN TRANSACTION ... COMMIT`: wipes working tables (`ownership_history`, `assets`, `loans`, `employees`, `departments`, `locations`) and re-populates them with the exact snapshot dataset.
-   - Deletes the consumed snapshot entry and records a `REVERT_IMPORT` audit event.
-   - Accompanied by client-side local cache restoration (`IMPORT_BACKUP_KEY`) to ensure instant consistency across all intranet workstations.
+   - Saves the current database before restoration and retains the selected snapshot in history. The client reloads the restored database.
+
+4. **Startup Duplicate Repair**:
+   - Database initialization saves a restore point when cleanup is needed, clears start dates later than return dates on records without pickup dates, and removes exact duplicates using the shared semantic comparison.
+   - Duplicate comparison excludes IDs and creation timestamps and canonicalizes equipment JSON. Records with differing details are retained.
+
+5. **Loan Entry & Equipment Search**:
+   - `POST /api/loans` requires Knox ID; empty asset and assignee strings are accepted. Empty asset and employee records are not created.
+   - The add form can record pickup immediately. PC suggestions are filtered to Laptop, MES PC, and PC; monitor suggestions and submitted monitor codes must refer to Monitor/Monitors inventory records.
+   - The Loans table displays and sorts PC asset numbers, replacing the sequence-number column.
 
 ---
 
 ## 7. Performance & Build Metrics
 
-Production build execution via `npm run build`:
-- **Modules Transformed**: 81 modules.
-- **HTML Bundle**: `dist/index.html` (~0.92 kB).
-- **CSS Bundle**: `dist/assets/index-[hash].css` (~72.0 kB, ~14.0 kB gzip).
-- **JS Bundle**: `dist/assets/index-[hash].js` (~515.5 kB, ~148.3 kB gzip) — includes full OpenXML parser, DEFLATE compressor, client API client, calendar engine, seed database, and React 19 runtime.
-- **Build Duration**: ~1.2 seconds.
-- **Initial Paint**: < 100ms in modern browsers.
+Production assets are generated by `npm run build`. Route pages use lazy imports and Suspense; the patch history modal and spreadsheet processing load on demand. This keeps those features out of the initial JavaScript bundle.
+
+Use the current Vite build output for chunk sizes and gzip estimates. Bundle sizes and build duration vary by release and environment; the project does not claim a measured initial-paint guarantee.
 
 ---
 

@@ -14,6 +14,7 @@ import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 import { normalizeLoanEndDate } from '../lib/loanEquipment';
+import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { api } from '../lib/api';
 
 const DbContext = createContext(null);
@@ -370,7 +371,7 @@ export function DbProvider({ children }) {
         a.code === assetUpdates?.code ? { ...a, ...assetUpdates, updated: todayIso() } : a,
       );
       // Auto-create asset if not found
-      if (assetUpdates && !prev.assets.some((a) => a.code === assetUpdates.code)) {
+      if (assetUpdates?.code && !prev.assets.some((a) => a.code === assetUpdates.code)) {
         nextAssets.push({
           id: crypto.randomUUID(),
           code: assetUpdates.code,
@@ -378,9 +379,9 @@ export function DbProvider({ children }) {
           category: 'Laptop',
           model: '',
           serial: '',
-          status: assetUpdates.status || 'On loan',
+          status: assetUpdates.status || (effectiveLoan.pickupDate ? 'On loan' : 'Available'),
           location: assetUpdates.location || '',
-          owner: assetUpdates.owner || '',
+          owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : 'IT department'),
           department: assetUpdates.department || '',
           condition: 'Good',
           notes: '',
@@ -388,7 +389,7 @@ export function DbProvider({ children }) {
         });
       }
       const nextEmployees = [...prev.employees];
-      if (newEmployee && !prev.employees.some((e) => e.name.toLowerCase() === newEmployee.name.toLowerCase())) {
+      if (newEmployee?.name && !prev.employees.some((e) => e.name.toLowerCase() === newEmployee.name.toLowerCase())) {
         nextEmployees.push(newEmployee);
       }
       return {
@@ -747,17 +748,7 @@ export function DbProvider({ children }) {
       // 2. Merge Loans
       if (normalizedLoans.length) {
         normalizedLoans.forEach((incLoan) => {
-          const existingIdx = nextLoans.findIndex(
-            (l) =>
-              l.assetCode.toLowerCase() === incLoan.assetCode.toLowerCase() &&
-              (
-                (l.pickupDate && incLoan.pickupDate && l.pickupDate.slice(0, 10) === incLoan.pickupDate.slice(0, 10)) ||
-                (l.startDate && incLoan.startDate && l.startDate.slice(0, 10) === incLoan.startDate.slice(0, 10)) ||
-                (l.knoxId && incLoan.knoxId && l.knoxId.toLowerCase() === incLoan.knoxId.toLowerCase()) ||
-                (l.assignee && incLoan.assignee && l.assignee.toLowerCase() === incLoan.assignee.toLowerCase()) ||
-                (!l.returnDate && !incLoan.returnDate)
-              )
-          );
+          const existingIdx = findLoanMatchIndex(nextLoans, incLoan);
           if (existingIdx >= 0) {
             nextLoans[existingIdx] = {
               ...nextLoans[existingIdx],
@@ -784,7 +775,7 @@ export function DbProvider({ children }) {
       return {
         ...prev,
         assets: nextAssets,
-        loans: nextLoans,
+        loans: deduplicateLoanRecords(nextLoans),
         employees: nextEmployees,
         locations: [...nextLocations],
       };

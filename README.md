@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.4.0)
+# StarPlus Energy Asset Management System (v1.5.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -45,14 +45,20 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
-3. **Loans & Custody (`/loans`)**: Searchable and status-filterable custody records, ready-for-pickup tracking for scheduled incomers, editable pickup/return details, itemized return records, and an Unreturned section for partial returns with outstanding equipment.
+3. **Loans & Custody (`/loans`)**: Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Enter a pickup date to record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, pickup readiness, return details, and an Unreturned section for partial returns.
 4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, and keyword search.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
-6. **Directory (`/directory`)**: Manage asset categories, departments, and locations with add, select-all, edit, and bulk-delete actions. Values currently used by assets are clearly marked and protected from editing or deletion.
-7. **Data Exchange (`/exchange`)**: Tab-delimited TXT file import extracted from Excel, 1:1 reference-format `.xlsx` export, interactive pre-flight preview modal, and one-click database rollback.
+6. **Asset & Organization Directory (`/directory`)**: Manage asset categories, statuses, departments, and locations. Add custom statuses here or from asset forms. Selection, select-all, edit, and bulk-delete actions protect reference values currently used by assets.
+7. **Data Exchange (`/exchange`)**: Tab-delimited TXT import, reference-format `.xlsx` export, interactive preview, and saved restore point history with restoration of a selected snapshot. Loan imports share matching rules with the preview and client merge to update existing records even when import IDs change.
 8. **Patch History & Changelog (`/patch-history` & `/changelog`)**: Dedicated release notes view with version filtering, keyword search, type toggles, and detailed per-version changelogs. Also accessible anywhere via the TopBar version button and bottom-left Sidebar footer.
 
 ---
+
+### Loan import matching and cleanup
+
+Repeat loan imports match existing IDs first, then asset and Knox ID/name with start, pickup, or return dates. If only one side lacks start and pickup dates, an asset/person match is used only when there is a single candidate. Blank imported start dates remain blank.
+
+Imports remove exact duplicate records. On server startup, cleanup first saves a database restore point, clears impossible start dates later than the return date on records without a pickup date, and removes exact duplicates. Records with differing details remain available for review. Restart the server to apply startup cleanup; its backup appears in Data Exchange restore point history.
 
 ## Development & Server Deployment
 

@@ -1266,16 +1266,17 @@ tbody tr:hover { background: #f8fafc; }
 }
 .loan-table th.col-no,
 .loan-table td.col-no {
-  width: 50px;
-  min-width: 50px;
-  max-width: 50px;
-  text-align: center;
+  width: 150px;
+  min-width: 125px;
+  max-width: 180px;
+  text-align: left;
   color: var(--muted);
   font-weight: 700;
   background: #f8fafc;
-  padding: 10px 6px;
+  padding: 10px 12px;
   border-right: 1px solid var(--line);
 }
+.loan-table td.col-no strong { color: var(--ink); overflow-wrap: anywhere; }
 .loan-table th.col-knox,
 .loan-table td.col-knox {
   min-width: 125px;

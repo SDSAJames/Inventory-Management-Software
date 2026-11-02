@@ -19,7 +19,7 @@ function dateSortKey(raw) {
 
 /* Sortable data columns (the first Action/checkbox column is prepended at render time). */
 const COLUMNS = [
-  { key: 'no', label: 'No', className: 'col-no', getValue: (_l, idx) => idx },
+  { key: 'assetCode', label: 'PC asset #', className: 'col-no', getValue: (loan) => String(loan.assetCode || loan.equipment?.Laptop || '').toLowerCase() },
   { key: 'knoxId', label: 'Knox ID', className: 'col-knox', getValue: (l) => String(l.knoxId || '').toLowerCase() },
   { key: 'startDate', label: 'Start date', getValue: (l) => dateSortKey(l.startDate || l.loanDate) },
   { key: 'pickupDate', label: 'Pickup date', getValue: (l) => dateSortKey(l.pickupDate) },
@@ -172,7 +172,7 @@ export default function LoanTable({
           </tr>
         </thead>
         <tbody>
-          {sortedRows.map(({ loan, idx: index }) => {
+          {sortedRows.map(({ loan }) => {
             const eq = loan.equipment || {};
             const asset = assets.find((a) => a.code === loan.assetCode);
             const isEditing = editingId === loan.id;
@@ -198,7 +198,7 @@ export default function LoanTable({
                       <button className="btn-action btn-cancel" onClick={cancelEdit}>Cancel</button>
                     </div>
                   </td>
-                  <td className="col-no">{index + 1}</td>
+                  <td className="col-no"><strong>{draft.assetCode || draft.equipment?.Laptop || '—'}</strong></td>
                   <td>
                     <input
                       className="inline-input"
@@ -360,7 +360,7 @@ export default function LoanTable({
                     </div>
                   </td>
                   )}
-                  <td className="col-no">{index + 1}</td>
+                  <td className="col-no"><strong>{loan.assetCode || eq.Laptop || '—'}</strong></td>
                   <td className="col-knox">
                     <div className="knox-cell">
                       <span className="expand-indicator">{isExpanded ? '▾' : '▸'}</span>

@@ -216,14 +216,16 @@ loansRouter.post('/', authenticate, (req, res) => {
     assigneeType = 'Business traveler',
   } = req.body || {};
 
-  const effectiveAssetCode = (assetCode || equipment?.Laptop || '').trim();
-  if (!effectiveAssetCode || !assignee) {
-    return res.status(400).json({ success: false, error: 'Asset number / Laptop and assignee are required.' });
+  const effectiveAssetCode = String(assetCode || equipment?.Laptop || '').trim();
+  const effectiveAssignee = String(assignee || '').trim();
+  const effectiveKnoxId = String(knoxId || '').trim();
+  if (!effectiveKnoxId) {
+    return res.status(400).json({ success: false, error: 'Knox ID is required.' });
   }
 
   const mergedEquipment = {
     ...equipment,
-    Laptop: effectiveAssetCode,
+    ...(effectiveAssetCode ? { Laptop: effectiveAssetCode } : {}),
   };
 
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
@@ -240,9 +242,9 @@ loansRouter.post('/', authenticate, (req, res) => {
     `).run(
       id,
       effectiveAssetCode,
-      assignee.trim(),
+      effectiveAssignee,
       department.trim(),
-      knoxId.trim(),
+      effectiveKnoxId,
       location.trim(),
       ip.trim(),
       startDate,
@@ -261,14 +263,16 @@ loansRouter.post('/', authenticate, (req, res) => {
     );
 
     // 2. Synchronize asset if pickupDate is set
-    const asset = db.prepare('SELECT id, owner FROM assets WHERE code = ?').get(effectiveAssetCode);
+    const asset = effectiveAssetCode
+      ? db.prepare('SELECT id, owner FROM assets WHERE code = ?').get(effectiveAssetCode)
+      : null;
     if (asset) {
       if (pickupDate) {
         db.prepare(`
           UPDATE assets
           SET status = 'On loan', owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(assignee.trim(), location.trim(), department.trim(), todayIso(), effectiveAssetCode);
+        `).run(effectiveAssignee, location.trim(), department.trim(), todayIso(), effectiveAssetCode);
 
         db.prepare(`
           INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
@@ -277,14 +281,14 @@ loansRouter.post('/', authenticate, (req, res) => {
           `hist-${Date.now()}`,
           effectiveAssetCode,
           asset.owner || 'None',
-          assignee.trim(),
+          effectiveAssignee,
           pickupDate,
           `Device Loan (${assigneeType})`,
           purpose || note || `Issued by ${req.user.username}`,
           now
         );
       }
-    } else {
+    } else if (effectiveAssetCode) {
       // Auto-create stub asset if asset doesn't exist
       const stubId = `ast-${Date.now()}`;
       db.prepare(`
@@ -296,7 +300,7 @@ loansRouter.post('/', authenticate, (req, res) => {
         effectiveAssetCode,
         pickupDate ? 'On loan' : 'Available',
         location.trim(),
-        pickupDate ? assignee.trim() : 'IT department',
+        pickupDate ? effectiveAssignee : 'IT department',
         department.trim(),
         todayIso(),
         now
@@ -304,17 +308,19 @@ loansRouter.post('/', authenticate, (req, res) => {
     }
 
     // 3. Ensure employee exists in employees directory
-    const existingEmp = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(assignee.trim());
-    if (!existingEmp) {
+    const existingEmp = effectiveAssignee
+      ? db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(effectiveAssignee)
+      : null;
+    if (effectiveAssignee && !existingEmp) {
       db.prepare(`
         INSERT INTO employees (id, name, department, position, knox_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(`emp-${Date.now()}`, assignee.trim(), department.trim(), assigneeType, knoxId.trim(), now);
+      `).run(`emp-${Date.now()}`, effectiveAssignee, department.trim(), assigneeType, effectiveKnoxId, now);
     }
 
     db.exec('COMMIT;');
 
-    logAudit('CREATE_LOAN', 'loans', id, { assetCode, assignee, initialStatus }, req.user);
+    logAudit('CREATE_LOAN', 'loans', id, { assetCode: effectiveAssetCode, assignee: effectiveAssignee, initialStatus }, req.user);
 
     const newLoan = db.prepare('SELECT * FROM loans WHERE id = ?').get(id);
     return res.status(201).json({

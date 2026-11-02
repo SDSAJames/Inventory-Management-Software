@@ -8,6 +8,53 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-02',
+    title: 'Flexible Loan Recording, Reliable Imports & Restore History',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary:
+      'Record loans with only a Knox ID, enter pickups directly, search PC and monitor assets by type, and merge repeat imports using shared loan identity rules.',
+    highlights: [
+      'Loan Recording: Knox ID is the only required field; assignee name and PC asset number are optional. Enter a pickup date to record an existing handover directly.',
+      'Equipment Search: Search laptops, MES PCs, and PCs in the PC field; monitor search accepts registered monitor assets.',
+      'Reliable Imports: Preview, local merging, and server imports share loan matching rules so regenerated import IDs do not create repeated records.',
+      'Restore History: Browse saved database restore points and restore a selected snapshot.',
+    ],
+    sections: [
+      {
+        heading: 'Loan Recording & Display',
+        badge: 'Custody Workflow',
+        items: [
+          'Display and sort by PC asset number in the Loans table instead of displaying a row sequence number.',
+          'Allow schedules without a full name or PC assignment; avoid creating empty asset and employee records.',
+          'An optional pickup date records the handover immediately and updates the linked PC custody state.',
+          'Filter PC suggestions to Laptop, MES PC, and PC categories, and monitor suggestions to Monitor and Monitors categories.',
+        ],
+      },
+      {
+        heading: 'Import Matching & Duplicate Cleanup',
+        badge: 'Data Integrity',
+        items: [
+          'Share identity matching between the import preview, client merge, and server import using record IDs, asset/person identifiers, and start, pickup, or return dates.',
+          'Use a unique asset/person fallback when only one side lacks start and pickup dates; retain separate dated records when no match is established.',
+          'Preserve blank imported start dates instead of substituting the import date, and report added and updated loan counts separately on the server.',
+          'Remove exact duplicate loan records during imports and server startup. Startup cleanup saves a restore point before clearing start dates later than the return date on records without a pickup date and removing resulting duplicates.',
+        ],
+      },
+      {
+        heading: 'Directory, Data Exchange & Loading',
+        badge: 'Application Improvements',
+        items: [
+          'Manage custom asset statuses from the Asset & Organization Directory and add statuses from asset forms.',
+          'Support the revised 10-column SPE equipment register, including asset type, purchase date, department, location, and notes.',
+          'Show database restore point history and allow restoration by snapshot ID, saving the current state before restoration.',
+          'Load route pages, patch history dialogs, and spreadsheet processing on demand to reduce the initial JavaScript bundle.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '1.4.0',
     date: '2026-10-27',
     title: 'Partial Return Tracking, Pickup Readiness & Directory Management',
     tag: 'Feature Release',
@@ -18,7 +65,7 @@ export const PATCH_HISTORY = [
       'Unreturned Loans: Review partial returns in a dedicated Loans section and see which issued accessories remain outstanding.',
       'Ready for Pickup: Mark scheduled loan equipment as prepared for incoming personnel.',
       'Directory Management: Add, select, edit, and bulk-delete categories, departments, and locations; values in use by assets are protected.',
-      `Version Governance: Application metadata is sourced from package.json (v${APP_VERSION}).`,
+      'Version Governance: Application metadata is sourced from package.json (v1.4.0).',
     ],
     sections: [
       {
@@ -48,7 +95,7 @@ export const PATCH_HISTORY = [
         heading: 'Documentation & Versioning',
         badge: 'Governance & Docs',
         items: [
-          `Updated package metadata and synchronized documentation to v${APP_VERSION}.`,
+          'Updated package metadata and synchronized documentation to v1.4.0.',
           'Updated README, Software Design Document, Technical Specification, and patch notes for this release.',
         ],
       },

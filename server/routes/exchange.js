@@ -4,6 +4,7 @@ import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/data
 import { authenticate } from '../middleware/auth.js';
 import { tracksEndDate } from '../loanRules.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
+import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 
 export const exchangeRouter = Router();
 
@@ -101,6 +102,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
     let importedAssetsCount = 0;
     let updatedAssetsCount = 0;
     let importedLoansCount = 0;
+    let updatedLoansCount = 0;
 
     // 1. Process Assets
     if (assets.length > 0) {
@@ -222,20 +224,23 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           assignee_type = excluded.assignee_type,
           is_archived = excluded.is_archived
       `);
+      const existingLoans = db.prepare('SELECT * FROM loans').all();
 
       for (const l of loans) {
-        if (!l.assetCode) continue;
-        const newLoanId = l.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const matchingIndex = findLoanMatchIndex(existingLoans, l);
+        const matchingLoan = matchingIndex >= 0 ? existingLoans[matchingIndex] : null;
+        const newLoanId = matchingLoan?.id || l.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const assetCode = String(l.assetCode || l.equipment?.Laptop || '').trim();
         const assigneeType = l.assigneeType || 'Business traveler';
         insertLoanStmt.run(
           newLoanId,
-          String(l.assetCode).trim(),
+          assetCode,
           l.assignee || 'Borrower',
           l.department || '',
           l.knoxId || '',
           l.location || 'Head Office',
           l.ip || '',
-          l.startDate || todayIso(),
+          l.startDate || '',
           l.pickupDate || '',
           tracksEndDate(assigneeType) ? (l.endDate || '') : '',
           l.returnDate || '',
@@ -252,7 +257,24 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           l.returnDate || l.returnedDate ? 1 : 0,
           now
         );
-        importedLoansCount++;
+        const savedLoan = db.prepare('SELECT * FROM loans WHERE id = ?').get(newLoanId);
+        if (matchingLoan) {
+          existingLoans[matchingIndex] = savedLoan;
+          updatedLoansCount++;
+        } else {
+          existingLoans.push(savedLoan);
+          importedLoansCount++;
+        }
+      }
+
+      // Previous imports could have inserted the same semantic row under new IDs.
+      // Remove only exact loan clones, preserving records whose dates or details differ.
+      const persistedLoans = db.prepare('SELECT * FROM loans ORDER BY created_at ASC, id ASC').all();
+      const retainedIds = new Set(deduplicateLoanRecords(persistedLoans).map((loan) => loan.id));
+      const duplicateIds = persistedLoans.filter((loan) => !retainedIds.has(loan.id)).map((loan) => loan.id);
+      if (duplicateIds.length) {
+        const deleteLoanStmt = db.prepare('DELETE FROM loans WHERE id = ?');
+        for (const duplicateId of duplicateIds) deleteLoanStmt.run(duplicateId);
       }
     }
 
@@ -265,6 +287,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
       importedAssetsCount,
       updatedAssetsCount,
       importedLoansCount,
+      updatedLoansCount,
       overwrite,
     }, req.user);
 
@@ -276,6 +299,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
         importedAssets: importedAssetsCount,
         updatedAssets: updatedAssetsCount,
         importedLoans: importedLoansCount,
+        updatedLoans: updatedLoansCount,
       },
     });
   } catch (err) {

@@ -5,6 +5,7 @@ import { buildReturnedEquipment, getMissingReturnItems, getReturnStatus } from '
 import { useToast } from '../hooks/useToast';
 import { nowLocalIso, readableLoanDate, todayIso, statusClass, isLoanOverdue, getLoanStatus } from '../lib/utils';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
+import { findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { LOAN_HEADERS } from '../lib/constants';
 import { getLoanEndDate } from '../lib/loanEquipment';
 import { loansToRows } from '../lib/loanExcel';
@@ -466,19 +467,7 @@ export default function LoansPage() {
         throw new Error('The file contains no valid loan rows');
       }
 
-      // Match by assetCode + (pickupDate or startDate or knoxId or assignee or active state)
-      const isExisting = (inc) =>
-        db.loans.some(
-          (l) =>
-            String(l.assetCode || '').toLowerCase() === inc.assetCode.toLowerCase() &&
-            (
-              (l.pickupDate && inc.pickupDate && l.pickupDate.slice(0, 10) === inc.pickupDate.slice(0, 10)) ||
-              (l.startDate && inc.startDate && l.startDate.slice(0, 10) === inc.startDate.slice(0, 10)) ||
-              (l.knoxId && inc.knoxId && l.knoxId.toLowerCase() === inc.knoxId.toLowerCase()) ||
-              (l.assignee && inc.assignee && l.assignee.toLowerCase() === inc.assignee.toLowerCase()) ||
-              (!l.returnDate && !inc.returnDate)
-            ),
-        );
+      const isExisting = (inc) => findLoanMatchIndex(db.loans, inc) >= 0;
 
       const updatedCount = result.loans.filter(isExisting).length;
       setImportPreview({
@@ -710,7 +699,7 @@ export default function LoansPage() {
           searchField={searchField}
           onSearchFieldChange={setSearchField}
           searchFieldOptions={LOAN_SEARCH_FIELDS}
-          placeholder="Search Knox ID, assignee name, laptop asset #, location, IP address, note..."
+          placeholder="Search Knox ID, assignee name, PC asset #, location, IP address, note..."
         />
 
         {hasSearch && (

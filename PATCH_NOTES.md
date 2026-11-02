@@ -6,6 +6,41 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] — 2026-11-02
+
+### Flexible Loan Recording, Reliable Imports & Restore History
+
+Record loans with only a Knox ID, enter pickups directly, search PC and monitor assets by type, and merge repeat imports using shared loan identity rules.
+
+#### Highlights
+- Loan Recording: Knox ID is the only required field; assignee name and PC asset number are optional. Enter a pickup date to record an existing handover directly.
+- Equipment Search: Search laptops, MES PCs, and PCs in the PC field; monitor search accepts registered monitor assets.
+- Reliable Imports: Preview, local merging, and server imports share loan matching rules so regenerated import IDs do not create repeated records.
+- Restore History: Browse saved database restore points and restore a selected snapshot.
+
+#### Loan Recording & Display
+
+- Display and sort by PC asset number in the Loans table instead of displaying a row sequence number.
+- Allow schedules without a full name or PC assignment; avoid creating empty asset and employee records.
+- An optional pickup date records the handover immediately and updates the linked PC custody state.
+- Filter PC suggestions to Laptop, MES PC, and PC categories, and monitor suggestions to Monitor and Monitors categories.
+
+#### Import Matching & Duplicate Cleanup
+
+- Share identity matching between the import preview, client merge, and server import using record IDs, asset/person identifiers, and start, pickup, or return dates.
+- Use a unique asset/person fallback when only one side lacks start and pickup dates; retain separate dated records when no match is established.
+- Preserve blank imported start dates instead of substituting the import date, and report added and updated loan counts separately on the server.
+- Remove exact duplicate loan records during imports and server startup. Startup cleanup saves a restore point before clearing start dates later than the return date on records without a pickup date and removing resulting duplicates.
+
+#### Directory, Data Exchange & Loading
+
+- Manage custom asset statuses from the Asset & Organization Directory and add statuses from asset forms.
+- Support the revised 10-column SPE equipment register, including asset type, purchase date, department, location, and notes.
+- Show database restore point history and allow restoration by snapshot ID, saving the current state before restoration.
+- Load route pages, patch history dialogs, and spreadsheet processing on demand to reduce the initial JavaScript bundle.
+
+---
+
 ## [1.4.0] — 2026-10-27
 
 ### Partial Return Tracking, Pickup Readiness & Directory Management
