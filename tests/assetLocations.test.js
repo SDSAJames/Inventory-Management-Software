@@ -155,6 +155,9 @@ test('loan returns and edits retain repair status while a new pickup can change 
   assert.equal(getAssetStatusForLoanEdit('Under repair', previous, { ...edit, returnDate: '2026-11-04' }), 'Under repair');
   const connection = locationDatabase();
   try {
+    connection.prepare("UPDATE assets SET location = 'Plant 1' WHERE code = 'PC-1'").run();
+    returnAssetToIt(connection, 'PC-1', '2026-11-04');
+    assert.equal(connection.prepare("SELECT location FROM assets WHERE code = 'PC-1'").get().location, DEFAULT_LOCATION);
     returnAssetToIt(connection, 'PC-2', '2026-11-04');
     const repaired = connection.prepare("SELECT * FROM assets WHERE code = 'PC-2'").get();
     assert.equal(repaired.status, 'Under repair');

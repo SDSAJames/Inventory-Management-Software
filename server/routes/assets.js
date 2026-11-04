@@ -1,3 +1,4 @@
+import { getAssetDateError, normalizeAssetDate } from '../../shared/assetDates.js';
 import { Router } from 'express';
 import { db, logAudit, reconcileAllAssetsInDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
@@ -150,10 +151,13 @@ assetsRouter.post('/', authenticate, (req, res) => {
     owner = '',
     department = '',
     purchaseDate = '',
+    warrantyExpirationDate = '',
     condition = 'Good',
     notes = '',
   } = req.body || {};
 
+  const dateError = getAssetDateError({ purchaseDate, warrantyExpirationDate });
+  if (dateError) return res.status(400).json({ success: false, error: dateError });
   const trimmedCode = (code || '').trim();
   const effectiveName = (name || trimmedCode || '').trim();
 
@@ -178,8 +182,8 @@ assetsRouter.post('/', authenticate, (req, res) => {
   db.exec('BEGIN TRANSACTION;');
   try {
     const insert = db.prepare(`
-      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, condition, notes, updated, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, warranty_expiration_date, condition, notes, updated, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     insert.run(
@@ -193,7 +197,8 @@ assetsRouter.post('/', authenticate, (req, res) => {
       assetLocationForWrite(db, effectiveStatus, location),
       owner,
       department,
-      purchaseDate,
+      normalizeAssetDate(purchaseDate),
+      normalizeAssetDate(warrantyExpirationDate),
       condition,
       notes,
       todayIso(),
@@ -231,7 +236,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     logAudit('CREATE_ASSET', 'assets', id, { code: trimmedCode, name }, req.user);
 
     const newAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
-    return res.status(201).json({ success: true, message: 'Asset created successfully.', asset: { ...newAsset, purchaseDate: newAsset.purchase_date || '' } });
+    return res.status(201).json({ success: true, message: 'Asset created successfully.', asset: { ...newAsset, purchaseDate: newAsset.purchase_date || '', warrantyExpirationDate: newAsset.warranty_expiration_date || '' } });
   } catch (err) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ success: false, error: err.message });
@@ -255,18 +260,21 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
     owner = asset.owner,
     department = asset.department,
     purchaseDate = req.body?.purchaseDate ?? asset.purchase_date ?? '',
+    warrantyExpirationDate = req.body?.warrantyExpirationDate ?? asset.warranty_expiration_date ?? '',
     condition = asset.condition,
     notes = asset.notes,
   } = req.body || {};
 
   const now = new Date().toISOString();
   const ownerChanged = owner !== undefined && owner !== asset.owner;
+  const dateError = getAssetDateError({ purchaseDate, warrantyExpirationDate });
+  if (dateError) return res.status(400).json({ success: false, error: dateError });
 
   db.exec('BEGIN TRANSACTION;');
   try {
     db.prepare(`
       UPDATE assets
-      SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, condition = ?, notes = ?, updated = ?
+      SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, warranty_expiration_date = ?, condition = ?, notes = ?, updated = ?
       WHERE id = ?
     `).run(
       name,
@@ -277,7 +285,8 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
       assetLocationForWrite(db, status, location),
       owner,
       department,
-      purchaseDate,
+      normalizeAssetDate(purchaseDate),
+      normalizeAssetDate(warrantyExpirationDate),
       condition,
       notes,
       todayIso(),
@@ -314,7 +323,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
     logAudit('UPDATE_ASSET', 'assets', asset.id, { code: asset.code, ownerChanged }, req.user);
 
     const updatedAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(asset.id);
-    return res.json({ success: true, message: 'Asset updated successfully.', asset: { ...updatedAsset, purchaseDate: updatedAsset.purchase_date || '' } });
+    return res.json({ success: true, message: 'Asset updated successfully.', asset: { ...updatedAsset, purchaseDate: updatedAsset.purchase_date || '', warrantyExpirationDate: updatedAsset.warranty_expiration_date || '' } });
   } catch (err) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ success: false, error: err.message });

@@ -21,6 +21,10 @@ export function getAssetStatusAfterReturn(status) {
   return ['Damaged', 'Under repair', 'Retired', 'Disposed'].includes(status) ? status : 'Available';
 }
 
+export function getAssetLocationAfterReturn(status) {
+  return getAssetLocation(getAssetStatusAfterReturn(status), DEFAULT_LOCATION);
+}
+
 /** Editing an ongoing loan must not undo a repair recorded on the same device. */
 export function getAssetStatusForLoanEdit(status, previousLoan = {}, nextLoan = {}) {
   const nextPickup = nextLoan.pickupDate ?? nextLoan.pickup_date;

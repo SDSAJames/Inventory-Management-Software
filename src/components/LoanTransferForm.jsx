@@ -13,9 +13,15 @@ export default function LoanTransferForm({ loan, onClose }) {
   const [assignee, setAssignee] = useState('');
   const [assigneeType, setAssigneeType] = useState('Employee');
   const [scheduleId, setScheduleId] = useState('');
+  const [scheduleSearch, setScheduleSearch] = useState('');
   const [startDate, setStartDate] = useState(todayIso);
   const [endDate, setEndDate] = useState('');
   const schedules = db.loans.filter((record) => !record.pickupDate && !isLoanReturned(record) && record.id !== loan.id && String(record.knoxId || '').trim().toLowerCase() !== String(loan.knoxId || '').trim().toLowerCase());
+  const scheduleQuery = scheduleSearch.trim().toLowerCase();
+  const matchingSchedules = schedules.filter((record) => String(record.knoxId || '').toLowerCase().includes(scheduleQuery));
+  const selectedSchedule = schedules.find((record) => record.id === scheduleId);
+  const selectedOutsideSearch = selectedSchedule && !matchingSchedules.some((record) => record.id === scheduleId);
+  const scheduleLabel = (record) => `${record.knoxId} — ${record.assignee || 'Unnamed recipient'} — ${record.assigneeType || 'Business traveler'} — ${record.startDate?.slice(0, 10) || 'No scheduled date'}`;
   const selectSchedule = (id) => {
     setScheduleId(id);
     const record = schedules.find((item) => item.id === id);
@@ -36,7 +42,12 @@ export default function LoanTransferForm({ loan, onClose }) {
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
   return <form onSubmit={submit}><h2>Transfer equipment</h2><p>Select items moving to the new holder and record whether they are an employee assignment or business-traveler loan. The previous holder's completed record is preserved.</p>
-    <div className="field"><label htmlFor="transfer-schedule">Recipient / pickup schedule</label><select id="transfer-schedule" value={scheduleId} onChange={(e) => selectSchedule(e.target.value)}><option value="">New recipient record</option>{schedules.map((record) => <option key={record.id} value={record.id}>{record.knoxId} — {record.assignee || 'Unnamed recipient'} — {record.assigneeType || 'Business traveler'} — {record.startDate?.slice(0, 10) || 'No scheduled date'}</option>)}</select></div>
+    <div className="field">
+      <label htmlFor="transfer-schedule-search">Search pickup schedules by Knox ID</label>
+      <input id="transfer-schedule-search" type="search" value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="Enter all or part of a Knox ID" autoComplete="off" spellCheck={false} aria-controls="transfer-schedule" />
+      <span className="field-hint" role="status">{matchingSchedules.length ? `${matchingSchedules.length} matching schedule${matchingSchedules.length === 1 ? '' : 's'}` : 'No matching pickup schedules.'}{selectedOutsideSearch ? ' Your selected schedule is retained below.' : ''}</span>
+    </div>
+    <div className="field"><label htmlFor="transfer-schedule">Recipient / pickup schedule</label><select id="transfer-schedule" value={scheduleId} onChange={(e) => selectSchedule(e.target.value)}><option value="">New recipient record</option>{selectedOutsideSearch && <option value={selectedSchedule.id}>Selected: {scheduleLabel(selectedSchedule)}</option>}{matchingSchedules.map((record) => <option key={record.id} value={record.id}>{scheduleLabel(record)}</option>)}</select></div>
     {scheduleId && <p className="field-hint">This schedule will move to Active with a pickup timestamp and “Pickup by transfer.” Planned equipment is replaced by the items actually transferred.</p>}
     <fieldset disabled={Boolean(scheduleId)} style={{ border: 0, padding: 0, margin: 0 }}>
     <div className="form-grid"><div className="field"><label htmlFor="transfer-type">New holder type *</label><select id="transfer-type" required value={assigneeType} onChange={(e) => setAssigneeType(e.target.value)}><option value="Employee">Employee</option><option value="Business traveler">Business traveler</option></select></div><div className="field"><label htmlFor="transfer-knox">New owner Knox ID *</label><input id="transfer-knox" required value={knoxId} onChange={(e) => setKnoxId(e.target.value)} /></div><div className="field"><label htmlFor="transfer-name">Assignee</label><input id="transfer-name" value={assignee} onChange={(e) => setAssignee(e.target.value)} /></div></div>

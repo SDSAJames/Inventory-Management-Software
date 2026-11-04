@@ -56,6 +56,10 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ### Loan import matching and cleanup
 
+All asset types include optional **Purchase date** and **Warranty expiration date**. Enter and view these dates as **MM-DD-YYYY**; for example, `10-07-2023` means October 7, 2023. Dates are stored internally as ISO calendar dates. The warranty date must be on or after the purchase date when both are supplied. Dates persist through editing, database backup/restore, and equipment import/export; exports append a warranty column when a recorded value needs it. Restart the backend after upgrading to add the warranty database column automatically.
+
+Returned devices move to **IT Department**. The existing **Under repair → service center** location rule remains in effect, and the original rental location remains on the custody record.
+
 **Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; picked-up employee equipment appears under **Assigned**, while business-traveler checkouts appear under **Loans**. Return records capture the laptop asset number actually received, including missing or substituted laptops. The existing `/loans` address continues to open this page.
 
 Employee and traveler requests without a pickup remain in the Assignments & Pickups **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.

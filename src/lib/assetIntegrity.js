@@ -1,3 +1,4 @@
+import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
 /**
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
@@ -148,6 +149,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
         owner: 'IT department',
         department: '',
         status: getAssetStatusAfterReturn(asset.status),
+        location: getAssetLocationAfterReturn(asset.status),
         updated: asset.updated || todayIso(),
       };
     }

@@ -11,6 +11,7 @@ export const EQUIPMENT_COLUMNS = [
   ['name', ['Asset Name', 'Name']],
   ['category', ['Category', 'Asset Type', 'Type']],
   ['purchaseDate', ['Purchase Date', 'Date Purchased']],
+  ['warrantyExpirationDate', ['Warranty Expiration Date', 'Warranty Expiry Date', 'Warranty End Date', 'Warranty Expiration']],
   ['model', ['Model']],
   ['location', ['Location', 'Facility']],
   ['department', ['Department', 'Dept']],

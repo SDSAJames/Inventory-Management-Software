@@ -25,6 +25,7 @@ export function formatAssetRow(asset, history, formatHistory = formatOwnershipRo
   return {
     ...asset,
     purchaseDate: asset.purchase_date || '',
+    warrantyExpirationDate: asset.warranty_expiration_date || '',
     ownershipHistory: history.map(formatHistory),
   };
 }

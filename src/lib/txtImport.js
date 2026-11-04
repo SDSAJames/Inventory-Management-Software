@@ -171,6 +171,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
   const {
     code: colCode, serial: colSerial, status: colStatus, owner: colOwner,
     purchaseDate: colPurchaseDate, issuedDate: colIssuedDate, category: colCategory,
+    warrantyExpirationDate: colWarranty,
     model: colModel, location: colLocation, department: colDept, notes: colNotes,
   } = equipmentColumnIndexes(rows[0]);
 
@@ -195,7 +196,8 @@ export function parseEquipmentsText(rows, existingAssets = []) {
     const rawStatus = colStatus >= 0 ? row[colStatus] : 'Available';
     const status = normalizeEquipmentStatus(rawStatus);
     const owner = colOwner >= 0 ? String(row[colOwner] || '').trim() : '';
-    const purchaseDate = colPurchaseDate >= 0 ? normalizeTextDate(row[colPurchaseDate]) : '';
+    const purchaseDate = colPurchaseDate >= 0 ? normalizeTextDate(normalizeAssetDate(row[colPurchaseDate])) : '';
+    const warrantyExpirationDate = colWarranty >= 0 ? normalizeTextDate(normalizeAssetDate(row[colWarranty])).slice(0, 10) : '';
     const issuedDate = colIssuedDate >= 0 ? normalizeTextDate(row[colIssuedDate]) : '';
     const category = colCategory >= 0 ? String(row[colCategory] || '').trim() : 'Laptop';
     const model = colModel >= 0 ? String(row[colModel] || '').trim() : '';
@@ -227,6 +229,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         category: category || existing.category,
         owner: owner || existing.owner,
         purchaseDate: purchaseDate || existing.purchaseDate || '',
+        warrantyExpirationDate: warrantyExpirationDate || existing.warrantyExpirationDate || '',
         issuedDate: issuedDate || existing.issuedDate || '',
         location,
         department: department || existing.department,
@@ -260,6 +263,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         location,
         owner,
         purchaseDate,
+        warrantyExpirationDate,
         department,
         issuedDate,
         condition: status === 'Damaged' ? 'Damaged' : 'Good',
@@ -458,3 +462,4 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     totalParsed: parsedLoans.length,
   };
 }
+import { normalizeAssetDate } from '../../shared/assetDates.js';

@@ -1,4 +1,4 @@
-import { getAssetStatusAfterReturn } from '../../shared/assetRules.js';
+import { getAssetStatusAfterReturn, getAssetLocationAfterReturn } from '../../shared/assetRules.js';
 import { assetLocationForWrite } from './assetLocations.js';
 
 /** Restore IT custody while retaining maintenance state and its automatic location. */
@@ -12,7 +12,7 @@ export function returnAssetToIt(database, assetCode, updated, { clearDepartment 
   `).run(
     status,
     clearDepartment ? '' : asset.department,
-    assetLocationForWrite(database, status, asset.location),
+    assetLocationForWrite(database, status, getAssetLocationAfterReturn(status)),
     updated,
     asset.id,
   );

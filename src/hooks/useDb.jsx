@@ -1,3 +1,4 @@
+import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   loadDb,
@@ -504,7 +505,7 @@ export function DbProvider({ children }) {
               ...(assetUpdates || {}),
               status: getAssetStatusForLoanEdit(a.status, existing, merged),
               owner: targetOwner,
-              location: merged.location || a.location,
+              location: hasReturn ? getAssetLocationAfterReturn(a.status) : merged.location || a.location,
               updated: todayIso(),
             };
           }
@@ -654,7 +655,7 @@ export function DbProvider({ children }) {
             previousOwner: a.owner || details.assignee || loan.assignee || 'Borrower',
             newOwner: 'IT department',
             department: 'IT',
-            location: details.location || loan.location || a.location || 'IT Store',
+            location: getAssetLocationAfterReturn(a.status),
             reason: 'Device Returned',
             notes: details.note || `Returned to IT department by ${details.assignee || loan.assignee || 'borrower'}`,
             date: timestamp.replace('T', ' '),
@@ -662,6 +663,7 @@ export function DbProvider({ children }) {
           return {
             ...a,
             status: getAssetStatusAfterReturn(a.status),
+            location: getAssetLocationAfterReturn(a.status),
             owner: 'IT department',
             department: '',
             ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],

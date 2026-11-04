@@ -1,3 +1,5 @@
+import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
+import { ensureAssetDateColumns } from '../lib/assetDates.js';
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
@@ -68,14 +70,7 @@ export function initDatabase() {
     );
   `);
 
-  try {
-    const assetCols = db.prepare('PRAGMA table_info(assets)').all().map((c) => c.name);
-    if (!assetCols.includes('purchase_date')) {
-      db.exec('ALTER TABLE assets ADD COLUMN purchase_date TEXT;');
-    }
-  } catch (e) {
-    console.warn('Note checking assets schema:', e.message);
-  }
+  ensureAssetDateColumns(db);
 
   // 3. Loans table
   db.exec(`
@@ -568,6 +563,7 @@ export function reconcileAllAssetsInDb() {
       // Check if most recent loan was returned
       const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
       if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === 'IT department')) {
+        newLoc = getAssetLocationAfterReturn(asset.status);
         newOwner = 'IT department';
         newDept = '';
         if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {

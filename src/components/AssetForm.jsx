@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 import { getAssetLocation } from '../../shared/assetRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { getAssetDateError, formatAssetDate, normalizeAssetDates } from '../../shared/assetDates.js';
 
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const { db, addAsset, updateAsset, addCategory, addStatus, addLocation, addDepartment } = useDb();
@@ -30,11 +31,13 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     owner: '',
     department: '',
     issuedDate: '',
+    purchaseDate: '',
+    warrantyExpirationDate: '',
     notes: '',
   });
 
   const [form, setForm] = useState(() => {
-    if (existing) return { ...existing };
+    if (existing) return { ...existing, purchaseDate: formatAssetDate(existing.purchaseDate), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate) };
     return makeBlank();
   });
 
@@ -44,7 +47,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   // Re-sync form when assetId changes
   useEffect(() => {
     if (existing) {
-      setForm({ ...existing });
+      setForm({ ...existing, purchaseDate: formatAssetDate(existing.purchaseDate), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate) });
     } else {
       setForm(makeBlank());
       setActiveTab('details');
@@ -128,6 +131,9 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const dateError = getAssetDateError(form);
+    if (dateError) { setSubmitError(dateError); toast(dateError); return; }
+
     const code = String(form.code || '').trim();
 
     const newErrors = {};
@@ -154,6 +160,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
     const payload = {
       ...form,
+      ...normalizeAssetDates(form),
       code,
       name: form.name || code,
       owner: form.owner ? form.owner.trim() : '',
@@ -309,6 +316,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               <label htmlFor="issuedDate">Issued date</label>
               <input id="issuedDate" type="date" value={form.issuedDate || ''} onChange={set('issuedDate')} />
             </div>
+            <div className="field"><label htmlFor="purchaseDate">Purchase date <span className="field-hint">(MM-DD-YYYY)</span></label><input id="purchaseDate" type="text" inputMode="numeric" maxLength={10} placeholder="10-07-2023" value={form.purchaseDate || ''} onChange={set('purchaseDate')} /></div>
+            <div className="field"><label htmlFor="warrantyExpirationDate">Warranty expiration date <span className="field-hint">(MM-DD-YYYY)</span></label><input id="warrantyExpirationDate" type="text" inputMode="numeric" maxLength={10} placeholder="10-07-2026" value={form.warrantyExpirationDate || ''} onChange={set('warrantyExpirationDate')} /></div>
             <div className="field col-span-2">
               <label htmlFor="notes">Notes</label>
               <input id="notes" value={form.notes} onChange={set('notes')} placeholder="Optional notes or asset condition" />

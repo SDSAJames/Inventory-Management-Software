@@ -149,6 +149,8 @@ Run `npm test` for the built-in Node.js regression suite. Tests cover shared rul
 
 ### 3.1 Asset Master Record (`Asset`)
 
+Purchase and warranty expiration dates are available for every asset category. Forms display and accept `MM-DD-YYYY` (for example, `10-07-2023` for October 7, 2023). Shared date helpers convert values to `YYYY-MM-DD` for storage and validate calendar dates and warranty ordering without timezone shifts. Existing ISO inputs remain supported.
+
 ```typescript
 interface Asset {
   id: string;                      // UUID primary key (crypto.randomUUID())
@@ -159,6 +161,8 @@ interface Asset {
   serial: string;                  // Manufacturer serial number
   status: AssetStatus;             // "Available" | "Assigned" | "On loan" | "Damaged" | "Under repair" | "Retired"
   location: string;                // Facility / Room (e.g., "HQ - Storage Room 2B", "Kokomo Plant")
+  purchaseDate?: string;           // Optional purchase date for any asset type (ISO storage)
+  warrantyExpirationDate?: string; // Optional warranty end date for any asset type (ISO storage)
   owner: string;                   // Current holder name (Employee Name or "IT department")
   department: string;              // Assigned department (e.g., "Engineering", "Quality Control")
   condition: string;               // "New" | "Good" | "Fair" | "Needs Maintenance"

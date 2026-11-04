@@ -78,12 +78,12 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
     if (assets.length > 0) {
       const getAssetStmt = db.prepare('SELECT * FROM assets WHERE LOWER(code) = LOWER(?)');
       const insertAssetStmt = db.prepare(`
-        INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, condition, notes, updated, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, warranty_expiration_date, condition, notes, updated, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       const updateAssetStmt = db.prepare(`
         UPDATE assets
-        SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, condition = ?, notes = ?, updated = ?
+        SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, warranty_expiration_date = ?, condition = ?, notes = ?, updated = ?
         WHERE id = ?
       `);
       const insertHistoryStmt = db.prepare(`
@@ -108,6 +108,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
               a.owner !== undefined ? a.owner : existing.owner,
               a.department !== undefined ? a.department : existing.department,
               a.purchaseDate || existing.purchase_date || '',
+              a.warrantyExpirationDate ?? a.warranty_expiration_date ?? existing.warranty_expiration_date ?? '',
               a.condition || existing.condition,
               a.notes || existing.notes,
               todayIso(),
@@ -143,6 +144,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
             a.owner || '',
             a.department || '',
             a.purchaseDate || '',
+            a.warrantyExpirationDate || a.warranty_expiration_date || '',
             a.condition || 'Good',
             a.notes || '',
             a.updated || todayIso(),
@@ -303,8 +305,8 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
 
     // 2. Restore Assets & History
     const insertAsset = db.prepare(`
-      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, condition, notes, updated, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, warranty_expiration_date, condition, notes, updated, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertHistory = db.prepare(`
       INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
@@ -325,6 +327,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           a.owner,
           a.department,
           a.purchase_date || a.purchaseDate || '',
+          a.warranty_expiration_date || a.warrantyExpirationDate || '',
           a.condition,
           a.notes,
           a.updated,

@@ -6,9 +6,10 @@
  */
 
 import { todayIso } from './utils.js';
-import { DEFAULT_ASSET_HEADERS, equipmentColumnIndexes, equipmentExportValue, normalizeEquipmentStatus } from './equipmentSchema.js';
+import { DEFAULT_ASSET_HEADERS, equipmentColumnIndexes, equipmentExportValue, equipmentFieldForHeader, normalizeEquipmentStatus } from './equipmentSchema.js';
 import { cleanSpreadsheetCell as clean, excelSerialDate } from './spreadsheetValues.js';
 import { getAssetLocation } from '../../shared/assetRules.js';
+import { normalizeAssetDate } from '../../shared/assetDates.js';
 
 export { DEFAULT_ASSET_HEADERS } from './equipmentSchema.js';
 export const ASSET_EXPORT_HEADERS = DEFAULT_ASSET_HEADERS;
@@ -17,8 +18,9 @@ export const ASSET_EXPORT_HEADERS = DEFAULT_ASSET_HEADERS;
 
 /** Excel serial (e.g. 46296) or date-like text -> YYYY-MM-DD. */
 function normalizeDate(raw) {
-  const value = clean(raw);
+  const value = normalizeAssetDate(clean(raw));
   if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   const serialDate = excelSerialDate(value, { maximum: 80000, round: true });
   if (serialDate) return serialDate.toISOString().slice(0, 10);
   const parsed = new Date(value);
@@ -79,6 +81,7 @@ export function parseAssetRows(rows, existingAssets) {
       department: get('department'),
       notes: get('notes'),
       purchaseDate: normalizeDate(get('purchaseDate')),
+      warrantyExpirationDate: normalizeDate(get('warrantyExpirationDate')) || existing?.warrantyExpirationDate || '',
       issuedDate: normalizeDate(get('issuedDate')),
       updated: todayIso(),
     };
@@ -113,7 +116,8 @@ export function parseAssetRows(rows, existingAssets) {
  * If custom headers from an imported file are provided, uses those exact columns.
  */
 export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS) {
-  const activeHeaders = Array.isArray(headers) && headers.length > 0 ? headers : DEFAULT_ASSET_HEADERS;
+  const activeHeaders = [...(Array.isArray(headers) && headers.length > 0 ? headers : DEFAULT_ASSET_HEADERS)];
+  if (assets.some((asset) => asset.warrantyExpirationDate) && !activeHeaders.some((header) => equipmentFieldForHeader(header) === 'warrantyExpirationDate')) activeHeaders.push('Warranty Expiration Date');
   return [
     activeHeaders,
     ...assets.map((asset) => activeHeaders.map((header) => equipmentExportValue(asset, header))),
