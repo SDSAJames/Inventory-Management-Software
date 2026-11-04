@@ -5,6 +5,7 @@ import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
 export function computeLoanStatus(loan, { today = todayIso(), tracksDueDate = tracksEndDate(loan.assignee_type) } = {}) {
   if (isLoanReturned(loan)) return 'Returned';
+  if (!loan.pickup_date && loan.status !== 'Active') return 'Scheduled';
   if (tracksDueDate && loan.end_date && loan.end_date < today) return 'Overdue';
   if (loan.pickup_date || loan.status === 'Active') return 'Active';
   return 'Scheduled';

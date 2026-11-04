@@ -27,7 +27,7 @@ test('loan tabs partition lifecycle records while partial returns remain indepen
   const records = [
     { id: 'scheduled', knoxId: 'jane.doe', equipment: { RequestedPC: true } },
     { id: 'active', pickupDate: '2026-01-01', endDate: '2999-01-01' },
-    { id: 'overdue', endDate: '2001-01-01' },
+    { id: 'overdue', pickupDate: '2000-01-01', endDate: '2001-01-01' },
     { id: 'returned', returnDate: '2026-01-02', endDate: '2001-01-01' },
     { id: 'partial', isArchived: true, returnStatus: 'Partial' },
     { id: 'employee', assigneeType: 'Employee', endDate: '2001-01-01' },

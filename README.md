@@ -56,6 +56,10 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ### Loan import matching and cleanup
 
+Employee and traveler requests without a pickup remain in the Loans **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.
+
+For an outstanding picked-up loan, expand its row and choose **Transfer equipment**. Select all items or individual items and quantities, then enter the new owner's Knox ID and optional name. Transfers create a linked custody record and ownership history for registered devices. Remaining items stay with the original owner; a fully transferred source is archived with a **Transferred** label. Transfers do not record a physical return.
+
 Repeat loan imports match existing IDs first, then asset and Knox ID/name with start, pickup, or return dates. If only one side lacks start and pickup dates, an asset/person match is used only when there is a single candidate. Blank imported start dates remain blank.
 
 Imports remove exact duplicate records. On server startup, cleanup first saves a database restore point, clears impossible start dates later than the return date on records without a pickup date, and removes exact duplicates. Records with differing details remain available for review. Restart the server to apply startup cleanup; its backup appears in Data Exchange restore point history.

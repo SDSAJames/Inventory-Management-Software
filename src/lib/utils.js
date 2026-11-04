@@ -127,6 +127,7 @@ export function isLoanOverdue(loan) {
 export function getLoanStatus(loan) {
   if (!loan) return 'Scheduled';
   if (isLoanReturned(loan)) return 'Returned';
+  if (!loan.pickupDate) return 'Scheduled';
   if (isLoanOverdue(loan)) return 'Overdue';
   if (loan.pickupDate) return 'Loaned';
   return 'Scheduled';

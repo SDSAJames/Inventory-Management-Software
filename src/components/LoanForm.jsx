@@ -244,7 +244,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>
 
           {/* Location & department */}
-          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />
+          <DirectorySelect allowCustom id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />
           <DirectorySelect id="department" label="Department" options={db.departments} value={form.department} onChange={set('department')} />
 
           {/* Equipment Checklist */}

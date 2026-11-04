@@ -4664,3 +4664,4 @@ textarea.input-error-red {
   font-weight: 600;
   margin-top: 3px;
 }
+.scheduled-loan-table > thead > tr > th:nth-child(6), .scheduled-loan-table > thead > tr > th:nth-child(8), .scheduled-loan-table > thead > tr > th:nth-child(9), .scheduled-loan-table > tbody > tr:not(.loan-detail-tr) > td:nth-child(6), .scheduled-loan-table > tbody > tr:not(.loan-detail-tr) > td:nth-child(8), .scheduled-loan-table > tbody > tr:not(.loan-detail-tr) > td:nth-child(9) { display: none; }

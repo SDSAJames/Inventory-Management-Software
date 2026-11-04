@@ -83,6 +83,7 @@ export const api = {
     },
     getById: (id) => request(`/loans/${id}`),
     create: (loan) => request('/loans', { method: 'POST', body: loan }),
+    transfer: (id, payload) => request(`/loans/${id}/transfer`, { method: 'POST', body: payload }),
     update: (id, changes) => request(`/loans/${id}`, { method: 'PUT', body: changes }),
     pickup: (id, payload) =>
       request(`/loans/${id}/pickup`, {

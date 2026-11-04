@@ -8,6 +8,7 @@ import AssetAutocomplete from './AssetAutocomplete';
 import DirectorySelect from './DirectorySelect';
 import LoanEquipmentFields from './LoanEquipmentFields';
 import IPAddressFields from './IPAddressFields';
+import { PC_CATEGORIES } from '../lib/assetCategories';
 
 export default function EditLoanForm({ loanId, onClose }) {
   const { db, updateLoan } = useDb();
@@ -32,6 +33,8 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
     location: loan.location || '',
     department: loan.department || '',
     ...equipmentToForm(equipment),
+    requestPc: Boolean(equipment.RequestedPC || loan.assetCode),
+    requestMonitor: Boolean(equipment.RequestedMonitor || equipment.Monitor),
     others: loan.others || '',
     note: loan.note || loan.purpose || '',
   });
@@ -40,6 +43,10 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
     setForm((prev) => ({
       ...prev,
       [field]: value,
+      ...(field === 'assetCode' && value ? { requestPc: true } : {}),
+      ...(field === 'monitor' && value ? { requestMonitor: true } : {}),
+      ...(field === 'requestPc' && !value ? { assetCode: '' } : {}),
+      ...(field === 'requestMonitor' && !value ? { monitor: '' } : {}),
       ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
     }));
   };
@@ -81,7 +88,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
       department: form.department,
       others: form.others,
       note: form.note,
-      equipment: { ...equipment, ...buildLoanEquipment(form, form.assetCode) },
+      equipment: { ...equipment, ...buildLoanEquipment(form, form.assetCode), RequestedPC: form.requestPc, RequestedMonitor: form.requestMonitor },
     };
 
     const assetUpdates = {
@@ -129,7 +136,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
           {/* IP address */}
           <IPAddressFields form={form} onChange={updateField} />
 
-          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} preserveCurrentValue />
+          <DirectorySelect allowCustom id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} preserveCurrentValue />
           <div className="field">
             <label htmlFor="startDate">Start date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
@@ -206,11 +213,16 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
             <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
               Equipment Checklist
             </label>
+            <fieldset className="loan-equipment-requests"><legend>Equipment requested</legend>
+              <label><input type="checkbox" checked={form.requestPc} onChange={(e) => updateField('requestPc', e.target.checked)} /> Laptop / PC</label>
+              <label><input type="checkbox" checked={form.requestMonitor} onChange={(e) => updateField('requestMonitor', e.target.checked)} /> Monitor</label>
+            </fieldset>
             <div className="equipment-grid">
               <div className="equipment-field asset-autocomplete-wrapper">
                 <label htmlFor="edit-assetCode">Laptop / asset number</label>
                 <AssetAutocomplete
                   id="edit-assetCode"
+                  categoryFilter={PC_CATEGORIES}
                   value={form.assetCode}
                   onChange={(value) => updateField('assetCode', value)}
                   onSelectAsset={(asset) => {
@@ -224,7 +236,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
                   placeholder="e.g. 432 or SPE-4321..."
                 />
               </div>
-              <LoanEquipmentFields form={form} idPrefix="edit-" onChange={updateField} />
+              <LoanEquipmentFields searchableMonitor form={form} idPrefix="edit-" onChange={updateField} />
             </div>
           </div>
 

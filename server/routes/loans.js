@@ -10,8 +10,16 @@ import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { getAssetStatusForLoanEdit, normalizeLocation } from '../../shared/assetRules.js';
 import { returnAssetToIt } from '../lib/assetLoans.js';
 import { assetLocationForWrite } from '../lib/assetLocations.js';
+import { transferLoan } from '../lib/loanTransfer.js';
 
 export const loansRouter = Router();
+loansRouter.post('/:id/transfer', authenticate, (req, res) => {
+  try {
+    const targetId = transferLoan(db, req.params.id, req.body || {});
+    logAudit('TRANSFER_LOAN', 'loans', req.params.id, { targetId }, req.user);
+    return res.json({ success: true, targetId });
+  } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+});
 
 // GET /api/loans
 loansRouter.get('/', (req, res) => {
@@ -425,6 +433,10 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
     location,
   } = req.body || {};
 
+  const effectiveAssetCode = String(req.body?.assetCode ?? equipment?.Laptop ?? loan.asset_code ?? '').trim();
+  if (equipment?.RequestedPC && !effectiveAssetCode) return res.status(400).json({ success: false, error: 'Select the PC being picked up' });
+  if (equipment?.RequestedMonitor && (!equipment.Monitor || equipment.Monitor === '0')) return res.status(400).json({ success: false, error: 'Select the monitor being picked up' });
+  if (effectiveAssetCode && !db.prepare('SELECT id FROM assets WHERE code = ?').get(effectiveAssetCode)) return res.status(400).json({ success: false, error: 'Select a registered PC asset' });
   const now = new Date().toISOString();
   const effectiveEndDate = tracksEndDate(loan.assignee_type)
     ? (endDate !== undefined ? endDate : loan.end_date)
@@ -435,7 +447,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
   let nextEquipmentJson = loan.equipment_json;
   if (equipment) {
     const prevEq = loan.equipment_json ? JSON.parse(loan.equipment_json) : {};
-    nextEquipmentJson = JSON.stringify({ ...prevEq, ...equipment });
+    nextEquipmentJson = JSON.stringify({ ...prevEq, ...equipment, Laptop: effectiveAssetCode });
   }
 
   const nextNote = note !== undefined ? note : loan.note;
@@ -446,12 +458,13 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
   try {
     db.prepare(`
       UPDATE loans
-      SET pickup_date = ?, start_date = ?, end_date = ?, status = ?,
+      SET asset_code = ?, pickup_date = ?, start_date = ?, end_date = ?, status = ?,
           equipment_json = ?, note = ?, others = ?, location = ?,
           return_date = '', returned_date = '', is_archived = 0,
           ready_for_pickup = 0, returned_equipment_json = NULL, return_status = NULL
       WHERE id = ?
     `).run(
+      effectiveAssetCode,
       pickupDate,
       effectiveStartDate,
       effectiveEndDate,
@@ -464,20 +477,20 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
     );
 
     // Update asset to 'On loan' and owner to assignee
-    const asset = db.prepare('SELECT id, owner FROM assets WHERE code = ?').get(loan.asset_code);
+    const asset = db.prepare('SELECT id, owner FROM assets WHERE code = ?').get(effectiveAssetCode);
     if (asset) {
       db.prepare(`
         UPDATE assets
         SET status = 'On loan', owner = ?, location = ?, updated = ?
         WHERE code = ?
-      `).run(loan.assignee, nextLocation, todayIso(), loan.asset_code);
+      `).run(loan.assignee, nextLocation, todayIso(), effectiveAssetCode);
 
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         `hist-${randomUUID()}`,
-        loan.asset_code,
+        effectiveAssetCode,
         asset.owner || 'None',
         loan.assignee,
         pickupDate,

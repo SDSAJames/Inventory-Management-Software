@@ -481,8 +481,9 @@ export function DbProvider({ children }) {
     api.loans.update(id, changes).catch((err) => console.warn('Could not sync loan update to server:', err.message));
   }, []);
 
-  const pickupLoan = useCallback((id, pickupDate, details = {}) => {
+  const pickupLoan = useCallback(async (id, pickupDate, details = {}) => {
     const timestamp = pickupDate || todayIso();
+    await api.loans.pickup(id, { pickupDate: timestamp, ...details });
     setDb((prev) => {
       const loan = prev.loans.find((l) => l.id === id);
       if (!loan) return prev;
@@ -521,7 +522,7 @@ export function DbProvider({ children }) {
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
-    api.loans.pickup(id, { pickupDate: timestamp, ...details }).catch((err) => console.warn('Could not sync loan pickup to server:', err.message));
+
   }, []);
 
   const setLoanReadyForPickup = useCallback((id, ready) => {

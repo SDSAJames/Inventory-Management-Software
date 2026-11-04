@@ -23,6 +23,7 @@ function dateSortKey(raw) {
 const COLUMNS = [
   { key: 'assetCode', label: 'PC asset #', className: 'col-no', getValue: (loan) => String(loan.assetCode || loan.equipment?.Laptop || '').toLowerCase() },
   { key: 'knoxId', label: 'Knox ID', className: 'col-knox', getValue: (l) => String(l.knoxId || '').toLowerCase() },
+  { key: 'assignee', label: 'Assignee', getValue: (l) => String(l.assignee || '').toLowerCase() },
   { key: 'startDate', label: 'Start date', getValue: (l) => dateSortKey(l.startDate || l.loanDate) },
   { key: 'pickupDate', label: 'Pickup date', getValue: (l) => dateSortKey(l.pickupDate) },
   { key: 'endDate', label: 'End date', getValue: (l) => dateSortKey(getLoanEndDate(l)) },
@@ -48,6 +49,8 @@ export default function LoanTable({
   onToggleSelect,
   onToggleSelectAll,
   emptyMessage,
+  scheduled = false,
+  onTransferLoan,
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -128,7 +131,7 @@ export default function LoanTable({
 
   return (
     <div className="table-wrap">
-      <table className={`loan-table simple-loan-table ${selectable ? 'selectable-loan-table' : ''}`}>
+      <table className={`loan-table simple-loan-table ${scheduled ? 'scheduled-loan-table' : ''} ${selectable ? 'selectable-loan-table' : ''}`}>
         <thead>
           <tr>
             {selectable ? (
@@ -187,7 +190,7 @@ export default function LoanTable({
               : [];
 
             // Compute current lifecycle status label (accurately reflecting Overdue if end date is over today)
-            const statusLabel = isEditing && draft ? getLoanStatus(draft) : getLoanStatus(loan);
+            const statusLabel = loan.status === 'Transferred' ? 'Transferred' : isEditing && draft ? getLoanStatus(draft) : getLoanStatus(loan);
 
             if (isEditing && draft) {
               return (
@@ -208,6 +211,7 @@ export default function LoanTable({
                       required
                     />
                   </td>
+                  <td><input className="inline-input" value={draft.assignee || ''} onChange={(e) => update('assignee', e.target.value)} /></td>
                   <td>
                     <input
                       className="inline-input"
@@ -372,6 +376,7 @@ export default function LoanTable({
                       <strong className="knox-id-text">{loan.knoxId || '—'}</strong>
                     </div>
                   </td>
+                  <td>{loan.assignee || '—'}</td>
                   <td>{readableLoanDate(loan.startDate || loan.loanDate) || '—'}</td>
                   <td>
                     {loan.pickupDate ? (
@@ -416,6 +421,7 @@ export default function LoanTable({
                             </span>
                           </div>
                           <div className="loan-detail-actions">
+                            {loan.pickupDate && !isReturned && onTransferLoan && <button className="button secondary small-btn" onClick={() => onTransferLoan(loan)}>Transfer equipment</button>}
                             {/* Revert / Pickup / Return actions */}
                             {!loan.pickupDate && !isReturned && (
                               <>
@@ -534,10 +540,10 @@ export default function LoanTable({
                                 <span>{missingReturnItems.join(', ') || 'Some equipment is outstanding'}</span>
                               </div>
                             )}
-                            {loan.returnStatus === 'Partial' && loan.returnedEquipment && (
+                            {loan.returnedEquipment && (
                               <div className="return-equipment-details">
                                 <strong>Returned quantities</strong>
-                                <span>Keyboard: {loan.returnedEquipment.Keyboard ?? '0'} · Mouse: {loan.returnedEquipment.Mouse ?? '0'} · Adapter: {loan.returnedEquipment.Adapter ?? '0'} · Cable: {loan.returnedEquipment.Cable ?? '0'}</span>
+                                <span>{Object.entries(loan.returnedEquipment).map(([key, value]) => `${key === 'Dongle' ? 'USB Dongle' : key}: ${value ?? '0'}`).join(' · ')}</span>
                               </div>
                             )}
                           </div>

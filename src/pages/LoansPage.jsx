@@ -16,6 +16,9 @@ import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
 import { LOAN_SEARCH_FIELDS, groupLoans, filterLoanGroups, getLoanGroup } from '../lib/loanSelectors.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import AssetAutocomplete from '../components/AssetAutocomplete';
+import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
+import LoanTransferForm from '../components/LoanTransferForm';
 
 export default function LoansPage() {
   const { db, updateLoan, pickupLoan, setLoanReadyForPickup, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
@@ -32,6 +35,7 @@ export default function LoansPage() {
   );
   const [searchField, setSearchField] = useState('All fields');
   const [showCreate, setShowCreate] = useState(false);
+  const [transferTarget, setTransferTarget] = useState(null);
   const [editLoanId, setEditLoanId] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
@@ -136,6 +140,9 @@ export default function LoansPage() {
     const eq = loan.equipment || {};
     setPickupForm({
       pickupDate: nowLocalIso(),
+      assetCode: loan.assetCode || eq.Laptop || '',
+      requestPc: Boolean(eq.RequestedPC || loan.assetCode),
+      requestMonitor: Boolean(eq.RequestedMonitor || eq.Monitor),
       startDate: (loan.startDate || loan.loanDate || todayIso()).slice(0, 10),
       endDate: getLoanEndDate(loan).slice(0, 10),
       location: loan.location || DEFAULT_LOCATION,
@@ -149,10 +156,13 @@ export default function LoansPage() {
     setPickupForm((prev) => ({ ...prev, [field]: val }));
   };
 
-  const handleConfirmPickup = () => {
+  const handleConfirmPickup = async () => {
     if (!pickupTarget) return;
     const timestamp = pickupForm.pickupDate || nowLocalIso();
+    if (pickupForm.requestPc && !pickupForm.assetCode.trim()) return toast('Select the PC being picked up');
+    if (pickupForm.requestMonitor && (!pickupForm.monitor || pickupForm.monitor === '0')) return toast('Select the monitor being picked up');
     const details = {
+      assetCode: pickupForm.assetCode.trim(),
       startDate: pickupForm.startDate,
       loanDate: pickupForm.startDate,
       endDate: pickupForm.endDate,
@@ -160,13 +170,15 @@ export default function LoansPage() {
       location: pickupForm.location,
       equipment: {
         ...(pickupTarget.equipment || {}),
-        ...buildLoanEquipment(pickupForm, pickupTarget.assetCode),
+        ...buildLoanEquipment(pickupForm, pickupForm.assetCode.trim()),
+        RequestedPC: pickupForm.requestPc,
+        RequestedMonitor: pickupForm.requestMonitor,
       },
       others: pickupForm.others,
       note: pickupForm.note,
     };
 
-    pickupLoan(pickupTarget.id, timestamp, details);
+    try { await pickupLoan(pickupTarget.id, timestamp, details); } catch (error) { toast(error.message || 'Could not record pickup'); return; }
     toast(`Device and accessories picked up for ${pickupTarget.assignee || 'assignee'}`);
     setPickupTarget(null);
   };
@@ -363,6 +375,7 @@ export default function LoansPage() {
 
   return (
     <>
+      {transferTarget && <Modal open onClose={() => setTransferTarget(null)}><LoanTransferForm loan={transferTarget} onClose={() => setTransferTarget(null)} /></Modal>}
       <div className="view-header">
         <div>
           <p className="view-subtitle">
@@ -634,6 +647,8 @@ export default function LoansPage() {
           </div>
         )}
         <LoanTable
+          scheduled={category === 'scheduled'}
+          onTransferLoan={setTransferTarget}
           loans={displayedLoans}
           assets={db.assets}
           editMode={editMode}
@@ -718,6 +733,12 @@ export default function LoansPage() {
                 <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
                   Sometimes planned schedule and actual pickup date differ. Adjust either below.
                 </p>
+
+                <fieldset className="loan-equipment-requests"><legend>Equipment requested</legend>
+                  <label><input type="checkbox" checked={pickupForm.requestPc || false} onChange={(e) => updatePickupField('requestPc', e.target.checked)} /> Laptop / PC</label>
+                  <label><input type="checkbox" checked={pickupForm.requestMonitor || false} onChange={(e) => updatePickupField('requestMonitor', e.target.checked)} /> Monitor</label>
+                </fieldset>
+                <div className="field"><label htmlFor="pickup-pc">PC picked up</label><AssetAutocomplete id="pickup-pc" categoryFilter={PC_CATEGORIES} value={pickupForm.assetCode || ''} onChange={(value) => updatePickupField('assetCode', value)} placeholder="Search laptop or MES PC asset number" /></div>
 
                 <div className="field">
                   <label htmlFor="modal-pickupDate">
@@ -972,13 +993,7 @@ export default function LoansPage() {
                       </div>
                     </div>
                     <div className="accessory-control">
-                      <input
-                        type="text"
-                        className="accessory-input accessory-input-wide"
-                        value={pickupForm.monitor}
-                        onChange={(e) => updatePickupField('monitor', e.target.value)}
-                        placeholder="Tag or 0"
-                      />
+                      <AssetAutocomplete id="pickup-monitor" categoryFilter={MONITOR_CATEGORIES} value={pickupForm.monitor === '0' ? '' : pickupForm.monitor} onChange={(value) => updatePickupField('monitor', value)} placeholder="Search monitor asset number" />
                     </div>
                   </div>
 
