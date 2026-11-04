@@ -1,5 +1,5 @@
 import { getLoanStatus } from './utils.js';
-import { getMissingReturnItems } from './loanEquipment.js';
+import { getMissingReturnItems, isBusinessTraveler } from './loanEquipment.js';
 
 export const LOAN_SEARCH_FIELDS = [
   'All fields',
@@ -61,10 +61,15 @@ export function filterLoan(loan, term, field) {
 
 /** Keep tab grouping and counts on the same lifecycle rules. */
 export function groupLoans(loans = []) {
-  const groups = { scheduled: [], loaned: [], overdue: [], returned: [], unreturned: [], all: loans };
+  const groups = { scheduled: [], assigned: [], loaned: [], overdue: [], returned: [], unreturned: [], all: loans };
   const statusKeys = { Scheduled: 'scheduled', Loaned: 'loaned', Overdue: 'overdue', Returned: 'returned' };
   for (const loan of loans) {
-    groups[statusKeys[getLoanStatus(loan)]].push(loan);
+    const status = getLoanStatus(loan);
+    if (status === 'Loaned' && !isBusinessTraveler(loan.assigneeType)) {
+      groups.assigned.push(loan);
+    } else {
+      groups[statusKeys[status]].push(loan);
+    }
     if (loan.returnStatus === 'Partial') groups.unreturned.push(loan);
   }
   return groups;

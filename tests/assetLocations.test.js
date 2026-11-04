@@ -7,7 +7,7 @@ import { normalizeDatabaseLocations } from '../src/lib/databaseLocations.js';
 import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 import { parseAssetRows } from '../src/lib/assetExcel.js';
 import { parseEquipmentsText } from '../src/lib/txtImport.js';
-import { normalizeStoredLocations } from '../server/lib/assetLocations.js';
+import { ensureLocation, normalizeStoredLocations } from '../server/lib/assetLocations.js';
 import { returnAssetToIt } from '../server/lib/assetLoans.js';
 
 function locationDatabase() {
@@ -38,6 +38,24 @@ test('shared location rules normalize defaults and force the repair destination'
   assert.equal(getAssetLocation('Damaged', 'Head Office'), DEFAULT_LOCATION);
 });
 
+test('loan locations are added to the client directory and server entries are idempotent', () => {
+  const cached = normalizeDatabaseLocations({
+    locations: ['Plant 1'],
+    assets: [],
+    loans: [{ location: 'New Lab' }],
+  });
+  assert.deepEqual(cached.locations, ['Plant 1', 'New Lab']);
+
+  const connection = locationDatabase();
+  try {
+    ensureLocation(connection, 'New Lab');
+    ensureLocation(connection, 'new lab');
+    assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE LOWER(name) = LOWER(?)').get('New Lab').count, 1);
+  } finally {
+    connection.close();
+  }
+});
+
 test('cache normalization merges renamed locations without changing rental locations to repair destinations', () => {
   const input = {
     locations: ['Head Office', 'IT Department', 'Service Center', 'Plant 1'],
@@ -55,6 +73,21 @@ test('cache normalization merges renamed locations without changing rental locat
   const reconciled = reconcileAssetWithLoans(result.assets[0], [active]);
   assert.equal(reconciled.status, 'Under repair');
   assert.equal(reconciled.location, REPAIR_LOCATION);
+});
+
+test('asset reconciliation tracks monitor handovers with employee and traveler statuses', () => {
+  const travelerMonitor = reconcileAssetWithLoans(
+    { code: 'MON-1', status: 'Available', owner: 'IT department' },
+    [{ assigneeType: 'Business traveler', assignee: 'Taylor', pickupDate: '2026-11-01', equipment: { Monitor: 'MON-1' } }],
+  );
+  const employeeMonitor = reconcileAssetWithLoans(
+    { code: 'MON-2', status: 'Available', owner: 'IT department' },
+    [{ assigneeType: 'Employee', assignee: 'Jordan', pickupDate: '2026-11-01', equipment: { Monitor: 'MON-2' } }],
+  );
+  assert.equal(travelerMonitor.status, 'On loan');
+  assert.equal(travelerMonitor.owner, 'Taylor');
+  assert.equal(employeeMonitor.status, 'Assigned');
+  assert.equal(employeeMonitor.owner, 'Jordan');
 });
 
 test('both equipment import formats apply the same default and repair rules', () => {

@@ -73,7 +73,7 @@ export default function LoansPage() {
 
   const loanGroups = useMemo(() => groupLoans(db.loans), [db.loans]);
   const {
-    scheduled: scheduledLoans, loaned: loanedLoans, overdue: overdueLoans,
+    scheduled: scheduledLoans, assigned: assignedLoans, loaned: loanedLoans, overdue: overdueLoans,
     returned: returnedLoans, unreturned: unreturnedLoans,
   } = loanGroups;
   const filteredGroups = useMemo(
@@ -81,7 +81,7 @@ export default function LoansPage() {
     [loanGroups, searchTerm, searchField],
   );
   const {
-    scheduled: filteredScheduledLoans, loaned: filteredLoanedLoans,
+    scheduled: filteredScheduledLoans, assigned: filteredAssignedLoans, loaned: filteredLoanedLoans,
     overdue: filteredOverdueLoans, returned: filteredReturnedLoans,
     unreturned: filteredUnreturnedLoans, all: filteredAllLoans,
   } = filteredGroups;
@@ -91,7 +91,7 @@ export default function LoansPage() {
 
   /* ── Selection & Bulk operations (Loaned & Overdue tabs) ── */
 
-  const isSelectableTab = category === 'loaned' || category === 'overdue';
+  const isSelectableTab = category === 'assigned' || category === 'loaned' || category === 'overdue';
 
   // Reset selection whenever the user switches tabs
   useEffect(() => {
@@ -210,10 +210,19 @@ export default function LoansPage() {
       const returned = loan.returnedEquipment || eq;
       setReturnForm({
         returnDate: nowTime,
+        returnedLaptopCode: returned.Laptop ?? loan.assetCode ?? eq.Laptop ?? '',
         ...equipmentQuantitiesToForm(returned, eq),
         others: returned.Others ?? loan.others ?? '',
         note: loan.note || '',
       });
+    } else {
+      setReturnForm((prev) => ({
+        ...prev,
+        bulkLaptopCodes: Object.fromEntries(list.map((loan) => [
+          loan.id,
+          loan.returnedEquipment?.Laptop ?? loan.assetCode ?? loan.equipment?.Laptop ?? '',
+        ])),
+      }));
     }
   };
 
@@ -227,10 +236,12 @@ export default function LoansPage() {
       const loan = returnTargets[0];
       const timestamp = returnForm.returnDate || returnTime || nowLocalIso();
       const returnedEquipment = buildReturnedEquipment(returnForm);
-      const missingItems = getMissingReturnItems(loan.equipment || {}, returnedEquipment);
-      const returnStatus = getReturnStatus(loan.equipment || {}, returnedEquipment);
+      const issuedEquipment = { ...(loan.equipment || {}), Laptop: loan.assetCode || loan.equipment?.Laptop || '' };
+      const missingItems = getMissingReturnItems(issuedEquipment, returnedEquipment);
+      const returnStatus = getReturnStatus(issuedEquipment, returnedEquipment);
       const details = {
         returnedEquipment,
+        returnedAssetCode: returnedEquipment.Laptop,
         returnStatus,
         others: returnForm.others,
         note: returnForm.note,
@@ -239,8 +250,23 @@ export default function LoansPage() {
       toast(missingItems.length ? `Return recorded with missing items: ${missingItems.join(', ')}` : `Laptop and accessories returned & archived (${loan.assetCode})`);
     } else {
       const timestamp = returnTime || nowLocalIso();
-      returnTargets.forEach((loan) => returnLoan(loan.id, timestamp));
-      toast(`${returnTargets.length} laptops returned & archived`);
+      returnTargets.forEach((loan) => {
+        const returnedLaptopCode = String(returnForm.bulkLaptopCodes?.[loan.id] || '').trim();
+        const equipment = loan.equipment || {};
+        const returnedEquipment = buildReturnedEquipment({
+          ...equipmentQuantitiesToForm(loan.returnedEquipment || equipment),
+          returnedLaptopCode,
+          others: loan.returnedEquipment?.Others ?? loan.others ?? '',
+        });
+        const issuedEquipment = { ...equipment, Laptop: loan.assetCode || equipment.Laptop || '' };
+        returnLoan(loan.id, timestamp, {
+          returnedEquipment,
+          returnedAssetCode: returnedLaptopCode,
+          returnStatus: getReturnStatus(issuedEquipment, returnedEquipment),
+          note: loan.note || '',
+        });
+      });
+      toast(`${returnTargets.length} return records processed`);
     }
 
     setSelectedIds((prev) => {
@@ -253,7 +279,7 @@ export default function LoansPage() {
 
   const handleRevertReturn = (loan) => {
     unarchiveLoan(loan.id);
-    toast(`Return reverted for ${loan.assignee || 'loan'}. Record moved back to Active.`);
+    toast(`Return reverted for ${loan.assignee || 'record'}. Record moved back to its Assigned or Loans tab.`);
   };
 
   /* ── Record Deletion flow ───────────────────────── */
@@ -433,12 +459,23 @@ export default function LoansPage() {
           </span>
         </button>
         <button
-          className={`loan-tab ${category === 'loaned' ? 'active' : ''}`}
-          onClick={() => setCategory('loaned')}
-          title={hasSearch ? `${filteredLoanedLoans.length} matching of ${loanedLoans.length} loaned` : undefined}
+          className={`loan-tab ${category === 'assigned' ? 'active' : ''}`}
+          onClick={() => setCategory('assigned')}
+          title={hasSearch ? `${filteredAssignedLoans.length} matching of ${assignedLoans.length} employee assignments` : undefined}
         >
           <span className="category-dot loaned-dot">●</span>
-          Active
+          Assigned
+          <span className="loan-tab-count">
+            {hasSearch ? filteredAssignedLoans.length : assignedLoans.length}
+          </span>
+        </button>
+        <button
+          className={`loan-tab ${category === 'loaned' ? 'active' : ''}`}
+          onClick={() => setCategory('loaned')}
+          title={hasSearch ? `${filteredLoanedLoans.length} matching of ${loanedLoans.length} business-traveler loans` : undefined}
+        >
+          <span className="category-dot loaned-dot">●</span>
+          Loans
           <span className="loan-tab-count">
             {hasSearch ? filteredLoanedLoans.length : loanedLoans.length}
           </span>
@@ -498,8 +535,11 @@ export default function LoansPage() {
         {category === 'scheduled' && (
           <span>📋 <strong>Scheduled pickups:</strong> Employee assignments and business-traveler equipment awaiting handover. Click <strong>Pickup</strong> to timestamp handover. Click row for recipient details.</span>
         )}
+        {category === 'assigned' && (
+          <span><strong>Employee assignments:</strong> Picked-up equipment assigned to employees. Tick checkboxes and use <strong>Return</strong> or <strong>↶ Revert pickup</strong> above the table.</span>
+        )}
         {category === 'loaned' && (
-          <span>🚀 <strong>Active assignments &amp; loans:</strong> Equipment assigned to employees or loaned to business travelers. Tick checkboxes and use <strong>Return</strong> or <strong>↶ Revert pickup</strong> above the table. Click column header to sort.</span>
+          <span><strong>Business-traveler loans:</strong> Equipment checked out to business travelers. Tick checkboxes and use <strong>Return</strong> or <strong>↶ Revert pickup</strong> above the table.</span>
         )}
         {category === 'overdue' && (
           <span>⚠️ <strong>Overdue loans:</strong> End date has passed today and equipment has not been returned. Tick checkboxes to record bulk returns or delete records.</span>
@@ -559,13 +599,22 @@ export default function LoansPage() {
                   Scheduled ({filteredScheduledLoans.length})
                 </button>
               )}
+              {filteredAssignedLoans.length > 0 && category !== 'assigned' && (
+                <button
+                  type="button"
+                  className="btn-hint-category"
+                  onClick={() => setCategory('assigned')}
+                >
+                  Assigned ({filteredAssignedLoans.length})
+                </button>
+              )}
               {filteredLoanedLoans.length > 0 && category !== 'loaned' && (
                 <button
                   type="button"
                   className="btn-hint-category"
                   onClick={() => setCategory('loaned')}
                 >
-                  Active ({filteredLoanedLoans.length})
+                  Loans ({filteredLoanedLoans.length})
                 </button>
               )}
               {filteredOverdueLoans.length > 0 && category !== 'overdue' && (
@@ -1158,12 +1207,25 @@ export default function LoansPage() {
                   </div>
                 </div>
 
+                <div className="field">
+                  <label htmlFor="modal-returnLaptop">Laptop returned (asset number)</label>
+                  <AssetAutocomplete
+                    id="modal-returnLaptop"
+                    categoryFilter={PC_CATEGORIES}
+                    allowCustom
+                    value={returnForm.returnedLaptopCode || ''}
+                    onChange={(value) => updateReturnField('returnedLaptopCode', value)}
+                    placeholder="Select returned laptop, or clear if missing"
+                  />
+                  <span className="field-hint">Enter a different laptop if substituted. Leave blank if no laptop was returned.</span>
+                </div>
+
                 <div className="return-status-callout">
                   <span className="callout-icon">ℹ️</span>
                   <div>
                     <strong>Device Check-in to IT Department</strong>
                     <p style={{ margin: '3px 0 0', lineHeight: 1.35 }}>
-                      Confirming return will change asset <strong>{returnTargets[0].assetCode}</strong> status back to <strong>Available</strong> in IT department inventory and archive this custody record.
+                      The returned laptop will move to available IT inventory. If this field is blank, the originally assigned laptop remains with the assignee and is marked outstanding.
                     </p>
                   </div>
                 </div>
@@ -1179,7 +1241,9 @@ export default function LoansPage() {
                   Verify that keyboard, mouse, and cables were returned. Adjust quantities if any item is retained or missing.
                 </p>
                 {(() => {
-                  const missing = getMissingReturnItems(returnTargets[0].equipment || {}, buildReturnedEquipment(returnForm));
+                  const loan = returnTargets[0];
+                  const issuedEquipment = { ...(loan.equipment || {}), Laptop: loan.assetCode || loan.equipment?.Laptop || '' };
+                  const missing = getMissingReturnItems(issuedEquipment, buildReturnedEquipment(returnForm));
                   return missing.length ? <div className="partial-return-warning"><strong>Partial return</strong><span>Still outstanding: {missing.join(', ')}</span></div> : <div className="complete-return-note">All issued accessories are marked returned.</div>;
                 })()}
 
@@ -1483,7 +1547,7 @@ export default function LoansPage() {
               {` (${returnTargets.length} laptops)`}
             </h2>
             <p className="modal-intro">
-              Timestamp defaults to current time. Confirming return will return the laptops to IT department and archive these custody records.
+              Confirm the laptop received for each record. Clear an asset number if the laptop was not returned, or select a different laptop if it was substituted.
             </p>
 
             <div className="timestamp-dialog-card">
@@ -1494,6 +1558,20 @@ export default function LoansPage() {
                     <span className="bulk-delete-meta">
                       {' '}— {l.assignee || 'Unknown'}, picked up {readableLoanDate(l.pickupDate) || '—'}
                     </span>
+                    <div className="field" style={{ marginTop: '8px' }}>
+                      <label htmlFor={`bulk-return-laptop-${l.id}`}>Laptop returned (asset number)</label>
+                      <AssetAutocomplete
+                        id={`bulk-return-laptop-${l.id}`}
+                        categoryFilter={PC_CATEGORIES}
+                        allowCustom
+                        value={returnForm.bulkLaptopCodes?.[l.id] || ''}
+                        onChange={(value) => setReturnForm((prev) => ({
+                          ...prev,
+                          bulkLaptopCodes: { ...(prev.bulkLaptopCodes || {}), [l.id]: value },
+                        }))}
+                        placeholder="Select returned laptop, or clear if missing"
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>

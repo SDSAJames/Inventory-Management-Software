@@ -199,7 +199,7 @@ export default function LoanTable({
             const isReturned = isLoanReturned(loan);
             const isPickedUp = Boolean(loan.pickupDate);
             const missingReturnItems = loan.returnStatus === 'Partial'
-              ? getMissingReturnItems(loan.equipment || {}, loan.returnedEquipment || {})
+              ? getMissingReturnItems({ ...eq, Laptop: loan.assetCode || eq.Laptop || '' }, loan.returnedEquipment || {})
               : [];
 
             // Compute current lifecycle status label (accurately reflecting Overdue if end date is over today)
@@ -399,6 +399,7 @@ export default function LoanTable({
                     {loan.pickupDate ? (
                       <span className="timestamp-badge">
                         {readableLoanDate(loan.pickupDate)}
+                        {loan.equipment?.PickupMethod === 'Transfer' && <small className="loan-request-summary">Pickup by transfer</small>}
                       </span>
                     ) : (
                       <span className="text-muted-badge">Not picked up</span>

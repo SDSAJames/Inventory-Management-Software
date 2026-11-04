@@ -53,6 +53,7 @@ function itemCount(value) {
 
 export function buildReturnedEquipment(form) {
   return {
+    Laptop: String(form.returnedLaptopCode || '').trim(),
     ...Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [storageKey, form[formKey]])),
     Others: form.others || '',
   };
@@ -62,6 +63,11 @@ export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {
   const missing = EQUIPMENT_FIELDS
     .filter(([key]) => itemCount(equipment[key]) > itemCount(returnedEquipment[key]))
     .map(([, , , , label]) => label);
+  const expectedLaptop = String(equipment.Laptop || '').trim();
+  const returnedLaptop = String(returnedEquipment.Laptop || '').trim();
+  if (expectedLaptop && expectedLaptop !== returnedLaptop) {
+    missing.unshift(`Laptop (${expectedLaptop})`);
+  }
   return missing;
 }
 

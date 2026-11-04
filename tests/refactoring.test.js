@@ -26,7 +26,8 @@ test('return and traveler rules accept browser and SQLite records', () => {
 test('loan tabs partition lifecycle records while partial returns remain independently visible', () => {
   const records = [
     { id: 'scheduled', knoxId: 'jane.doe', equipment: { RequestedPC: true } },
-    { id: 'active', pickupDate: '2026-01-01', endDate: '2999-01-01' },
+    { id: 'active', assigneeType: 'Business traveler', pickupDate: '2026-01-01', endDate: '2999-01-01' },
+    { id: 'employee-active', assigneeType: 'Employee', pickupDate: '2026-01-01' },
     { id: 'overdue', pickupDate: '2000-01-01', endDate: '2001-01-01' },
     { id: 'returned', returnDate: '2026-01-02', endDate: '2001-01-01' },
     { id: 'partial', isArchived: true, returnStatus: 'Partial' },
@@ -35,6 +36,7 @@ test('loan tabs partition lifecycle records while partial returns remain indepen
   const groups = groupLoans(records);
   const ids = (key) => groups[key].map((record) => record.id);
   assert.deepEqual(ids('scheduled'), ['scheduled', 'employee']);
+  assert.deepEqual(ids('assigned'), ['employee-active']);
   assert.deepEqual(ids('loaned'), ['active']);
   assert.deepEqual(ids('overdue'), ['overdue']);
   assert.deepEqual(ids('returned'), ['returned', 'partial']);
@@ -66,8 +68,10 @@ test('equipment mapping preserves zeros, monitor asset codes and request metadat
   const equipment = { RequestedPC: true, ...buildLoanEquipment(form, 'PC-123') };
   assert.equal(equipment.Laptop, 'PC-123');
   assert.equal(equipment.RequestedPC, true);
-  const returned = buildReturnedEquipment({ ...form, monitor: '', others: 'Headset' });
+  const returned = buildReturnedEquipment({ ...form, returnedLaptopCode: 'PC-123', monitor: '', others: 'Headset' });
   assert.deepEqual(getMissingReturnItems(equipment, returned), ['Monitor']);
+  assert.deepEqual(getMissingReturnItems({ Laptop: 'PC-123' }, buildReturnedEquipment({ returnedLaptopCode: '' })), ['Laptop (PC-123)']);
+  assert.deepEqual(getMissingReturnItems({ Laptop: 'PC-123' }, buildReturnedEquipment({ returnedLaptopCode: 'PC-456' })), ['Laptop (PC-123)']);
   assert.deepEqual(getMissingReturnItems({ RequestedPC: true, RequestedMonitor: true }, {}), []);
 });
 

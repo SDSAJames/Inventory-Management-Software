@@ -4,6 +4,7 @@
  */
 import { todayIso, readableLoanDate, isLoanReturned } from './utils.js';
 import { getAssetLocation, getAssetStatusAfterReturn } from '../../shared/assetRules.js';
+import { isBusinessTravelerType } from '../../shared/loanRules.js';
 
 /**
  * Reconciles an asset against all loans in the database to derive its true latest
@@ -94,7 +95,8 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   if (asset.status === 'Under repair') return asset;
 
   const assetLoans = loans.filter(
-    (l) => String(l.assetCode || '').trim().toLowerCase() === String(asset.code || '').trim().toLowerCase()
+    (loan) => [loan.assetCode, loan.equipment?.Monitor]
+      .some((code) => String(code || '').trim().toLowerCase() === String(asset.code || '').trim().toLowerCase())
   );
 
   // Find active loans (picked up, not returned, not archived)
@@ -105,16 +107,16 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   });
 
   if (activeLoan) {
-    // Current reality: on loan to active loan assignee
+    const activeStatus = isBusinessTravelerType(activeLoan.assigneeType) ? 'On loan' : 'Assigned';
     const needsUpdate =
-      asset.status !== 'On loan' ||
+      asset.status !== activeStatus ||
       asset.owner !== (activeLoan.assignee || '') ||
       (activeLoan.location && asset.location !== activeLoan.location);
 
     if (needsUpdate) {
       return {
         ...asset,
-        status: 'On loan',
+        status: activeStatus,
         owner: activeLoan.assignee || asset.owner || '',
         location: activeLoan.location || asset.location,
         department: activeLoan.department || asset.department,

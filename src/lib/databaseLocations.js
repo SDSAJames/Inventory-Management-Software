@@ -16,7 +16,11 @@ export function normalizeDatabaseLocations(database) {
   };
   const assets = normalizeRows(database.assets, (asset) => getAssetLocation(asset.status, asset.location));
   const loans = normalizeRows(database.loans, (loan) => normalizeLocation(loan.location, ''));
-  const locations = [...new Set((database.locations || []).map((location) => normalizeLocation(location, '')).filter(Boolean))];
+  const locations = [...new Set([
+    ...(database.locations || []),
+    ...(assets || []).map((asset) => asset.location),
+    ...(loans || []).map((loan) => loan.location),
+  ].map((location) => normalizeLocation(location, '')).filter(Boolean))];
   if ((assets || []).some((asset) => asset.status === 'Under repair') && !locations.includes(REPAIR_LOCATION)) {
     locations.push(REPAIR_LOCATION);
   }

@@ -13,7 +13,7 @@ import { seed } from '../data/seed';
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
-import { normalizeLoanEndDate } from '../lib/loanEquipment';
+import { isBusinessTraveler, normalizeLoanEndDate } from '../lib/loanEquipment';
 import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { api } from '../lib/api';
 import { normalizeDatabaseLocations } from '../lib/databaseLocations';
@@ -375,9 +375,34 @@ export function DbProvider({ children }) {
     });
 
     setDb((prev) => {
-      const nextAssets = prev.assets.map((a) =>
-        effectiveLoan.pickupDate && a.code === assetUpdates?.code ? { ...a, ...assetUpdates, updated: todayIso() } : a,
+      const owner = effectiveLoan.assignee || '';
+      const handoverAssetCodes = new Set(
+        effectiveLoan.pickupDate
+          ? [assetUpdates?.code, effectiveLoan.equipment?.Monitor]
+              .map((code) => String(code || '').trim())
+              .filter((code) => code && code !== '0')
+          : [],
       );
+      const nextAssets = prev.assets.map((a) => {
+        if (!handoverAssetCodes.has(a.code)) return a;
+        const history = createOwnershipEntry({
+          previousOwner: a.owner || 'IT department',
+          newOwner: owner,
+          date: effectiveLoan.pickupDate.replace('T', ' '),
+          reason: 'Device Handover',
+          notes: `Device handed over to ${owner}`,
+          location: effectiveLoan.location || a.location,
+        });
+        return {
+          ...a,
+          ...(a.code === assetUpdates?.code ? assetUpdates : {}),
+          status: isBusinessTraveler(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned',
+          owner,
+          location: effectiveLoan.location || a.location,
+          ownershipHistory: [history, ...(a.ownershipHistory || [])],
+          updated: todayIso(),
+        };
+      });
       // Auto-create asset if not found
       if (effectiveLoan.pickupDate && assetUpdates?.code && !prev.assets.some((a) => a.code === assetUpdates.code)) {
         nextAssets.push({
@@ -387,9 +412,21 @@ export function DbProvider({ children }) {
           category: 'Laptop',
           model: '',
           serial: '',
-          status: assetUpdates.status || (effectiveLoan.pickupDate ? 'On loan' : 'Available'),
+          status: effectiveLoan.pickupDate
+            ? (isBusinessTraveler(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned')
+            : 'Available',
           location: assetUpdates.location || '',
           owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : 'IT department'),
+          ownershipHistory: effectiveLoan.pickupDate
+            ? [createOwnershipEntry({
+                previousOwner: 'IT department',
+                newOwner: effectiveLoan.assignee || '',
+                date: effectiveLoan.pickupDate.replace('T', ' '),
+                reason: 'Device Handover',
+                notes: `Device handed over to ${effectiveLoan.assignee || ''}`,
+                location: effectiveLoan.location,
+              })]
+            : [],
           department: assetUpdates.department || '',
           condition: 'Good',
           notes: '',
@@ -508,17 +545,31 @@ export function DbProvider({ children }) {
           : l,
       );
       const effectiveAssetCode = details.assetCode || loan.assetCode;
-      const nextAssets = prev.assets.map((a) =>
-        a.code === effectiveAssetCode
-          ? {
-              ...a,
-              status: 'On loan',
-              owner: details.assignee || loan.assignee || a.owner,
-              location: details.location || loan.location || a.location,
-              updated: todayIso(),
-            }
-          : a,
+      const owner = details.assignee || loan.assignee || '';
+      const handoverAssetCodes = new Set(
+        [effectiveAssetCode, details.equipment?.Monitor]
+          .map((code) => String(code || '').trim())
+          .filter((code) => code && code !== '0'),
       );
+      const nextAssets = prev.assets.map((a) => {
+        if (!handoverAssetCodes.has(a.code)) return a;
+        const history = createOwnershipEntry({
+          previousOwner: a.owner || 'IT department',
+          newOwner: owner,
+          date: timestamp.replace('T', ' '),
+          reason: 'Device Handover',
+          notes: `Device handed over to ${owner}`,
+          location: details.location || loan.location || a.location,
+        });
+        return {
+          ...a,
+          status: isBusinessTraveler(merged.assigneeType) ? 'On loan' : 'Assigned',
+          owner,
+          location: details.location || loan.location || a.location,
+          ownershipHistory: [history, ...(a.ownershipHistory || [])],
+          updated: todayIso(),
+        };
+      });
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
@@ -586,26 +637,46 @@ export function DbProvider({ children }) {
       const nextLoans = prev.loans.map((l) =>
         l.id === id ? merged : l,
       );
-      const effectiveAssetCode = details.assetCode || loan.assetCode;
+      const expectedAssetCode = loan.assetCode || loan.equipment?.Laptop || '';
+      const returnedEquipment = details.returnedEquipment || {};
+      const hasLaptopReturnDetail = Object.hasOwn(returnedEquipment, 'Laptop');
+      const returnedLaptopCode = String(
+        hasLaptopReturnDetail ? returnedEquipment.Laptop || '' : details.returnedAssetCode || expectedAssetCode,
+      ).trim();
+      const returnedAssetCodes = new Set(
+        [returnedLaptopCode, returnedEquipment.Monitor]
+          .map((code) => String(code || '').trim())
+          .filter((code) => code && code !== '0'),
+      );
       const nextAssets = prev.assets.map((a) => {
-        if (a.code !== effectiveAssetCode) return a;
-        const returnEntry = createOwnershipEntry({
-          previousOwner: details.assignee || loan.assignee || 'Borrower',
-          newOwner: 'IT department',
-          department: 'IT',
-          location: details.location || loan.location || a.location || 'IT Store',
-          reason: 'Loan Returned',
-          notes: details.note || `Returned to IT department (was borrowed by ${details.assignee || loan.assignee || 'borrower'})`,
-          date: timestamp.replace('T', ' '),
-        });
-        return {
-          ...a,
-          status: getAssetStatusAfterReturn(a.status),
-          owner: 'IT department',
-          department: '',
-          ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],
-          updated: todayIso(),
-        };
+        if (returnedAssetCodes.has(a.code)) {
+          const returnEntry = createOwnershipEntry({
+            previousOwner: a.owner || details.assignee || loan.assignee || 'Borrower',
+            newOwner: 'IT department',
+            department: 'IT',
+            location: details.location || loan.location || a.location || 'IT Store',
+            reason: 'Device Returned',
+            notes: details.note || `Returned to IT department by ${details.assignee || loan.assignee || 'borrower'}`,
+            date: timestamp.replace('T', ' '),
+          });
+          return {
+            ...a,
+            status: getAssetStatusAfterReturn(a.status),
+            owner: 'IT department',
+            department: '',
+            ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],
+            updated: todayIso(),
+          };
+        }
+        if (a.code === expectedAssetCode && expectedAssetCode && !returnedAssetCodes.has(expectedAssetCode)) {
+          return {
+            ...a,
+            status: isBusinessTraveler(loan.assigneeType) ? 'On loan' : 'Assigned',
+            owner: loan.assignee || a.owner,
+            updated: todayIso(),
+          };
+        }
+        return a;
       });
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });

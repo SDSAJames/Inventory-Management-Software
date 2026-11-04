@@ -56,11 +56,13 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ### Loan import matching and cleanup
 
-**Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; the Active tab covers equipment already handed over, and employee records display Assigned. The existing `/loans` address continues to open this page.
+**Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; picked-up employee equipment appears under **Assigned**, while business-traveler checkouts appear under **Loans**. Return records capture the laptop asset number actually received, including missing or substituted laptops. The existing `/loans` address continues to open this page.
 
 Employee and traveler requests without a pickup remain in the Assignments & Pickups **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.
 
 For an outstanding picked-up loan, expand its row and choose **Transfer equipment**. Select all items or individual items and quantities, then enter the new owner's Knox ID and optional name. Transfers create a linked custody record and ownership history for registered devices. Remaining items stay with the original owner; a fully transferred source is archived with a **Transferred** label. Transfers do not record a physical return.
+
+Choose **Recipient / pickup schedule** to fulfill an existing schedule by transfer. Review the loaded recipient and dates before confirming. Business travelers require valid start and end dates, with the end on or after the start. The selected schedule receives the actual transferred equipment and pickup timestamp, clears its readiness flag, and moves out of Scheduled with **Pickup by transfer** shown beside the pickup time. Planned quantities are replaced by the actual handover; a different preselected PC or monitor must be corrected on the schedule first.
 
 Repeat loan imports match existing IDs first, then asset and Knox ID/name with start, pickup, or return dates. If only one side lacks start and pickup dates, an asset/person match is used only when there is a single candidate. Blank imported start dates remain blank.
 
