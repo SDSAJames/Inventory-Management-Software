@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.5.0** |
+| **Specification Version** | **v1.6.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 2, 2026 |
+| **Release Date** | November 4, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -199,17 +199,20 @@ interface Loan {
   pickupDate?: string;             // May be supplied on creation to record handover directly
   endDate: string;                 // Scheduled return due date ("YYYY-MM-DD")
   returnDate?: string;             // Actual date hardware was returned to IT
-  status: LoanStatus;              // "Scheduled" | "Active" | "Returned" | "Overdue"
+  status: LoanStatus;              // "Scheduled" | "Active" | "Returned" | "Overdue" | "Transferred"
   equipment: EquipmentChecklist;   // Itemized accessories
-  returnedEquipment?: EquipmentChecklist; // Actual returned quantities; present for partial returns
+  returnedEquipment?: EquipmentChecklist; // Actual returned quantities, displayed for any recorded return
   returnStatus?: 'Partial' | 'Complete'; // Return completeness independently of loan due date/status
   readyForPickup?: boolean;        // Scheduled loan preparation flag
   others?: string;                 // Miscellaneous items
   note?: string;                   // Custody instructions
-  isArchived?: boolean;            // Soft-archive flag for returned loans
+  isArchived?: boolean;            // Soft-archive flag for returned or fully transferred loans
 }
 
 interface EquipmentChecklist {
+  Laptop?: string;                 // Actual PC asset number; may be blank during scheduling
+  RequestedPC?: boolean;           // PC requested before asset assignment
+  RequestedMonitor?: boolean;      // Monitor requested before asset assignment
   Adapter: number;                 // Power adapter count
   Cable: number;                   // Power cable count
   Dongle: number;                  // USB-C / Display adapter count
@@ -320,6 +323,14 @@ The Assets table allows instantaneous ownership reassignment by clicking directl
    - Persists state to the shared SQLite database via `api.assets.transfer` (recording audit entry in `ownership_history` and logging to `audit_logs`), updates local storage cache, and broadcasts toast notification.
 
 ---
+
+### 5.1 Loan Equipment Transfers
+
+`POST /api/loans/:id/transfer` accepts `knoxId`, optional `assignee`, and a `selection` object keyed by equipment storage names. The source must have a pickup date and remain outstanding. The new Knox ID must differ from the source owner. `shared/loanTransfer.js` validates device identities and quantities and splits transferred equipment from remaining custody.
+
+`server/lib/loanTransfer.js` uses a SQLite savepoint to create the destination loan, update the source, and record ownership changes for registered PCs and monitors. Any failure rolls back all those writes. Source and destination notes link the records and retain transferred item values. A fully transferred source uses stored status `Transferred` and `isArchived = 1`; its table label remains Transferred in the archived lifecycle group. The transfer leaves actual return dates blank. The destination records pickup at the transfer time and inherits the source rental context and due date.
+
+`LoanTransferForm.jsx` provides select-all, individual item selection, and numeric quantities. It requires server success and reloads the shared database before dismissing. `Confirm pickup` persists the selected PC code in both the loan asset reference and equipment checklist. Requested PC and monitor flags are retained across schedule, full edit, and pickup; rental location inputs accept Directory suggestions or manual text.
 
 ## 6. Native OpenXML Spreadsheet Engine (`lib/xlsx.js`)
 

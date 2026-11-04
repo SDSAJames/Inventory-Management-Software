@@ -6,6 +6,13 @@ import { PATCH_HISTORY } from '../src/data/patchHistory.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const version = packageMetadata.version;
+const releaseDate = new Intl.DateTimeFormat('en-US', {
+  month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+}).format(new Date(`${PATCH_HISTORY[0].date}T00:00:00Z`));
+
+function syncReleaseDate(content) {
+  return content.replace(/(\*\*Release Date\*\* \| )[^|]+(?=\|)/, `$1${releaseDate} `);
+}
 
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -49,7 +56,7 @@ function renderPatchNotes() {
 const readme = read('README.md');
 write('README.md', readme.replace(/^(# StarPlus Energy Asset Management System \()v?[^)]+\)/m, `$1v${version})`));
 
-const designDocument = read('Software Design Document.md');
+const designDocument = syncReleaseDate(read('Software Design Document.md'));
 const withDesignVersion = designDocument.replace(/(\*\*Document Version\*\* \| \*\*)v?[^*]+(\*\*)/, `$1v${version}$2`);
 write(
   'Software Design Document.md',
@@ -59,7 +66,7 @@ write(
   ),
 );
 
-const technicalSpec = read('Technical Specification.md')
+const technicalSpec = syncReleaseDate(read('Technical Specification.md'))
   .replace(/(\*\*Specification Version\*\* \| \*\*)v?[^*]+(\*\*)/, `$1v${version}$2`)
   .replace(/Project manifest \(v[^)]+\)/, 'Project manifest (version sourced from package.json)')
   .replace(/APP_VERSION \('[^']+'\)/, `APP_VERSION (derived from package.json)`);

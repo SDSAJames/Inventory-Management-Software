@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.5.0** |
+| **Document Version** | **v1.6.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 2, 2026 |
+| **Release Date** | November 4, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -300,6 +300,10 @@ The frontend application provides eight core operational views accessed via the 
    - Knox ID is the only required field in the add form; full name and PC assignment are optional. An optional pickup date records a handover directly.
    - PC search includes Laptop, MES PC, and PC categories; monitor search accepts registered Monitor/Monitors assets. The main table displays PC asset numbers instead of sequence numbers.
    - Active, Scheduled, Overdue, Returned, and Unreturned (partial return) custody management.
+   - Employee and traveler requests without pickup dates remain in Scheduled. Scheduled rows show Assignee and omit pickup date, return date, and status columns.
+   - Rental location accepts typed values with Directory suggestions. Full editing and pickup retain the requested PC and monitor checkboxes; pickup assigns actual PC and monitor asset numbers.
+   - Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items.
+   - Expand a picked-up outstanding loan to transfer all items or selected quantities to another owner. A different Knox ID is required; assignee name is optional. Transfers create linked custody records and device ownership history, retain remaining equipment on the source, and archive fully transferred sources as Transferred without a physical return.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Search across loan fields with selectable field and status filters.
    - Editable accessory checklist and supporting loan details during pickup and return.
@@ -313,13 +317,14 @@ The frontend application provides eight core operational views accessed via the 
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
-   - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, Head Office) with one-click filtering.
+   - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Department) with one-click filtering.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
 6. **Asset & Organization Directory (`/directory`)**:
    - Manage asset categories, statuses, departments, and locations. Custom statuses can also be added from asset forms.
    - Items referenced by assets are marked in use and cannot be edited or deleted; unused values remain manageable.
+   - IT Department is the default location. Legacy Head Office values are normalized during startup, import, and restore. Under repair assets automatically use service center, with the location locked in single and batch asset forms while that status is selected.
 7. **Data Exchange (`/exchange`)**:
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
    - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
@@ -346,4 +351,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.5.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.6.0**.

@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.5.0)
+# StarPlus Energy Asset Management System (v1.6.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.

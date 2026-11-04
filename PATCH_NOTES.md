@@ -6,6 +6,45 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] — 2026-11-04
+
+### Loan Equipment Transfers & Complete Pickup Workflows
+
+Transfer all or part of a loan to another owner, carry equipment requests through pickup, and share business rules across the client and server.
+
+#### Highlights
+- Equipment transfers: Select all items or individual quantities for a new owner, with linked loan records and device ownership history.
+- Scheduled pickups: Include employee schedules, show assignees, and hide pickup, return, and status columns during scheduling.
+- Pickup details: Edit requested PC and monitor flags and select actual device asset numbers at handover.
+- Locations: Use IT Department as the default and automatically assign service center to assets under repair.
+
+#### Loan Scheduling, Pickup & Returns
+
+- Keep employee and traveler records without pickup dates in Scheduled, including requests whose planned dates have passed.
+- Display Assignee in the loan table and hide pickup date, return date, and status columns in the Scheduled tab.
+- Accept manually typed rental locations alongside Directory suggestions in the add and full edit forms.
+- Carry requested PC and monitor flags into full details and Confirm pickup; provide PC and monitor asset selectors at handover.
+- Save the selected PC asset number during pickup and wait for the server response before confirming success.
+- Display all recorded returned quantities, including USB Dongle, monitor, Ethernet cable, and other items.
+
+#### Equipment Transfers
+
+- Expand a picked-up outstanding loan and choose Transfer equipment; enter a different owner Knox ID and optional name.
+- Select all equipment or specific items and quantities. Retain remaining items on the source loan and create a linked custody record for transferred items.
+- Update ownership history for registered PCs and monitors. Archive fully transferred source records with a Transferred label without recording a physical return.
+- Validate available quantities and apply loan, asset, and ownership history updates atomically, rolling back on failure.
+
+#### Shared Rules, Location Defaults & Reliability
+
+- Extract shared loan rules, equipment schemas, import mappings, calendar helpers, form controls, Directory panels, and server serializers.
+- Rename legacy Head Office locations to IT Department on startup, import, and restore; merge duplicate default entries.
+- Automatically register service center and assign it to Under repair assets across single and batch edits, imports, restores, and reconciliation.
+- Preserve repair state during ongoing loan edits and returns; an explicit new pickup follows the handover transition.
+- Preserve physical spreadsheet column positions when headers contain blanks and handle custom status names safely during export.
+- Add regression checks for shared behavior, loan transfers, quantity conservation, ownership history, and transactional rollback.
+
+---
+
 ## [1.5.0] — 2026-11-02
 
 ### Flexible Loan Recording, Reliable Imports & Restore History
