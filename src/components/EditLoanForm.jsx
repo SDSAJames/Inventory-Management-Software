@@ -1,60 +1,51 @@
 import { useState } from 'react';
-import { IP_PREFIX } from '../lib/constants';
-import { validOctet, nowLocalIso } from '../lib/utils';
+import { nowLocalIso } from '../lib/utils';
+import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from '../lib/ipAddress';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { buildLoanEquipment, isBusinessTraveler, LOAN_EQUIPMENT_FIELDS } from '../lib/loanEquipment';
+import { buildLoanEquipment, equipmentToForm, isBusinessTraveler } from '../lib/loanEquipment';
 import AssetAutocomplete from './AssetAutocomplete';
+import DirectorySelect from './DirectorySelect';
+import LoanEquipmentFields from './LoanEquipmentFields';
+import IPAddressFields from './IPAddressFields';
 
 export default function EditLoanForm({ loanId, onClose }) {
   const { db, updateLoan } = useDb();
-  const toast = useToast();
-
   const loan = db.loans.find((l) => l.id === loanId);
-  if (!loan) return null;
+  return loan ? <LoanEditor key={loan.id} loan={loan} db={db} updateLoan={updateLoan} onClose={onClose} /> : null;
+}
 
+function LoanEditor({ loan, db, updateLoan, onClose }) {
+  const toast = useToast();
   const equipment = loan.equipment || {};
-  const rawIp = String(loan.ip || '').replace(/^105\.101\./, '');
-  const ipParts = rawIp.split('.');
 
   const [form, setForm] = useState({
     assetCode: loan.assetCode || '',
     assignee: loan.assignee || loan.borrower || '',
     assigneeType: loan.assigneeType || 'Business traveler',
     knoxId: loan.knoxId || '',
-    ipSubnet: ipParts[0] || '',
-    ipNumber: ipParts[1] || '',
+    ...ipAddressToForm(loan.ip),
     startDate: (loan.startDate || loan.loanDate || '').slice(0, 10),
     endDate: isBusinessTraveler(loan.assigneeType) ? (loan.endDate || loan.dueDate || '').slice(0, 10) : '',
     pickupDate: loan.pickupDate || '',
     returnDate: loan.returnDate || loan.returnedDate || '',
     location: loan.location || '',
     department: loan.department || '',
-    adapter: equipment.Adapter || '',
-    cable: equipment.Cable || '',
-    dongle: equipment.Dongle || '',
-    keyboard: equipment.Keyboard || '',
-    mouse: equipment.Mouse || '',
-    monitor: equipment.Monitor || '',
-    ethernetCable: equipment['Ethernet cable'] || '',
+    ...equipmentToForm(equipment),
     others: loan.others || '',
     note: loan.note || loan.purpose || '',
   });
 
-  const set = (field) => (e) => {
-    const value = e.target.value;
+  const updateField = (field, value) => {
     setForm((prev) => ({
       ...prev,
       [field]: value,
       ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
     }));
   };
+  const set = (field) => (event) => updateField(field, event.target.value);
 
   const stampNow = (field) => () => setForm((prev) => ({ ...prev, [field]: nowLocalIso() }));
-
-  const ipInvalid =
-    (form.ipSubnet && !validOctet(form.ipSubnet)) ||
-    (form.ipNumber && !validOctet(form.ipNumber));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -63,7 +54,7 @@ export default function EditLoanForm({ loanId, onClose }) {
       return toast('Knox ID is required');
     }
 
-    if (!validOctet(form.ipSubnet) || !validOctet(form.ipNumber)) {
+    if (isIpAddressInvalid(form)) {
       return toast('IP subnet and number must each be between 0 and 255');
     }
 
@@ -71,9 +62,7 @@ export default function EditLoanForm({ loanId, onClose }) {
       return toast('End date cannot be earlier than start date');
     }
 
-    const ip = form.ipSubnet && form.ipNumber
-      ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
-      : '';
+    const ip = buildIpAddress(form);
 
     const changes = {
       assetCode: form.assetCode,
@@ -101,7 +90,7 @@ export default function EditLoanForm({ loanId, onClose }) {
       location: form.location,
     };
 
-    updateLoan(loanId, changes, assetUpdates);
+    updateLoan(loan.id, changes, assetUpdates);
     toast('Loan updated');
     onClose();
   };
@@ -138,37 +127,9 @@ export default function EditLoanForm({ loanId, onClose }) {
           </div>
 
           {/* IP address */}
-          <div className="ip-field">
-            <label>IP address</label>
-            <div className="ip-control">
-              <span>{IP_PREFIX}</span>
-              <input
-                className={ipInvalid && form.ipSubnet ? 'invalid-input' : ''}
-                maxLength={3}
-                value={form.ipSubnet}
-                onChange={set('ipSubnet')}
-                placeholder="subnet"
-              />
-              <span className="ip-separator">.</span>
-              <input
-                className={ipInvalid && form.ipNumber ? 'invalid-input' : ''}
-                maxLength={3}
-                value={form.ipNumber}
-                onChange={set('ipNumber')}
-                placeholder="number"
-              />
-              {ipInvalid && (
-                <div className="ip-warning visible" role="alert">
-                  Each IP value must be between 0 and 255.
-                </div>
-              )}
-            </div>
-          </div>
+          <IPAddressFields form={form} onChange={updateField} />
 
-          <div className="field">
-            <label htmlFor="location">Rental location</label>
-            <input id="location" value={form.location} onChange={set('location')} />
-          </div>
+          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} preserveCurrentValue />
           <div className="field">
             <label htmlFor="startDate">Start date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
@@ -251,7 +212,7 @@ export default function EditLoanForm({ loanId, onClose }) {
                 <AssetAutocomplete
                   id="edit-assetCode"
                   value={form.assetCode}
-                  onChange={(val) => setForm((prev) => ({ ...prev, assetCode: val }))}
+                  onChange={(value) => updateField('assetCode', value)}
                   onSelectAsset={(asset) => {
                     setForm((prev) => ({
                       ...prev,
@@ -263,12 +224,7 @@ export default function EditLoanForm({ loanId, onClose }) {
                   placeholder="e.g. 432 or SPE-4321..."
                 />
               </div>
-              {LOAN_EQUIPMENT_FIELDS.map(([label, key]) => (
-                <div className="equipment-field" key={key}>
-                  <label htmlFor={`edit-${key}`}>{label}</label>
-                  <input id={`edit-${key}`} value={form[key]} onChange={set(key)} />
-                </div>
-              ))}
+              <LoanEquipmentFields form={form} idPrefix="edit-" onChange={updateField} />
             </div>
           </div>
 

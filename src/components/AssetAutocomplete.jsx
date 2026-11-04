@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useDb } from '../hooks/useDb';
 import { isAssetAssignable, isItDepartment } from '../lib/assetIntegrity';
+import { findAssetByCode, matchesAssetCategory, PC_CATEGORIES } from '../lib/assetCategories';
 
 function highlightMatch(text, query) {
   if (!query || !text) return text;
@@ -17,13 +18,6 @@ function highlightMatch(text, query) {
       {original.slice(idx + q.length)}
     </>
   );
-}
-
-function matchesCategory(assetCategory, categoryFilter) {
-  if (!categoryFilter) return true;
-  const normalize = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-  const allowed = (Array.isArray(categoryFilter) ? categoryFilter : [categoryFilter]).map(normalize);
-  return allowed.includes(normalize(assetCategory));
 }
 
 export default function AssetAutocomplete({
@@ -65,12 +59,12 @@ export default function AssetAutocomplete({
     if (!q) {
       return all
         .filter((a) => {
-          if (!matchesCategory(a.category, categoryFilter)) return false;
+          if (!matchesAssetCategory(a.category, categoryFilter)) return false;
           return isAssetAssignable(a);
         })
         .sort((a, b) => {
-          const aPc = ['laptop', 'mes pc', 'pc'].includes(String(a.category || '').trim().toLowerCase());
-          const bPc = ['laptop', 'mes pc', 'pc'].includes(String(b.category || '').trim().toLowerCase());
+          const aPc = matchesAssetCategory(a.category, PC_CATEGORIES);
+          const bPc = matchesAssetCategory(b.category, PC_CATEGORIES);
           if (aPc && !bPc) return -1;
           if (bPc && !aPc) return 1;
           return (a.code || '').localeCompare(b.code || '');
@@ -80,7 +74,7 @@ export default function AssetAutocomplete({
 
     // Match query against code (asset number), model, serial, category, holder
     const filtered = all.filter((a) => {
-      if (!matchesCategory(a.category, categoryFilter)) return false;
+      if (!matchesAssetCategory(a.category, categoryFilter)) return false;
       const code = String(a.code || '').toLowerCase();
       const model = String(a.model || '').toLowerCase();
       const serial = String(a.serial || '').toLowerCase();
@@ -124,8 +118,8 @@ export default function AssetAutocomplete({
         if (aAssignable && !bAssignable) return -1;
         if (bAssignable && !aAssignable) return 1;
 
-        const aPc = ['laptop', 'mes pc', 'pc'].includes(String(a.category || '').trim().toLowerCase());
-        const bPc = ['laptop', 'mes pc', 'pc'].includes(String(b.category || '').trim().toLowerCase());
+        const aPc = matchesAssetCategory(a.category, PC_CATEGORIES);
+        const bPc = matchesAssetCategory(b.category, PC_CATEGORIES);
         if (aPc && !bPc) return -1;
         if (bPc && !aPc) return 1;
 
@@ -137,15 +131,11 @@ export default function AssetAutocomplete({
   // Check if current value matches an exact asset
   const matchedAsset = useMemo(() => {
     if (!query) return null;
-    return matches.find(
-      (a) => String(a.code || '').trim().toLowerCase() === query.toLowerCase()
-    );
+    return findAssetByCode(matches, query);
   }, [matches, query]);
 
   // Check if the query itself is not an existing asset code (so we offer "Use custom")
-  const hasExactCodeInInventory = (db.assets || []).some(
-    (asset) => String(asset.code || '').trim().toLowerCase() === query.toLowerCase()
-  );
+  const hasExactCodeInInventory = Boolean(findAssetByCode(db.assets, query));
 
   const allowCustom = allowCustomProp ?? !categoryFilter;
   const canUseCustom = allowCustom && !hasExactCodeInInventory;

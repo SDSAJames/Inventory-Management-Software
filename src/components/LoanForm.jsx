@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { IP_PREFIX } from '../lib/constants';
-import { todayIso, validOctet } from '../lib/utils';
+import { todayIso } from '../lib/utils';
+import { buildIpAddress, isIpAddressInvalid } from '../lib/ipAddress';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { buildLoanEquipment, isBusinessTraveler, LOAN_EQUIPMENT_FIELDS } from '../lib/loanEquipment';
+import { buildLoanEquipment, equipmentToForm, isBusinessTraveler } from '../lib/loanEquipment';
+import { findAssetByCode, matchesAssetCategory, PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import AssetAutocomplete from './AssetAutocomplete';
+import DirectorySelect from './DirectorySelect';
+import LoanEquipmentFields from './LoanEquipmentFields';
+import IPAddressFields from './IPAddressFields';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
 export default function LoanForm({ onClose, defaultAssigneeType = 'Business traveler', onSuccess }) {
   const { db, addLoan } = useDb();
@@ -24,13 +29,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     endDate: '',
     location: '',
     department: (db.departments || []).includes('Operations') ? 'Operations' : '',
-    adapter: '',
-    cable: '',
-    dongle: '',
-    keyboard: '',
-    mouse: '',
-    monitor: '',
-    ethernetCable: '',
+    ...equipmentToForm(),
     others: '',
     note: '',
   });
@@ -38,24 +37,27 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
 
-  const set = (field) => (e) => {
-    const val = e.target.value;
+  const updateField = (field, val) => {
     setForm((prev) => ({
       ...prev,
       [field]: val,
       ...(field === 'assigneeType' && !isBusinessTraveler(val) ? { endDate: '' } : {}),
+      ...(field === 'assetCode' && val ? { requestPc: true } : {}),
+      ...(field === 'monitor' && val ? { requestMonitor: true } : {}),
     }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
+    const errorKey = field === 'ipSubnet' || field === 'ipNumber' ? 'ip' : field;
+    if (errors[errorKey]) {
+      setErrors((prev) => ({ ...prev, [errorKey]: null }));
     }
     if (submitError) {
       setSubmitError('');
     }
   };
-
-  const ipInvalid =
-    (form.ipSubnet && !validOctet(form.ipSubnet)) ||
-    (form.ipNumber && !validOctet(form.ipNumber));
+  const set = (field) => (event) => updateField(field, event.target.value);
+  const setEquipmentRequest = (requestField, assetField) => (event) => {
+    const checked = event.target.checked;
+    setForm((prev) => ({ ...prev, [requestField]: checked, ...(!checked ? { [assetField]: '' } : {}) }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -67,20 +69,15 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
     if (!knoxId) newErrors.knoxId = 'Knox ID is required';
 
-    const existingPcCode = (db.assets || []).find((asset) =>
-      String(asset.code || '').trim().toLowerCase() === assetCode.toLowerCase()
-    );
-    const existingPcCategory = String(existingPcCode?.category || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (existingPcCode && !['laptop', 'mespc', 'pc'].includes(existingPcCategory)) {
+    const existingPcCode = findAssetByCode(db.assets, assetCode);
+    if (existingPcCode && !matchesAssetCategory(existingPcCode.category, PC_CATEGORIES)) {
       newErrors.assetCode = 'Select a Laptop or MES PC asset';
     }
 
     const monitorCode = form.monitor.trim();
     if (monitorCode) {
-      const selectedMonitor = (db.assets || []).some((asset) =>
-        String(asset.code || '').trim().toLowerCase() === monitorCode.toLowerCase() &&
-        ['monitor', 'monitors'].includes(String(asset.category || '').trim().toLowerCase())
-      );
+      const monitorAsset = findAssetByCode(db.assets, monitorCode);
+      const selectedMonitor = monitorAsset && matchesAssetCategory(monitorAsset.category, MONITOR_CATEGORIES);
       if (!selectedMonitor) newErrors.monitor = 'Select a monitor from the matching asset list';
     }
 
@@ -89,7 +86,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       newErrors.endDate = 'Due date cannot be earlier than start date';
     }
 
-    if ((form.ipSubnet || form.ipNumber) && (!validOctet(form.ipSubnet) || !validOctet(form.ipNumber))) {
+    if (isIpAddressInvalid(form)) {
       newErrors.ip = 'IP subnet and number must each be between 0 and 255';
     }
 
@@ -107,9 +104,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
     setSubmitError('');
 
-    const ip = form.ipSubnet && form.ipNumber
-      ? `${IP_PREFIX}${form.ipSubnet}.${form.ipNumber}`
-      : '';
+    const ip = buildIpAddress(form);
 
     // A pickup date records a handover now; leaving it blank keeps this as a scheduled loan.
     const loanData = {
@@ -124,7 +119,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       dueDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
       pickupDate: form.pickupDate,
       returnDate: '',
-      location: form.location || 'Head Office',
+      location: form.location || DEFAULT_LOCATION,
       department: form.department,
       equipment: {
         ...buildLoanEquipment(form, assetCode),
@@ -138,7 +133,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     const assetUpdates = assetCode && form.pickupDate
       ? {
           code: assetCode,
-          location: form.location || 'Head Office',
+          location: form.location || DEFAULT_LOCATION,
           ...(form.pickupDate ? { owner: assignee, status: 'On loan' } : {}),
         }
       : null;
@@ -220,36 +215,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>
 
           {/* IP address */}
-          <div className="ip-field">
-            <label>IP address <span className="field-hint">(Optional)</span></label>
-            <div className="ip-control">
-              <span>{IP_PREFIX}</span>
-              <input
-                className={ipInvalid && form.ipSubnet ? 'invalid-input' : ''}
-                inputMode="numeric"
-                maxLength={3}
-                placeholder="subnet"
-                aria-label="IP subnet"
-                value={form.ipSubnet}
-                onChange={set('ipSubnet')}
-              />
-              <span className="ip-separator">.</span>
-              <input
-                className={ipInvalid && form.ipNumber ? 'invalid-input' : ''}
-                inputMode="numeric"
-                maxLength={3}
-                placeholder="number"
-                aria-label="IP number"
-                value={form.ipNumber}
-                onChange={set('ipNumber')}
-              />
-              {ipInvalid && (
-                <div className="ip-warning visible" role="alert">
-                  Each IP value must be between 0 and 255.
-                </div>
-              )}
-            </div>
-          </div>
+          <IPAddressFields form={form} optional onChange={updateField} />
 
           {/* Dates */}
           <div className="field">
@@ -278,40 +244,16 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>
 
           {/* Location & department */}
-          <div className="field">
-            <label htmlFor="location">Rental location</label>
-            <select
-              id="location"
-              value={form.location}
-              onChange={set('location')}
-            >
-              <option value="">Select rental location</option>
-              {(db.locations || []).map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="department">Department</label>
-            <select
-              id="department"
-              value={form.department}
-              onChange={set('department')}
-            >
-              <option value="">Select department</option>
-              {(db.departments || []).map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
+          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />
+          <DirectorySelect id="department" label="Department" options={db.departments} value={form.department} onChange={set('department')} />
 
           {/* Equipment Checklist */}
           <div className="field full">
             <div className="equipment-header-row">
               <fieldset className="loan-equipment-requests">
                 <legend>Equipment requested</legend>
-                <label><input type="checkbox" checked={form.requestPc} onChange={(event) => setForm((prev) => ({ ...prev, requestPc: event.target.checked, ...(!event.target.checked ? { assetCode: '' } : {}) }))} /> Laptop / PC</label>
-                <label><input type="checkbox" checked={form.requestMonitor} onChange={(event) => setForm((prev) => ({ ...prev, requestMonitor: event.target.checked, ...(!event.target.checked ? { monitor: '' } : {}) }))} /> Monitor</label>
+                <label><input type="checkbox" checked={form.requestPc} onChange={setEquipmentRequest('requestPc', 'assetCode')} /> Laptop / PC</label>
+                <label><input type="checkbox" checked={form.requestMonitor} onChange={setEquipmentRequest('requestMonitor', 'monitor')} /> Monitor</label>
               </fieldset>
               <span className="equipment-header-hint">Asset numbers can be assigned later.</span>
             </div>
@@ -322,14 +264,11 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                 <label htmlFor="assetCode">PC asset number <span className="field-hint">(Optional)</span></label>
                 <AssetAutocomplete
                   id="assetCode"
-                  categoryFilter={['Laptop', 'MES PC', 'PC']}
+                  categoryFilter={PC_CATEGORIES}
                   allowCustom
                   value={form.assetCode}
                   hasError={Boolean(errors.assetCode)}
-                  onChange={(val) => {
-                    setForm((prev) => ({ ...prev, assetCode: val, requestPc: val ? true : prev.requestPc }));
-                    if (errors.assetCode) setErrors((prev) => ({ ...prev, assetCode: null }));
-                  }}
+                  onChange={(value) => updateField('assetCode', value)}
                   onSelectAsset={(asset) => {
                     setForm((prev) => ({
                       ...prev,
@@ -345,37 +284,12 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                 )}
               </div>
 
-              {LOAN_EQUIPMENT_FIELDS.map(([label, key, placeholder]) => (
-                <div className="equipment-field" key={key}>
-                  <label htmlFor={key === 'monitor' ? 'monitorAssetCode' : key}>{label}</label>
-                  {key === 'monitor' ? (
-                    <AssetAutocomplete
-                      id="monitorAssetCode"
-                      value={form.monitor}
-                      categoryFilter={['Monitor', 'Monitors']}
-                      hasError={Boolean(errors.monitor)}
-                      onChange={(value) => {
-                        setForm((prev) => ({ ...prev, monitor: value, requestMonitor: value ? true : prev.requestMonitor }));
-                        if (errors.monitor) setErrors((prev) => ({ ...prev, monitor: null }));
-                      }}
-                      onSelectAsset={(asset) => {
-                        setForm((prev) => ({ ...prev, monitor: asset.code }));
-                      }}
-                      placeholder="Search monitor asset number..."
-                    />
-                  ) : (
-                    <input
-                      id={key}
-                      placeholder={placeholder}
-                      value={form[key]}
-                      onChange={set(key)}
-                    />
-                  )}
-                  {key === 'monitor' && errors.monitor && (
-                    <span className="field-error-msg">⚠️ {errors.monitor}</span>
-                  )}
-                </div>
-              ))}
+              <LoanEquipmentFields
+                form={form}
+                errors={errors}
+                searchableMonitor
+                onChange={updateField}
+              />
             </div>
           </div>
 

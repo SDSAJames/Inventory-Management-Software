@@ -65,35 +65,13 @@ function canonicalize(value) {
  * row to match its later picked-up or imported returned version.
  */
 export function loanIdentityKeys(loan) {
-  const equipment = parseJsonValue(fieldValue(loan, FIELDS.equipment));
-  const asset = normalizedText(fieldValue(loan, FIELDS.assetCode) || equipment?.Laptop) || 'no-asset';
-  const people = [
-    ['knox', normalizedText(fieldValue(loan, FIELDS.knoxId))],
-    ['name', normalizedText(fieldValue(loan, FIELDS.assignee))],
-  ].filter(([, value]) => value);
-  if (!people.length) return [];
-
+  const parties = loanPartyKeys(loan);
   const dates = loanIdentityDates(loan);
-  const keys = [];
-
-  if (dates.length) {
-    for (const [type, person] of people) {
-      for (const date of new Set(dates)) {
-        keys.push(`${asset}|${type}:${person}|date:${date}`);
-      }
-      const returnDate = normalizedDate(fieldValue(loan, FIELDS.returnDate));
-      if (returnDate) keys.push(`${asset}|${type}:${person}|return:${returnDate}`);
-    }
-  } else {
-    const returnDate = normalizedDate(fieldValue(loan, FIELDS.returnDate));
-    const status = normalizedText(fieldValue(loan, FIELDS.status));
-    const undatedAnchor = returnDate ? `return:${returnDate}` : `undated:${status}`;
-    for (const [type, person] of people) {
-      keys.push(`${asset}|${type}:${person}|${undatedAnchor}`);
-    }
-  }
-
-  return keys;
+  const returnDate = normalizedDate(fieldValue(loan, FIELDS.returnDate));
+  const anchors = dates.map((date) => `date:${date}`);
+  if (returnDate) anchors.push(`return:${returnDate}`);
+  if (!anchors.length) anchors.push(`undated:${normalizedText(fieldValue(loan, FIELDS.status))}`);
+  return parties.flatMap((party) => anchors.map((anchor) => `${party}|${anchor}`));
 }
 
 function loanIdentityDates(loan) {

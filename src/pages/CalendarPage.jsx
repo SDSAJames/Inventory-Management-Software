@@ -1,3 +1,4 @@
+import { isLoanReturned } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
@@ -28,7 +29,7 @@ export default function CalendarPage() {
     let employees = 0;
 
     loans.forEach((l) => {
-      const isReturned = Boolean(l.returnDate || l.returnedDate || l.status === 'Returned' || l.isArchived);
+      const isReturned = isLoanReturned(l);
       const hasPickup = Boolean(l.pickupDate || l.status === 'Active');
       const isOverdue = !isReturned && isLoanOverdue(l);
 

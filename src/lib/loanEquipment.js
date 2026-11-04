@@ -1,25 +1,29 @@
-const RETURN_ITEMS = [
-  ['Adapter', 'Charging adapter'],
-  ['Cable', 'Charging cable'],
-  ['Dongle', 'Dongle / hub'],
-  ['Keyboard', 'Keyboard'],
-  ['Mouse', 'Mouse'],
-  ['Monitor', 'Monitor'],
-  ['Ethernet cable', 'Ethernet cable'],
+import { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
+export { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
+
+// Storage keys, form keys, labels, and return descriptions live together so
+// create/edit forms and return accounting use the same equipment schema.
+const EQUIPMENT_FIELDS = [
+  ['Adapter', 'adapter', 'Charging Adapter', 'e.g. 65W USB-C', 'Charging adapter'],
+  ['Cable', 'cable', 'Charging Cable', 'e.g. USB-C Cable', 'Charging cable'],
+  ['Dongle', 'dongle', 'Dongle', 'e.g. HDMI/USB-C Multiport', 'Dongle / hub'],
+  ['Keyboard', 'keyboard', 'Keyboard', 'e.g. Wireless keyboard', 'Keyboard'],
+  ['Mouse', 'mouse', 'Mouse', 'e.g. Optical mouse', 'Mouse'],
+  ['Monitor', 'monitor', 'Monitor asset number', 'e.g. SPE-MON-01', 'Monitor'],
+  ['Ethernet cable', 'ethernetCable', 'Ethernet Cable', 'e.g. Cat6 cable', 'Ethernet cable'],
 ];
 
-export const LOAN_EQUIPMENT_FIELDS = [
-  ['Charging Adapter', 'adapter', 'e.g. 65W USB-C'],
-  ['Charging Cable', 'cable', 'e.g. USB-C Cable'],
-  ['Dongle', 'dongle', 'e.g. HDMI/USB-C Multiport'],
-  ['Keyboard', 'keyboard', 'e.g. Wireless keyboard'],
-  ['Mouse', 'mouse', 'e.g. Optical mouse'],
-  ['Monitor asset number', 'monitor', 'e.g. SPE-MON-01'],
-  ['Ethernet Cable', 'ethernetCable', 'e.g. Cat6 cable'],
-];
+export const LOAN_EQUIPMENT_FIELDS = EQUIPMENT_FIELDS.map(([, key, label, placeholder]) => [label, key, placeholder]);
 
-export function isBusinessTraveler(assigneeType) {
-  return String(assigneeType || 'Business traveler').trim().toLowerCase() === 'business traveler';
+export function equipmentToForm(equipment = {}) {
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [formKey, equipment[storageKey] || '']));
+}
+
+/** Pickup/return controls use string values and retain explicit zero quantities. */
+export function equipmentQuantitiesToForm(equipment = {}, fallback = {}) {
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [
+    formKey, String(equipment[storageKey] ?? fallback[storageKey] ?? '0'),
+  ]));
 }
 
 export function getLoanEndDate(loan) {
@@ -36,13 +40,7 @@ export function normalizeLoanEndDate(loan) {
 export function buildLoanEquipment(form, assetCode) {
   return {
     Laptop: assetCode,
-    Adapter: form.adapter,
-    Cable: form.cable,
-    Dongle: form.dongle,
-    Keyboard: form.keyboard,
-    Mouse: form.mouse,
-    Monitor: form.monitor,
-    'Ethernet cable': form.ethernetCable,
+    ...Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [storageKey, form[formKey]])),
   };
 }
 
@@ -55,21 +53,15 @@ function itemCount(value) {
 
 export function buildReturnedEquipment(form) {
   return {
-    Adapter: form.adapter,
-    Cable: form.cable,
-    Dongle: form.dongle,
-    Keyboard: form.keyboard,
-    Mouse: form.mouse,
-    Monitor: form.monitor,
-    'Ethernet cable': form.ethernetCable,
+    ...Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [storageKey, form[formKey]])),
     Others: form.others || '',
   };
 }
 
 export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {
-  const missing = RETURN_ITEMS
+  const missing = EQUIPMENT_FIELDS
     .filter(([key]) => itemCount(equipment[key]) > itemCount(returnedEquipment[key]))
-    .map(([, label]) => label);
+    .map(([, , , , label]) => label);
   return missing;
 }
 

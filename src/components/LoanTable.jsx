@@ -1,3 +1,5 @@
+import { isLoanReturned } from '../../shared/loanRules.js';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { Fragment, useMemo, useState } from 'react';
 import { readableLoanDate, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
@@ -178,9 +180,7 @@ export default function LoanTable({
             const isEditing = editingId === loan.id;
             const isExpanded = expandedId === loan.id;
             const isSelected = selectable && selectedIds.has(loan.id);
-            const isReturned = Boolean(
-              loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived,
-            );
+            const isReturned = isLoanReturned(loan);
             const isPickedUp = Boolean(loan.pickupDate);
             const missingReturnItems = loan.returnStatus === 'Partial'
               ? getMissingReturnItems(loan.equipment || {}, loan.returnedEquipment || {})
@@ -487,7 +487,7 @@ export default function LoanTable({
                               <dt>Department:</dt>
                               <dd>{loan.department || '—'}</dd>
                               <dt>Rental location:</dt>
-                              <dd>{loan.location || asset?.location || 'Head Office'}</dd>
+                              <dd>{loan.location || asset?.location || DEFAULT_LOCATION}</dd>
                               <dt>Assigned IP:</dt>
                               <dd><code>{loan.ip || '—'}</code></dd>
                             </dl>

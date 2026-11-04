@@ -1,12 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
-import { buildReturnedEquipment, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
+import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
 import { useToast } from '../hooks/useToast';
-import { nowLocalIso, readableLoanDate, todayIso, statusClass, isLoanOverdue, getLoanStatus } from '../lib/utils';
+import { nowLocalIso, readableLoanDate, todayIso, statusClass } from '../lib/utils';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
 import { findLoanMatchIndex } from '../../shared/loanIdentity.js';
-import { LOAN_HEADERS } from '../lib/constants';
+import { LOAN_HEADERS, XLSX_MIME } from '../lib/constants';
 import { getLoanEndDate } from '../lib/loanEquipment';
 import { loansToRows } from '../lib/loanExcel';
 import LoanTable from '../components/LoanTable';
@@ -14,66 +14,8 @@ import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
-
-const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-const LOAN_SEARCH_FIELDS = [
-  'All fields',
-  'Assignee / Name',
-  'Knox ID',
-  'Laptop / Asset #',
-  'Location',
-  'IP address',
-  'Department',
-  'Note / Purpose',
-];
-
-function filterLoan(loan, term, field) {
-  if (!term || !term.trim()) return true;
-  const q = term.toLowerCase().trim();
-  const terms = q.split(/\s+/);
-
-  let searchable = '';
-  switch (field) {
-    case 'Assignee / Name':
-      searchable = loan.assignee || '';
-      break;
-    case 'Knox ID':
-      searchable = loan.knoxId || '';
-      break;
-    case 'Laptop / Asset #':
-      searchable = `${loan.assetCode || ''} ${loan.equipment?.Laptop || ''}`;
-      break;
-    case 'Location':
-      searchable = loan.location || '';
-      break;
-    case 'IP address':
-      searchable = loan.ip || '';
-      break;
-    case 'Department':
-      searchable = loan.department || '';
-      break;
-    case 'Note / Purpose':
-      searchable = `${loan.note || ''} ${loan.purpose || ''}`;
-      break;
-    case 'All fields':
-    default: {
-      const laptop = loan.assetCode || loan.equipment?.Laptop || '';
-      const accessories = loan.equipment
-        ? Object.entries(loan.equipment)
-            .map(([k, v]) => `${k} ${v}`)
-            .join(' ')
-        : '';
-      const status = getLoanStatus(loan);
-      const missingEquipment = getMissingReturnItems(loan.equipment || {}, loan.returnedEquipment || {}).join(' ');
-      searchable = `${loan.assignee || ''} ${loan.knoxId || ''} ${laptop} ${loan.location || ''} ${loan.ip || ''} ${loan.department || ''} ${loan.note || ''} ${loan.purpose || ''} ${loan.others || ''} ${loan.assigneeType || ''} ${status} ${accessories} ${loan.returnStatus || ''} ${missingEquipment}`;
-      break;
-    }
-  }
-
-  const lower = searchable.toLowerCase();
-  return terms.every((t) => lower.includes(t));
-}
+import { LOAN_SEARCH_FIELDS, groupLoans, filterLoanGroups, getLoanGroup } from '../lib/loanSelectors.js';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
 export default function LoansPage() {
   const { db, updateLoan, pickupLoan, setLoanReadyForPickup, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
@@ -100,13 +42,7 @@ export default function LoansPage() {
     startDate: '',
     endDate: '',
     location: '',
-    adapter: '1',
-    cable: '1',
-    dongle: '0',
-    keyboard: '0',
-    mouse: '0',
-    monitor: '0',
-    ethernetCable: '0',
+    ...equipmentQuantitiesToForm({}, { Adapter: 1, Cable: 1 }),
     others: '',
     note: '',
   });
@@ -116,13 +52,7 @@ export default function LoansPage() {
   const [returnTime, setReturnTime] = useState('');
   const [returnForm, setReturnForm] = useState({
     returnDate: '',
-    adapter: '1',
-    cable: '1',
-    dongle: '0',
-    keyboard: '0',
-    mouse: '0',
-    monitor: '0',
-    ethernetCable: '0',
+    ...equipmentQuantitiesToForm({}, { Adapter: 1, Cable: 1 }),
     others: '',
     note: '',
   });
@@ -137,123 +67,23 @@ export default function LoansPage() {
   // TXT / Excel import preview
   const [importPreview, setImportPreview] = useState(null);
 
-  // 1. Scheduled: Laptops scheduled for pickup (no pickup timestamp yet, not returned, not overdue)
-  const scheduledLoans = useMemo(
-    () =>
-      db.loans.filter(
-        (l) =>
-          !l.pickupDate &&
-          !l.returnDate &&
-          !l.returnedDate &&
-          l.status !== 'Returned' &&
-          !l.isArchived &&
-          !isLoanOverdue(l),
-      ),
-    [db.loans],
+  const loanGroups = useMemo(() => groupLoans(db.loans), [db.loans]);
+  const {
+    scheduled: scheduledLoans, loaned: loanedLoans, overdue: overdueLoans,
+    returned: returnedLoans, unreturned: unreturnedLoans,
+  } = loanGroups;
+  const filteredGroups = useMemo(
+    () => filterLoanGroups(loanGroups, searchTerm, searchField),
+    [loanGroups, searchTerm, searchField],
   );
-
-  // 2. Loaned: Laptops currently handed out & in use (has pickup timestamp, not returned, not overdue)
-  const loanedLoans = useMemo(
-    () =>
-      db.loans.filter(
-        (l) =>
-          Boolean(l.pickupDate) &&
-          !l.returnDate &&
-          !l.returnedDate &&
-          l.status !== 'Returned' &&
-          !l.isArchived &&
-          !isLoanOverdue(l),
-      ),
-    [db.loans],
-  );
-
-  // 3. Overdue: Laptops where end date has passed today and have not been returned
-  const overdueLoans = useMemo(
-    () => db.loans.filter(isLoanOverdue),
-    [db.loans],
-  );
-
-  // 4. Returned: Laptops that have been returned & archived
-  const returnedLoans = useMemo(
-    () =>
-      db.loans.filter(
-        (l) =>
-          Boolean(l.returnDate || l.returnedDate || l.status === 'Returned' || l.isArchived),
-      ),
-    [db.loans],
-  );
-
-  // Partial returns with equipment still outstanding, regardless of due date.
-  const unreturnedLoans = useMemo(
-    () => db.loans.filter((loan) => loan.returnStatus === 'Partial'),
-    [db.loans],
-  );
-
-  const filteredScheduledLoans = useMemo(
-    () => scheduledLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
-    [scheduledLoans, searchTerm, searchField],
-  );
-
-  const filteredLoanedLoans = useMemo(
-    () => loanedLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
-    [loanedLoans, searchTerm, searchField],
-  );
-
-  const filteredOverdueLoans = useMemo(
-    () => overdueLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
-    [overdueLoans, searchTerm, searchField],
-  );
-
-  const filteredReturnedLoans = useMemo(
-    () => returnedLoans.filter((l) => filterLoan(l, searchTerm, searchField)),
-    [returnedLoans, searchTerm, searchField],
-  );
-
-  const filteredUnreturnedLoans = useMemo(
-    () => unreturnedLoans.filter((loan) => filterLoan(loan, searchTerm, searchField)),
-    [unreturnedLoans, searchTerm, searchField],
-  );
-
-  const filteredAllLoans = useMemo(
-    () => db.loans.filter((l) => filterLoan(l, searchTerm, searchField)),
-    [db.loans, searchTerm, searchField],
-  );
-
+  const {
+    scheduled: filteredScheduledLoans, loaned: filteredLoanedLoans,
+    overdue: filteredOverdueLoans, returned: filteredReturnedLoans,
+    unreturned: filteredUnreturnedLoans, all: filteredAllLoans,
+  } = filteredGroups;
   const hasSearch = Boolean(searchTerm && searchTerm.trim());
-
-  const displayedLoans = useMemo(() => {
-    if (category === 'scheduled') return filteredScheduledLoans;
-    if (category === 'loaned') return filteredLoanedLoans;
-    if (category === 'overdue') return filteredOverdueLoans;
-    if (category === 'returned') return filteredReturnedLoans;
-    if (category === 'unreturned') return filteredUnreturnedLoans;
-    return filteredAllLoans;
-  }, [
-    category,
-    filteredScheduledLoans,
-    filteredLoanedLoans,
-    filteredOverdueLoans,
-    filteredReturnedLoans,
-    filteredUnreturnedLoans,
-    filteredAllLoans,
-  ]);
-
-  const totalCategoryCount = useMemo(() => {
-    if (category === 'scheduled') return scheduledLoans.length;
-    if (category === 'loaned') return loanedLoans.length;
-    if (category === 'overdue') return overdueLoans.length;
-    if (category === 'returned') return returnedLoans.length;
-    if (category === 'unreturned') return unreturnedLoans.length;
-    return db.loans.length;
-  }, [
-    category,
-    scheduledLoans.length,
-    loanedLoans.length,
-    overdueLoans.length,
-    returnedLoans.length,
-    unreturnedLoans.length,
-    db.loans.length,
-  ]);
+  const displayedLoans = getLoanGroup(filteredGroups, category);
+  const totalCategoryCount = getLoanGroup(loanGroups, category).length;
 
   /* ── Selection & Bulk operations (Loaned & Overdue tabs) ── */
 
@@ -308,14 +138,8 @@ export default function LoansPage() {
       pickupDate: nowLocalIso(),
       startDate: (loan.startDate || loan.loanDate || todayIso()).slice(0, 10),
       endDate: getLoanEndDate(loan).slice(0, 10),
-      location: loan.location || 'Head Office',
-      adapter: String(eq.Adapter ?? '1'),
-      cable: String(eq.Cable ?? '1'),
-      dongle: String(eq.Dongle ?? '0'),
-      keyboard: String(eq.Keyboard ?? '0'),
-      mouse: String(eq.Mouse ?? '0'),
-      monitor: String(eq.Monitor ?? '0'),
-      ethernetCable: String(eq['Ethernet cable'] ?? '0'),
+      location: loan.location || DEFAULT_LOCATION,
+      ...equipmentQuantitiesToForm(eq, { Adapter: 1, Cable: 1 }),
       others: loan.others || '',
       note: loan.note || loan.purpose || '',
     });
@@ -336,14 +160,7 @@ export default function LoansPage() {
       location: pickupForm.location,
       equipment: {
         ...(pickupTarget.equipment || {}),
-        Laptop: pickupTarget.assetCode,
-        Adapter: pickupForm.adapter,
-        Cable: pickupForm.cable,
-        Dongle: pickupForm.dongle,
-        Keyboard: pickupForm.keyboard,
-        Mouse: pickupForm.mouse,
-        Monitor: pickupForm.monitor,
-        'Ethernet cable': pickupForm.ethernetCable,
+        ...buildLoanEquipment(pickupForm, pickupTarget.assetCode),
       },
       others: pickupForm.others,
       note: pickupForm.note,
@@ -381,13 +198,7 @@ export default function LoansPage() {
       const returned = loan.returnedEquipment || eq;
       setReturnForm({
         returnDate: nowTime,
-        adapter: String(returned.Adapter ?? eq.Adapter ?? '0'),
-        cable: String(returned.Cable ?? eq.Cable ?? '0'),
-        dongle: String(returned.Dongle ?? eq.Dongle ?? '0'),
-        keyboard: String(returned.Keyboard ?? eq.Keyboard ?? '0'),
-        mouse: String(returned.Mouse ?? eq.Mouse ?? '0'),
-        monitor: String(returned.Monitor ?? eq.Monitor ?? '0'),
-        ethernetCable: String(returned['Ethernet cable'] ?? eq['Ethernet cable'] ?? '0'),
+        ...equipmentQuantitiesToForm(returned, eq),
         others: returned.Others ?? loan.others ?? '',
         note: loan.note || '',
       });
@@ -887,7 +698,7 @@ export default function LoansPage() {
               </div>
               <div className="loan-summary-item">
                 <span className="summary-label">Location</span>
-                <span className="summary-val">{pickupForm.location || 'Head Office'}</span>
+                <span className="summary-val">{pickupForm.location || DEFAULT_LOCATION}</span>
               </div>
               {pickupTarget.ip && (
                 <div className="loan-summary-item">
@@ -958,7 +769,7 @@ export default function LoansPage() {
                     id="modal-pickupLocation"
                     value={pickupForm.location}
                     onChange={(e) => updatePickupField('location', e.target.value)}
-                    placeholder="e.g. Head Office, Lab 2, etc."
+                    placeholder={`e.g. ${DEFAULT_LOCATION}, Lab 2, etc.`}
                   />
                 </div>
               </div>

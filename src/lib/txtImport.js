@@ -14,9 +14,12 @@
  *             Monitor | Ethernet cable | others | Note
  */
 
-import { STATUSES } from './constants.js';
 import { todayIso } from './utils.js';
 import { createOwnershipEntry } from './assetIntegrity.js';
+import { equipmentColumnIndexes, normalizeEquipmentStatus } from './equipmentSchema.js';
+import { createHeaderLookup, excelSerialDate, normalizeSpreadsheetHeader } from './spreadsheetValues.js';
+import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
 /* ── 1. Delimited Text Parser ──────────────────────────────── */
 
@@ -96,10 +99,9 @@ export function normalizeTextDate(raw) {
   }
 
   // 1. Check Excel numeric serial date (e.g. 46202 or 46189.474305555559)
-  const numeric = Number(str);
-  if (Number.isFinite(numeric) && numeric > 20000 && numeric < 100000) {
-    const date = new Date(Date.UTC(1899, 11, 30) + numeric * 86400000);
-    if (numeric % 1 !== 0) {
+  const date = excelSerialDate(str);
+  if (date) {
+    if (Number(str) % 1 !== 0) {
       return date.toISOString().slice(0, 16).replace('T', ' ');
     }
     return date.toISOString().slice(0, 10);
@@ -141,7 +143,7 @@ export function normalizeTextDate(raw) {
  */
 export function detectFileType(rows) {
   if (!rows || rows.length < 1) return 'unknown';
-  const headers = rows[0].map((h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+  const headers = rows[0].map(normalizeSpreadsheetHeader);
   if (headers.includes('hostname') || headers.includes('assetnumber') || headers.includes('issuedknoxid')) {
     return 'equipments';
   }
@@ -158,22 +160,6 @@ export function detectFileType(rows) {
 
 /* ── 4. Parse Equipment Master Records ─────────────────────── */
 
-const STATUS_ALIASES = {
-  issued: 'Assigned',
-  broken: 'Damaged',
-  loaned: 'On loan',
-  repair: 'Under repair',
-  disposed: 'Retired',
-  available: 'Available',
-};
-
-function normalizeEquipmentStatus(raw) {
-  const val = String(raw || '').trim().toLowerCase();
-  if (!val) return 'Available';
-  const direct = STATUSES.find((s) => s.toLowerCase() === val);
-  return direct || STATUS_ALIASES[val] || 'Available';
-}
-
 /**
  * Parses Equipment text rows into structured asset objects.
  */
@@ -182,24 +168,11 @@ export function parseEquipmentsText(rows, existingAssets = []) {
     throw new Error('Equipment text file contains no data rows');
   }
 
-  const rawHeaders = rows[0];
-  const normHeaders = rawHeaders.map((h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
-
-  const findIdx = (candidates) => {
-    return normHeaders.findIndex((h) => candidates.includes(h));
-  };
-
-  const colCode = findIdx(['hostname', 'assetcode', 'code', 'assetnumber', 'host']);
-  const colSerial = findIdx(['serialnumber', 'serial', 'sn']);
-  const colStatus = findIdx(['status']);
-  const colOwner = findIdx(['issuedknoxid', 'knoxid', 'holder', 'currentholder', 'owner']);
-  const colPurchaseDate = findIdx(['purchasedate', 'datepurchased']);
-  const colIssuedDate = findIdx(['issueddate', 'issuedate', 'date']);
-  const colCategory = findIdx(['category', 'assettype', 'type']);
-  const colModel = findIdx(['model']);
-  const colLocation = findIdx(['location', 'facility']);
-  const colDept = findIdx(['department', 'dept']);
-  const colNotes = findIdx(['notes', 'note']);
+  const {
+    code: colCode, serial: colSerial, status: colStatus, owner: colOwner,
+    purchaseDate: colPurchaseDate, issuedDate: colIssuedDate, category: colCategory,
+    model: colModel, location: colLocation, department: colDept, notes: colNotes,
+  } = equipmentColumnIndexes(rows[0]);
 
   if (colCode < 0) {
     throw new Error('Equipment file is missing required "Host Name" or "Asset Number" column');
@@ -226,11 +199,10 @@ export function parseEquipmentsText(rows, existingAssets = []) {
     const issuedDate = colIssuedDate >= 0 ? normalizeTextDate(row[colIssuedDate]) : '';
     const category = colCategory >= 0 ? String(row[colCategory] || '').trim() : 'Laptop';
     const model = colModel >= 0 ? String(row[colModel] || '').trim() : '';
-    const location = colLocation >= 0 ? String(row[colLocation] || '').trim() : 'Head Office';
+    const existing = existingMap.get(code.toLowerCase());
+    const location = getAssetLocation(status, colLocation >= 0 ? String(row[colLocation] || '').trim() : DEFAULT_LOCATION, existing?.location);
     const department = colDept >= 0 ? String(row[colDept] || '').trim() : '';
     const notes = colNotes >= 0 ? String(row[colNotes] || '').trim() : '';
-
-    const existing = existingMap.get(code.toLowerCase());
 
     if (existing) {
       // Update existing asset
@@ -256,7 +228,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         owner: owner || existing.owner,
         purchaseDate: purchaseDate || existing.purchaseDate || '',
         issuedDate: issuedDate || existing.issuedDate || '',
-        location: location || existing.location,
+        location,
         department: department || existing.department,
         notes: notes ? (existing.notes ? `${existing.notes} | ${notes}` : notes) : existing.notes,
         ownershipHistory,
@@ -319,14 +291,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     throw new Error('Loan text file contains no data rows');
   }
 
-  const rawHeaders = rows[0];
-  const normHeaders = rawHeaders.map((h) =>
-    String(h || '').toLowerCase().replace(/_?x000d_?/g, '').replace(/[^a-z0-9]/g, '')
-  );
-
-  const findIdx = (candidates) => {
-    return normHeaders.findIndex((h) => candidates.includes(h));
-  };
+  const findIdx = createHeaderLookup(rows[0]);
 
   const colNo = findIdx(['index', 'no', 'number', 'seq', 'id', 'colno']);
   const colName = findIdx(['name', 'assignee', 'borrower']);
@@ -397,9 +362,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
       knoxId = associatedAsset.owner;
     }
 
-    const location = (colLocation >= 0 ? String(row[colLocation] || '').trim() : '') ||
-      associatedAsset?.location ||
-      'Head Office';
+    const location = normalizeLocation((colLocation >= 0 ? String(row[colLocation] || '').trim() : '') || associatedAsset?.location);
 
     const ip = colIp >= 0 ? String(row[colIp] || '').trim() : '';
 

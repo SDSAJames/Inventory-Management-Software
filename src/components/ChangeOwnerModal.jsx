@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIsoWithSeconds } from '../lib/utils';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
 export default function ChangeOwnerModal({ asset, onClose, onDone }) {
   const { db, changeAssetOwner, transferReasons, addTransferReason, removeTransferReason } = useDb();
@@ -158,7 +159,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
             <input
               id="ownerLocation"
               list="locationsList"
-              placeholder="e.g. Head Office, Regional Office, IT Store"
+              placeholder={`e.g. ${DEFAULT_LOCATION}, Regional Office, IT Store`}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />

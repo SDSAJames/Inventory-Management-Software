@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { db, logAudit, reconcileAllAssetsInDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 
-export const assetsRouter = Router();
+import { todayIso } from '../lib/dates.js';
+import { formatAssetRow, formatOwnershipAuditRow } from '../lib/assetRows.js';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { normalizeLocation } from '../../shared/assetRules.js';
+import { assetLocationForWrite } from '../lib/assetLocations.js';
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
+export const assetsRouter = Router();
 
 // GET /api/assets
 assetsRouter.get('/', (req, res) => {
@@ -55,18 +57,7 @@ assetsRouter.get('/', (req, res) => {
   // Attach ownership history
   const getHistory = db.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC, created_at DESC');
 
-  const assets = rows.map((a) => ({
-    ...a,
-    purchaseDate: a.purchase_date || '',
-    ownershipHistory: getHistory.all(a.code).map((h) => ({
-      id: h.id,
-      previousOwner: h.previous_owner,
-      newOwner: h.new_owner,
-      date: h.date,
-      reason: h.reason,
-      notes: h.notes,
-    })),
-  }));
+  const assets = rows.map((asset) => formatAssetRow(asset, getHistory.all(asset.code)));
 
   return res.json({
     success: true,
@@ -112,16 +103,7 @@ assetsRouter.get('/history/all', (req, res) => {
   return res.json({
     success: true,
     total: history.length,
-    history: history.map((h) => ({
-      id: h.id,
-      assetCode: h.asset_code,
-      previousOwner: h.previous_owner,
-      newOwner: h.new_owner,
-      date: h.date,
-      reason: h.reason,
-      notes: h.notes,
-      createdAt: h.created_at,
-    })),
+    history: history.map(formatOwnershipAuditRow),
   });
 });
 
@@ -151,18 +133,7 @@ assetsRouter.get('/:id', (req, res) => {
 
   return res.json({
     success: true,
-    asset: {
-      ...asset,
-      purchaseDate: asset.purchase_date || '',
-      ownershipHistory: history.map((h) => ({
-        id: h.id,
-        previousOwner: h.previous_owner,
-        newOwner: h.new_owner,
-        date: h.date,
-        reason: h.reason,
-        notes: h.notes,
-      })),
-    },
+    asset: formatAssetRow(asset, history),
   });
 });
 
@@ -175,7 +146,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     model = '',
     serial = '',
     status = 'Available',
-    location = 'Head Office',
+    location = DEFAULT_LOCATION,
     owner = '',
     department = '',
     purchaseDate = '',
@@ -219,7 +190,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
       model,
       serial,
       effectiveStatus,
-      location,
+      assetLocationForWrite(db, effectiveStatus, location),
       owner,
       department,
       purchaseDate,
@@ -303,7 +274,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
       model,
       serial,
       status,
-      location,
+      assetLocationForWrite(db, status, location),
       owner,
       department,
       purchaseDate,
@@ -360,7 +331,7 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
   const {
     newOwner,
     department = '',
-    location = asset.location || 'Head Office',
+    location = asset.location || DEFAULT_LOCATION,
     reason = 'Direct transfer',
     notes = '',
     date = todayIso(),
@@ -398,7 +369,7 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
     `).run(
       newOwner.trim(),
       newOwner === 'IT department' ? '' : department.trim(),
-      location.trim(),
+      normalizeLocation(location),
       nextStatus,
       date,
       asset.id
@@ -457,7 +428,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
           WHERE id = ?
         `).run(
           status || null,
-          location || null,
+          assetLocationForWrite(db, status || asset.status, location || asset.location),
           category || null,
           department || null,
           condition || null,

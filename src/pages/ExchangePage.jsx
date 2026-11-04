@@ -1,42 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { LOAN_HEADERS } from '../lib/constants';
+import { LOAN_HEADERS, XLSX_MIME } from '../lib/constants';
 import { DEFAULT_ASSET_HEADERS, assetsToRows } from '../lib/assetExcel';
+import { equipmentFieldForHeader } from '../lib/equipmentSchema.js';
 import { loansToRows } from '../lib/loanExcel';
 import { statusClass, todayIso } from '../lib/utils';
 import { api } from '../lib/api';
 import { parseDelimitedText, detectFileType, parseEquipmentsText, parseLoansText } from '../lib/txtImport';
 import Modal from '../components/Modal';
-
-const EQUIPMENT_PREVIEW_FIELDS = {
-  assetnumber: 'code',
-  assetcode: 'code',
-  code: 'code',
-  hostname: 'code',
-  assettype: 'category',
-  category: 'category',
-  type: 'category',
-  serialnumber: 'serial',
-  serial: 'serial',
-  sn: 'serial',
-  purchasedate: 'purchaseDate',
-  datepurchased: 'purchaseDate',
-  status: 'status',
-  issuedknoxid: 'owner',
-  knoxid: 'owner',
-  holder: 'owner',
-  currentholder: 'owner',
-  owner: 'owner',
-  issueddate: 'issuedDate',
-  department: 'department',
-  dept: 'department',
-  location: 'location',
-  facility: 'location',
-  notes: 'notes',
-  note: 'notes',
-  model: 'model',
-};
 
 export default function ExchangePage() {
   const { db, setDb, importDb, mergeImportData } = useDb();
@@ -73,7 +45,7 @@ export default function ExchangePage() {
     const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx([LOAN_HEADERS, ...rows]);
     downloadBlob(
-      new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      new Blob([workbook], { type: XLSX_MIME }),
       `SPE_IT_Equipment_Loan_List_${todayIso()}.xlsx`,
     );
     toast('Reference-format .xlsx loan list exported');
@@ -84,7 +56,7 @@ export default function ExchangePage() {
     const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx(rows);
     downloadBlob(
-      new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      new Blob([workbook], { type: XLSX_MIME }),
       `SPE_Equipments_${todayIso()}.xlsx`,
     );
     toast(`${db.assets.length} equipment assets exported to .xlsx`);
@@ -490,7 +462,7 @@ export default function ExchangePage() {
                     {previewData.equipments.assets.map((a, i) => (
                       <tr key={i}>
                         {(previewData.equipmentSourceHeaders || []).map((header, columnIndex) => {
-                          const field = EQUIPMENT_PREVIEW_FIELDS[String(header).toLowerCase().replace(/[^a-z0-9]/g, '')];
+                          const field = equipmentFieldForHeader(header);
                           const value = field ? a[field] : '';
                           return (
                             <td key={`${header}-${columnIndex}`}>

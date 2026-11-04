@@ -4,7 +4,11 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
 import { seed } from '../../src/data/seed.js';
-import { deduplicateLoanRecords } from '../../shared/loanIdentity.js';
+import { getDuplicateLoanIds, removeDuplicateLoans } from '../lib/loanDuplicates.js';
+import { DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from '../../shared/referenceData.js';
+import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
+import { assetLocationForWrite, normalizeStoredLocations } from '../lib/assetLocations.js';
+import { isLoanReturned } from '../../shared/loanRules.js';
 
 // Ensure data directory exists
 const dbDir = path.dirname(config.dbPath);
@@ -19,15 +23,7 @@ export const db = new DatabaseSync(config.dbPath);
 db.exec('PRAGMA journal_mode = WAL;');
 db.exec('PRAGMA foreign_keys = ON;');
 
-export const DEFAULT_TRANSFER_REASONS = [
-  'Reassigned to new staff',
-  'New Hire onboarding',
-  'Department Transfer',
-  'Temporary Handover',
-  'Permanent Allocation',
-  'Returned to IT department',
-  'Repaired & Reassigned',
-];
+export { DEFAULT_TRANSFER_REASONS } from '../../shared/referenceData.js';
 
 export function initDatabase() {
   // 1. Users table
@@ -163,9 +159,8 @@ export function initDatabase() {
       name TEXT UNIQUE NOT NULL
     );
   `);
-  const defaultStatuses = ['Available', 'Assigned', 'On loan', 'Damaged', 'Under repair', 'Retired'];
   const insertStatus = db.prepare('INSERT OR IGNORE INTO asset_statuses (id, name) VALUES (?, ?)');
-  defaultStatuses.forEach((name) => insertStatus.run(`status-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, name));
+  DEFAULT_ASSET_STATUSES.forEach((name) => insertStatus.run(`status-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, name));
   const existingCategories = db.prepare('SELECT COUNT(*) as count FROM asset_categories').get().count;
   if (!existingCategories) {
     const categories = db.prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND TRIM(category) <> ''").all();
@@ -234,6 +229,7 @@ export function initDatabase() {
   `);
 
   seedDefaultData();
+  normalizeStoredLocations(db);
   removeExactDuplicateLoans();
 }
 
@@ -245,13 +241,10 @@ function removeExactDuplicateLoans() {
       AND COALESCE(NULLIF(return_date, ''), NULLIF(returned_date, '')) IS NOT NULL
       AND substr(start_date, 1, 10) > substr(COALESCE(NULLIF(return_date, ''), NULLIF(returned_date, '')), 1, 10)
   `).all();
-  const loans = db.prepare('SELECT * FROM loans ORDER BY created_at ASC, id ASC').all();
-  const retainedIds = new Set(deduplicateLoanRecords(loans).map((loan) => loan.id));
-  const duplicateIds = loans.filter((loan) => !retainedIds.has(loan.id)).map((loan) => loan.id);
+  const duplicateIds = getDuplicateLoanIds(db);
   if (!invalidStartDates.length && !duplicateIds.length) return;
 
   createSnapshot(`Before loan cleanup: ${duplicateIds.length} duplicate records and ${invalidStartDates.length} invalid start dates`);
-  const deleteLoan = db.prepare('DELETE FROM loans WHERE id = ?');
   db.exec('BEGIN TRANSACTION;');
   try {
     if (invalidStartDates.length) {
@@ -259,14 +252,9 @@ function removeExactDuplicateLoans() {
       for (const { id } of invalidStartDates) clearInvalidStartDate.run(id);
     }
 
-    const normalizedLoans = db.prepare('SELECT * FROM loans ORDER BY created_at ASC, id ASC').all();
-    const normalizedRetainedIds = new Set(deduplicateLoanRecords(normalizedLoans).map((loan) => loan.id));
-    const normalizedDuplicateIds = normalizedLoans
-      .filter((loan) => !normalizedRetainedIds.has(loan.id))
-      .map((loan) => loan.id);
-    for (const id of normalizedDuplicateIds) deleteLoan.run(id);
+    const removedCount = removeDuplicateLoans(db);
     db.exec('COMMIT;');
-    console.info(`Loan cleanup removed ${normalizedDuplicateIds.length} exact duplicate record${normalizedDuplicateIds.length === 1 ? '' : 's'} and cleared ${invalidStartDates.length} impossible start date${invalidStartDates.length === 1 ? '' : 's'}.`);
+    console.info(`Loan cleanup removed ${removedCount} exact duplicate record${removedCount === 1 ? '' : 's'} and cleared ${invalidStartDates.length} impossible start date${invalidStartDates.length === 1 ? '' : 's'}.`);
   } catch (error) {
     db.exec('ROLLBACK;');
     console.warn('Could not remove exact duplicate loan records:', error.message);
@@ -378,7 +366,7 @@ function seedDefaultData() {
         a.model || '',
         a.serial || '',
         a.status || 'Available',
-        a.location || 'Head Office',
+        getAssetLocation(a.status || 'Available', a.location),
         a.owner || '',
         a.department || '',
         a.condition || 'Good',
@@ -429,7 +417,7 @@ function seedDefaultData() {
         l.assignee,
         l.department || '',
         l.knoxId || '',
-        l.location || 'Head Office',
+        normalizeLocation(l.location),
         l.ip || '',
         l.loanDate || l.startDate || now.slice(0, 10),
         l.pickupDate || l.loanDate || now.slice(0, 10),
@@ -463,7 +451,7 @@ function seedDefaultData() {
   if (countLocs.count === 0 && seed.locations?.length) {
     const insertLoc = db.prepare('INSERT INTO locations (id, name) VALUES (?, ?)');
     seed.locations.forEach((loc, idx) => {
-      insertLoc.run(`loc-${idx + 1}`, loc);
+      insertLoc.run(`loc-${idx + 1}`, normalizeLocation(loc));
     });
   }
 
@@ -552,7 +540,7 @@ export function reconcileAllAssetsInDb() {
 
     // Active loan is one with pickup_date, no return_date or returned_date, and not archived
     const activeLoan = assetLoans.find((l) => {
-      const isReturned = Boolean(l.return_date || l.returned_date || l.status === 'Returned' || l.is_archived);
+      const isReturned = isLoanReturned(l);
       const hasPickedUp = Boolean(l.pickup_date || l.status === 'Active');
       return hasPickedUp && !isReturned;
     });
@@ -562,7 +550,10 @@ export function reconcileAllAssetsInDb() {
     let newDept = asset.department || '';
     let newLoc = asset.location || '';
 
-    if (activeLoan) {
+    if (asset.status === 'Under repair') {
+      // A manually recorded repair takes precedence over an outstanding loan.
+      newLoc = assetLocationForWrite(db, asset.status, asset.location);
+    } else if (activeLoan) {
       newStatus = 'On loan';
       newOwner = activeLoan.assignee || asset.owner || '';
       newDept = activeLoan.department || asset.department || '';
@@ -594,6 +585,8 @@ export function reconcileAllAssetsInDb() {
         }
       }
     }
+
+    newLoc = assetLocationForWrite(db, newStatus, newLoc, '');
 
     if (
       newStatus !== asset.status ||

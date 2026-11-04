@@ -1,14 +1,10 @@
+import { isLoanReturned } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate, isLoanOverdue } from '../lib/utils';
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from './Modal';
-
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+import { CALENDAR_YEARS, MONTH_NAMES, WEEKDAYS, calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
+import { useCalendarMonth } from '../hooks/useCalendarMonth.js';
 
 export default function InOutCalendar({
   loans = [],
@@ -22,9 +18,10 @@ export default function InOutCalendar({
   initialRequester = 'ALL',
 }) {
   const today = todayIso();
-  const todayDate = useMemo(() => new Date(), []);
-  const [currentYear, setCurrentYear] = useState(() => todayDate.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(() => todayDate.getMonth()); // 0-11
+  const {
+    currentYear, currentMonth, calendarDays, setCurrentYear, setCurrentMonth,
+    handlePrevMonth, handleNextMonth, handleGoToday,
+  } = useCalendarMonth();
 
   // Filter state
   const [requesterTypeFilter, setRequesterTypeFilter] = useState(initialRequesterType); // 'ALL' | 'Business traveler' | 'Employee'
@@ -37,31 +34,6 @@ export default function InOutCalendar({
   const [selectedDayData, setSelectedDayData] = useState(null);
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
 
-  /* ── 1. Month navigation ────────────────────────────────────── */
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
-  };
-
-  const handleGoToday = () => {
-    const now = new Date();
-    setCurrentYear(now.getFullYear());
-    setCurrentMonth(now.getMonth());
-  };
-
   /* ── 2. Enrich loans with asset details & normalization ──────── */
   const enrichedLoans = useMemo(() => {
     const assetMap = new Map();
@@ -71,7 +43,7 @@ export default function InOutCalendar({
 
     return loans.map((loan) => {
       const asset = assetMap.get(String(loan.assetCode || '').toLowerCase());
-      const isReturned = Boolean(loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived);
+      const isReturned = isLoanReturned(loan);
       const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
       const dueDate = getLoanEndDate(loan);
       const isOverdue = !isReturned && isLoanOverdue(loan);
@@ -213,65 +185,9 @@ export default function InOutCalendar({
     return { outgoingByDate: outMap, incomingByDate: inMap };
   }, [enrichedLoans]);
 
-  /* ── 6. 42-day Month Grid calculation ───────────────────────── */
-  const pad = (n) => String(n).padStart(2, '0');
-
-  const calendarDays = useMemo(() => {
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-    const startDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) - 6 (Sat)
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-    const days = [];
-
-    // 1. Previous month padding days
-    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    const prevMonthNum = currentMonth === 0 ? 12 : currentMonth;
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
-      const dayNum = daysInPrevMonth - i;
-      const dateStr = `${prevYear}-${pad(prevMonthNum)}-${pad(dayNum)}`;
-      days.push({
-        dateStr,
-        dayNum,
-        isCurrentMonth: false,
-        isPrevMonth: true,
-        isNextMonth: false,
-      });
-    }
-
-    // 2. Current month days
-    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-      const dateStr = `${currentYear}-${pad(currentMonth + 1)}-${pad(dayNum)}`;
-      days.push({
-        dateStr,
-        dayNum,
-        isCurrentMonth: true,
-        isPrevMonth: false,
-        isNextMonth: false,
-      });
-    }
-
-    // 3. Next month padding days to complete 6 rows (42 cells)
-    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-    const nextMonthNum = currentMonth === 11 ? 1 : currentMonth + 2;
-    const remaining = 42 - days.length;
-    for (let dayNum = 1; dayNum <= remaining; dayNum++) {
-      const dateStr = `${nextYear}-${pad(nextMonthNum)}-${pad(dayNum)}`;
-      days.push({
-        dateStr,
-        dayNum,
-        isCurrentMonth: false,
-        isPrevMonth: false,
-        isNextMonth: true,
-      });
-    }
-
-    return days;
-  }, [currentYear, currentMonth]);
-
   /* ── 7. Monthly Summary Metrics ─────────────────────────────── */
   const monthStats = useMemo(() => {
-    const prefix = `${currentYear}-${pad(currentMonth + 1)}`;
+    const prefix = calendarMonthPrefix(currentYear, currentMonth);
     let outgoingCount = 0;
     let incomingCount = 0;
     let overdueCount = 0;
@@ -325,22 +241,6 @@ export default function InOutCalendar({
       incoming,
     });
     setDayModalFilter('all');
-  };
-
-  const formatDayTitle = (dateStr) => {
-    if (!dateStr) return '';
-    try {
-      const parts = dateStr.split('-');
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return d.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
   };
 
   return (
@@ -404,7 +304,7 @@ export default function InOutCalendar({
               value={currentYear}
               onChange={(e) => setCurrentYear(Number(e.target.value))}
             >
-              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
+              {CALENDAR_YEARS.map((y) => (
                 <option key={y} value={y}>
                   {y}
                 </option>

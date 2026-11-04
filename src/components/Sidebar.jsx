@@ -1,3 +1,4 @@
+import { isLoanReturned } from '../../shared/loanRules.js';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
@@ -90,7 +91,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
   const activeTravelersCount = useMemo(() => {
     return (db.loans || []).filter((l) => {
       const isTraveler = isBusinessTraveler(l.assigneeType);
-      const isOngoing = !l.returnDate && !l.returnedDate && l.status !== 'Returned' && !l.isArchived;
+      const isOngoing = !isLoanReturned(l);
       return isTraveler && isOngoing;
     }).length;
   }, [db.loans]);

@@ -4,53 +4,14 @@ import { db, logAudit } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { tracksEndDate } from '../loanRules.js';
 
+import { todayIso } from '../lib/dates.js';
+import { computeLoanStatus, formatLoanRow } from '../lib/loanRows.js';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { getAssetStatusForLoanEdit, normalizeLocation } from '../../shared/assetRules.js';
+import { returnAssetToIt } from '../lib/assetLoans.js';
+import { assetLocationForWrite } from '../lib/assetLocations.js';
+
 export const loansRouter = Router();
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function computeLoanStatus(loan) {
-  const isReturned = Boolean(loan.return_date || loan.returned_date || loan.status === 'Returned' || loan.is_archived);
-  if (isReturned) return 'Returned';
-
-  const hasPickedUp = Boolean(loan.pickup_date || loan.status === 'Active');
-  const today = todayIso();
-  const isOverdue = Boolean(tracksEndDate(loan.assignee_type) && loan.end_date && loan.end_date < today);
-
-  if (isOverdue) return 'Overdue';
-  if (hasPickedUp) return 'Active';
-  return 'Scheduled';
-}
-
-function formatLoanRow(l) {
-  const dynamicStatus = computeLoanStatus(l);
-  return {
-    id: l.id,
-    assetCode: l.asset_code,
-    assignee: l.assignee,
-    department: l.department || '',
-    knoxId: l.knox_id || '',
-    location: l.location || 'Head Office',
-    ip: l.ip || '',
-    startDate: l.start_date || '',
-    pickupDate: l.pickup_date || '',
-    endDate: tracksEndDate(l.assignee_type) ? (l.end_date || '') : '',
-    returnDate: l.return_date || '',
-    returnedDate: l.returned_date || '',
-    status: dynamicStatus,
-    equipment: l.equipment_json ? JSON.parse(l.equipment_json) : { Adapter: 1, Cable: 1 },
-    returnedEquipment: l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null,
-    returnStatus: l.return_status || '',
-    readyForPickup: Boolean(l.ready_for_pickup),
-    others: l.others || '',
-    note: l.note || '',
-    purpose: l.purpose || '',
-    assigneeType: l.assignee_type || 'Business traveler',
-    isArchived: Boolean(l.is_archived || l.return_date || l.returned_date),
-    createdAt: l.created_at,
-  };
-}
 
 // GET /api/loans
 loansRouter.get('/', (req, res) => {
@@ -204,7 +165,7 @@ loansRouter.post('/', authenticate, (req, res) => {
     assignee,
     department = '',
     knoxId = '',
-    location = 'Head Office',
+    location = DEFAULT_LOCATION,
     ip = '',
     startDate = todayIso(),
     pickupDate = '',
@@ -245,7 +206,7 @@ loansRouter.post('/', authenticate, (req, res) => {
       effectiveAssignee,
       department.trim(),
       effectiveKnoxId,
-      location.trim(),
+      normalizeLocation(location),
       ip.trim(),
       startDate,
       pickupDate,
@@ -272,7 +233,7 @@ loansRouter.post('/', authenticate, (req, res) => {
           UPDATE assets
           SET status = 'On loan', owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(effectiveAssignee, location.trim(), department.trim(), todayIso(), effectiveAssetCode);
+        `).run(effectiveAssignee, normalizeLocation(location), department.trim(), todayIso(), effectiveAssetCode);
 
         db.prepare(`
           INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
@@ -299,7 +260,7 @@ loansRouter.post('/', authenticate, (req, res) => {
         effectiveAssetCode,
         effectiveAssetCode,
         pickupDate ? 'On loan' : 'Available',
-        location.trim(),
+        normalizeLocation(location),
         pickupDate ? effectiveAssignee : 'IT department',
         department.trim(),
         todayIso(),
@@ -395,7 +356,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       assignee.trim(),
       department.trim(),
       knoxId.trim(),
-      location.trim(),
+      normalizeLocation(location),
       ip.trim(),
       startDate,
       pickupDate,
@@ -416,23 +377,19 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     const currentCode = effectiveAssetCode || existing.asset_code;
     if (currentCode) {
       if (hasReturn) {
-        db.prepare(`
-          UPDATE assets
-          SET status = 'Available', owner = 'IT department', department = '', updated = ?
-          WHERE code = ?
-        `).run(today, currentCode);
+        returnAssetToIt(db, currentCode, today);
       } else if (hasPickup) {
+        const asset = db.prepare('SELECT status FROM assets WHERE code = ?').get(currentCode);
+        const targetStatus = getAssetStatusForLoanEdit(asset?.status, existing, {
+          assetCode: currentCode, pickupDate, returnDate, status: computedStatus, isArchived: Boolean(isArchived),
+        });
         db.prepare(`
           UPDATE assets
-          SET status = 'On loan', owner = ?, location = ?, department = ?, updated = ?
+          SET status = ?, owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(assignee.trim(), location.trim(), department.trim(), today, currentCode);
+        `).run(targetStatus, assignee.trim(), assetLocationForWrite(db, targetStatus, location), department.trim(), today, currentCode);
       } else if (existing.pickup_date || existing.return_date || existing.returned_date) {
-        db.prepare(`
-          UPDATE assets
-          SET status = 'Available', owner = 'IT department', department = '', updated = ?
-          WHERE code = ?
-        `).run(today, currentCode);
+        returnAssetToIt(db, currentCode, today);
       }
     }
 
@@ -483,7 +440,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
 
   const nextNote = note !== undefined ? note : loan.note;
   const nextOthers = others !== undefined ? others : loan.others;
-  const nextLocation = location !== undefined ? location : (loan.location || 'Head Office');
+  const nextLocation = normalizeLocation(location !== undefined ? location : loan.location);
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -569,11 +526,7 @@ loansRouter.post('/:id/revert-pickup', authenticate, (req, res) => {
     `).get(loan.asset_code, loan.id);
 
     if (!otherActive) {
-      db.prepare(`
-        UPDATE assets
-        SET status = 'Available', owner = 'IT department', department = '', updated = ?
-        WHERE code = ?
-      `).run(todayIso(), loan.asset_code);
+      returnAssetToIt(db, loan.asset_code, todayIso());
     }
 
     db.exec('COMMIT;');
@@ -640,15 +593,9 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     );
 
     // 2. Return asset to IT department with status 'Available'
-    const asset = db.prepare('SELECT id, owner, status FROM assets WHERE code = ?').get(loan.asset_code);
+    const asset = db.prepare('SELECT id, owner, status, location FROM assets WHERE code = ?').get(loan.asset_code);
     if (asset) {
-      const targetStatus = ['Damaged', 'Under repair', 'Retired'].includes(asset.status) ? asset.status : 'Available';
-
-      db.prepare(`
-        UPDATE assets
-        SET status = ?, owner = 'IT department', department = '', updated = ?
-        WHERE code = ?
-      `).run(targetStatus, todayIso(), loan.asset_code);
+      returnAssetToIt(db, loan.asset_code, todayIso());
 
       // 3. Append unbroken audit history
       db.prepare(`
@@ -740,12 +687,6 @@ loansRouter.post('/batch-return', authenticate, (req, res) => {
       WHERE id = ?
     `);
 
-    const updateAssetStmt = db.prepare(`
-      UPDATE assets
-      SET status = 'Available', owner = 'IT department', department = '', updated = ?
-      WHERE code = ?
-    `);
-
     const insertHistStmt = db.prepare(`
       INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
       VALUES (?, ?, ?, 'IT department', ?, 'Returned to IT department', ?, ?)
@@ -756,7 +697,7 @@ loansRouter.post('/batch-return', authenticate, (req, res) => {
       const loan = db.prepare('SELECT * FROM loans WHERE id = ?').get(id);
       if (loan) {
         updateLoanStmt.run(returnDate, returnDate, loan.id);
-        updateAssetStmt.run(todayIso(), loan.asset_code);
+        returnAssetToIt(db, loan.asset_code, todayIso());
         insertHistStmt.run(
           `hist-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           loan.asset_code,
@@ -811,11 +752,7 @@ loansRouter.post('/batch-delete', authenticate, (req, res) => {
 
     for (const code of affectedAssetCodes) {
       if (!checkActive.get(code)) {
-        db.prepare(`
-          UPDATE assets
-          SET status = 'Available', owner = 'IT department', updated = ?
-          WHERE code = ?
-        `).run(todayIso(), code);
+        returnAssetToIt(db, code, todayIso(), { clearDepartment: false });
       }
     }
 
@@ -850,11 +787,7 @@ loansRouter.delete('/:id', authenticate, (req, res) => {
     `).get(loan.asset_code);
 
     if (!otherActive) {
-      db.prepare(`
-        UPDATE assets
-        SET status = 'Available', owner = 'IT department', updated = ?
-        WHERE code = ?
-      `).run(todayIso(), loan.asset_code);
+      returnAssetToIt(db, loan.asset_code, todayIso(), { clearDepartment: false });
     }
 
     db.exec('COMMIT;');

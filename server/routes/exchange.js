@@ -4,55 +4,25 @@ import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/data
 import { authenticate } from '../middleware/auth.js';
 import { tracksEndDate } from '../loanRules.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
+import { findLoanMatchIndex } from '../../shared/loanIdentity.js';
+
+import { todayIso } from '../lib/dates.js';
+import { exportLoanRow } from '../lib/loanRows.js';
+import { formatAssetRow, exportOwnershipRow } from '../lib/assetRows.js';
+import { removeDuplicateLoans } from '../lib/loanDuplicates.js';
+import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
+import { assetLocationForWrite, normalizeStoredLocations } from '../lib/assetLocations.js';
 
 export const exchangeRouter = Router();
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 // GET /api/exchange/export (Export entire database as structured JSON)
 exchangeRouter.get('/export', (req, res) => {
   const assets = db.prepare('SELECT * FROM assets ORDER BY code ASC').all();
   const getHistory = db.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC, created_at DESC');
 
-  const enrichedAssets = assets.map((a) => ({
-    ...a,
-    purchaseDate: a.purchase_date || '',
-    ownershipHistory: getHistory.all(a.code).map((h) => ({
-      previousOwner: h.previous_owner,
-      newOwner: h.new_owner,
-      date: h.date,
-      reason: h.reason,
-      notes: h.notes,
-    })),
-  }));
+  const enrichedAssets = assets.map((asset) => formatAssetRow(asset, getHistory.all(asset.code), exportOwnershipRow));
 
-  const loans = db.prepare('SELECT * FROM loans ORDER BY created_at DESC').all().map((l) => ({
-    id: l.id,
-    assetCode: l.asset_code,
-    assignee: l.assignee,
-    department: l.department,
-    knoxId: l.knox_id,
-    location: l.location,
-    ip: l.ip,
-    startDate: l.start_date,
-    pickupDate: l.pickup_date,
-    endDate: tracksEndDate(l.assignee_type) ? l.end_date : '',
-    returnDate: l.return_date,
-    returnedDate: l.returned_date,
-    status: l.status,
-    equipment: l.equipment_json ? JSON.parse(l.equipment_json) : {},
-    returnedEquipment: l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null,
-    returnStatus: l.return_status || '',
-    readyForPickup: Boolean(l.ready_for_pickup),
-    others: l.others,
-    note: l.note,
-    purpose: l.purpose,
-    assigneeType: l.assignee_type,
-    isArchived: Boolean(l.is_archived),
-  }));
+  const loans = db.prepare('SELECT * FROM loans ORDER BY created_at DESC').all().map(exportLoanRow);
 
   const employees = db.prepare('SELECT id, name, department, position, knox_id FROM employees ORDER BY name ASC').all();
   const departments = db.prepare('SELECT name FROM departments ORDER BY name ASC').all().map((d) => d.name);
@@ -134,7 +104,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
               a.model || existing.model,
               a.serial || existing.serial,
               a.status || existing.status,
-              a.location || existing.location,
+              assetLocationForWrite(db, a.status || existing.status, a.location || existing.location),
               a.owner !== undefined ? a.owner : existing.owner,
               a.department !== undefined ? a.department : existing.department,
               a.purchaseDate || existing.purchase_date || '',
@@ -169,7 +139,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
             a.model || '',
             a.serial || '',
             a.status || (a.owner ? 'Assigned' : 'Available'),
-            a.location || 'Head Office',
+            assetLocationForWrite(db, a.status || (a.owner ? 'Assigned' : 'Available'), a.location),
             a.owner || '',
             a.department || '',
             a.purchaseDate || '',
@@ -238,7 +208,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           l.assignee || 'Borrower',
           l.department || '',
           l.knoxId || '',
-          l.location || 'Head Office',
+          normalizeLocation(l.location),
           l.ip || '',
           l.startDate || '',
           l.pickupDate || '',
@@ -269,13 +239,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 
       // Previous imports could have inserted the same semantic row under new IDs.
       // Remove only exact loan clones, preserving records whose dates or details differ.
-      const persistedLoans = db.prepare('SELECT * FROM loans ORDER BY created_at ASC, id ASC').all();
-      const retainedIds = new Set(deduplicateLoanRecords(persistedLoans).map((loan) => loan.id));
-      const duplicateIds = persistedLoans.filter((loan) => !retainedIds.has(loan.id)).map((loan) => loan.id);
-      if (duplicateIds.length) {
-        const deleteLoanStmt = db.prepare('DELETE FROM loans WHERE id = ?');
-        for (const duplicateId of duplicateIds) deleteLoanStmt.run(duplicateId);
-      }
+      removeDuplicateLoans(db);
     }
 
     db.exec('COMMIT;');
@@ -357,7 +321,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           a.model,
           a.serial,
           a.status,
-          a.location,
+          getAssetLocation(a.status, a.location),
           a.owner,
           a.department,
           a.purchase_date || a.purchaseDate || '',
@@ -397,7 +361,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           l.assignee,
           l.department,
           l.knox_id || l.knoxId,
-          l.location,
+          normalizeLocation(l.location),
           l.ip,
           l.start_date || l.startDate,
           l.pickup_date || l.pickupDate,
@@ -443,6 +407,9 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
         insertLoc.run(l.id || `loc-${idx}`, l.name || l);
       });
     }
+
+    // Apply current location rules to restored working records without changing snapshots.
+    normalizeStoredLocations(db);
 
     // 6. Delete consumed snapshot
     db.prepare('DELETE FROM import_backups WHERE id = ?').run(latestSnapshot.id);

@@ -1,4 +1,7 @@
 import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
+import { isLoanReturned } from '../../shared/loanRules.js';
+import { excelSerialDate } from './spreadsheetValues.js';
+export { isLoanReturned } from '../../shared/loanRules.js';
 
 /** Escape special chars for safe XML attribute/element content. */
 export function xmlEscape(value = '') {
@@ -18,9 +21,8 @@ export function statusClass(status) {
  */
 export function readableLoanDate(value) {
   if (value === undefined || value === null || value === '') return '';
-  const numeric = Number(value);
-  if (Number.isFinite(numeric) && numeric > 20000) {
-    const date = new Date(Date.UTC(1899, 11, 30) + numeric * 86400000);
+  const date = excelSerialDate(value, { maximum: Infinity });
+  if (date) {
     return date.toISOString().slice(0, 16).replace('T', ' ');
   }
   return String(value).replace('T', ' ');
@@ -57,9 +59,8 @@ export function normalizeDateToIso(raw) {
   if (!str || str === '1/0/1900' || str === '0' || str === '—') return '';
 
   // 1. Excel serial date number (e.g. 46202 or 46189.47)
-  const numeric = Number(str);
-  if (Number.isFinite(numeric) && numeric > 20000 && numeric < 100000) {
-    const d = new Date(Date.UTC(1899, 11, 30) + numeric * 86400000);
+  const d = excelSerialDate(str);
+  if (d) {
     return d.toISOString().slice(0, 10);
   }
 
@@ -95,10 +96,7 @@ export function normalizeDateToIso(raw) {
  */
 export function isLoanOverdue(loan) {
   if (!loan) return false;
-  const isReturned = Boolean(
-    loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived,
-  );
-  if (isReturned) return false;
+  if (isLoanReturned(loan)) return false;
   if (!isBusinessTraveler(loan.assigneeType)) return false;
   if (loan.status === 'Overdue') return true;
 
@@ -128,10 +126,7 @@ export function isLoanOverdue(loan) {
  */
 export function getLoanStatus(loan) {
   if (!loan) return 'Scheduled';
-  const isReturned = Boolean(
-    loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived,
-  );
-  if (isReturned) return 'Returned';
+  if (isLoanReturned(loan)) return 'Returned';
   if (isLoanOverdue(loan)) return 'Overdue';
   if (loan.pickupDate) return 'Loaned';
   return 'Scheduled';

@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { STATUSES } from '../lib/constants';
+import { STATUSES, XLSX_MIME } from '../lib/constants';
 import { todayIso, statusClass } from '../lib/utils';
 import { DEFAULT_ASSET_HEADERS, parseAssetRows, assetsToRows } from '../lib/assetExcel';
 import { parseDelimitedText } from '../lib/txtImport';
@@ -13,8 +13,6 @@ import Modal from '../components/Modal';
 import AssetForm from '../components/AssetForm';
 import BatchEditForm from '../components/BatchEditForm';
 import ChangeOwnerModal from '../components/ChangeOwnerModal';
-
-const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 const SEARCH_FIELDS = ['All fields', 'Asset number', 'Category', 'Holder', 'Location', 'Serial number'];
 

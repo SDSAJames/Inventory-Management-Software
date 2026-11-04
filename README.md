@@ -106,6 +106,12 @@ npm run dev
 
 ---
 
+### Validation and Shared Code
+
+Run `npm test` for regression checks and `npm run build` for the production frontend. Database tests use in-memory SQLite.
+
+Shared functions and controls own repeated business rules, import mappings, loan fields, directory panels, calendars, and server serializers. See **Technical Specification → 2.1 Shared Modules and Change Ownership** for the module map and asset location rules.
+
 ## Documentation
 
 - **Release source of truth**: `package.json` owns the application version and `src/data/patchHistory.js` owns release notes. After changing either, run `npm run docs:sync` to update generated patch notes and documentation version metadata.

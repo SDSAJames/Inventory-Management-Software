@@ -16,12 +16,14 @@ import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 import { normalizeLoanEndDate } from '../lib/loanEquipment';
 import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { api } from '../lib/api';
+import { normalizeDatabaseLocations } from '../lib/databaseLocations';
+import { getAssetStatusAfterReturn, getAssetStatusForLoanEdit } from '../../shared/assetRules.js';
 
 const DbContext = createContext(null);
 
 export function DbProvider({ children }) {
-  const [db, setDb] = useState(() => {
-    const raw = loadDb();
+  const [db, setDbState] = useState(() => {
+    const raw = normalizeDatabaseLocations(loadDb());
     if (raw && raw.assets && raw.loans) {
       // Ensure baseline seed assets like SPE-4321 are present
       const existingCodes = new Set(raw.assets.map((a) => a.code));
@@ -66,6 +68,12 @@ export function DbProvider({ children }) {
       categories: raw.categories || [...new Set((seed.assets || []).map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
     } : raw;
   });
+
+  const setDb = useCallback((update) => {
+    setDbState((previous) => normalizeDatabaseLocations(
+      typeof update === 'function' ? update(previous) : update,
+    ));
+  }, []);
 
   const [transferReasons, setTransferReasons] = useState(() => {
     return loadTransferReasons() || DEFAULT_TRANSFER_REASONS;
@@ -450,11 +458,6 @@ export function DbProvider({ children }) {
       const assetCode = merged.assetCode || existing.assetCode;
 
       if (assetCode && (hasPickup || hasReturn || existing.pickupDate || existing.returnDate || existing.returnedDate)) {
-        const targetAssetStatus = hasReturn
-          ? 'Available'
-          : hasPickup
-          ? 'On loan'
-          : 'Available';
         const targetOwner = hasPickup && !hasReturn ? (merged.assignee || '') : '';
 
         nextAssets = prev.assets.map((a) => {
@@ -462,7 +465,7 @@ export function DbProvider({ children }) {
             return {
               ...a,
               ...(assetUpdates || {}),
-              status: targetAssetStatus,
+              status: getAssetStatusForLoanEdit(a.status, existing, merged),
               owner: targetOwner,
               location: merged.location || a.location,
               updated: todayIso(),
@@ -546,7 +549,7 @@ export function DbProvider({ children }) {
         a.code === loan.assetCode
           ? {
               ...a,
-              status: 'Available',
+              status: getAssetStatusAfterReturn(a.status),
               owner: '',
               updated: todayIso(),
             }
@@ -596,7 +599,7 @@ export function DbProvider({ children }) {
         });
         return {
           ...a,
-          status: a.status === 'Damaged' || a.status === 'Under repair' || a.status === 'Disposed' ? a.status : 'Available',
+          status: getAssetStatusAfterReturn(a.status),
           owner: 'IT department',
           department: '',
           ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],
@@ -663,7 +666,7 @@ export function DbProvider({ children }) {
       if (!hasOtherActiveLoan) {
         nextAssets = prev.assets.map((a) =>
           a.code === loan.assetCode
-            ? { ...a, status: 'Available', owner: '', updated: todayIso() }
+            ? { ...a, status: getAssetStatusAfterReturn(a.status), owner: '', updated: todayIso() }
             : a,
         );
       }

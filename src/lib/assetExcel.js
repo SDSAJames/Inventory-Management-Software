@@ -5,80 +5,22 @@
  * so an exported file can be re-imported without losing information.
  */
 
-import { STATUSES } from './constants';
-import { todayIso } from './utils';
+import { todayIso } from './utils.js';
+import { DEFAULT_ASSET_HEADERS, equipmentColumnIndexes, equipmentExportValue, normalizeEquipmentStatus } from './equipmentSchema.js';
+import { cleanSpreadsheetCell as clean, excelSerialDate } from './spreadsheetValues.js';
+import { getAssetLocation } from '../../shared/assetRules.js';
 
-/* ── Column definitions ─────────────────────────────── */
-
-// field -> accepted header names (case-insensitive). First entry is used on export.
-const COLUMNS = [
-  ['code', ['Asset number', 'Host Name', 'Asset code', 'Code']],
-  ['serial', ['Serial Number', 'Serial', 'S/N']],
-  ['status', ['Status']],
-  ['owner', ['Issued Knox ID', 'Knox ID', 'Holder', 'Current holder', 'Owner']],
-  ['issuedDate', ['Issued Date', 'Issue date']],
-  ['name', ['Asset Name', 'Name']],
-  ['category', ['Category', 'Asset Type']],
-  ['purchaseDate', ['Purchase Date', 'Date Purchased']],
-  ['model', ['Model']],
-  ['location', ['Location']],
-  ['department', ['Department']],
-  ['notes', ['Notes', 'Note']],
-  ['updated', ['Updated', 'Last updated']],
-];
-
-export const DEFAULT_ASSET_HEADERS = [
-  'Asset Number',
-  'Asset Type',
-  'Serial Number',
-  'Purchase Date',
-  'Status',
-  'Issued Knox ID',
-  'Issued Date',
-  'Department',
-  'Location',
-  'Notes',
-];
-
+export { DEFAULT_ASSET_HEADERS } from './equipmentSchema.js';
 export const ASSET_EXPORT_HEADERS = DEFAULT_ASSET_HEADERS;
 
-// Spreadsheet vocabulary -> register statuses
-const STATUS_ALIASES = {
-  issued: 'Assigned',
-  broken: 'Damaged',
-  loaned: 'On loan',
-  repair: 'Under repair',
-  disposed: 'Retired',
-};
-
 /* ── Value helpers ──────────────────────────────────── */
-
-const clean = (v) => String(v ?? '').replace(/_x000D_/gi, '').trim();
-
-function normalizeStatus(raw) {
-  const value = clean(raw).toLowerCase();
-  if (!value) return 'Available';
-  const direct = STATUSES.find((s) => s.toLowerCase() === value);
-  return direct || STATUS_ALIASES[value] || 'Available';
-}
-
-function exportStatus(status) {
-  if (status === 'Assigned') return 'Issued';
-  if (status === 'Damaged') return 'Broken';
-  if (status === 'On loan') return 'Loaned';
-  if (status === 'Under repair') return 'Repair';
-  if (status === 'Retired') return 'Disposed';
-  return status || 'Available';
-}
 
 /** Excel serial (e.g. 46296) or date-like text -> YYYY-MM-DD. */
 function normalizeDate(raw) {
   const value = clean(raw);
   if (!value) return '';
-  const numeric = Number(value);
-  if (Number.isFinite(numeric) && numeric > 20000 && numeric < 80000) {
-    return new Date(Date.UTC(1899, 11, 30) + Math.round(numeric) * 86400000).toISOString().slice(0, 10);
-  }
+  const serialDate = excelSerialDate(value, { maximum: 80000, round: true });
+  if (serialDate) return serialDate.toISOString().slice(0, 10);
   const parsed = new Date(value);
   if (!Number.isNaN(parsed.getTime()) && /\d{4}/.test(value)) {
     const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
@@ -97,12 +39,8 @@ export function parseAssetRows(rows, existingAssets) {
   const headerRowIndex = rows.findIndex((r) => r && r.some((c) => clean(c)));
   if (headerRowIndex < 0) throw new Error('The workbook is empty');
 
-  const rawHeaders = rows[headerRowIndex].map((h) => clean(h)).filter(Boolean);
-  const headers = rawHeaders.map((h) => h.toLowerCase());
-  const index = {};
-  COLUMNS.forEach(([field, names]) => {
-    index[field] = headers.findIndex((h) => names.some((n) => n.toLowerCase() === h));
-  });
+  const rawHeaders = rows[headerRowIndex].map(clean);
+  const index = equipmentColumnIndexes(rawHeaders);
 
   if (index.code < 0) {
     throw new Error('Missing "Host Name" (asset code) column — check the workbook format');
@@ -127,14 +65,16 @@ export function parseAssetRows(rows, existingAssets) {
     seenInFile.add(key);
 
     const category = get('category') || 'Laptop';
+    const status = normalizeEquipmentStatus(get('status'));
+    const existing = existingMap.get(key);
     const parsedAsset = {
       code,
       name: get('name') || code,
       category,
       model: get('model'),
       serial: get('serial'),
-      status: normalizeStatus(get('status')),
-      location: get('location'),
+      status,
+      location: getAssetLocation(status, get('location'), existing?.location),
       owner: get('owner'),
       department: get('department'),
       notes: get('notes'),
@@ -144,14 +84,13 @@ export function parseAssetRows(rows, existingAssets) {
     };
 
     if (existingMap.has(key)) {
-      const existing = existingMap.get(key);
       duplicates.push({
         id: existing.id,
         ...parsedAsset,
         // preserve original existing values if blank in import
         name: parsedAsset.name || existing.name,
         category: parsedAsset.category || existing.category,
-        location: parsedAsset.location || existing.location,
+        location: parsedAsset.location,
         purchaseDate: parsedAsset.purchaseDate || existing.purchaseDate || '',
         existingRecord: existing,
       });
@@ -175,53 +114,8 @@ export function parseAssetRows(rows, existingAssets) {
  */
 export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS) {
   const activeHeaders = Array.isArray(headers) && headers.length > 0 ? headers : DEFAULT_ASSET_HEADERS;
-
-  const getFieldValue = (asset, headerName) => {
-    const h = clean(headerName).toLowerCase();
-    if (['host name', 'asset code', 'code', 'asset number'].includes(h)) {
-      return asset.code || '';
-    }
-    if (['serial number', 'serial', 's/n'].includes(h)) {
-      return asset.serial || '';
-    }
-    if (['status'].includes(h)) {
-      return exportStatus(asset.status);
-    }
-    if (['issued knox id', 'knox id', 'holder', 'current holder', 'owner'].includes(h)) {
-      return asset.owner || '';
-    }
-    if (['issued date', 'issue date'].includes(h)) {
-      return asset.issuedDate || '';
-    }
-    if (['purchase date', 'date purchased'].includes(h)) {
-      return asset.purchaseDate || '';
-    }
-    if (['asset name', 'name'].includes(h)) {
-      return asset.name || '';
-    }
-    if (['category', 'asset type', 'type'].includes(h)) {
-      return asset.category || '';
-    }
-    if (['model'].includes(h)) {
-      return asset.model || '';
-    }
-    if (['location'].includes(h)) {
-      return asset.location || '';
-    }
-    if (['department'].includes(h)) {
-      return asset.department || '';
-    }
-    if (['notes', 'note'].includes(h)) {
-      return asset.notes || '';
-    }
-    if (['updated', 'last updated', 'modification date'].includes(h)) {
-      return asset.updated || '';
-    }
-    return asset[headerName] ?? '';
-  };
-
   return [
     activeHeaders,
-    ...assets.map((asset) => activeHeaders.map((header) => getFieldValue(asset, header))),
+    ...assets.map((asset) => activeHeaders.map((header) => equipmentExportValue(asset, header))),
   ];
 }

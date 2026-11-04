@@ -2,13 +2,8 @@ import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
 import { getLoanEndDate } from '../lib/loanEquipment';
 import Modal from './Modal';
-
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+import { CALENDAR_YEARS, MONTH_NAMES, WEEKDAYS, calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
+import { useCalendarMonth } from '../hooks/useCalendarMonth.js';
 
 export default function TravelerCalendar({
   travelers = [],
@@ -21,9 +16,10 @@ export default function TravelerCalendar({
 }) {
   // Calendar view month & year (defaults to today's month/year)
   const today = todayIso();
-  const todayDate = useMemo(() => new Date(), []);
-  const [currentYear, setCurrentYear] = useState(() => todayDate.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(() => todayDate.getMonth()); // 0-11
+  const {
+    currentYear, currentMonth, calendarDays, setCurrentYear, setCurrentMonth,
+    handlePrevMonth, handleNextMonth, handleGoToday,
+  } = useCalendarMonth();
 
   // Filter state
   const [eventTypeFilter, setEventTypeFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
@@ -32,31 +28,6 @@ export default function TravelerCalendar({
   // Day detail modal state
   const [selectedDayData, setSelectedDayData] = useState(null);
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
-
-  /* ── Month navigation ────────────────────────────────────── */
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
-  };
-
-  const handleGoToday = () => {
-    const now = new Date();
-    setCurrentYear(now.getFullYear());
-    setCurrentMonth(now.getMonth());
-  };
 
   /* ── Index travelers by dates ────────────────────────────── */
   const { incomingByDate, returningByDate } = useMemo(() => {
@@ -84,65 +55,9 @@ export default function TravelerCalendar({
     return { incomingByDate: incMap, returningByDate: retMap };
   }, [travelers]);
 
-  /* ── 42-day Month Grid calculation ───────────────────────── */
-  const pad = (n) => String(n).padStart(2, '0');
-
-  const calendarDays = useMemo(() => {
-    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-    const startDayOfWeek = firstDayOfMonth.getDay(); // 0 (Sun) - 6 (Sat)
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-
-    const days = [];
-
-    // 1. Previous month padding days
-    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    const prevMonthNum = currentMonth === 0 ? 12 : currentMonth;
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
-      const dayNum = daysInPrevMonth - i;
-      const dateStr = `${prevYear}-${pad(prevMonthNum)}-${pad(dayNum)}`;
-      days.push({
-        dateStr,
-        dayNum,
-        isCurrentMonth: false,
-        isPrevMonth: true,
-        isNextMonth: false,
-      });
-    }
-
-    // 2. Current month days
-    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-      const dateStr = `${currentYear}-${pad(currentMonth + 1)}-${pad(dayNum)}`;
-      days.push({
-        dateStr,
-        dayNum,
-        isCurrentMonth: true,
-        isPrevMonth: false,
-        isNextMonth: false,
-      });
-    }
-
-    // 3. Next month padding days to complete 6 rows (42 cells)
-    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-    const nextMonthNum = currentMonth === 11 ? 1 : currentMonth + 2;
-    const remaining = 42 - days.length;
-    for (let dayNum = 1; dayNum <= remaining; dayNum++) {
-      const dateStr = `${nextYear}-${pad(nextMonthNum)}-${pad(dayNum)}`;
-      days.push({
-        dateStr,
-        dayNum,
-        isCurrentMonth: false,
-        isPrevMonth: false,
-        isNextMonth: true,
-      });
-    }
-
-    return days;
-  }, [currentYear, currentMonth]);
-
   /* ── Monthly metrics ─────────────────────────────────────── */
   const monthStats = useMemo(() => {
-    const prefix = `${currentYear}-${pad(currentMonth + 1)}`;
+    const prefix = calendarMonthPrefix(currentYear, currentMonth);
     let incomingCount = 0;
     let returningCount = 0;
     let overdueCount = 0;
@@ -216,23 +131,6 @@ export default function TravelerCalendar({
     setDayModalFilter('all');
   };
 
-  /* ── Format formatted date label ─────────────────────────── */
-  const formatDayTitle = (dateStr) => {
-    if (!dateStr) return '';
-    try {
-      const parts = dateStr.split('-');
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return d.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
   return (
     <div className="traveler-calendar-card">
       {/* ── Calendar Toolbar Header ─────────────────────────── */}
@@ -294,7 +192,7 @@ export default function TravelerCalendar({
               value={currentYear}
               onChange={(e) => setCurrentYear(Number(e.target.value))}
             >
-              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
+              {CALENDAR_YEARS.map((y) => (
                 <option key={y} value={y}>
                   {y}
                 </option>

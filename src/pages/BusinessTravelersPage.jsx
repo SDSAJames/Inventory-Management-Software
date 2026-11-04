@@ -1,3 +1,4 @@
+import { isLoanReturned } from '../../shared/loanRules.js';
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
@@ -50,7 +51,7 @@ export default function BusinessTravelersPage() {
       const asset = (db.assets || []).find(
         (a) => String(a.code || '').toLowerCase() === String(loan.assetCode || '').toLowerCase()
       );
-      const isReturned = Boolean(loan.returnDate || loan.returnedDate || loan.status === 'Returned' || loan.isArchived);
+      const isReturned = isLoanReturned(loan);
       const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
       const dueDate = getLoanEndDate(loan);
       const isOverdue = !isReturned && dueDate && dueDate < todayIso();

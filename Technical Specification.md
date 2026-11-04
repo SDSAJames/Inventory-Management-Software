@@ -122,6 +122,29 @@ Inventory-Management-Software/
 
 ---
 
+### 2.1 Shared Modules and Change Ownership
+
+Update the shared module for a rule or field mapping, then import it at each caller instead of copying the implementation.
+
+| Module | Responsibility |
+| :--- | :--- |
+| `shared/referenceData.js` | Default asset statuses, transfer reasons, and location names used by both application tiers. |
+| `shared/assetRules.js` | Location normalization, repair destinations, and asset status transitions during loan edits and returns. |
+| `shared/loanRules.js`, `shared/loanIdentity.js` | Returned-loan detection, traveler classification, and import matching identities. |
+| `src/lib/equipmentSchema.js`, `spreadsheetValues.js` | Equipment column aliases, status translations, header lookup, and spreadsheet value parsing shared by TXT and XLSX paths. |
+| `src/lib/loanEquipment.js`, `loanSelectors.js` | Checklist mappings, partial returns, loan grouping, and search. |
+| `src/lib/calendarDates.js`, `src/hooks/useCalendarMonth.js` | Calendar grids and month navigation. |
+| `src/components/DirectoryPanel.jsx`, `DirectorySelect.jsx`, `LoanEquipmentFields.jsx`, `IPAddressFields.jsx` | Reusable directory and loan form controls. |
+| `src/lib/databaseLocations.js` | Immutable location normalization for browser cache, imports, restores, and state updates. |
+| `server/lib/assetRows.js`, `loanRows.js` | Shared database row serialization; explicit API and export profiles retain their respective defaults. |
+| `server/lib/assetLocations.js`, `assetLoans.js`, `loanDuplicates.js` | Transactional location migration, custody resets, and exact duplicate loan cleanup. |
+
+The default location is **IT Department**. Legacy **Head Office** labels normalize to that value on startup, import, and restore. Assets with status **Under repair** always use **service center**, which is registered in the location directory automatically. Single and batch asset forms display this destination without allowing it to be overridden while the repair status is selected. Editing an ongoing loan or returning custody preserves a repair recorded on its asset; an explicit new pickup follows the normal handover transition. Rental locations remain independent of an asset's repair destination.
+
+Run `npm test` for the built-in Node.js regression suite. Tests cover shared rules, import mappings, calendar dates, loan identities and grouping, serializers, and database migration rollback using in-memory SQLite. Run `npm run build` to check the complete frontend. Browser-local date formatting and server UTC dates retain their separate purposes.
+
+---
+
 ## 3. Data Schema & Models (Schema Version 1.0.0)
 
 ### 3.1 Asset Master Record (`Asset`)

@@ -3,14 +3,34 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { statusClass } from '../lib/utils';
+import { STATUSES } from '../lib/constants';
 import Modal from '../components/Modal';
+import DirectoryPanel from '../components/DirectoryPanel';
 
 export default function DirectoryPage() {
   const { db, addCategory, addStatus, addDepartment, addLocation, renameCategory, deleteCategory, renameDepartment, deleteDepartment, renameLocation, deleteLocation } = useDb();
   const { user } = useAuth();
   const toast = useToast();
-  const canAddCategory = ['ADMIN', 'OPERATOR'].includes(user?.role);
-  const canManageCategories = ['ADMIN', 'OPERATOR'].includes(user?.role);
+  const canManageDirectory = ['ADMIN', 'OPERATOR'].includes(user?.role);
+  const assets = db.assets || [];
+  const panelDefinitions = [
+    { type: 'Category', title: 'Asset categories', description: 'Equipment type, such as Laptop or Printer.', items: db.categories || [], assetField: 'category', add: addCategory, rename: (entry, name) => renameCategory(entry.id, name), remove: (entry) => deleteCategory(entry.id) },
+    { type: 'Department', title: 'Departments', description: 'Teams assigned to company assets.', items: db.departments || [], assetField: 'department', add: addDepartment, rename: (entry, name) => renameDepartment(entry.name, name), remove: (entry) => deleteDepartment(entry.name) },
+    { type: 'Location', title: 'Locations', description: 'Sites where company assets are held.', items: db.locations || [], assetField: 'location', showCount: true, add: addLocation, rename: (entry, name) => renameLocation(entry.name, name), remove: (entry) => deleteLocation(entry.name) },
+  ];
+  const panels = panelDefinitions.map((definition) => ({
+    ...definition,
+    entries: definition.items.map((item) => {
+      const entry = typeof item === 'string' ? { name: item, key: item } : { ...item, key: item.id };
+      const count = assets.filter((asset) => asset[definition.assetField]?.toLowerCase() === entry.name.toLowerCase()).length;
+      return { ...entry, type: definition.type, used: count > 0, ...(definition.showCount ? { count } : {}) };
+    }),
+  }));
+  const statusPanel = {
+    type: 'Asset status', title: 'Asset statuses', description: 'Lifecycle state shown on every asset record.', addOnly: true, add: addStatus,
+    entries: (db.statuses?.length ? db.statuses.map((item) => item.name) : STATUSES).map((name) => ({ key: name, name, used: assets.some((asset) => asset.status?.toLowerCase() === name.toLowerCase()) })),
+  };
+  const panelForType = (type) => panels.find((panel) => panel.type === type);
   const handleAddOption = async (label, addOption) => {
     const name = window.prompt(`Enter a name for the new ${label.toLowerCase()}`);
     if (name === null || !name.trim()) return;
@@ -35,18 +55,10 @@ export default function DirectoryPage() {
     }
     openManage(entry);
   };
-  const handleRowKeyDown = (event, entry) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      activateEntry(entry);
-    }
-  };
   const handleRename = async () => {
-    if (!manageTarget || !editedName.trim()) return;
+    if (!manageTarget || manageTarget.used || !editedName.trim()) return;
     try {
-      if (manageTarget.type === 'Category') await renameCategory(manageTarget.id, editedName);
-      if (manageTarget.type === 'Department') await renameDepartment(manageTarget.name, editedName);
-      if (manageTarget.type === 'Location') await renameLocation(manageTarget.name, editedName);
+      await panelForType(manageTarget.type).rename(manageTarget, editedName);
       toast(`${manageTarget.type} renamed`);
       setManageTarget(null);
     } catch (error) { toast(error.message || `Could not rename ${manageTarget.type.toLowerCase()}`); }
@@ -54,21 +66,14 @@ export default function DirectoryPage() {
   const handleDelete = async () => {
     if (!manageTarget || manageTarget.used) return;
     try {
-      if (manageTarget.type === 'Category') await deleteCategory(manageTarget.id);
-      if (manageTarget.type === 'Department') await deleteDepartment(manageTarget.name);
-      if (manageTarget.type === 'Location') await deleteLocation(manageTarget.name);
+      await panelForType(manageTarget.type).remove(manageTarget);
       toast(`${manageTarget.type} removed`);
       if (selectedLocation === manageTarget.name) setSelectedLocation(null);
       setManageTarget(null);
     } catch (error) { toast(error.message || `Could not remove ${manageTarget.type.toLowerCase()}`); }
   };
-  const locations = db.locations || [];
-  const assets = db.assets || [];
   const selectedAssets = assets.filter((asset) => asset.location === selectedLocation);
-  const categoryEntries = (db.categories || []).map((item) => ({ type: 'Category', key: item.id, name: item.name, id: item.id, used: assets.some((asset) => asset.category?.toLowerCase() === item.name.toLowerCase()) }));
-  const departmentEntries = (db.departments || []).map((name) => ({ type: 'Department', key: name, name, used: assets.some((asset) => asset.department?.toLowerCase() === name.toLowerCase()) }));
-  const locationEntries = locations.map((name) => ({ type: 'Location', key: name, name, used: assets.some((asset) => asset.location?.toLowerCase() === name.toLowerCase()), count: assets.filter((asset) => asset.location?.toLowerCase() === name.toLowerCase()).length }));
-  const entriesForType = (type) => ({ Category: categoryEntries, Department: departmentEntries, Location: locationEntries })[type] || [];
+  const entriesForType = (type) => panelForType(type)?.entries || [];
   const toggleSelection = (key) => setSelectedKeys((prev) => prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]);
   const startSelection = (type) => {
     if (selectionType === type) { setSelectionType(null); setSelectedKeys([]); }
@@ -79,7 +84,7 @@ export default function DirectoryPage() {
     setSelectedKeys((prev) => eligible.length && eligible.every((key) => prev.includes(key)) ? [] : eligible);
   };
   const manageActions = (type) => {
-    const selected = entriesForType(type).filter((entry) => selectedKeys.includes(entry.key));
+    const selected = entriesForType(type).filter((entry) => !entry.used && selectedKeys.includes(entry.key));
     if (selected.length !== 1) return;
     const entry = selected[0];
     openManage({ ...entry });
@@ -89,30 +94,11 @@ export default function DirectoryPage() {
     if (!selected.length || !window.confirm(`Delete ${selected.length} selected ${type.toLowerCase()}${selected.length === 1 ? '' : 's'}?`)) return;
     try {
       for (const entry of selected) {
-        if (type === 'Category') await deleteCategory(entry.id);
-        if (type === 'Department') await deleteDepartment(entry.name);
-        if (type === 'Location') await deleteLocation(entry.name);
+        await panelForType(type).remove(entry);
       }
       toast(`${selected.length} ${type.toLowerCase()}${selected.length === 1 ? '' : 's'} deleted`);
       setSelectedKeys([]);
     } catch (error) { toast(error.message || `Could not delete selected ${type.toLowerCase()}s`); }
-  };
-  const renderPanelActions = (type, addOption) => {
-    const entries = entriesForType(type);
-    const selectedCount = entries.filter((entry) => selectedKeys.includes(entry.key)).length;
-    const active = selectionType === type;
-    return <div className="directory-panel-actions">
-      {active ? <>
-        <button type="button" className="button ghost directory-add-button" onClick={() => selectAll(type)}>{entries.filter((entry) => !entry.used).length > 0 && entries.filter((entry) => !entry.used).every((entry) => selectedKeys.includes(entry.key)) ? 'Clear all' : 'Select all'}</button>
-        <span className="directory-selection-count">{selectedCount} selected</span>
-        {selectedCount === 1 && <button type="button" className="button ghost directory-add-button" onClick={() => manageActions(type)}>Edit</button>}
-        {selectedCount > 0 && <button type="button" className="button danger directory-add-button" onClick={() => deleteSelected(type)}>Delete</button>}
-        <button type="button" className="text-button" onClick={() => startSelection(type)}>Done</button>
-      </> : <>
-        {canAddCategory && <button type="button" className="button ghost directory-add-button" onClick={() => handleAddOption(type, addOption)}>+ Add</button>}
-        {canManageCategories && <button type="button" className="button ghost directory-add-button" onClick={() => startSelection(type)}>Select</button>}
-      </>}
-    </div>;
   };
 
   return (
@@ -124,54 +110,22 @@ export default function DirectoryPage() {
       </div>
 
       <div className="directory-columns">
-        <section className="panel">
-          <div className="directory-panel-heading">
-            <div><h3>Asset statuses</h3><p className="directory-panel-description">Lifecycle state shown on every asset record.</p></div>
-            {canAddCategory && <button type="button" className="button ghost directory-add-button" onClick={() => handleAddOption('Asset status', addStatus)}>+ Add</button>}
-          </div>
-          <ul className="directory-list">
-            {(db.statuses?.length ? db.statuses.map((item) => item.name) : ['Available', 'Assigned', 'On loan', 'Damaged', 'Under repair', 'Retired']).map((name) => {
-              const used = assets.some((asset) => asset.status?.toLowerCase() === name.toLowerCase());
-              return <li key={name} className="category-directory-row"><span>{name}</span><span className={`directory-edit-state ${used ? 'locked' : 'ready'}`}>{used ? 'In use' : 'Default'}</span></li>;
-            })}
-          </ul>
-        </section>
-        <section className="panel">
-          <div className="directory-panel-heading">
-            <div><h3>Asset categories</h3><p className="directory-panel-description">Equipment type, such as Laptop or Printer.</p></div>
-            {renderPanelActions('Category', addCategory)}
-          </div>
-          <ul className="directory-list">
-            {categoryEntries.map((entry) => <li key={entry.key} className={`category-directory-row directory-clickable-row${entry.used ? ' in-use' : ' editable'}${selectionType === entry.type && selectedKeys.includes(entry.key) ? ' selected' : ''}`} role={entry.used ? undefined : 'button'} tabIndex={entry.used ? undefined : 0} aria-disabled={entry.used || undefined} aria-pressed={!entry.used && selectionType === entry.type && selectedKeys.includes(entry.key)} onClick={() => activateEntry(entry)} onKeyDown={(event) => handleRowKeyDown(event, entry)}>{selectionType === entry.type && <input aria-label={`Select ${entry.name}`} type="checkbox" checked={selectedKeys.includes(entry.key)} disabled={entry.used} onClick={(event) => event.stopPropagation()} onChange={() => !entry.used && toggleSelection(entry.key)} />}<span>{entry.name}</span><span className={`directory-edit-state ${entry.used ? 'locked' : 'ready'}`}>{entry.used ? 'In use' : 'Editable'}</span></li>)}
-          </ul>
-        </section>
-        <section className="panel">
-          <div className="directory-panel-heading">
-            <div><h3>Departments</h3><p className="directory-panel-description">Teams assigned to company assets.</p></div>
-            {renderPanelActions('Department', addDepartment)}
-          </div>
-          <ul className="directory-list">
-            {departmentEntries.map((entry) => <li key={entry.key} className={`category-directory-row directory-clickable-row${entry.used ? ' in-use' : ' editable'}${selectionType === entry.type && selectedKeys.includes(entry.key) ? ' selected' : ''}`} role={entry.used ? undefined : 'button'} tabIndex={entry.used ? undefined : 0} aria-disabled={entry.used || undefined} aria-pressed={!entry.used && selectionType === entry.type && selectedKeys.includes(entry.key)} onClick={() => activateEntry(entry)} onKeyDown={(event) => handleRowKeyDown(event, entry)}>{selectionType === entry.type && <input aria-label={`Select ${entry.name}`} type="checkbox" checked={selectedKeys.includes(entry.key)} disabled={entry.used} onClick={(event) => event.stopPropagation()} onChange={() => !entry.used && toggleSelection(entry.key)} />}<span>{entry.name}</span><span className={`directory-edit-state ${entry.used ? 'locked' : 'ready'}`}>{entry.used ? 'In use' : 'Editable'}</span></li>)}
-          </ul>
-        </section>
-
-        <section className="panel">
-          <div className="directory-panel-heading">
-            <div><h3>Locations</h3><p className="directory-panel-description">Sites where company assets are held.</p></div>
-            {renderPanelActions('Location', addLocation)}
-          </div>
-          <ul className="directory-list">
-            {locationEntries.map((entry) => {
-              return (
-              <li key={entry.key} className={`category-directory-row directory-clickable-row location-clickable-row${entry.used ? ' in-use' : ' editable'}${selectionType === entry.type && selectedKeys.includes(entry.key) ? ' selected' : ''}`} role={entry.used ? undefined : 'button'} tabIndex={entry.used ? undefined : 0} aria-disabled={entry.used || undefined} aria-pressed={!entry.used && selectionType === entry.type && selectedKeys.includes(entry.key)} onClick={() => activateEntry(entry)} onKeyDown={(event) => handleRowKeyDown(event, entry)}>
-                {selectionType === entry.type && <input aria-label={`Select ${entry.name}`} type="checkbox" checked={selectedKeys.includes(entry.key)} disabled={entry.used} onClick={(event) => event.stopPropagation()} onChange={() => !entry.used && toggleSelection(entry.key)} />}
-                <span className="directory-location-name">{entry.name}<small>{entry.count} {entry.count === 1 ? 'asset' : 'assets'}</small></span>
-                <span className={`directory-edit-state ${entry.used ? 'locked' : 'ready'}`}>{entry.used ? 'In use' : 'Editable'}</span>
-              </li>
-              );
-            })}
-          </ul>
-        </section>
+        {[statusPanel, ...panels].map((panel) => (
+          <DirectoryPanel
+            key={panel.type}
+            panel={panel}
+            canManage={canManageDirectory}
+            selecting={selectionType === panel.type}
+            selectedKeys={selectionType === panel.type ? selectedKeys : []}
+            onAdd={() => handleAddOption(panel.type, panel.add)}
+            onToggleMode={() => startSelection(panel.type)}
+            onSelectAll={() => selectAll(panel.type)}
+            onEditSelected={() => manageActions(panel.type)}
+            onDeleteSelected={() => deleteSelected(panel.type)}
+            onActivate={activateEntry}
+            onToggleSelection={toggleSelection}
+          />
+        ))}
       </div>
 
       {selectedLocation && (
@@ -212,7 +166,7 @@ export default function DirectoryPage() {
             </p>
             <div className="field">
               <label htmlFor="directoryValueName">{manageTarget.type} name</label>
-              <input id="directoryValueName" value={editedName} onChange={(event) => setEditedName(event.target.value)} disabled={!canManageCategories || manageTarget.used} />
+              <input id="directoryValueName" value={editedName} onChange={(event) => setEditedName(event.target.value)} disabled={!canManageDirectory || manageTarget.used} />
             </div>
             {manageTarget.type === 'Location' && (
               <button type="button" className="text-button" onClick={() => { setSelectedLocation(manageTarget.name); setManageTarget(null); }}>
@@ -221,7 +175,7 @@ export default function DirectoryPage() {
             )}
             <div className="form-actions">
               <button type="button" className="button ghost" onClick={() => setManageTarget(null)}>Close</button>
-              {canManageCategories && <>
+              {canManageDirectory && <>
                 <button type="button" className="button danger" disabled={manageTarget.used} onClick={handleDelete}>Delete</button>
                 <button type="button" className="button" disabled={manageTarget.used || !editedName.trim() || editedName.trim() === manageTarget.name} onClick={handleRename}>Save</button>
               </>}

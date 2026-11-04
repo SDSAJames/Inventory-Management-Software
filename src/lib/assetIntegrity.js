@@ -2,7 +2,8 @@
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
-import { todayIso, readableLoanDate } from './utils.js';
+import { todayIso, readableLoanDate, isLoanReturned } from './utils.js';
+import { getAssetLocation, getAssetStatusAfterReturn } from '../../shared/assetRules.js';
 
 /**
  * Reconciles an asset against all loans in the database to derive its true latest
@@ -88,13 +89,17 @@ export function isAssetAssignable(asset) {
 export function reconcileAssetWithLoans(asset, loans = []) {
   if (!asset || !asset.code) return asset;
 
+  const location = getAssetLocation(asset.status, asset.location);
+  if (location !== asset.location) asset = { ...asset, location };
+  if (asset.status === 'Under repair') return asset;
+
   const assetLoans = loans.filter(
     (l) => String(l.assetCode || '').trim().toLowerCase() === String(asset.code || '').trim().toLowerCase()
   );
 
   // Find active loans (picked up, not returned, not archived)
   const activeLoan = assetLoans.find((l) => {
-    const isReturned = Boolean(l.returnDate || l.returnedDate || l.status === 'Returned' || l.isArchived);
+    const isReturned = isLoanReturned(l);
     const hasPickedUp = Boolean(l.pickupDate || l.status === 'Active');
     return hasPickedUp && !isReturned;
   });
@@ -140,7 +145,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
         ...asset,
         owner: 'IT department',
         department: '',
-        status: asset.status === 'Damaged' || asset.status === 'Under repair' || asset.status === 'Disposed' ? asset.status : 'Available',
+        status: getAssetStatusAfterReturn(asset.status),
         updated: asset.updated || todayIso(),
       };
     }
@@ -178,6 +183,8 @@ export function reconcileAssetWithLoans(asset, loans = []) {
  */
 export function validateAssetStatus(asset) {
   if (!asset) return asset;
+  const location = getAssetLocation(asset.status, asset.location);
+  if (location !== asset.location) asset = { ...asset, location };
   const isItDept = isItDepartment(asset.owner);
   const hasHolder = Boolean(asset.owner && String(asset.owner).trim() !== '' && !isItDept);
 

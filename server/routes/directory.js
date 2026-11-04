@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { normalizeLocation } from '../../shared/assetRules.js';
 
 export const directoryRouter = Router();
 
@@ -279,7 +280,7 @@ directoryRouter.post('/locations', authenticate, (req, res) => {
     return res.status(400).json({ success: false, error: 'Location name is required.' });
   }
 
-  const trimmed = name.trim();
+  const trimmed = normalizeLocation(name, '');
   const existing = db.prepare('SELECT id FROM locations WHERE LOWER(name) = LOWER(?)').get(trimmed);
   if (existing) {
     return res.status(409).json({ success: false, error: `Location ${trimmed} already exists.` });
@@ -300,7 +301,7 @@ directoryRouter.post('/locations', authenticate, (req, res) => {
 directoryRouter.put('/locations/:name', authenticate, requireRole('ADMIN', 'OPERATOR'), (req, res) => {
   const location = db.prepare('SELECT id, name FROM locations WHERE LOWER(name) = LOWER(?) OR id = ?').get(req.params.name, req.params.name);
   if (!location) return res.status(404).json({ success: false, error: 'Location not found.' });
-  const name = String(req.body?.name || '').trim();
+  const name = normalizeLocation(req.body?.name, '');
   if (!name) return res.status(400).json({ success: false, error: 'Location name is required.' });
   if (db.prepare('SELECT id FROM locations WHERE LOWER(name) = LOWER(?) AND id <> ?').get(name, location.id)) {
     return res.status(409).json({ success: false, error: 'That location already exists.' });

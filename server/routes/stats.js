@@ -2,11 +2,11 @@ import { Router } from 'express';
 import { db } from '../db/database.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
-export const statsRouter = Router();
+import { todayIso } from '../lib/dates.js';
+import { computeLoanStatus } from '../lib/loanRows.js';
+import { formatOwnershipAuditRow } from '../lib/assetRows.js';
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
+export const statsRouter = Router();
 
 // GET /api/stats/dashboard (Public or Authenticated)
 statsRouter.get('/dashboard', (req, res) => {
@@ -37,21 +37,12 @@ statsRouter.get('/dashboard', (req, res) => {
   let returnedLoans = 0;
 
   loans.forEach((l) => {
-    const isReturned = Boolean(l.return_date || l.returned_date || l.status === 'Returned' || l.is_archived);
-    if (isReturned) {
-      returnedLoans++;
-      return;
-    }
-    const hasPickedUp = Boolean(l.pickup_date || l.status === 'Active');
-    const isOverdue = Boolean(l.end_date && l.end_date < today);
-
-    if (isOverdue) {
-      overdueLoans++;
-    } else if (hasPickedUp) {
-      activeLoans++;
-    } else {
-      scheduledLoans++;
-    }
+    // Dashboard historically counts every stored end date; retain that policy.
+    const status = computeLoanStatus(l, { today, tracksDueDate: true });
+    if (status === 'Returned') returnedLoans++;
+    else if (status === 'Overdue') overdueLoans++;
+    else if (status === 'Active') activeLoans++;
+    else scheduledLoans++;
   });
 
   // 3. Category distribution
@@ -86,16 +77,7 @@ statsRouter.get('/dashboard', (req, res) => {
     FROM ownership_history
     ORDER BY date DESC, created_at DESC
     LIMIT 10
-  `).all().map((h) => ({
-    id: h.id,
-    assetCode: h.asset_code,
-    previousOwner: h.previous_owner,
-    newOwner: h.new_owner,
-    date: h.date,
-    reason: h.reason,
-    notes: h.notes,
-    createdAt: h.created_at,
-  }));
+  `).all().map(formatOwnershipAuditRow);
 
   // 7. Directory counts
   const totalEmployees = db.prepare('SELECT COUNT(*) as count FROM employees').get().count;

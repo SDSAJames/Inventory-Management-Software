@@ -5,6 +5,8 @@ import { getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
+import { getAssetLocation } from '../../shared/assetRules.js';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const { db, addAsset, updateAsset, addCategory, addStatus, addLocation, addDepartment } = useDb();
@@ -24,7 +26,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     model: '',
     serial: '',
     status: 'Available',
-    location: db.locations[0] || '',
+    location: DEFAULT_LOCATION,
     owner: '',
     department: '',
     issuedDate: '',
@@ -82,7 +84,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       if (nextStatus === 'Assigned' && prev.owner === 'IT department') {
         return { ...prev, status: 'Assigned', owner: '', department: '' };
       }
-      return { ...prev, status: nextStatus };
+      return { ...prev, status: nextStatus, location: getAssetLocation(nextStatus, prev.location) };
     });
   };
 
@@ -102,39 +104,24 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     });
   };
 
-  const handleAddCategory = async () => {
-    const name = window.prompt('Enter a name for the new asset category');
+  const handleAddDirectoryOption = async (field) => {
+    const label = field[0].toUpperCase() + field.slice(1);
+    const promptLabel = field === 'category' || field === 'status' ? `asset ${field}` : field;
+    const errorLabel = field === 'status' ? 'asset status' : field;
+    const addOption = { category: addCategory, status: addStatus, location: addLocation, department: addDepartment }[field];
+    const name = window.prompt(`Enter a name for the new ${promptLabel}`);
     if (name === null || !name.trim()) return;
     try {
-      const category = await addCategory(name);
-      setForm((prev) => ({ ...prev, category: category.name }));
-      toast(`Category “${category.name}” added`);
-    } catch (error) {
-      toast(error.message || 'Could not add category');
-    }
-  };
-
-  const handleAddDirectoryOption = async (label, addOption, field) => {
-    const name = window.prompt(`Enter a name for the new ${label.toLowerCase()}`);
-    if (name === null || !name.trim()) return;
-    try {
-      const value = await addOption(name);
-      setForm((prev) => ({ ...prev, [field]: value }));
+      const result = await addOption(name);
+      const value = typeof result === 'string' ? result : result.name;
+      setForm((prev) => ({
+        ...prev,
+        [field]: value,
+        ...(field === 'status' ? { location: getAssetLocation(value, prev.location) } : {}),
+      }));
       toast(`${label} “${value}” added`);
     } catch (error) {
-      toast(error.message || `Could not add ${label.toLowerCase()}`);
-    }
-  };
-
-  const handleAddStatus = async () => {
-    const name = window.prompt('Enter a name for the new asset status');
-    if (name === null || !name.trim()) return;
-    try {
-      const status = await addStatus(name);
-      setForm((prev) => ({ ...prev, status: status.name }));
-      toast(`Status “${status.name}” added`);
-    } catch (error) {
-      toast(error.message || 'Could not add asset status');
+      toast(error.message || `Could not add ${errorLabel}`);
     }
   };
 
@@ -171,6 +158,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       name: form.name || code,
       owner: form.owner ? form.owner.trim() : '',
       status: validatedStatus,
+      location: getAssetLocation(validatedStatus, form.location),
     };
 
     if (existing) {
@@ -252,7 +240,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             <div className="field">
               <div className="asset-category-label">
                 <label htmlFor="category">Category</label>
-                {canAddCategory && <button type="button" className="text-button" onClick={handleAddCategory}>+ Add</button>}
+                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('category')}>+ Add</button>}
               </div>
               <select id="category" value={form.category} onChange={set('category')}>
                 {[...new Set([...(db.categories || []).map((category) => category.name), form.category].filter(Boolean))].map((category) => (
@@ -273,7 +261,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             <div className="field">
               <div className="asset-category-label">
                 <label htmlFor="status">Status</label>
-                {canAddCategory && <button type="button" className="text-button" onClick={handleAddStatus}>+ Add</button>}
+                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('status')}>+ Add</button>}
               </div>
               <select id="status" value={form.status} onChange={handleStatusChange}>
                 {[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])].map((s) => <option key={s}>{s}</option>)}
@@ -282,11 +270,12 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             <div className="field">
               <div className="asset-category-label">
                 <label htmlFor="location">Location</label>
-                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('Location', addLocation, 'location')}>+ Add</button>}
+                {canAddCategory && form.status !== 'Under repair' && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('location')}>+ Add</button>}
               </div>
-              <select id="location" value={form.location} onChange={set('location')}>
-                {[...new Set([...(db.locations || []), form.location].filter(Boolean))].map((location) => <option key={location} value={location}>{location}</option>)}
+              <select id="location" value={getAssetLocation(form.status, form.location)} onChange={set('location')} disabled={form.status === 'Under repair'} aria-describedby={form.status === 'Under repair' ? 'repair-location-hint' : undefined}>
+                {[...new Set([...(db.locations || []), getAssetLocation(form.status, form.location)].filter(Boolean))].map((location) => <option key={location} value={location}>{location}</option>)}
               </select>
+              {form.status === 'Under repair' && <span id="repair-location-hint" className="field-hint">Set automatically while under repair.</span>}
             </div>
             <div className="field">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -309,7 +298,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             <div className="field">
               <div className="asset-category-label">
                 <label htmlFor="department">Department</label>
-                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('Department', addDepartment, 'department')}>+ Add</button>}
+                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('department')}>+ Add</button>}
               </div>
               <select id="department" value={form.department || ''} onChange={set('department')}>
                 <option value="">Select department</option>

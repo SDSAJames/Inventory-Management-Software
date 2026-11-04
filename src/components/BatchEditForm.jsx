@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { STATUSES } from '../lib/constants';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
+import { getAssetLocation } from '../../shared/assetRules.js';
+import { DEFAULT_LOCATION, REPAIR_LOCATION } from '../../shared/referenceData.js';
 
 /**
  * BatchEditForm – apply field changes to multiple selected assets.
@@ -25,7 +27,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
   // Values to apply
   const [values, setValues] = useState({
     status: 'Available',
-    location: db.locations[0] || '',
+    location: DEFAULT_LOCATION,
     owner: '',
     department: '',
     category: '',
@@ -38,6 +40,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
     setValues((prev) => ({ ...prev, [field]: e.target.value }));
 
   const enabledCount = Object.values(enabled).filter(Boolean).length;
+  const repairLocation = enabled.status && values.status === 'Under repair';
 
   const handleApply = (e) => {
     e.preventDefault();
@@ -51,6 +54,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
     for (const [field, on] of Object.entries(enabled)) {
       if (on) changes[field] = values[field];
     }
+    if (repairLocation) changes.location = getAssetLocation(changes.status, changes.location);
 
     const ids = new Set(selectedAssets.map((a) => a.id));
     batchUpdateAssets(ids, changes);
@@ -73,7 +77,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
       key: 'location',
       label: 'Location',
       type: 'select',
-      options: db.locations,
+      options: [...new Set([...(db.locations || []), ...(repairLocation ? [REPAIR_LOCATION] : [])])],
     },
     {
       key: 'owner',
@@ -111,21 +115,22 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
       <form onSubmit={handleApply}>
         <div className="batch-fields">
           {FIELDS.map((f) => (
-            <div key={f.key} className={`batch-field-row ${enabled[f.key] ? 'active' : ''}`}>
+            <div key={f.key} className={`batch-field-row ${enabled[f.key] || (f.key === 'location' && repairLocation) ? 'active' : ''}`}>
               <label className="batch-toggle">
                 <input
                   type="checkbox"
-                  checked={enabled[f.key]}
+                  checked={enabled[f.key] || (f.key === 'location' && repairLocation)}
                   onChange={() => toggle(f.key)}
+                  disabled={f.key === 'location' && repairLocation}
                 />
                 <span className="batch-field-label">{f.label}</span>
               </label>
               <div className="batch-field-input">
                 {f.type === 'select' ? (
                   <select
-                    value={values[f.key]}
+                    value={f.key === 'location' && repairLocation ? REPAIR_LOCATION : values[f.key]}
                     onChange={set(f.key)}
-                    disabled={!enabled[f.key]}
+                    disabled={!enabled[f.key] || (f.key === 'location' && repairLocation)}
                   >
                     {f.options.map((o) => (
                       <option key={o}>{o}</option>
@@ -144,6 +149,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
             </div>
           ))}
         </div>
+        {repairLocation && <p className="field-hint">Under repair automatically sets the location to {REPAIR_LOCATION}.</p>}
 
         <div className="form-actions">
           <button type="button" className="button ghost" onClick={onClose}>
