@@ -128,7 +128,7 @@ export default function LoansPage() {
   const handleConfirmBulkDelete = () => {
     const count = selectedLoans.length;
     selectedLoans.forEach((loan) => deleteLoan(loan.id));
-    toast(`${count} loan record${count === 1 ? '' : 's'} deleted.`);
+    toast(`${count} custody record${count === 1 ? '' : 's'} deleted.`);
     setSelectedIds(new Set());
     setShowBulkDelete(false);
   };
@@ -253,7 +253,7 @@ export default function LoansPage() {
 
   const handleRevertReturn = (loan) => {
     unarchiveLoan(loan.id);
-    toast(`Return reverted for ${loan.assignee || 'loan'}. Record moved back to Loaned.`);
+    toast(`Return reverted for ${loan.assignee || 'loan'}. Record moved back to Active.`);
   };
 
   /* ── Record Deletion flow ───────────────────────── */
@@ -336,7 +336,7 @@ export default function LoansPage() {
       new Blob([workbook], { type: XLSX_MIME }),
       `SPE_IT_Equipment_Loan_List_${todayIso()}.xlsx`,
     );
-    toast(`${db.loans.length} loan record${db.loans.length === 1 ? '' : 's'} exported to Excel.`);
+    toast(`${db.loans.length} custody record${db.loans.length === 1 ? '' : 's'} exported to Excel.`);
   };
 
   /* ── Inline save ────────────────────────────────── */
@@ -379,7 +379,7 @@ export default function LoansPage() {
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            Track scheduled pickups, device handovers, and return records. Click any row to view details.
+            Manage employee laptop assignments and business-traveler equipment checkouts together, with shared pickup schedules, handovers, and returns. Click any row to view details.
           </p>
         </div>
         <div className="view-header-actions">
@@ -414,7 +414,7 @@ export default function LoansPage() {
             onChange={handleImportFile}
           />
           <button className="button" onClick={() => setShowCreate(true)}>
-            + Schedule laptop
+            + Schedule pickup
           </button>
         </div>
       </div>
@@ -438,7 +438,7 @@ export default function LoansPage() {
           title={hasSearch ? `${filteredLoanedLoans.length} matching of ${loanedLoans.length} loaned` : undefined}
         >
           <span className="category-dot loaned-dot">●</span>
-          Loaned
+          Active
           <span className="loan-tab-count">
             {hasSearch ? filteredLoanedLoans.length : loanedLoans.length}
           </span>
@@ -496,22 +496,22 @@ export default function LoansPage() {
 
       <div className="category-description">
         {category === 'scheduled' && (
-          <span>📋 <strong>Scheduled pickups:</strong> Laptops awaiting handover. Click <strong>Pickup</strong> to timestamp handover. Click row for loaner details.</span>
+          <span>📋 <strong>Scheduled pickups:</strong> Employee assignments and business-traveler equipment awaiting handover. Click <strong>Pickup</strong> to timestamp handover. Click row for recipient details.</span>
         )}
         {category === 'loaned' && (
-          <span>🚀 <strong>Active loans:</strong> Laptops currently with employees/travelers. Tick checkboxes and use <strong>Return</strong> or <strong>↶ Revert pickup</strong> above the table. Click column header to sort.</span>
+          <span>🚀 <strong>Active assignments &amp; loans:</strong> Equipment assigned to employees or loaned to business travelers. Tick checkboxes and use <strong>Return</strong> or <strong>↶ Revert pickup</strong> above the table. Click column header to sort.</span>
         )}
         {category === 'overdue' && (
           <span>⚠️ <strong>Overdue loans:</strong> End date has passed today and equipment has not been returned. Tick checkboxes to record bulk returns or delete records.</span>
         )}
         {category === 'returned' && (
-          <span>📦 <strong>Returned & archived:</strong> Completed laptop loans. Click <strong>↶ Revert</strong> if returned by mistake to move back to Loaned.</span>
+          <span>📦 <strong>Returned & archived:</strong> Completed assignments and loans. Click <strong>↶ Revert</strong> if returned by mistake to move back to Active.</span>
         )}
         {category === 'unreturned' && (
-          <span>⚠️ <strong>Equipment outstanding:</strong> Returned loans with accessories still missing. Expand a row to see which items were not returned.</span>
+          <span>⚠️ <strong>Equipment outstanding:</strong> Returned records with accessories still missing. Expand a row to see which items were not returned.</span>
         )}
         {category === 'all' && (
-          <span>🗂️ <strong>All records:</strong> Complete schedule and loan history with full status management.</span>
+          <span>🗂️ <strong>All records:</strong> Complete assignment, loan, and pickup history with full status management.</span>
         )}
       </div>
 
@@ -565,7 +565,7 @@ export default function LoansPage() {
                   className="btn-hint-category"
                   onClick={() => setCategory('loaned')}
                 >
-                  Loaned ({filteredLoanedLoans.length})
+                  Active ({filteredLoanedLoans.length})
                 </button>
               )}
               {filteredOverdueLoans.length > 0 && category !== 'overdue' && (
@@ -639,7 +639,7 @@ export default function LoansPage() {
                 className="button danger"
                 disabled={!selectedLoans.length}
                 onClick={() => setShowBulkDelete(true)}
-                title="Permanently delete selected loan records"
+                title="Permanently delete selected custody records"
               >
                 🗑 Delete{selectedLoans.length ? ` (${selectedLoans.length})` : ''}
               </button>
@@ -1163,7 +1163,7 @@ export default function LoansPage() {
                   <div>
                     <strong>Device Check-in to IT Department</strong>
                     <p style={{ margin: '3px 0 0', lineHeight: 1.35 }}>
-                      Confirming return will change asset <strong>{returnTargets[0].assetCode}</strong> status back to <strong>Available</strong> in IT department inventory and archive this loan record.
+                      Confirming return will change asset <strong>{returnTargets[0].assetCode}</strong> status back to <strong>Available</strong> in IT department inventory and archive this custody record.
                     </p>
                   </div>
                 </div>
@@ -1483,7 +1483,7 @@ export default function LoansPage() {
               {` (${returnTargets.length} laptops)`}
             </h2>
             <p className="modal-intro">
-              Timestamp defaults to current time. Confirming return will return the laptops to IT department and archive these loan records.
+              Timestamp defaults to current time. Confirming return will return the laptops to IT department and archive these custody records.
             </p>
 
             <div className="timestamp-dialog-card">
@@ -1544,9 +1544,9 @@ export default function LoansPage() {
       {/* Bulk Deletion Confirmation Modal (Loaned tab) */}
       <Modal open={showBulkDelete} size="sm" onClose={() => setShowBulkDelete(false)}>
         <div className="delete-dialog">
-          <h2>Delete {selectedLoans.length} loan record{selectedLoans.length === 1 ? '' : 's'}</h2>
+          <h2>Delete {selectedLoans.length} custody record{selectedLoans.length === 1 ? '' : 's'}</h2>
           <p className="modal-intro">
-            Are you sure you want to permanently delete the selected loan record{selectedLoans.length === 1 ? '' : 's'}? This action cannot be undone.
+            Are you sure you want to permanently delete the selected custody record{selectedLoans.length === 1 ? '' : 's'}? This action cannot be undone.
           </p>
           <div className="timestamp-dialog-card">
             <ul className="bulk-delete-list">
@@ -1580,7 +1580,7 @@ export default function LoansPage() {
           <div className="import-preview">
             <h2>Import loans from file</h2>
             <p className="modal-intro">
-              <code>{importPreview.fileName}</code> — review the loan records found in the file before applying.
+              <code>{importPreview.fileName}</code> — review the custody records found in the file before applying.
             </p>
 
             <div className="import-stats">
@@ -1678,9 +1678,9 @@ export default function LoansPage() {
       <Modal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}>
         {deleteTarget && (
           <div className="delete-dialog">
-            <h2>Delete loan record</h2>
+            <h2>Delete custody record</h2>
             <p className="modal-intro">
-              Are you sure you want to permanently delete this loan record? This action cannot be undone.
+              Are you sure you want to permanently delete this custody record? This action cannot be undone.
             </p>
 
             <div className="timestamp-dialog-card">

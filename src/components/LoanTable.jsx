@@ -31,6 +31,18 @@ const COLUMNS = [
   { key: 'status', label: 'Status', getValue: (l) => STATUS_ORDER[getLoanStatus(l)] },
 ];
 
+const SCHEDULED_COLUMNS = [
+  { key: 'readyForPickup', label: 'Pickup readiness', getValue: (loan) => loan.readyForPickup ? 1 : 0 },
+  { key: 'assigneeType', label: 'Borrower type', getValue: (loan) => isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee' },
+];
+
+function ScheduleFields({ loan }) {
+  return <>
+    <td><span className={`status ${loan.readyForPickup ? 'available' : 'scheduled'}`}>{loan.readyForPickup ? 'Ready for pickup' : 'Not ready'}</span></td>
+    <td><span className="assignee-badge">{isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee'}</span></td>
+  </>;
+}
+
 export default function LoanTable({
   loans,
   assets,
@@ -57,12 +69,13 @@ export default function LoanTable({
   const [expandedId, setExpandedId] = useState(null);
   const [sort, setSort] = useState({ key: null, dir: 'asc' });
 
-  const totalColumns = COLUMNS.length + 1;
+  const columns = useMemo(() => scheduled ? [...SCHEDULED_COLUMNS, ...COLUMNS] : COLUMNS, [scheduled]);
+  const totalColumns = columns.length + 1;
 
   // Keep the original position (No) attached to each loan, then apply sorting.
   const sortedRows = useMemo(() => {
     const rows = loans.map((loan, idx) => ({ loan, idx }));
-    const column = COLUMNS.find((c) => c.key === sort.key);
+    const column = columns.find((c) => c.key === sort.key);
     if (!column) return rows;
     const factor = sort.dir === 'asc' ? 1 : -1;
     return [...rows].sort((a, b) => {
@@ -78,7 +91,7 @@ export default function LoanTable({
       if (va > vb) return 1 * factor;
       return a.idx - b.idx;
     });
-  }, [loans, sort]);
+  }, [loans, sort, columns]);
 
   // Cycle: ascending → descending → original order
   const handleSort = (key) => {
@@ -126,7 +139,7 @@ export default function LoanTable({
   };
 
   if (!loans.length) {
-    return <div className="empty">{emptyMessage || 'No loan records in this category.'}</div>;
+    return <div className="empty">{emptyMessage || 'No assignment or loan records in this category.'}</div>;
   }
 
   return (
@@ -149,7 +162,7 @@ export default function LoanTable({
             ) : (
               <th className="col-action">Action</th>
             )}
-            {COLUMNS.map((col) => {
+            {columns.map((col) => {
               const isActive = sort.key === col.key;
               return (
                 <th
@@ -190,7 +203,9 @@ export default function LoanTable({
               : [];
 
             // Compute current lifecycle status label (accurately reflecting Overdue if end date is over today)
-            const statusLabel = loan.status === 'Transferred' ? 'Transferred' : isEditing && draft ? getLoanStatus(draft) : getLoanStatus(loan);
+            const currentRecord = isEditing && draft ? draft : loan;
+            const lifecycleStatus = currentRecord.status === 'Transferred' ? 'Transferred' : getLoanStatus(currentRecord);
+            const statusLabel = lifecycleStatus === 'Loaned' && !isBusinessTraveler(currentRecord.assigneeType) ? 'Assigned' : lifecycleStatus;
 
             if (isEditing && draft) {
               return (
@@ -201,6 +216,7 @@ export default function LoanTable({
                       <button className="btn-action btn-cancel" onClick={cancelEdit}>Cancel</button>
                     </div>
                   </td>
+                  {scheduled && <ScheduleFields loan={draft} />}
                   <td className="col-no"><strong>{draft.assetCode || draft.equipment?.Laptop || '—'}</strong></td>
                   <td>
                     <input
@@ -267,7 +283,7 @@ export default function LoanTable({
                             update('returnDate', '');
                             update('returnedDate', '');
                           }}
-                          title="Clear return date (revert to Loaned)"
+                          title="Clear return date (revert to Active)"
                         >
                           ✕
                         </button>
@@ -293,7 +309,7 @@ export default function LoanTable({
                     if (['BUTTON', 'INPUT', 'SELECT', 'A'].includes(e.target.tagName)) return;
                     toggleExpand(loan.id);
                   }}
-                  title="Click to view loaner and equipment information"
+                  title="Click to view recipient and equipment information"
                 >
                   {selectable ? (
                   <td className="col-checkbox">
@@ -316,7 +332,7 @@ export default function LoanTable({
                               e.stopPropagation();
                               onRevertReturn && onRevertReturn(loan);
                             }}
-                            title="Revert return: removes return date and puts record back on Loaned"
+                            title="Revert return: removes return date and puts record back in Active"
                           >
                             ↶ Revert
                           </button>
@@ -364,6 +380,7 @@ export default function LoanTable({
                     </div>
                   </td>
                   )}
+                  {scheduled && <ScheduleFields loan={loan} />}
                   <td className="col-no">
                     <strong>{loan.assetCode || eq.Laptop || '—'}</strong>
                     {!isPickedUp && !isReturned && (eq.RequestedPC || eq.RequestedMonitor) && (
@@ -412,7 +429,7 @@ export default function LoanTable({
                       <div className="loan-detail-card">
                         <div className="loan-detail-header">
                           <div className="loan-detail-title">
-                            <h4>{loan.assignee || 'Unnamed Loaner'}</h4>
+                            <h4>{loan.assignee || 'Unnamed recipient'}</h4>
                             <span className="assignee-badge">
                               {loan.assigneeType || 'Employee'}
                             </span>
@@ -452,9 +469,9 @@ export default function LoanTable({
                               <button
                                 className="button secondary small-btn"
                                 onClick={() => onRevertReturn && onRevertReturn(loan)}
-                                title="Clear return date and revert to Loaned"
+                                title="Clear return date and revert to Active"
                               >
-                                ↶ Revert to Loaned (remove return date)
+                                ↶ Revert to Active (remove return date)
                               </button>
                             )}
 
@@ -471,7 +488,7 @@ export default function LoanTable({
                               <button
                                 className="button ghost small-btn danger-action-btn"
                                 onClick={() => onDeleteLoan(loan)}
-                                title="Permanently delete this loan record"
+                                title="Permanently delete this custody record"
                               >
                                 🗑 Delete record
                               </button>
@@ -482,7 +499,7 @@ export default function LoanTable({
                         <div className="loan-detail-grid">
                           {/* Loaner Details */}
                           <div className="detail-section">
-                            <h5>👤 Loaner information</h5>
+                            <h5>👤 Recipient information</h5>
                             <dl>
                               <dt>Assignee:</dt>
                               <dd><strong>{loan.assignee || '—'}</strong></dd>

@@ -296,7 +296,8 @@ The frontend application provides eight core operational views accessed via the 
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
    - Click and drag row selection with bulk status updates and bulk deletion.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
-3. **Loans & Custody (`/loans`)**:
+3. **Assignments & Pickups (`/loans`)**:
+   - Employee laptop handovers are assignments; business traveler handovers are loans. Both share the Scheduled pickup list and Active tab. Navigation and page headings use Assignments & Pickups; the `/loans` address is retained.
    - Knox ID is the only required field in the add form; full name and PC assignment are optional. An optional pickup date records a handover directly.
    - PC search includes Laptop, MES PC, and PC categories; monitor search accepts registered Monitor/Monitors assets. The main table displays PC asset numbers instead of sequence numbers.
    - Active, Scheduled, Overdue, Returned, and Unreturned (partial return) custody management.

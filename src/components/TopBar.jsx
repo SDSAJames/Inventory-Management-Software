@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { CUSTODY_PAGE_TITLE } from '../lib/constants';
 
 const PAGE_META = {
   '/': {
@@ -11,8 +12,8 @@ const PAGE_META = {
     title: 'Asset Register',
   },
   '/loans': {
-    eyebrow: 'DEVICE LOANS & CUSTODY MANAGEMENT',
-    title: 'Loans & Custody',
+    eyebrow: 'EMPLOYEE ASSIGNMENTS & TRAVELER PICKUP SCHEDULE',
+    title: CUSTODY_PAGE_TITLE,
   },
   '/calendar': {
     eyebrow: 'EQUIPMENT CHECKOUT & RETURN SCHEDULE',

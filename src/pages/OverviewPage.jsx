@@ -190,7 +190,7 @@ export default function OverviewPage() {
           </div>
           <div className="quick-actions">
             <button onClick={() => setModal('loan')}>
-              <span className="quick-icon">↗</span>Record a loan
+              <span className="quick-icon">↗</span>Record assignment or loan
             </button>
             <button onClick={() => navigate('/exchange')}>
               <span className="quick-icon">⇄</span>Import Excel

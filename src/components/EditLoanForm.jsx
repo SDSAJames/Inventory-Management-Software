@@ -104,9 +104,9 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
 
   return (
     <>
-      <h2>Edit loan record</h2>
+      <h2>{isBusinessTraveler(form.assigneeType) ? 'Edit loan' : 'Edit assignment'}</h2>
       <p className="modal-intro">
-        Update any loan field. Pickup and return can be added here after creation.
+        Update the assignment or loan details. Pickup and return can be added here after creation.
       </p>
 
       <form onSubmit={handleSubmit} noValidate>

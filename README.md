@@ -45,7 +45,7 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
-3. **Loans & Custody (`/loans`)**: Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Enter a pickup date to record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, pickup readiness, return details, and an Unreturned section for partial returns.
+3. **Assignments & Pickups (`/loans`)**: Manage employee laptop assignments and business-traveler equipment checkouts together. Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Enter a pickup date to record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, pickup readiness, return details, and an Unreturned section for partial returns.
 4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, and keyword search.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
 6. **Asset & Organization Directory (`/directory`)**: Manage asset categories, statuses, departments, and locations. Add custom statuses here or from asset forms. Selection, select-all, edit, and bulk-delete actions protect reference values currently used by assets.
@@ -56,7 +56,9 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ### Loan import matching and cleanup
 
-Employee and traveler requests without a pickup remain in the Loans **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.
+**Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; the Active tab covers equipment already handed over, and employee records display Assigned. The existing `/loans` address continues to open this page.
+
+Employee and traveler requests without a pickup remain in the Assignments & Pickups **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.
 
 For an outstanding picked-up loan, expand its row and choose **Transfer equipment**. Select all items or individual items and quantities, then enter the new owner's Knox ID and optional name. Transfers create a linked custody record and ownership history for registered devices. Remaining items stay with the original owner; a fully transferred source is archived with a **Transferred** label. Transfers do not record a physical return.
 

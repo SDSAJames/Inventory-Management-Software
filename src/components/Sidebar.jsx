@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { isBusinessTraveler } from '../lib/loanEquipment';
-import { APP_VERSION } from '../lib/constants';
+import { APP_VERSION, CUSTODY_PAGE_TITLE } from '../lib/constants';
 
 const NAV_ITEMS = [
   {
@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   },
   {
     path: '/loans',
-    label: 'Loans',
+    label: CUSTODY_PAGE_TITLE,
     view: 'loans',
     icon: (
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

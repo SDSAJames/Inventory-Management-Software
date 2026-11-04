@@ -146,7 +146,8 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     } : null;
 
     addLoan(loanData, assetUpdates, newEmployee);
-    toast(form.pickupDate ? 'Loan recorded with pickup date' : 'Loan scheduled successfully');
+    const recordType = isBusinessTraveler(form.assigneeType) ? 'Loan' : 'Assignment';
+    toast(form.pickupDate ? `${recordType} recorded with pickup date` : `${recordType} scheduled successfully`);
 
     if (onSuccess) {
       onSuccess(loanData);
@@ -157,9 +158,9 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   return (
     <div className="loan-entry">
       <div className="modal-header-section">
-        <h2>Record internal loan</h2>
+        <h2>Record assignment or loan</h2>
         <p className="modal-intro">
-          Only Knox ID is required. Leave pickup blank to schedule equipment without changing inventory.
+          Assign equipment to an employee or loan it to a business traveler. Only Knox ID is required. Leave pickup blank to schedule equipment without changing inventory.
         </p>
       </div>
 
@@ -320,7 +321,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
             Cancel
           </button>
           <button type="submit" className="button">
-            {form.pickupDate ? 'Record loan' : 'Schedule loan'}
+            {form.pickupDate ? 'Record pickup' : 'Schedule pickup'}
           </button>
         </div>
       </form>

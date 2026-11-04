@@ -1,6 +1,7 @@
 import packageMetadata from '../../package.json' with { type: 'json' };
 
 export const APP_VERSION = packageMetadata.version;
+export const CUSTODY_PAGE_TITLE = 'Assignments & Pickups';
 export const STORAGE_KEY = 'starplusenergy-asset-index-v1';
 export const IMPORT_BACKUP_KEY = 'starplusenergy-last-import-backup-v1';
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

@@ -19,7 +19,7 @@ export default function LoanTransferForm({ loan, onClose }) {
       setDb((previous) => ({ ...previous, ...result.db })); onClose();
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
-  return <form onSubmit={submit}><h2>Transfer loan equipment</h2><p>Select items or quantities moving to the new owner. The original loan retains the transfer history.</p>
+  return <form onSubmit={submit}><h2>Transfer equipment</h2><p>Select items or quantities moving to the new owner. The original record retains the transfer history.</p>
     <div className="form-grid"><div className="field"><label htmlFor="transfer-knox">New owner Knox ID *</label><input id="transfer-knox" required value={knoxId} onChange={(e) => setKnoxId(e.target.value)} /></div><div className="field"><label htmlFor="transfer-name">Assignee</label><input id="transfer-name" value={assignee} onChange={(e) => setAssignee(e.target.value)} /></div></div>
     <button type="button" className="button ghost" onClick={() => setSelection(Object.fromEntries(items.map((key) => [key, String(equipment[key])])))}>Select all</button>
     <button type="button" className="button ghost" onClick={() => setSelection({})}>Clear all</button>
