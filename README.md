@@ -56,9 +56,13 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ### Loan import matching and cleanup
 
+Click a Directory status, category, department, or location to open its matching asset list. Search the list and open an asset to edit its location or other details; saving returns to the refreshed list. Use Select to rename or delete unused directory values. Asset number edits persist and update linked custody and ownership-history references together; duplicate numbers are rejected and failed saves keep the form open.
+
 All asset types include optional **Purchase date** and **Warranty expiration date**. Enter and view these dates as **MM-DD-YYYY**; for example, `10-07-2023` means October 7, 2023. Dates are stored internally as ISO calendar dates. The warranty date must be on or after the purchase date when both are supplied. Dates persist through editing, database backup/restore, and equipment import/export; exports append a warranty column when a recorded value needs it. Restart the backend after upgrading to add the warranty database column automatically.
 
 Returned devices move to **IT Department**. The existing **Under repair → service center** location rule remains in effect, and the original rental location remains on the custody record.
+
+Clearing an existing asset's **Current holder** and saving records a return to **IT department** in Ownership History, including the previous holder and timestamp. The linked pickup records the returned device so synchronization keeps it in IT custody. Other devices and accessories remain outstanding until checked in.
 
 **Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; picked-up employee equipment appears under **Assigned**, while business-traveler checkouts appear under **Loans**. Return records capture the laptop asset number actually received, including missing or substituted laptops. The existing `/loans` address continues to open this page.
 

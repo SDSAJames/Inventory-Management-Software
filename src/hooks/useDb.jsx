@@ -29,7 +29,7 @@ export function DbProvider({ children }) {
       // Ensure baseline seed assets like SPE-4321 are present
       const existingCodes = new Set(raw.assets.map((a) => a.code));
       for (const sa of (seed.assets || [])) {
-        if (!existingCodes.has(sa.code)) {
+        if (!existingCodes.has(sa.code) && !raw.assets.some((asset) => asset.id === sa.id)) {
           raw.assets.push(sa);
         }
       }
@@ -183,31 +183,40 @@ export function DbProvider({ children }) {
     api.assets.create(newAsset).catch((err) => console.warn('Could not sync asset to server:', err.message));
   }, []);
 
-  const updateAsset = useCallback((id, changes) => {
-    setDb((prev) => ({
-      ...prev,
-      assets: prev.assets.map((a) => {
-        if (a.id !== id) return a;
-        let ownershipHistory = a.ownershipHistory || [];
-        if (changes.owner !== undefined && changes.owner !== a.owner) {
-          ownershipHistory = [
-            createOwnershipEntry({
-              previousOwner: a.owner || 'None',
-              newOwner: changes.owner || 'None',
-              reason: changes.owner ? (a.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
-            }),
-            ...ownershipHistory,
-          ];
-        }
-        return validateAssetStatus({
-          ...a,
-          ...changes,
-          ownershipHistory,
-          updated: todayIso(),
-        });
-      }),
-    }));
-    api.assets.update(id, changes).catch((err) => console.warn('Could not sync asset update to server:', err.message));
+  const updateAsset = useCallback(async (id, changes) => {
+    const result = await api.assets.update(id, changes);
+    setDb((prev) => {
+      const previousAsset = prev.assets.find((asset) => asset.id === id);
+      const savedChanges = { ...changes, ...result.asset };
+      const affectedLoans = new Map((result.loans || []).map((loan) => [loan.id, loan]));
+      return {
+        ...prev,
+        loans: (previousAsset && savedChanges.code && previousAsset.code !== savedChanges.code
+          ? prev.loans.map((loan) => renameLoanAssetReferences(loan, previousAsset.code, savedChanges.code))
+          : prev.loans).map((loan) => affectedLoans.get(loan.id) || loan),
+        assets: prev.assets.map((a) => {
+          if (a.id !== id) return a;
+          let ownershipHistory = result.asset.ownershipHistory || a.ownershipHistory || [];
+          if (!result.asset.ownershipHistory && savedChanges.owner !== undefined && savedChanges.owner !== a.owner) {
+            ownershipHistory = [
+              createOwnershipEntry({
+                previousOwner: a.owner || 'None',
+                newOwner: savedChanges.owner || 'None',
+                reason: savedChanges.owner ? (a.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
+              }),
+              ...ownershipHistory,
+            ];
+          }
+          return validateAssetStatus({
+            ...a,
+            ...savedChanges,
+            ownershipHistory,
+            updated: todayIso(),
+          });
+        }),
+      };
+    });
+    return result.asset;
   }, []);
 
   /**
@@ -1023,3 +1032,4 @@ export function useDb() {
   if (!ctx) throw new Error('useDb must be used within <DbProvider>');
   return ctx;
 }
+import { renameLoanAssetReferences } from '../../shared/assetReferences.js';

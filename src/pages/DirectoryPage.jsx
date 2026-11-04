@@ -2,10 +2,12 @@ import { useDb } from '../hooks/useDb';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
-import { statusClass } from '../lib/utils';
 import { STATUSES } from '../lib/constants';
 import Modal from '../components/Modal';
 import DirectoryPanel from '../components/DirectoryPanel';
+import AssetTable from '../components/AssetTable';
+import AssetForm from '../components/AssetForm';
+import SearchBar from '../components/SearchBar';
 
 export default function DirectoryPage() {
   const { db, addCategory, addStatus, addDepartment, addLocation, renameCategory, deleteCategory, renameDepartment, deleteDepartment, renameLocation, deleteLocation } = useDb();
@@ -41,7 +43,13 @@ export default function DirectoryPage() {
       toast(error.message || `Could not add ${label.toLowerCase()}`);
     }
   };
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [assetTarget, setAssetTarget] = useState(null);
+  const [assetSearch, setAssetSearch] = useState('');
+  const [editAssetId, setEditAssetId] = useState(null);
+  const openAssets = (panel, entry) => {
+    setAssetTarget({ field: panel.assetField || 'status', type: panel.type, name: entry.name });
+    setAssetSearch('');
+  };
   const [manageTarget, setManageTarget] = useState(null);
   const [editedName, setEditedName] = useState('');
   const [selectionType, setSelectionType] = useState(null);
@@ -68,11 +76,11 @@ export default function DirectoryPage() {
     try {
       await panelForType(manageTarget.type).remove(manageTarget);
       toast(`${manageTarget.type} removed`);
-      if (selectedLocation === manageTarget.name) setSelectedLocation(null);
       setManageTarget(null);
     } catch (error) { toast(error.message || `Could not remove ${manageTarget.type.toLowerCase()}`); }
   };
-  const selectedAssets = assets.filter((asset) => asset.location === selectedLocation);
+  const selectedAssets = assetTarget ? assets.filter((asset) => String(asset[assetTarget.field] || '').trim().toLowerCase() === assetTarget.name.trim().toLowerCase()) : [];
+  const visibleAssets = selectedAssets.filter((asset) => [asset.code, asset.name, asset.category, asset.model, asset.serial, asset.owner, asset.department, asset.location].some((value) => String(value || '').toLowerCase().includes(assetSearch.trim().toLowerCase())));
   const entriesForType = (type) => panelForType(type)?.entries || [];
   const toggleSelection = (key) => setSelectedKeys((prev) => prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]);
   const startSelection = (type) => {
@@ -105,7 +113,7 @@ export default function DirectoryPage() {
     <>
       <div className="view-header">
         <div>
-          <p className="view-subtitle">Manage the shared lists used by asset records: statuses, categories, departments, and locations.</p>
+          <p className="view-subtitle">Click a status, category, department, or location to view its assets and edit their details. Use Select to rename or delete unused directory values.</p>
         </div>
       </div>
 
@@ -124,36 +132,23 @@ export default function DirectoryPage() {
             onDeleteSelected={() => deleteSelected(panel.type)}
             onActivate={activateEntry}
             onToggleSelection={toggleSelection}
+            onBrowse={(entry) => openAssets(panel, entry)}
           />
         ))}
       </div>
 
-      {selectedLocation && (
-        <section className="panel directory-assets-panel" aria-live="polite">
-          <div className="directory-assets-heading">
-            <div>
-              <h3>{selectedLocation}</h3>
-              <p>{selectedAssets.length} {selectedAssets.length === 1 ? 'asset' : 'assets'} at this location</p>
-            </div>
-            <button type="button" className="button ghost" onClick={() => setSelectedLocation(null)}>Close</button>
-          </div>
-          {selectedAssets.length ? (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Asset</th><th>Category / model</th><th>Status</th><th>Holder</th><th>Department</th><th>Serial number</th><th>Condition</th></tr></thead>
-                <tbody>{selectedAssets.map((asset) => (
-                  <tr key={asset.id || asset.code}>
-                    <td><strong>{asset.name || asset.code || 'Unnamed asset'}</strong><div className="asset-code">{asset.code || 'No asset number'}</div></td>
-                    <td>{asset.category || '—'}<div className="asset-code">{asset.model || '—'}</div></td>
-                    <td><span className={`status ${statusClass(asset.status)}`}>{asset.status || 'Unknown'}</span></td>
-                    <td>{asset.owner || '—'}</td><td>{asset.department || '—'}</td><td>{asset.serial || '—'}</td><td>{asset.condition || '—'}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-          ) : <div className="empty">No assets are currently assigned to this location.</div>}
-        </section>
-      )}
+      <Modal open={Boolean(assetTarget) && editAssetId === null} size="wide" onClose={() => setAssetTarget(null)}>
+        {assetTarget && <>
+          <h2>{assetTarget.type}: {assetTarget.name}</h2>
+          <p className="modal-intro">{selectedAssets.length} {selectedAssets.length === 1 ? 'asset' : 'assets'}.{canManageDirectory ? ' Click an asset to edit its location or other details.' : ''}</p>
+          <SearchBar id="directory-asset-search" searchTerm={assetSearch} onSearchChange={setAssetSearch} placeholder="Search asset number, holder, model, or serial number" />
+          {visibleAssets.length ? <AssetTable assets={visibleAssets} onEditAsset={canManageDirectory ? setEditAssetId : undefined} /> : <div className="empty">{selectedAssets.length ? 'No assets match your search.' : 'No assets currently use this directory value.'}</div>}
+          <div className="form-actions"><button type="button" className="button ghost" onClick={() => setAssetTarget(null)}>Close</button></div>
+        </>}
+      </Modal>
+      <Modal open={editAssetId !== null} size="wide" onClose={() => setEditAssetId(null)}>
+        {editAssetId !== null && <AssetForm assetId={editAssetId} onClose={() => setEditAssetId(null)} />}
+      </Modal>
 
       <Modal open={Boolean(manageTarget)} onClose={() => setManageTarget(null)} size="sm">
         {manageTarget && (
@@ -169,7 +164,7 @@ export default function DirectoryPage() {
               <input id="directoryValueName" value={editedName} onChange={(event) => setEditedName(event.target.value)} disabled={!canManageDirectory || manageTarget.used} />
             </div>
             {manageTarget.type === 'Location' && (
-              <button type="button" className="text-button" onClick={() => { setSelectedLocation(manageTarget.name); setManageTarget(null); }}>
+              <button type="button" className="text-button" onClick={() => { openAssets(panelForType(manageTarget.type), manageTarget); setManageTarget(null); }}>
                 View {manageTarget.count} {manageTarget.count === 1 ? 'asset' : 'assets'}
               </button>
             )}

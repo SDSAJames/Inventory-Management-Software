@@ -8,6 +8,10 @@ import { formatAssetRow, formatOwnershipAuditRow } from '../lib/assetRows.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { normalizeLocation } from '../../shared/assetRules.js';
 import { assetLocationForWrite } from '../lib/assetLocations.js';
+import { renameStoredAssetReferences } from '../lib/assetReferences.js';
+import { getHolderReturnChanges } from '../../shared/assetRules.js';
+import { recordHolderReturn } from '../lib/assetReturns.js';
+import { randomUUID } from 'node:crypto';
 
 export const assetsRouter = Router();
 
@@ -250,6 +254,11 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
     return res.status(404).json({ success: false, error: 'Asset not found.' });
   }
 
+  const code = String(req.body?.code ?? asset.code).trim();
+  if (!code) return res.status(400).json({ success: false, error: 'Asset number is required.' });
+  const duplicate = db.prepare('SELECT id FROM assets WHERE LOWER(code) = LOWER(?) AND id <> ?').get(code, asset.id);
+  if (duplicate) return res.status(409).json({ success: false, error: `Asset with number ${code} already exists.` });
+
   const {
     name = asset.name,
     category = asset.category,
@@ -266,7 +275,13 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
   } = req.body || {};
 
   const now = new Date().toISOString();
-  const ownerChanged = owner !== undefined && owner !== asset.owner;
+  const returnChanges = getHolderReturnChanges(asset, req.body || {});
+  const effectiveOwner = returnChanges?.owner ?? owner;
+  const effectiveStatus = returnChanges?.status ?? status;
+  const effectiveLocation = returnChanges?.location ?? location;
+  const effectiveDepartment = returnChanges?.department ?? department;
+  const effectiveOwnerChanged = effectiveOwner !== asset.owner;
+  let affectedLoans = [];
   const dateError = getAssetDateError({ purchaseDate, warrantyExpirationDate });
   if (dateError) return res.status(400).json({ success: false, error: dateError });
 
@@ -274,17 +289,18 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
   try {
     db.prepare(`
       UPDATE assets
-      SET name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, warranty_expiration_date = ?, condition = ?, notes = ?, updated = ?
+      SET code = ?, name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, warranty_expiration_date = ?, condition = ?, notes = ?, updated = ?
       WHERE id = ?
     `).run(
+      code,
       name,
       category,
       model,
       serial,
-      status,
-      assetLocationForWrite(db, status, location),
-      owner,
-      department,
+      effectiveStatus,
+      assetLocationForWrite(db, effectiveStatus, effectiveLocation),
+      effectiveOwner,
+      effectiveDepartment,
       normalizeAssetDate(purchaseDate),
       normalizeAssetDate(warrantyExpirationDate),
       condition,
@@ -293,37 +309,41 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
       asset.id
     );
 
-    if (ownerChanged) {
+    if (code !== asset.code) renameStoredAssetReferences(db, asset.code, code);
+    if (returnChanges && effectiveOwnerChanged) affectedLoans = recordHolderReturn(db, code, now);
+
+    if (effectiveOwnerChanged) {
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        `hist-${Date.now()}`,
-        asset.code,
+        `hist-${randomUUID()}`,
+        code,
         asset.owner || 'None',
-        owner || 'None',
-        todayIso(),
-        owner ? (asset.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
-        `Asset modified by ${req.user.username}`,
+        effectiveOwner || 'None',
+        now,
+        returnChanges ? 'Returned to IT department' : effectiveOwner ? (asset.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
+        returnChanges ? `Returned to IT department through asset details by ${req.user.username}` : `Asset modified by ${req.user.username}`,
         now
       );
 
-      if (owner && owner !== 'IT department') {
-        const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(owner.trim());
+      if (effectiveOwner && effectiveOwner !== 'IT department') {
+        const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(effectiveOwner.trim());
         if (!empExists) {
           db.prepare(`
             INSERT INTO employees (id, name, department, position, created_at)
             VALUES (?, ?, ?, 'Staff', ?)
-          `).run(`emp-${Date.now()}`, owner.trim(), department || '', now);
+          `).run(`emp-${Date.now()}`, effectiveOwner.trim(), effectiveDepartment || '', now);
         }
       }
     }
 
     db.exec('COMMIT;');
-    logAudit('UPDATE_ASSET', 'assets', asset.id, { code: asset.code, ownerChanged }, req.user);
+    logAudit('UPDATE_ASSET', 'assets', asset.id, { code, previousCode: asset.code, ownerChanged: effectiveOwnerChanged }, req.user);
 
     const updatedAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(asset.id);
-    return res.json({ success: true, message: 'Asset updated successfully.', asset: { ...updatedAsset, purchaseDate: updatedAsset.purchase_date || '', warrantyExpirationDate: updatedAsset.warranty_expiration_date || '' } });
+    const history = db.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC, created_at DESC').all(code);
+    return res.json({ success: true, message: 'Asset updated successfully.', asset: formatAssetRow(updatedAsset, history), loans: affectedLoans });
   } catch (err) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ success: false, error: err.message });

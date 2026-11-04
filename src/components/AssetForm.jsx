@@ -5,7 +5,7 @@ import { getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
-import { getAssetLocation } from '../../shared/assetRules.js';
+import { getAssetLocation, getHolderReturnChanges } from '../../shared/assetRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { getAssetDateError, formatAssetDate, normalizeAssetDates } from '../../shared/assetDates.js';
 
@@ -43,6 +43,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Re-sync form when assetId changes
   useEffect(() => {
@@ -103,6 +104,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       } else if (!hasEmployeeHolder && prev.status === 'Assigned') {
         nextStatus = 'Available';
       }
+      const returnChanges = getHolderReturnChanges(existing, { owner: nextOwner, status: nextStatus });
+      if (returnChanges) return { ...prev, ...returnChanges, owner: nextOwner };
       return { ...prev, owner: nextOwner, status: nextStatus };
     });
   };
@@ -128,8 +131,9 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
 
     const dateError = getAssetDateError(form);
     if (dateError) { setSubmitError(dateError); toast(dateError); return; }
@@ -167,15 +171,22 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
       status: validatedStatus,
       location: getAssetLocation(validatedStatus, form.location),
     };
+    Object.assign(payload, getHolderReturnChanges(existing, payload) || {});
 
-    if (existing) {
-      updateAsset(assetId, payload);
-      toast('Asset updated');
-    } else {
-      addAsset(payload);
-      toast('Asset added to the register');
-    }
-    onClose();
+    setSaving(true);
+    try {
+      if (existing) {
+        await updateAsset(assetId, payload);
+        toast('Asset updated');
+      } else {
+        await addAsset(payload);
+        toast('Asset added to the register');
+      }
+      onClose();
+    } catch (error) {
+      setSubmitError(error.message || 'Could not save asset');
+      toast(error.message || 'Could not save asset');
+    } finally { setSaving(false); }
   };
 
   return (
@@ -299,6 +310,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                 )}
               </div>
               <input id="owner" value={form.owner} onChange={handleOwnerChange} placeholder="Holder name" />
+              {existing?.owner && !String(form.owner || '').trim() && <span className="field-hint">Saving with no holder records a return to IT Department in Ownership History.</span>}
             </div>
 
             {/* ROW 3: Department, Issued Date & Notes */}
@@ -325,8 +337,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
           </div>
 
           <div className="form-actions" style={{ marginTop: '14px' }}>
-            <button type="button" className="button ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="button">{existing ? 'Save changes' : 'Create asset'}</button>
+            <button type="button" className="button ghost" disabled={saving} onClick={onClose}>Cancel</button>
+            <button type="submit" className="button" disabled={saving}>{saving ? 'Saving…' : existing ? 'Save changes' : 'Create asset'}</button>
           </div>
         </form>
       )}

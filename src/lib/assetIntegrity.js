@@ -104,7 +104,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   const activeLoan = assetLoans.find((l) => {
     const isReturned = isLoanReturned(l);
     const hasPickedUp = Boolean(l.pickupDate || l.status === 'Active');
-    return hasPickedUp && !isReturned;
+    return hasPickedUp && !isReturned && !isAssetReturnedOnRecord(l, asset.code);
   });
 
   if (activeLoan) {
@@ -394,3 +394,4 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   return sortedAsc.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 
+import { isAssetReturnedOnRecord } from '../../shared/assetReturns.js';

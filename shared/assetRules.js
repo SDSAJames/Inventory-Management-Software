@@ -25,6 +25,15 @@ export function getAssetLocationAfterReturn(status) {
   return getAssetLocation(getAssetStatusAfterReturn(status), DEFAULT_LOCATION);
 }
 
+/** An explicitly cleared holder on an existing asset means return to IT custody. */
+export function getHolderReturnChanges(previous, changes) {
+  if (!previous || !Object.hasOwn(changes, 'owner') || !String(previous.owner || '').trim()) return null;
+  const nextOwner = String(changes.owner || '').trim().toLowerCase();
+  if (nextOwner && nextOwner !== 'it department') return null;
+  const status = getAssetStatusAfterReturn(changes.status ?? previous.status);
+  return { owner: 'IT department', department: '', status, location: getAssetLocationAfterReturn(status) };
+}
+
 /** Editing an ongoing loan must not undo a repair recorded on the same device. */
 export function getAssetStatusForLoanEdit(status, previousLoan = {}, nextLoan = {}) {
   const nextPickup = nextLoan.pickupDate ?? nextLoan.pickup_date;

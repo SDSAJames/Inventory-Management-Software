@@ -52,7 +52,7 @@ test('MM-DD-YYYY dates convert without timezone shifts and compare by calendar d
   }
 });
 
-test('asset routes persist lifecycle dates through editing and exchange', async () => {
+test('asset routes persist lifecycle dates through editing and exchange', async (t) => {
   const db = new DatabaseSync(':memory:');
   globalThis.__assetDateTestDb = db;
   const dbUrl = new URL('../server/db/database.js', import.meta.url).href;
@@ -71,11 +71,12 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
     ensureAssetDateColumns(db);
     const { assetsRouter } = await import('../server/routes/assets.js');
     const { exchangeRouter } = await import('../server/routes/exchange.js');
-    const invoke = (router, method, path, body, params = {}) => {
+    const invoke = (router, method, path, body, params = {}, expectedStatus) => {
       const layer = router.stack.find((entry) => entry.route?.path === path && entry.route.methods[method]);
       const response = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(value) { this.body = value; return this; } };
       layer.route.stack.at(-1).handle({ body, params, query: {}, user: { username: 'date-test' } }, response);
-      assert.ok(response.statusCode < 400, JSON.stringify(response.body));
+      if (expectedStatus) assert.equal(response.statusCode, expectedStatus, JSON.stringify(response.body));
+      else assert.ok(response.statusCode < 400, JSON.stringify(response.body));
       return response.body;
     };
     const input = { id: 'pc', code: 'PC-DATE', category: 'Laptop', purchaseDate: '2026-01-02', warrantyExpirationDate: '2027-01-02' };
@@ -101,5 +102,60 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(result.asset.warrantyExpirationDate, '2026-10-07');
       assert.equal(db.prepare('SELECT warranty_expiration_date FROM assets WHERE id = ?').get(id).warranty_expiration_date, '2026-10-07');
     }
+    await t.test('asset number edits persist and keep linked custody and history', () => {
+      invoke(assetsRouter, 'post', '/', { id: 'rename', code: 'MES-6519', category: 'MES PC' });
+      db.prepare('INSERT INTO loans (id, asset_code, assignee, equipment_json, returned_equipment_json, created_at) VALUES (?, ?, ?, ?, ?, ?)').run('linked', 'MES-6519', 'Jane', '{"Laptop":"MES-6519","Monitor":"MON-1","Keyboard":1}', '{"Laptop":"MES-6519","Mouse":1}', '2026-11-04');
+      db.prepare('INSERT INTO ownership_history (id, asset_code, date, created_at) VALUES (?, ?, ?, ?)').run('rename-history', 'MES-6519', '2026-11-04', '2026-11-04');
+      const result = invoke(assetsRouter, 'put', '/:id', { code: ' MESM-6519 ' }, { id: 'rename' });
+      assert.equal(result.asset.code, 'MESM-6519');
+      assert.equal(db.prepare("SELECT code FROM assets WHERE id = 'rename'").get().code, 'MESM-6519');
+      const linked = db.prepare("SELECT * FROM loans WHERE id = 'linked'").get();
+      assert.equal(linked.asset_code, 'MESM-6519');
+      assert.deepEqual(JSON.parse(linked.equipment_json), { Laptop: 'MESM-6519', Monitor: 'MON-1', Keyboard: 1 });
+      assert.equal(JSON.parse(linked.returned_equipment_json).Laptop, 'MESM-6519');
+      assert.equal(db.prepare("SELECT asset_code FROM ownership_history WHERE id = 'rename-history'").get().asset_code, 'MESM-6519');
+      const reloaded = invoke(assetsRouter, 'get', '/:id', {}, { id: 'rename' }).asset;
+      assert.equal(reloaded.code, 'MESM-6519');
+      assert.equal(reloaded.ownershipHistory.length, 1);
+      invoke(assetsRouter, 'put', '/:id', { code: 'pc-date' }, { id: 'rename' }, 409);
+      invoke(assetsRouter, 'put', '/:id', { code: '  ' }, { id: 'rename' }, 400);
+      assert.equal(db.prepare("SELECT code FROM assets WHERE id = 'rename'").get().code, 'MESM-6519');
+      db.exec("CREATE TRIGGER reject_rename BEFORE UPDATE ON loans BEGIN SELECT RAISE(ABORT, 'reference failure'); END");
+      invoke(assetsRouter, 'put', '/:id', { code: 'MESM-NEW' }, { id: 'rename' }, 500);
+      assert.equal(db.prepare("SELECT code FROM assets WHERE id = 'rename'").get().code, 'MESM-6519');
+      assert.equal(db.prepare("SELECT asset_code FROM loans WHERE id = 'linked'").get().asset_code, 'MESM-6519');
+      db.exec('DROP TRIGGER reject_rename');
+    });
+    await t.test('clearing a holder records an IT return, checks in the device, and keeps missing accessories outstanding', () => {
+      invoke(assetsRouter, 'post', '/', { id: 'holder-return', code: 'RETURN-PC', owner: 'Holder Return Test', department: 'Operations', location: 'Stack', status: 'Assigned' });
+      db.prepare('INSERT INTO loans (id, asset_code, assignee, assignee_type, pickup_date, status, equipment_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('return-linked', 'RETURN-PC', 'Holder Return Test', 'Employee', '2026-11-01', 'Active', '{"Laptop":"RETURN-PC","Keyboard":1}', '2026-11-01');
+      invoke(assetsRouter, 'put', '/:id', { notes: 'No holder edit' }, { id: 'holder-return' });
+      assert.equal(db.prepare("SELECT owner FROM assets WHERE id = 'holder-return'").get().owner, 'Holder Return Test');
+      const result = invoke(assetsRouter, 'put', '/:id', { owner: '  ' }, { id: 'holder-return' });
+      assert.equal(result.asset.owner, 'IT department');
+      assert.equal(result.asset.status, 'Available');
+      assert.equal(result.asset.location, 'IT Department');
+      assert.equal(result.asset.department, '');
+      const history = result.asset.ownershipHistory.find((entry) => entry.reason === 'Returned to IT department');
+      assert.equal(history.previousOwner, 'Holder Return Test');
+      assert.equal(history.newOwner, 'IT department');
+      assert.ok(history.date);
+      assert.equal(result.loans[0].returnedEquipment.Laptop, 'RETURN-PC');
+      assert.equal(result.loans[0].returnedEquipment.Keyboard, undefined);
+      assert.equal(result.loans[0].returnStatus, 'Partial');
+      assert.equal(result.loans[0].status, 'Returned');
+      invoke(assetsRouter, 'put', '/:id', { owner: '' }, { id: 'holder-return' });
+      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = 'RETURN-PC' AND reason = 'Returned to IT department'").get().count, 1);
+    });
+    await t.test('failed return history rolls back the holder and linked pickup', () => {
+      invoke(assetsRouter, 'post', '/', { id: 'failed-return', code: 'ROLLBACK-PC', owner: 'Holder Return Test', status: 'Assigned', location: 'Stack' });
+      db.prepare('INSERT INTO loans (id, asset_code, assignee, pickup_date, status, equipment_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run('rollback-linked', 'ROLLBACK-PC', 'Holder Return Test', '2026-11-01', 'Active', '{"Laptop":"ROLLBACK-PC"}', '2026-11-01');
+      db.exec("CREATE TRIGGER reject_return_history BEFORE INSERT ON ownership_history WHEN NEW.reason = 'Returned to IT department' BEGIN SELECT RAISE(ABORT, 'history failed'); END");
+      invoke(assetsRouter, 'put', '/:id', { owner: '' }, { id: 'failed-return' }, 500);
+      assert.equal(db.prepare("SELECT owner FROM assets WHERE id = 'failed-return'").get().owner, 'Holder Return Test');
+      assert.equal(db.prepare("SELECT status FROM loans WHERE id = 'rollback-linked'").get().status, 'Active');
+      assert.equal(db.prepare("SELECT returned_equipment_json FROM loans WHERE id = 'rollback-linked'").get().returned_equipment_json, null);
+      db.exec('DROP TRIGGER reject_return_history');
+    });
   } finally { hook.deregister(); db.close(); delete globalThis.__assetDateTestDb; }
 });

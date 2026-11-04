@@ -537,7 +537,8 @@ export function reconcileAllAssetsInDb() {
     const activeLoan = assetLoans.find((l) => {
       const isReturned = isLoanReturned(l);
       const hasPickedUp = Boolean(l.pickup_date || l.status === 'Active');
-      return hasPickedUp && !isReturned;
+      const returnedEquipment = l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null;
+      return hasPickedUp && !isReturned && !isAssetReturnedOnRecord({ returnedEquipment }, asset.code);
     });
 
     let newStatus = asset.status;
@@ -637,3 +638,4 @@ export function createSnapshot(description = 'Pre-import state snapshot') {
 
   return id;
 }
+import { isAssetReturnedOnRecord } from '../../shared/assetReturns.js';
