@@ -171,5 +171,20 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = ? AND reason = 'Returned to IT department'").get(id).count, 1);
       }
     });
+    await t.test('scheduled records cannot be returned through full edit, return, or mixed bulk return', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'phase-pc', code: 'PHASE-PC', status: 'Assigned', owner: 'Holder Return Test' });
+      invoke(loansRouter, 'post', '/', { id: 'phase-schedule', assetCode: 'PHASE-PC', knoxId: 'phase.schedule', assigneeType: 'Employee', assignee: 'Holder Return Test' });
+      invoke(loansRouter, 'post', '/', { id: 'phase-active', assetCode: 'PHASE-PC', knoxId: 'phase.active', assigneeType: 'Employee', assignee: 'Holder Return Test', pickupDate: '2026-11-05' });
+      invoke(loansRouter, 'put', '/:id', { pickupDate: '2026-11-05', returnDate: '2026-11-05' }, { id: 'phase-schedule' }, 400);
+      invoke(loansRouter, 'put', '/:id', { pickupDate: '', returnDate: '2026-11-05' }, { id: 'phase-active' }, 400);
+      invoke(loansRouter, 'post', '/:id/return', { returnDate: '2026-11-05' }, { id: 'phase-schedule' }, 400);
+      invoke(loansRouter, 'post', '/batch-return', { ids: ['phase-active', 'phase-schedule'], returnDate: '2026-11-05' }, {}, 400);
+      assert.equal(db.prepare("SELECT status FROM loans WHERE id = 'phase-active'").get().status, 'Active');
+      assert.equal(db.prepare("SELECT return_date FROM loans WHERE id = 'phase-schedule'").get().return_date || '', '');
+      invoke(loansRouter, 'put', '/:id', { note: 'Still scheduled' }, { id: 'phase-schedule' });
+      invoke(loansRouter, 'post', '/:id/return', { returnDate: '2026-11-05' }, { id: 'phase-active' });
+      assert.equal(db.prepare("SELECT status FROM loans WHERE id = 'phase-active'").get().status, 'Returned');
+    });
   } finally { hook.deregister(); db.close(); delete globalThis.__assetDateTestDb; }
 });

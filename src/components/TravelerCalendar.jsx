@@ -1,3 +1,5 @@
+import { indexInOutSchedule } from '../lib/inOutSchedule.js';
+import { canRecordReturn } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
 import { getLoanEndDate } from '../lib/loanEquipment';
@@ -26,34 +28,26 @@ export default function TravelerCalendar({
   const [searchFilter, setSearchFilter] = useState('');
 
   // Day detail modal state
-  const [selectedDayData, setSelectedDayData] = useState(null);
+  const [selectedDay, setSelectedDayData] = useState(null);
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
 
   /* ── Index travelers by dates ────────────────────────────── */
-  const { incomingByDate, returningByDate } = useMemo(() => {
-    const incMap = new Map();
-    const retMap = new Map();
+  const { outgoingByDate: incomingByDate, incomingByDate: returningByDate } = useMemo(() => indexInOutSchedule(travelers.map((traveler) => ({
+    ...traveler,
+    outIso: normalizeDateToIso(traveler.startDate || traveler.pickupDate || traveler.loanDate),
+    inIso: traveler.isReturned ? normalizeDateToIso(traveler.returnDate || traveler.returnedDate || getLoanEndDate(traveler)) : normalizeDateToIso(getLoanEndDate(traveler)),
+  }))), [travelers]);
+  const matchesFilters = (traveler) => {
+    if (selectedLocation !== 'ALL' && traveler.location !== selectedLocation) return false;
+    const query = searchFilter.trim().toLowerCase();
+    return !query || [traveler.assignee, traveler.knoxId, traveler.assetCode, traveler.location].some((value) => String(value || '').toLowerCase().includes(query));
+  };
+  const selectedDayData = selectedDay ? {
+    dateStr: selectedDay.dateStr,
+    incoming: (incomingByDate.get(selectedDay.dateStr) || []).filter(matchesFilters),
+    returning: (returningByDate.get(selectedDay.dateStr) || []).filter(matchesFilters),
+  } : null;
 
-    travelers.forEach((t) => {
-      // 1. Incoming schedule: Start date or pickup date
-      const startIso = normalizeDateToIso(t.startDate || t.pickupDate || t.loanDate);
-      if (startIso) {
-        if (!incMap.has(startIso)) incMap.set(startIso, []);
-        incMap.get(startIso).push(t);
-      }
-
-      // 2. Returning schedule: Due date, end date, or actual return date
-      const endIso = t.isReturned
-        ? normalizeDateToIso(t.returnDate || t.returnedDate || getLoanEndDate(t))
-        : normalizeDateToIso(getLoanEndDate(t));
-      if (endIso) {
-        if (!retMap.has(endIso)) retMap.set(endIso, []);
-        retMap.get(endIso).push(t);
-      }
-    });
-
-    return { incomingByDate: incMap, returningByDate: retMap };
-  }, [travelers]);
 
   /* ── Monthly metrics ─────────────────────────────────────── */
   const monthStats = useMemo(() => {
@@ -63,20 +57,7 @@ export default function TravelerCalendar({
     let overdueCount = 0;
     let completedReturns = 0;
 
-    // Filter by location & search query
-    const query = searchFilter.toLowerCase().trim();
-    const filterFn = (t) => {
-      if (selectedLocation !== 'ALL' && t.location !== selectedLocation) return false;
-      if (query) {
-        const match =
-          String(t.assignee || '').toLowerCase().includes(query) ||
-          String(t.knoxId || '').toLowerCase().includes(query) ||
-          String(t.assetCode || '').toLowerCase().includes(query) ||
-          String(t.location || '').toLowerCase().includes(query);
-        if (!match) return false;
-      }
-      return true;
-    };
+    const filterFn = matchesFilters;
 
     incomingByDate.forEach((list, dateStr) => {
       if (dateStr.startsWith(prefix)) {
@@ -106,28 +87,7 @@ export default function TravelerCalendar({
 
   /* ── Open day detail modal ───────────────────────────────── */
   const handleOpenDay = (dateStr) => {
-    const query = searchFilter.toLowerCase().trim();
-    const filterFn = (t) => {
-      if (selectedLocation !== 'ALL' && t.location !== selectedLocation) return false;
-      if (query) {
-        const match =
-          String(t.assignee || '').toLowerCase().includes(query) ||
-          String(t.knoxId || '').toLowerCase().includes(query) ||
-          String(t.assetCode || '').toLowerCase().includes(query) ||
-          String(t.location || '').toLowerCase().includes(query);
-        if (!match) return false;
-      }
-      return true;
-    };
-
-    const incoming = (incomingByDate.get(dateStr) || []).filter(filterFn);
-    const returning = (returningByDate.get(dateStr) || []).filter(filterFn);
-
-    setSelectedDayData({
-      dateStr,
-      incoming,
-      returning,
-    });
+    setSelectedDayData({ dateStr });
     setDayModalFilter('all');
   };
 
@@ -596,7 +556,7 @@ export default function TravelerCalendar({
                               ✎ Edit Details
                             </button>
                           )}
-                          {!t.isReturned && onReturnTraveler && (
+                          {!t.isReturned && canRecordReturn(t) && onReturnTraveler && (
                             <button
                               type="button"
                               className="button secondary small-btn"
@@ -692,7 +652,7 @@ export default function TravelerCalendar({
                               ✎ Edit Details
                             </button>
                           )}
-                          {!t.isReturned && onReturnTraveler && (
+                          {!t.isReturned && canRecordReturn(t) && onReturnTraveler && (
                             <button
                               type="button"
                               className="button secondary small-btn"

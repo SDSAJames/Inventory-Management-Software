@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.6.0** |
+| **Specification Version** | **v1.7.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 4, 2026 |
+| **Release Date** | November 5, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -130,14 +130,18 @@ Update the shared module for a rule or field mapping, then import it at each cal
 | :--- | :--- |
 | `shared/referenceData.js` | Default asset statuses, transfer reasons, and location names used by both application tiers. |
 | `shared/assetRules.js` | Location normalization, repair destinations, and asset status transitions during loan edits and returns. |
+| `shared/assetDates.js`, `shared/dateTime.js` | Calendar-date validation and MM-DD-YYYY entry conversion; local display of zoned timestamps without changing their stored instant. |
+| `shared/assetReferences.js`, `shared/assetReturns.js` | Exact device-reference renaming and per-device return accounting across linked custody records. |
 | `shared/loanRules.js`, `shared/loanIdentity.js` | Returned-loan detection, traveler classification, and import matching identities. |
 | `src/lib/equipmentSchema.js`, `spreadsheetValues.js` | Equipment column aliases, status translations, header lookup, and spreadsheet value parsing shared by TXT and XLSX paths. |
 | `src/lib/loanEquipment.js`, `loanSelectors.js` | Checklist mappings, partial returns, loan grouping, and search. |
 | `src/lib/calendarDates.js`, `src/hooks/useCalendarMonth.js` | Calendar grids and month navigation. |
+| `src/lib/inOutSchedule.js`, `transferNotes.js` | Pending pickup indexes shared by both calendars and readable presentation of legacy generated transfer notes. |
 | `src/components/DirectoryPanel.jsx`, `DirectorySelect.jsx`, `LoanEquipmentFields.jsx`, `IPAddressFields.jsx` | Reusable directory and loan form controls. |
 | `src/lib/databaseLocations.js` | Immutable location normalization for browser cache, imports, restores, and state updates. |
 | `server/lib/assetRows.js`, `loanRows.js` | Shared database row serialization; explicit API and export profiles retain their respective defaults. |
 | `server/lib/assetLocations.js`, `assetLoans.js`, `loanDuplicates.js` | Transactional location migration, custody resets, and exact duplicate loan cleanup. |
+| `server/lib/assetCustody.js`, `assetReferences.js`, `assetReturns.js`, `assetDates.js` | Idempotent IT-custody history repair, transactional reference updates, linked device returns, and additive date-column migration. |
 
 The default location is **IT Department**. Legacy **Head Office** labels normalize to that value on startup, import, and restore. Assets with status **Under repair** always use **service center**, which is registered in the location directory automatically. Single and batch asset forms display this destination without allowing it to be overridden while the repair status is selected. Editing an ongoing loan or returning custody preserves a repair recorded on its asset; an explicit new pickup follows the normal handover transition. Rental locations remain independent of an asset's repair destination.
 
@@ -239,7 +243,7 @@ interface EquipmentChecklist {
 +------------------+-----------------------+------------------------------+
 | State Code       | Semantics             | Holder Constraint            |
 +------------------+-----------------------+------------------------------+
-| Available        | In fleet / unassigned | IT department (or empty)     |
+| Available        | Available in IT custody | IT department             |
 | Assigned         | Dedicated allocation  | Named employee / department  |
 | On loan          | Temporary checkout    | Active loan assignee         |
 | Damaged          | Defective / offline   | IT department / Reporting    |
@@ -293,7 +297,8 @@ When a loan is returned via `returnLoan(loanId)`:
 3. The associated asset is retrieved:
    - `asset.owner` is set strictly to `'IT department'`.
    - `asset.department` is cleared (`''`).
-   - `asset.status` transitions to `'Available'` (unless flagged `'Damaged'`).
+   - `asset.status` transitions to `'Available'` while preserving Damaged, Under repair, Retired, or legacy Disposed maintenance states.
+   - `asset.location` becomes `IT Department`; Under repair equipment retains its automatic `service center` destination.
    - An `ownershipHistory` entry is created:
      ```javascript
      createOwnershipEntry({
@@ -304,6 +309,14 @@ When a loan is returned via `returnLoan(loanId)`:
      })
      ```
 4. The passive verification service validates that no other active loans exist for this asset code and commits the transaction.
+
+Scheduled records cannot be returned through full edit, direct return, or bulk return before pickup. Historical return records remain editable. Clearing an existing holder or explicitly selecting Available records IT custody and a persistent history event; linked pickup records check in only the affected device, preserving outstanding equipment. Startup and exchange restoration repair older Available records with missing IT custody/history once, labeling observation time when the historical return date is unknown.
+
+The Scheduled table and expanded details omit return information. Overdue omits the return-date column and expanded return time, and return-date records are grouped as Returned before overdue classification.
+
+### 4.4 Pending Schedule Presentation
+
+Both `InOutCalendar.jsx` and `TravelerCalendar.jsx` use the pending pickup index in `src/lib/inOutSchedule.js`. Their open-day dialogs derive lists from current records instead of keeping copied event arrays. Pickup, return, or transfer removes the pending pickup event and updates counts. Both calendar templates use one-column, full-width rows with responsive inner details. Scheduled entries cannot offer return actions.
 
 ---
 

@@ -26,6 +26,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     ipNumber: '',
     startDate: todayIso(),
     pickupDate: '',
+    pickedUp: false,
     endDate: '',
     location: '',
     department: (db.departments || []).includes('Operations') ? 'Operations' : '',
@@ -68,6 +69,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     const assignee = form.assignee.trim();
 
     if (!knoxId) newErrors.knoxId = 'Knox ID is required';
+    if (form.pickedUp && !form.pickupDate) newErrors.pickupDate = 'Enter the pickup date or uncheck Picked up';
 
     const existingPcCode = findAssetByCode(db.assets, assetCode);
     if (existingPcCode && !matchesAssetCategory(existingPcCode.category, PC_CATEGORIES)) {
@@ -160,7 +162,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       <div className="modal-header-section">
         <h2>Record assignment or loan</h2>
         <p className="modal-intro">
-          Assign equipment to an employee or loan it to a business traveler. Only Knox ID is required. Leave pickup blank to schedule equipment without changing inventory.
+          Assign equipment to an employee or loan it to a business traveler. Only Knox ID is required. Leave Picked up unchecked to schedule equipment without changing inventory.
         </p>
       </div>
 
@@ -224,10 +226,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
           </div>
           <div className="field">
-            <label htmlFor="pickupDate">Pickup date <span className="field-hint">(if already picked up)</span></label>
-            <input id="pickupDate" type="date" value={form.pickupDate} onChange={set('pickupDate')} />
-          </div>
-          <div className="field">
             <label htmlFor="endDate">
               Due date <span className="field-hint">(Business travelers only)</span>
             </label>
@@ -243,6 +241,21 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
               <span className="field-error-msg">{errors.endDate}</span>
             )}
           </div>
+
+          <div className="field">
+            <label htmlFor="pickedUp">Pickup confirmation</label>
+            <label className="pickup-confirmation-control"><input id="pickedUp" type="checkbox" checked={form.pickedUp} onChange={(e) => {
+              const checked = e.target.checked;
+              setForm((previous) => ({ ...previous, pickedUp: checked, pickupDate: checked ? previous.pickupDate || todayIso() : '' }));
+              setErrors((previous) => ({ ...previous, pickupDate: null }));
+              setSubmitError('');
+            }} /> Picked up</label>
+          </div>
+          {form.pickedUp && <div className="field">
+            <label htmlFor="pickupDate">Pickup date <span className="required-asterisk">*</span></label>
+            <input id="pickupDate" type="date" value={form.pickupDate} onChange={set('pickupDate')} required />
+            {errors.pickupDate && <span className="field-error-msg">{errors.pickupDate}</span>}
+          </div>}
 
           {/* Location & department */}
           <DirectorySelect allowCustom id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />

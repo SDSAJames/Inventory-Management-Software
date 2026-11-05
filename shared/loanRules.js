@@ -10,3 +10,8 @@ export function isLoanReturned(loan) {
     loan.status === 'Returned' || loan.isArchived || loan.is_archived
   ));
 }
+
+/** Historical returns remain editable; a schedule cannot be returned before pickup. */
+export function canRecordReturn(record) {
+  return Boolean(record && (record.pickupDate || record.pickup_date || record.returnDate || record.return_date || record.returnedDate || record.returned_date || record.status === 'Returned'));
+}

@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.6.0** |
+| **Document Version** | **v1.7.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 4, 2026 |
+| **Release Date** | November 5, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -145,7 +145,7 @@ The system recognizes exactly six mutually exclusive operational states for all 
 
 | Status | Code | Description | Permitted Current Holder |
 | :--- | :--- | :--- | :--- |
-| **Available** | `Available` | Asset is in storage/fleet, tested, and ready for immediate deployment or checkout. | Strictly `IT department` or Unassigned (`""`) |
+| **Available** | `Available` | Asset is in storage/fleet, tested, and ready for immediate deployment or checkout. | Strictly `IT department`; legacy blank holders are repaired |
 | **Assigned** | `Assigned` | Asset is assigned to a specific employee or department for day-to-day work duties. | Must be a named employee or department |
 | **On loan** | `On loan` | Asset is out on active temporary custody under a formal loan agreement. | Must match the active loan's `assignee` |
 | **Damaged** | `Damaged` | Asset has reported physical or functional defects; held for evaluation. | `IT department` or reporting employee |
@@ -296,12 +296,17 @@ The frontend application provides eight core operational views accessed via the 
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
    - Click and drag row selection with bulk status updates and bulk deletion.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
+   - Purchase and warranty expiration dates apply to every asset type and accept MM-DD-YYYY entry. Date validation and persistence cover asset editing, imports, exports, and restores.
+   - Asset-number edits update linked custody and ownership-history references atomically; failed saves remain open with an error.
+   - Clearing Current holder or selecting Available records IT custody and ownership history. Existing missing history is reconciled once with an explicit observation-time note when the original return date is unknown.
 3. **Assignments & Pickups (`/loans`)**:
    - Employee laptop handovers are assignments; business traveler handovers are loans. Both share the Scheduled pickup list; picked-up employees appear under Assigned and business travelers under Loans. Return records capture the laptop asset number actually received. Navigation and page headings use Assignments & Pickups; the `/loans` address is retained.
-   - Knox ID is the only required field in the add form; full name and PC assignment are optional. An optional pickup date records a handover directly.
+   - Knox ID is the only required field in the add form; full name and PC assignment are optional. A Picked up checkbox beside Due date reveals the pickup-date field for an existing handover.
    - PC search includes Laptop, MES PC, and PC categories; monitor search accepts registered Monitor/Monitors assets. The main table displays PC asset numbers instead of sequence numbers.
    - Active, Scheduled, Overdue, Returned, and Unreturned (partial return) custody management.
    - Employee and traveler requests without pickup dates remain in Scheduled. Scheduled rows show Assignee and omit pickup date, return date, and status columns.
+   - Scheduled columns start with Action, Pickup readiness, and Borrower type. Return time is hidden from expanded Scheduled details and scheduled full editing. Overdue omits the return-date column and expanded return time; records with a return date cannot be overdue.
+   - Transfers can fulfill an existing schedule selected by Knox ID. Traveler recipients require reviewed start and end dates. Pickup timestamps display in local time, and generated notes use readable recipient details.
    - Rental location accepts typed values with Directory suggestions. Full editing and pickup retain the requested PC and monitor checkboxes; pickup assigns actual PC and monitor asset numbers.
    - Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items.
    - Expand a picked-up outstanding loan to transfer all items or selected quantities to another owner. A different Knox ID is required; assignee name is optional. Transfers create linked custody records and device ownership history, retain remaining equipment on the source, and archive fully transferred sources as Transferred without a physical return.
@@ -313,9 +318,10 @@ The frontend application provides eight core operational views accessed via the 
    - Universal schedule calendar tracking hardware checkouts (Out / Departure) and returns (In / Return) across all enterprise personnel.
    - Encompasses all requester types, displaying both standard SPE Employees and mobile Business Travelers.
    - Multi-tier filtering: filter by Requester Type (`Business traveler` vs `SPE employee`), select an individual requester from a categorized dropdown, filter by flow direction (`Out` vs `In`), or search by keyword.
-   - Interactive day detail modal with complete item cards, accessory checklists, and direct custody action buttons.
+   - Interactive day detail modal with full-width schedule rows, accessory checklists, and direct custody action buttons. Picked-up and completed records leave outgoing schedules; return actions require pickup.
 5. **Business Travelers (`/business-travelers`)**:
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
+   - Its separate day dialog also uses full-width rows. Pending arrivals exclude completed pickups and refresh while the dialog is open.
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Department) with one-click filtering.
@@ -325,6 +331,7 @@ The frontend application provides eight core operational views accessed via the 
 6. **Asset & Organization Directory (`/directory`)**:
    - Manage asset categories, statuses, departments, and locations. Custom statuses can also be added from asset forms.
    - Items referenced by assets are marked in use and cannot be edited or deleted; unused values remain manageable.
+   - Clicking any Directory value opens its matching asset list. Operators can search and edit those assets, then return to the refreshed list; reference-value protection remains separate.
    - IT Department is the default location. Legacy Head Office values are normalized during startup, import, and restore. Under repair assets automatically use service center, with the location locked in single and batch asset forms while that status is selected.
 7. **Data Exchange (`/exchange`)**:
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
@@ -352,4 +359,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.6.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.7.0**.

@@ -10,6 +10,7 @@ import DirectorySelect from './DirectorySelect';
 import LoanEquipmentFields from './LoanEquipmentFields';
 import IPAddressFields from './IPAddressFields';
 import { PC_CATEGORIES } from '../lib/assetCategories';
+import { canRecordReturn } from '../../shared/loanRules.js';
 
 export default function EditLoanForm({ loanId, onClose }) {
   const { db, updateLoan } = useDb();
@@ -49,6 +50,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
       ...(field === 'requestPc' && !value ? { assetCode: '' } : {}),
       ...(field === 'requestMonitor' && !value ? { monitor: '' } : {}),
       ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
+      ...(field === 'pickupDate' && !value ? { returnDate: '' } : {}),
     }));
   };
   const set = (field) => (event) => updateField(field, event.target.value);
@@ -61,6 +63,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
     if (!form.knoxId.trim()) {
       return toast('Knox ID is required');
     }
+    if (form.returnDate && (!canRecordReturn(loan) || (!form.pickupDate && !loan.returnDate && !loan.returnedDate))) return toast('Record pickup before returning equipment');
 
     if (isIpAddressInvalid(form)) {
       return toast('IP subnet and number must each be between 0 and 255');
@@ -182,6 +185,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
           </div>
 
           {/* Return timestamp */}
+          {canRecordReturn(loan) && Boolean(form.pickupDate || loan.returnDate || loan.returnedDate) && (
           <div className="timestamp-field">
             <label htmlFor="returnDate">
               Return timestamp
@@ -208,6 +212,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
               )}
             </div>
           </div>
+          )}
 
           {/* Equipment */}
           <div className="field full">

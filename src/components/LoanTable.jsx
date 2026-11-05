@@ -1,4 +1,4 @@
-import { isLoanReturned } from '../../shared/loanRules.js';
+import { isLoanReturned, canRecordReturn } from '../../shared/loanRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { Fragment, useMemo, useState } from 'react';
 import { readableLoanDate, dateTimeInputValue, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
@@ -63,6 +63,7 @@ export default function LoanTable({
   onToggleSelectAll,
   emptyMessage,
   scheduled = false,
+  hideReturnDate = false,
   onTransferLoan,
 }) {
   const [editingId, setEditingId] = useState(null);
@@ -70,7 +71,10 @@ export default function LoanTable({
   const [expandedId, setExpandedId] = useState(null);
   const [sort, setSort] = useState({ key: null, dir: 'asc' });
 
-  const columns = useMemo(() => scheduled ? [...SCHEDULED_COLUMNS, ...COLUMNS] : COLUMNS, [scheduled]);
+  const columns = useMemo(() => {
+    const visible = COLUMNS.filter((column) => !hideReturnDate || column.key !== 'returnDate');
+    return scheduled ? [...SCHEDULED_COLUMNS, ...visible] : visible;
+  }, [scheduled, hideReturnDate]);
   const totalColumns = columns.length + 1;
 
   // Keep the original position (No) attached to each loan, then apply sorting.
@@ -267,6 +271,7 @@ export default function LoanTable({
                       disabled={!isBusinessTraveler(draft.assigneeType)}
                     />
                   </td>
+                  {!hideReturnDate && (
                   <td>
                     <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
                       <input
@@ -291,6 +296,7 @@ export default function LoanTable({
                       )}
                     </div>
                   </td>
+                  )}
                   <td>
                     <span className={`status ${statusClass(statusLabel)}`}>
                       {statusLabel}
@@ -407,6 +413,7 @@ export default function LoanTable({
                     )}
                   </td>
                   <td>{readableLoanDate(getLoanEndDate(loan)) || '—'}</td>
+                  {!hideReturnDate && (
                   <td>
                     {loan.returnDate || loan.returnedDate ? (
                       <span className="timestamp-badge">
@@ -416,6 +423,7 @@ export default function LoanTable({
                       <span className="text-muted-badge">—</span>
                     )}
                   </td>
+                  )}
                   <td>
                     <span className={`status ${statusClass(statusLabel)}`}>
                       {statusLabel}
@@ -585,6 +593,7 @@ export default function LoanTable({
                               </dd>
                               <dt>Due / End date:</dt>
                               <dd>{readableLoanDate(getLoanEndDate(loan)) || '—'}</dd>
+                              {!scheduled && !hideReturnDate && canRecordReturn(loan) && <>
                               <dt>Return time:</dt>
                               <dd>
                                 {(loan.returnDate || loan.returnedDate) ? (
@@ -595,6 +604,7 @@ export default function LoanTable({
                                   <span className="text-muted-badge">Not returned</span>
                                 )}
                               </dd>
+                              </>}
                               {loan.note && (
                                 <>
                                   <dt>Note:</dt>

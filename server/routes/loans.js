@@ -11,6 +11,7 @@ import { getAssetStatusForLoanEdit, normalizeLocation } from '../../shared/asset
 import { returnAssetToIt } from '../lib/assetLoans.js';
 import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js';
 import { transferLoan } from '../lib/loanTransfer.js';
+import { canRecordReturn } from '../../shared/loanRules.js';
 
 export const loansRouter = Router();
 loansRouter.post('/:id/transfer', authenticate, (req, res) => {
@@ -385,6 +386,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
 
   const hasReturn = Boolean(returnDate);
   const hasPickup = Boolean(pickupDate);
+  if (hasReturn && (!canRecordReturn(existing) || (!hasPickup && !existing.return_date && !existing.returned_date))) return res.status(400).json({ success: false, error: 'Record pickup before returning equipment.' });
   const today = todayIso();
 
   let computedStatus = 'Scheduled';
@@ -621,6 +623,7 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
   if (!loan) {
     return res.status(404).json({ success: false, error: 'Loan not found.' });
   }
+  if (!canRecordReturn(loan)) return res.status(400).json({ success: false, error: 'Record pickup before returning equipment.' });
 
   const {
     returnDate = todayIso(),
@@ -757,6 +760,10 @@ loansRouter.post('/batch-return', authenticate, (req, res) => {
   const { ids = [], returnDate = todayIso() } = req.body || {};
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ success: false, error: 'Array of loan IDs is required.' });
+  }
+  for (const id of ids) {
+    const record = db.prepare('SELECT * FROM loans WHERE id = ?').get(id);
+    if (record && !canRecordReturn(record)) return res.status(400).json({ success: false, error: 'Scheduled equipment must be picked up before it can be returned.' });
   }
 
   const now = new Date().toISOString();

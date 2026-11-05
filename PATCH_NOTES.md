@@ -6,6 +6,56 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] — 2026-11-05
+
+### Assignments & Pickups, Reliable Asset History & Schedule Rows
+
+Separate employee assignments from traveler loans, fulfill pickup schedules by transfer, and keep asset dates, current holders, and ownership history consistent.
+
+#### Highlights
+- Assignments & Pickups: Shared scheduling with separate Assigned and Loans sections, pickup readiness, and borrower type.
+- Transfer to schedule: Search by Knox ID, review traveler dates, and fulfill an existing pickup schedule in place.
+- Asset integrity: Persist asset-number edits, record returns to IT, and repair missing history for existing Available assets.
+- Schedule rows: Full-width entries in both calendar day dialogs; completed pickups leave pending schedules.
+
+#### Pickup Scheduling & Calendar Layout
+
+- Place Action, Pickup readiness, and Borrower type first in Scheduled; keep employee and traveler pickup requests together.
+- Hide pickup date in Record assignment or loan until the Picked up checkbox beside Due date is checked.
+- Hide return time when editing a scheduled record and reject returns before pickup through full edit, direct return, and mixed bulk return requests.
+- Hide return time in expanded Scheduled rows as well as full editing. Omit the return-date column and expanded return time in Overdue; return-date records cannot be overdue.
+- Display full-width schedule rows in both In & Out and Business Travelers day dialogs, with responsive layouts for smaller windows.
+- Remove picked-up, returned, and transferred records from pending pickup rows and counts; refresh open-day contents from current records.
+
+#### Equipment Transfers & Readable Times
+
+- Select a new recipient or an existing pickup schedule. Search schedules by full or partial Knox ID without losing the current selection.
+- Require valid start and end dates for business traveler recipients and preserve employee assignment semantics.
+- Fulfill the selected schedule without creating a duplicate recipient record; record actual transferred items, clear readiness, and mark Pickup by transfer.
+- Keep source custody and ownership history while updating registered PC and monitor ownership atomically.
+- Display UTC transfer timestamps in local time without milliseconds or Z suffixes; use readable holder details and time-zone labels in new notes.
+- Render older generated transfer notes without exposing internal record IDs, while preserving stored history.
+
+#### Asset Dates, Renaming & Directory Browsing
+
+- Provide optional Purchase date and Warranty expiration date for every asset type, accepting MM-DD-YYYY entry and retaining ISO storage.
+- Validate calendar dates and warranty ordering; preserve dates through editing, TXT/XLSX exchange, backups, and restores.
+- Add the warranty database column automatically and include warranty data in spreadsheet exports when populated.
+- Persist asset-number changes and update linked custody, equipment, returned-device, and ownership-history references in the same transaction.
+- Reject duplicate asset numbers and keep failed saves open with an error message.
+- Open matching assets by clicking a Directory status, category, department, or location; search and edit asset details from that list.
+- Prevent a drag beginning inside a dialog from dismissing it when the pointer ends on the backdrop.
+
+#### IT Custody & Ownership History
+
+- Treat clearing Current holder or selecting Available as a return to IT department, recording the previous holder and return time.
+- Move returned devices to IT Department while preserving the Under repair service-center rule.
+- Update linked pickup records for the returned device without falsely returning other issued equipment.
+- Repair blank or stale holders and missing IT-custody history on existing Available records once. Identify reconciliation time when the original return date is unknown.
+- Represent the latest current holder in Ownership History even if an older entry already names that holder.
+
+---
+
 ## [1.6.0] — 2026-11-04
 
 ### Loan Equipment Transfers & Complete Pickup Workflows

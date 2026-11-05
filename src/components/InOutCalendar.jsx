@@ -1,4 +1,5 @@
-import { isLoanReturned } from '../../shared/loanRules.js';
+import { indexInOutSchedule, scheduleForDay } from '../lib/inOutSchedule.js';
+import { isLoanReturned, canRecordReturn } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate, isLoanOverdue } from '../lib/utils';
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
@@ -31,7 +32,7 @@ export default function InOutCalendar({
   const [searchFilter, setSearchFilter] = useState('');
 
   // Day detail modal state
-  const [selectedDayData, setSelectedDayData] = useState(null);
+  const [selectedDay, setSelectedDayData] = useState(null);
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
 
   /* ── 2. Enrich loans with asset details & normalization ──────── */
@@ -46,7 +47,7 @@ export default function InOutCalendar({
       const isReturned = isLoanReturned(loan);
       const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
       const dueDate = getLoanEndDate(loan);
-      const isOverdue = !isReturned && isLoanOverdue(loan);
+      const isOverdue = hasPickup && !isReturned && isLoanOverdue(loan);
 
       // Normalize requester type
       const isTraveler = isBusinessTraveler(loan.assigneeType);
@@ -164,26 +165,10 @@ export default function InOutCalendar({
   };
 
   /* ── 5. Index Outgoing & Incoming events by Date ────────────── */
-  const { outgoingByDate, incomingByDate } = useMemo(() => {
-    const outMap = new Map();
-    const inMap = new Map();
+  const scheduleIndex = useMemo(() => indexInOutSchedule(enrichedLoans), [enrichedLoans]);
+  const { outgoingByDate, incomingByDate } = scheduleIndex;
+  const selectedDayData = selectedDay ? scheduleForDay(scheduleIndex, selectedDay.dateStr, matchesFilters) : null;
 
-    enrichedLoans.forEach((loan) => {
-      // 1. Outgoing schedule: Checkouts, Start dates, Pickup dates
-      if (loan.outIso) {
-        if (!outMap.has(loan.outIso)) outMap.set(loan.outIso, []);
-        outMap.get(loan.outIso).push(loan);
-      }
-
-      // 2. Incoming schedule: Returns, Due dates, Completed check-ins
-      if (loan.inIso) {
-        if (!inMap.has(loan.inIso)) inMap.set(loan.inIso, []);
-        inMap.get(loan.inIso).push(loan);
-      }
-    });
-
-    return { outgoingByDate: outMap, incomingByDate: inMap };
-  }, [enrichedLoans]);
 
   /* ── 7. Monthly Summary Metrics ─────────────────────────────── */
   const monthStats = useMemo(() => {
@@ -232,14 +217,7 @@ export default function InOutCalendar({
 
   /* ── 8. Open Day Detail Modal ───────────────────────────────── */
   const handleOpenDay = (dateStr) => {
-    const outgoing = (outgoingByDate.get(dateStr) || []).filter(matchesFilters);
-    const incoming = (incomingByDate.get(dateStr) || []).filter(matchesFilters);
-
-    setSelectedDayData({
-      dateStr,
-      outgoing,
-      incoming,
-    });
+    setSelectedDayData({ dateStr });
     setDayModalFilter('all');
   };
 
@@ -698,6 +676,7 @@ export default function InOutCalendar({
         <Modal
           open={Boolean(selectedDayData)}
           size="wide"
+          className="in-out-day-modal"
           onClose={() => setSelectedDayData(null)}
         >
           <div className="day-modal-header">
@@ -835,7 +814,7 @@ export default function InOutCalendar({
                               Confirm Pickup
                             </button>
                           )}
-                          {!loan.isReturned && onReturnLoan && (
+                          {!loan.isReturned && canRecordReturn(loan) && onReturnLoan && (
                             <button
                               type="button"
                               className="button small-btn"
@@ -957,7 +936,7 @@ export default function InOutCalendar({
                               Edit Schedule
                             </button>
                           )}
-                          {!loan.isReturned && onReturnLoan && (
+                          {!loan.isReturned && canRecordReturn(loan) && onReturnLoan && (
                             <button
                               type="button"
                               className="button small-btn"

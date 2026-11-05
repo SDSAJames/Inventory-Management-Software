@@ -4667,3 +4667,18 @@ textarea.input-error-red {
   margin-top: 3px;
 }
 .scheduled-loan-table > thead > tr > th:nth-child(8), .scheduled-loan-table > thead > tr > th:nth-child(10), .scheduled-loan-table > thead > tr > th:nth-child(11), .scheduled-loan-table > tbody > tr:not(.loan-detail-tr) > td:nth-child(8), .scheduled-loan-table > tbody > tr:not(.loan-detail-tr) > td:nth-child(10), .scheduled-loan-table > tbody > tr:not(.loan-detail-tr) > td:nth-child(11) { display: none; }
+.pickup-confirmation-control { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.pickup-confirmation-control input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; margin: 0; }
+.in-out-day-modal .day-modal-cards-grid, .day-schedule-modal .schedule-cards-grid { grid-template-columns: minmax(0, 1fr); }
+.in-out-day-modal .day-detail-card, .day-schedule-modal .schedule-card { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr) auto; align-items: center; gap: 16px; }
+.in-out-day-modal .day-card-header, .day-schedule-modal .card-top-row { flex-wrap: wrap; gap: 8px; min-width: 0; }
+.in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; gap: 8px 16px; }
+.in-out-day-modal .day-card-info-item { flex-wrap: wrap; align-items: baseline; justify-content: flex-start; }
+.in-out-day-modal .day-card-info-item .info-val { overflow-wrap: anywhere; }
+.in-out-day-modal .day-card-accessories { grid-column: 1 / -1; }
+.in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex-direction: column; align-items: stretch; border-top: 0; border-left: 1px solid var(--line); padding: 0 0 0 14px; margin-top: 0; }
+@media (max-width: 850px) {
+  .in-out-day-modal .day-detail-card, .day-schedule-modal .schedule-card { grid-template-columns: minmax(0, 1fr); }
+  .in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex-direction: row; flex-wrap: wrap; border-left: 0; border-top: 1px solid var(--line); padding: 8px 0 0; }
+}
+@media (max-width: 520px) { .in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { grid-template-columns: minmax(0, 1fr); } }

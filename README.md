@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.6.0)
+# StarPlus Energy Asset Management System (v1.7.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -45,7 +45,7 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
-3. **Assignments & Pickups (`/loans`)**: Manage employee laptop assignments and business-traveler equipment checkouts together. Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Enter a pickup date to record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, pickup readiness, return details, and an Unreturned section for partial returns.
+3. **Assignments & Pickups (`/loans`)**: Manage employee laptop assignments and business-traveler equipment checkouts together. Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Check Picked up to reveal the pickup date and record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, pickup readiness, return details, and an Unreturned section for partial returns.
 4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, and keyword search.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
 6. **Asset & Organization Directory (`/directory`)**: Manage asset categories, statuses, departments, and locations. Add custom statuses here or from asset forms. Selection, select-all, edit, and bulk-delete actions protect reference values currently used by assets.
@@ -54,7 +54,9 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 ---
 
-### Loan import matching and cleanup
+### Asset and custody workflows
+
+In **Record assignment or loan**, the **Picked up** checkbox sits beside Due date. Keep it unchecked for a schedule; checking it reveals the pickup date. Scheduled full-detail editing omits return time, and return actions require a completed pickup. The In & Out day view uses full-width rows and removes picked-up or completed records from outgoing schedules, with counts and open-day details refreshed from current records.
 
 Click a Directory status, category, department, or location to open its matching asset list. Search the list and open an asset to edit its location or other details; saving returns to the refreshed list. Use Select to rename or delete unused directory values. Asset number edits persist and update linked custody and ownership-history references together; duplicate numbers are rejected and failed saves keep the form open.
 
@@ -68,11 +70,13 @@ Clearing an existing asset's **Current holder** and saving records a return to *
 
 **Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; picked-up employee equipment appears under **Assigned**, while business-traveler checkouts appear under **Loans**. Return records capture the laptop asset number actually received, including missing or substituted laptops. The existing `/loans` address continues to open this page.
 
-Employee and traveler requests without a pickup remain in the Assignments & Pickups **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.
+Employee and traveler requests without a pickup remain in the Assignments & Pickups **Scheduled** tab. Its columns begin with Action, Pickup readiness, and Borrower type, followed by asset and assignee details; pickup, return, and status columns are omitted. Expanded Scheduled details and scheduled full editing omit return time. Overdue also omits the return-date column and expanded return time. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.
 
 For an outstanding picked-up loan, expand its row and choose **Transfer equipment**. Select all items or individual items and quantities, then enter the new owner's Knox ID and optional name. Transfers create a linked custody record and ownership history for registered devices. Remaining items stay with the original owner; a fully transferred source is archived with a **Transferred** label. Transfers do not record a physical return.
 
 Choose **Recipient / pickup schedule** to fulfill an existing schedule by transfer. Review the loaded recipient and dates before confirming. Business travelers require valid start and end dates, with the end on or after the start. The selected schedule receives the actual transferred equipment and pickup timestamp, clears its readiness flag, and moves out of Scheduled with **Pickup by transfer** shown beside the pickup time. Planned quantities are replaced by the actual handover; a different preselected PC or monitor must be corrected on the schedule first.
+
+### Import matching and cleanup
 
 Repeat loan imports match existing IDs first, then asset and Knox ID/name with start, pickup, or return dates. If only one side lacks start and pickup dates, an asset/person match is used only when there is a single candidate. Blank imported start dates remain blank.
 

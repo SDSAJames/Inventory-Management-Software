@@ -698,6 +698,7 @@ export default function LoansPage() {
         )}
         <LoanTable
           scheduled={category === 'scheduled'}
+          hideReturnDate={category === 'overdue'}
           onTransferLoan={setTransferTarget}
           loans={displayedLoans}
           assets={db.assets}
