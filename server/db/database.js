@@ -226,6 +226,7 @@ export function initDatabase() {
   seedDefaultData();
   normalizeStoredLocations(db);
   removeExactDuplicateLoans();
+  ensureAvailableAssetCustody(db);
 }
 
 function removeExactDuplicateLoans() {
@@ -639,3 +640,4 @@ export function createSnapshot(description = 'Pre-import state snapshot') {
   return id;
 }
 import { isAssetReturnedOnRecord } from '../../shared/assetReturns.js';
+import { ensureAvailableAssetCustody } from '../lib/assetCustody.js';

@@ -46,7 +46,7 @@ export function DbProvider({ children }) {
                 previousOwner: 'None',
                 newOwner: assetWithNorm.owner,
                 date: assetWithNorm.issuedDate || assetWithNorm.updated || todayIso(),
-                reason: assetWithNorm.owner === 'IT department' ? 'Returned to IT department' : 'Initial assignment',
+                reason: assetWithNorm.owner === 'IT department' ? 'IT custody recorded' : 'Initial assignment',
                 notes: assetWithNorm.department ? `Department: ${assetWithNorm.department}` : (assetWithNorm.notes || ''),
               }),
             ],
@@ -171,7 +171,7 @@ export function DbProvider({ children }) {
   const addAsset = useCallback((asset) => {
     const validated = validateAssetStatus(asset);
     const initialHistory = validated.owner
-      ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: 'Initial assignment' })]
+      ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: validated.owner === 'IT department' ? 'IT custody recorded' : 'Initial assignment' })]
       : [];
     const newAsset = {
       id: asset.id || crypto.randomUUID(),

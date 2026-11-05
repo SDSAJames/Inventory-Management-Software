@@ -28,7 +28,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     serial: '',
     status: 'Available',
     location: DEFAULT_LOCATION,
-    owner: '',
+    owner: 'IT department',
     department: '',
     issuedDate: '',
     purchaseDate: '',

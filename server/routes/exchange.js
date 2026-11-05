@@ -248,6 +248,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 
     // Run reconciliation after commit
     reconcileAllAssetsInDb();
+    ensureAvailableAssetCustody(db);
 
     logAudit('IMPORT_DATA', 'exchange', snapshotId, {
       importedAssetsCount,
@@ -413,6 +414,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
 
     // Apply current location rules to restored working records without changing snapshots.
     normalizeStoredLocations(db);
+    ensureAvailableAssetCustody(db);
 
     // 6. Delete consumed snapshot
     db.prepare('DELETE FROM import_backups WHERE id = ?').run(latestSnapshot.id);
@@ -431,3 +433,4 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+import { ensureAvailableAssetCustody } from '../lib/assetCustody.js';

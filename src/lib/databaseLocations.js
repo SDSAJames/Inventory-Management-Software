@@ -1,20 +1,21 @@
-import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
+import { getAssetLocation, normalizeLocation, normalizeAvailableAsset } from '../../shared/assetRules.js';
 import { REPAIR_LOCATION } from '../../shared/referenceData.js';
 
 /** Keep the local cache, imports, and server snapshots on the same location rules. */
 export function normalizeDatabaseLocations(database) {
   if (!database) return database;
-  const normalizeRows = (rows, locationFor) => {
+  const normalizeRows = (rows, locationFor, normalize = (row) => row) => {
     let changed = false;
     const normalized = (rows || []).map((row) => {
-      const location = locationFor(row);
-      if (location === row.location) return row;
+      const normalizedRow = normalize(row);
+      const location = locationFor(normalizedRow);
+      if (location === row.location && normalizedRow === row) return row;
       changed = true;
-      return { ...row, location };
+      return { ...normalizedRow, location };
     });
     return changed ? normalized : rows;
   };
-  const assets = normalizeRows(database.assets, (asset) => getAssetLocation(asset.status, asset.location));
+  const assets = normalizeRows(database.assets, (asset) => getAssetLocation(asset.status, asset.location), normalizeAvailableAsset);
   const loans = normalizeRows(database.loans, (loan) => normalizeLocation(loan.location, ''));
   const locations = [...new Set([
     ...(database.locations || []),

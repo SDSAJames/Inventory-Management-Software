@@ -116,7 +116,7 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(db.prepare("SELECT asset_code FROM ownership_history WHERE id = 'rename-history'").get().asset_code, 'MESM-6519');
       const reloaded = invoke(assetsRouter, 'get', '/:id', {}, { id: 'rename' }).asset;
       assert.equal(reloaded.code, 'MESM-6519');
-      assert.equal(reloaded.ownershipHistory.length, 1);
+      assert.ok(reloaded.ownershipHistory.some((entry) => entry.id === 'rename-history'));
       invoke(assetsRouter, 'put', '/:id', { code: 'pc-date' }, { id: 'rename' }, 409);
       invoke(assetsRouter, 'put', '/:id', { code: '  ' }, { id: 'rename' }, 400);
       assert.equal(db.prepare("SELECT code FROM assets WHERE id = 'rename'").get().code, 'MESM-6519');
@@ -156,6 +156,20 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(db.prepare("SELECT status FROM loans WHERE id = 'rollback-linked'").get().status, 'Active');
       assert.equal(db.prepare("SELECT returned_equipment_json FROM loans WHERE id = 'rollback-linked'").get().returned_equipment_json, null);
       db.exec('DROP TRIGGER reject_return_history');
+    });
+    await t.test('Available status means an IT return for single and bulk asset updates', () => {
+      for (const id of ['single-available', 'bulk-available']) {
+        invoke(assetsRouter, 'post', '/', { id, code: id, owner: 'Holder Return Test', status: 'Assigned', location: 'Stack' });
+      }
+      invoke(assetsRouter, 'put', '/:id', { status: 'Available' }, { id: 'single-available' });
+      invoke(assetsRouter, 'post', '/batch-update', { ids: ['bulk-available'], changes: { status: 'Available' } });
+      for (const id of ['single-available', 'bulk-available']) {
+        const asset = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
+        assert.equal(asset.owner, 'IT department');
+        assert.equal(asset.status, 'Available');
+        assert.equal(asset.location, 'IT Department');
+        assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = ? AND reason = 'Returned to IT department'").get(id).count, 1);
+      }
     });
   } finally { hook.deregister(); db.close(); delete globalThis.__assetDateTestDb; }
 });

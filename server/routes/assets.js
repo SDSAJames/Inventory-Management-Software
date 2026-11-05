@@ -9,8 +9,9 @@ import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { normalizeLocation } from '../../shared/assetRules.js';
 import { assetLocationForWrite } from '../lib/assetLocations.js';
 import { renameStoredAssetReferences } from '../lib/assetReferences.js';
-import { getHolderReturnChanges } from '../../shared/assetRules.js';
+import { getHolderReturnChanges, normalizeAvailableAsset } from '../../shared/assetRules.js';
 import { recordHolderReturn } from '../lib/assetReturns.js';
+import { returnAssetToIt } from '../lib/assetLoans.js';
 import { randomUUID } from 'node:crypto';
 
 export const assetsRouter = Router();
@@ -177,11 +178,10 @@ assetsRouter.post('/', authenticate, (req, res) => {
   const id = req.body.id || `ast-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
 
-  // If owner is provided and not IT department, enforce status 'Assigned'
-  let effectiveStatus = status;
-  if (owner && owner !== 'IT department' && status === 'Available') {
-    effectiveStatus = 'Assigned';
-  }
+  const initialCustody = normalizeAvailableAsset({ status, owner, department });
+  const effectiveStatus = initialCustody.status;
+  const effectiveOwner = initialCustody.owner;
+  const effectiveDepartment = initialCustody.department;
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -199,8 +199,8 @@ assetsRouter.post('/', authenticate, (req, res) => {
       serial,
       effectiveStatus,
       assetLocationForWrite(db, effectiveStatus, location),
-      owner,
-      department,
+      effectiveOwner,
+      effectiveDepartment,
       normalizeAssetDate(purchaseDate),
       normalizeAssetDate(warrantyExpirationDate),
       condition,
@@ -209,29 +209,29 @@ assetsRouter.post('/', authenticate, (req, res) => {
       now
     );
 
-    if (owner) {
+    if (effectiveOwner) {
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        `hist-${Date.now()}`,
+        `hist-${randomUUID()}`,
         trimmedCode,
         'None',
-        owner,
+        effectiveOwner,
         todayIso(),
-        owner === 'IT department' ? 'Returned to IT department' : 'Initial assignment',
+        effectiveOwner === 'IT department' ? 'IT custody recorded' : 'Initial assignment',
         notes || `Registered by ${req.user.username}`,
         now
       );
 
       // Also ensure employee exists if named owner
-      if (owner !== 'IT department') {
-        const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(owner.trim());
+      if (effectiveOwner !== 'IT department') {
+        const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(effectiveOwner.trim());
         if (!empExists) {
           db.prepare(`
             INSERT INTO employees (id, name, department, position, created_at)
             VALUES (?, ?, ?, 'Staff', ?)
-          `).run(`emp-${Date.now()}`, owner.trim(), department, now);
+          `).run(`emp-${Date.now()}`, effectiveOwner.trim(), effectiveDepartment, now);
         }
       }
     }
@@ -276,10 +276,11 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
 
   const now = new Date().toISOString();
   const returnChanges = getHolderReturnChanges(asset, req.body || {});
-  const effectiveOwner = returnChanges?.owner ?? owner;
-  const effectiveStatus = returnChanges?.status ?? status;
+  const custody = normalizeAvailableAsset({ status, owner, department, ...returnChanges });
+  const effectiveOwner = custody.owner;
+  const effectiveStatus = custody.status;
   const effectiveLocation = returnChanges?.location ?? location;
-  const effectiveDepartment = returnChanges?.department ?? department;
+  const effectiveDepartment = custody.department;
   const effectiveOwnerChanged = effectiveOwner !== asset.owner;
   let affectedLoans = [];
   const dateError = getAssetDateError({ purchaseDate, warrantyExpirationDate });
@@ -310,7 +311,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
     );
 
     if (code !== asset.code) renameStoredAssetReferences(db, asset.code, code);
-    if (returnChanges && effectiveOwnerChanged) affectedLoans = recordHolderReturn(db, code, now);
+    if (returnChanges) affectedLoans = recordHolderReturn(db, code, now);
 
     if (effectiveOwnerChanged) {
       db.prepare(`
@@ -322,7 +323,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
         asset.owner || 'None',
         effectiveOwner || 'None',
         now,
-        returnChanges ? 'Returned to IT department' : effectiveOwner ? (asset.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
+        returnChanges ? 'Returned to IT department' : effectiveOwner === 'IT department' ? 'IT custody recorded' : effectiveOwner ? (asset.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
         returnChanges ? `Returned to IT department through asset details by ${req.user.username}` : `Asset modified by ${req.user.username}`,
         now
       );
@@ -380,7 +381,7 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
       INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      `hist-${Date.now()}`,
+      `hist-${randomUUID()}`,
       asset.code,
       asset.owner || 'None',
       newOwner.trim(),
@@ -465,6 +466,17 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
           todayIso(),
           asset.id
         );
+        if (status === 'Available') {
+          const returnedAt = new Date().toISOString();
+          recordHolderReturn(db, asset.code, returnedAt);
+          returnAssetToIt(db, asset.code, todayIso());
+          if (String(asset.owner || '').trim().toLowerCase() !== 'it department') {
+            db.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+              `hist-${randomUUID()}`, asset.code, asset.owner || 'None', 'IT department', returnedAt,
+              'Returned to IT department', `Available status selected in bulk update by ${req.user.username}`, returnedAt,
+            );
+          }
+        }
         updatedCount++;
       }
     }

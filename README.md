@@ -64,6 +64,8 @@ Returned devices move to **IT Department**. The existing **Under repair → serv
 
 Clearing an existing asset's **Current holder** and saving records a return to **IT department** in Ownership History, including the previous holder and timestamp. The linked pickup records the returned device so synchronization keeps it in IT custody. Other devices and accessories remain outstanding until checked in.
 
+**Available** means IT custody: the current holder is **IT department**, including after single or bulk status changes. Startup repairs existing Available records with blank or stale holders and fills missing ownership history once. When an earlier return date is unknown, the added entry identifies the custody reconciliation time rather than claiming a historical return date.
+
 **Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; picked-up employee equipment appears under **Assigned**, while business-traveler checkouts appear under **Loans**. Return records capture the laptop asset number actually received, including missing or substituted laptops. The existing `/loans` address continues to open this page.
 
 Employee and traveler requests without a pickup remain in the Assignments & Pickups **Scheduled** tab. That tab displays the assignee and omits pickup, return, and status columns. Rental locations offer Directory suggestions and accept typed values. Requested PC and monitor flags can be edited in full details and confirmed alongside actual asset numbers during pickup.

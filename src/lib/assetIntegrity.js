@@ -4,7 +4,7 @@ import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
 import { todayIso, readableLoanDate, isLoanReturned } from './utils.js';
-import { getAssetLocation, getAssetStatusAfterReturn } from '../../shared/assetRules.js';
+import { getAssetLocation, getAssetStatusAfterReturn, normalizeAvailableAsset } from '../../shared/assetRules.js';
 import { isBusinessTravelerType } from '../../shared/loanRules.js';
 
 /**
@@ -187,6 +187,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
  */
 export function validateAssetStatus(asset) {
   if (!asset) return asset;
+  asset = normalizeAvailableAsset(asset);
   const location = getAssetLocation(asset.status, asset.location);
   if (location !== asset.location) asset = { ...asset, location };
   const isItDept = isItDepartment(asset.owner);
@@ -268,6 +269,7 @@ export function createOwnershipEntry({
  */
 export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   if (!asset) return [];
+  asset = normalizeAvailableAsset(asset);
 
   const entries = [];
   const seen = new Set();
@@ -341,20 +343,19 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   // 3. Ensure the current holder is represented in the timeline
   if (asset.owner && asset.owner.trim() !== '') {
     const normCurrentOwner = normalizeHolder(asset.owner);
-    const hasCurrentOwnerEntry = entries.some(
-      (e) => normalizeHolder(e.newOwner).toLowerCase() === normCurrentOwner.toLowerCase()
-    );
+    const latest = [...entries].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))[0];
+    const hasCurrentOwnerEntry = latest && normalizeHolder(latest.newOwner).toLowerCase() === normCurrentOwner.toLowerCase();
 
     if (!hasCurrentOwnerEntry) {
       addEntry({
         id: `current-owner-${asset.id || asset.code}`,
-        date: asset.issuedDate || asset.updated || todayIso(),
-        previousOwner: 'IT department',
+        date: latest ? new Date().toISOString() : asset.issuedDate || asset.updated || todayIso(),
+        previousOwner: latest?.newOwner || 'None',
         newOwner: normCurrentOwner,
         location: asset.location || '',
         department: asset.department || '',
-        reason: 'Assigned',
-        notes: asset.notes || '',
+        reason: isItDepartment(normCurrentOwner) ? 'IT custody recorded' : 'Assigned',
+        notes: isItDepartment(normCurrentOwner) ? 'Current IT custody confirmed from Available status; earlier return date was not recorded.' : asset.notes || '',
         isLoan: false,
       });
     }
