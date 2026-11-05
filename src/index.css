@@ -994,6 +994,7 @@ tbody tr:hover { background: #f8fafc; }
 .directory-location-name small { display: block; color: var(--muted); margin-top: 3px; }
 .btn-ready-toggle { background: #edf5ff; color: #2459a8; border: 1px solid #cfe0fb; }
 .btn-ready { background: #e6f6ed; color: #176b43; border: 1px solid #bfe6cf; }
+.pickup-readiness-control { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .partial-return-badge { display: inline-block; margin: 4px 0 0 5px; padding: 3px 7px; border-radius: 999px; background: #fff0dd; color: #97530d; font-size: 10px; font-weight: 700; white-space: nowrap; }
 .partial-return-warning, .complete-return-note { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 12px; padding: 10px 12px; border-radius: 8px; font-size: 12px; }
 .partial-return-warning { background: #fff3e3; border: 1px solid #f2d5aa; color: #754511; }

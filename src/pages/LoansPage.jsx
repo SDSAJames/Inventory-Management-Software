@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
-import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
+import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, updateLoanFormField, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIso, readableLoanDate, todayIso, statusClass } from '../lib/utils';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
@@ -20,6 +20,8 @@ import { readableTransferNote } from '../lib/transferNotes';
 import AssetAutocomplete from '../components/AssetAutocomplete';
 import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import LoanTransferForm from '../components/LoanTransferForm';
+import DirectorySelect from '../components/DirectorySelect';
+import EquipmentQuantityInput from '../components/EquipmentQuantityInput';
 
 export default function LoansPage() {
   const { db, updateLoan, pickupLoan, setLoanReadyForPickup, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
@@ -47,7 +49,7 @@ export default function LoansPage() {
     startDate: '',
     endDate: '',
     location: '',
-    ...equipmentQuantitiesToForm({}, { Adapter: 1, Cable: 1 }),
+    ...equipmentQuantitiesToForm(),
     others: '',
     note: '',
   });
@@ -147,14 +149,15 @@ export default function LoansPage() {
       startDate: (loan.startDate || loan.loanDate || todayIso()).slice(0, 10),
       endDate: getLoanEndDate(loan).slice(0, 10),
       location: loan.location || DEFAULT_LOCATION,
-      ...equipmentQuantitiesToForm(eq, { Adapter: 1, Cable: 1 }),
+      department: loan.department || '',
+      ...equipmentQuantitiesToForm(eq, { Adapter: eq.RequestedPC || loan.assetCode ? 1 : 0, Cable: eq.RequestedPC || loan.assetCode ? 1 : 0 }),
       others: loan.others || '',
       note: readableTransferNote(loan.note || loan.purpose || ''),
     });
   };
 
   const updatePickupField = (field, val) => {
-    setPickupForm((prev) => ({ ...prev, [field]: val }));
+    setPickupForm((prev) => updateLoanFormField(prev, field, val));
   };
 
   const handleConfirmPickup = async () => {
@@ -169,6 +172,7 @@ export default function LoansPage() {
       endDate: pickupForm.endDate,
       dueDate: pickupForm.endDate,
       location: pickupForm.location,
+      department: pickupForm.department,
       equipment: {
         ...(pickupTarget.equipment || {}),
         ...buildLoanEquipment(pickupForm, pickupForm.assetCode.trim()),
@@ -836,13 +840,15 @@ export default function LoansPage() {
                 </div>
 
                 <div className="field" style={{ marginTop: '8px' }}>
-                  <label htmlFor="modal-pickupLocation">Pickup / Rental location</label>
-                  <input
+                  <DirectorySelect
                     id="modal-pickupLocation"
+                    label="Rental location"
+                    options={db.locations}
+                    preserveCurrentValue
                     value={pickupForm.location}
                     onChange={(e) => updatePickupField('location', e.target.value)}
-                    placeholder={`e.g. ${DEFAULT_LOCATION}, Lab 2, etc.`}
                   />
+                  <DirectorySelect allowCustom id="modal-pickupDepartment" label="Department" placeholder="Select or type a department" options={db.departments} value={pickupForm.department || ''} onChange={(e) => updatePickupField('department', e.target.value)} />
                 </div>
               </div>
 
@@ -853,7 +859,7 @@ export default function LoansPage() {
                   <span className="panel-badge-info">Keyboard, Mouse &amp; Cables</span>
                 </div>
                 <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
-                  Verify items handed over. Click quick buttons or type quantities/details.
+                  Verify items handed over. Click quick buttons or enter quantities. PC and monitor use asset numbers.
                 </p>
 
                 <div className="equipment-accessory-list">
@@ -883,8 +889,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={pickupForm.keyboard}
                         onChange={(e) => updatePickupField('keyboard', e.target.value)}
@@ -919,8 +924,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={pickupForm.mouse}
                         onChange={(e) => updatePickupField('mouse', e.target.value)}
@@ -955,8 +959,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={pickupForm.adapter}
                         onChange={(e) => updatePickupField('adapter', e.target.value)}
@@ -990,8 +993,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={pickupForm.cable}
                         onChange={(e) => updatePickupField('cable', e.target.value)}
@@ -1025,8 +1027,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={pickupForm.dongle}
                         onChange={(e) => updatePickupField('dongle', e.target.value)}
@@ -1040,7 +1041,7 @@ export default function LoansPage() {
                       <span className="accessory-icon">🖥️</span>
                       <div>
                         <strong>Monitor</strong>
-                        <span className="accessory-desc">Asset tag / count</span>
+                        <span className="accessory-desc">Monitor asset number</span>
                       </div>
                     </div>
                     <div className="accessory-control">
@@ -1074,8 +1075,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={pickupForm.ethernetCable}
                         onChange={(e) => updatePickupField('ethernetCable', e.target.value)}
@@ -1278,8 +1278,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={returnForm.keyboard}
                         onChange={(e) => updateReturnField('keyboard', e.target.value)}
@@ -1316,8 +1315,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={returnForm.mouse}
                         onChange={(e) => updateReturnField('mouse', e.target.value)}
@@ -1352,8 +1350,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={returnForm.adapter}
                         onChange={(e) => updateReturnField('adapter', e.target.value)}
@@ -1387,8 +1384,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={returnForm.cable}
                         onChange={(e) => updateReturnField('cable', e.target.value)}
@@ -1422,8 +1418,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={returnForm.dongle}
                         onChange={(e) => updateReturnField('dongle', e.target.value)}
@@ -1437,7 +1432,7 @@ export default function LoansPage() {
                       <span className="accessory-icon">🖥️</span>
                       <div>
                         <strong>Monitor</strong>
-                        <span className="accessory-desc">Asset tag / count</span>
+                        <span className="accessory-desc">Monitor asset number</span>
                       </div>
                     </div>
                     <div className="accessory-control">
@@ -1477,8 +1472,7 @@ export default function LoansPage() {
                           1
                         </button>
                       </div>
-                      <input
-                        type="text"
+                      <EquipmentQuantityInput
                         className="accessory-input"
                         value={returnForm.ethernetCable}
                         onChange={(e) => updateReturnField('ethernetCable', e.target.value)}

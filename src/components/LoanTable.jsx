@@ -37,9 +37,14 @@ const SCHEDULED_COLUMNS = [
   { key: 'assigneeType', label: 'Borrower type', getValue: (loan) => isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee' },
 ];
 
-function ScheduleFields({ loan }) {
+function ScheduleFields({ loan, onToggleReady }) {
   return <>
-    <td><span className={`status ${loan.readyForPickup ? 'available' : 'scheduled'}`}>{loan.readyForPickup ? 'Ready for pickup' : 'Not ready'}</span></td>
+    <td><div className="pickup-readiness-control">
+      {(loan.readyForPickup || !onToggleReady) && <span className={`status ${loan.readyForPickup ? 'available' : 'scheduled'}`}>{loan.readyForPickup ? 'Ready for pickup' : 'Not ready'}</span>}
+      {onToggleReady && <button type="button" className={`btn-action ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={(event) => { event.stopPropagation(); onToggleReady(loan); }}>
+        {loan.readyForPickup ? 'Mark not ready' : 'Mark ready'}
+      </button>}
+    </div></td>
     <td><span className="assignee-badge">{isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee'}</span></td>
   </>;
 }
@@ -221,7 +226,7 @@ export default function LoanTable({
                       <button className="btn-action btn-cancel" onClick={cancelEdit}>Cancel</button>
                     </div>
                   </td>
-                  {scheduled && <ScheduleFields loan={draft} />}
+                  {scheduled && <ScheduleFields loan={loan} onToggleReady={onToggleReady} />}
                   <td className="col-no"><strong>{draft.assetCode || draft.equipment?.Laptop || '—'}</strong></td>
                   <td>
                     <input
@@ -369,9 +374,9 @@ export default function LoanTable({
                         </>
                       ) : (
                         <>
-                          <button type="button" className={`btn-action ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={(e) => { e.stopPropagation(); onToggleReady && onToggleReady(loan); }} title={loan.readyForPickup ? 'Mark as not ready for pickup' : 'Mark laptop as ready for pickup'}>
+                          {!scheduled && <button type="button" className={`btn-action ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={(e) => { e.stopPropagation(); onToggleReady && onToggleReady(loan); }} title={loan.readyForPickup ? 'Mark as not ready for pickup' : 'Mark laptop as ready for pickup'}>
                             {loan.readyForPickup ? '✓ Ready' : 'Mark ready'}
-                          </button>
+                          </button>}
                           <button
                             className="btn-action btn-pickup"
                             onClick={(e) => {
@@ -387,7 +392,7 @@ export default function LoanTable({
                     </div>
                   </td>
                   )}
-                  {scheduled && <ScheduleFields loan={loan} />}
+                  {scheduled && <ScheduleFields loan={loan} onToggleReady={onToggleReady} />}
                   <td className="col-no">
                     <strong>{loan.assetCode || eq.Laptop || '—'}</strong>
                     {!isPickedUp && !isReturned && (eq.RequestedPC || eq.RequestedMonitor) && (
@@ -452,9 +457,9 @@ export default function LoanTable({
                             {/* Revert / Pickup / Return actions */}
                             {!loan.pickupDate && !isReturned && (
                               <>
-                                <button className={`button small-btn ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={() => onToggleReady && onToggleReady(loan)}>
+                                {!scheduled && <button className={`button small-btn ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={() => onToggleReady && onToggleReady(loan)}>
                                   {loan.readyForPickup ? '✓ Ready for pickup' : 'Mark ready for pickup'}
-                                </button>
+                                </button>}
                                 <button className="button small-btn" onClick={() => onPickupLoan && onPickupLoan(loan)}>↗ Confirm pickup</button>
                               </>
                             )}

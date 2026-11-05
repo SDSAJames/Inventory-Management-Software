@@ -15,8 +15,33 @@ const EQUIPMENT_FIELDS = [
 
 export const LOAN_EQUIPMENT_FIELDS = EQUIPMENT_FIELDS.map(([, key, label, placeholder]) => [label, key, placeholder]);
 
+export function newLoanEquipmentForm() {
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(([, key]) => [
+    key, key === 'monitor' ? '' : '0',
+  ]));
+}
+
+// Keep equipment requests and their defaults consistent in every custody form.
+export function updateLoanFormField(previous, field, value) {
+  const requestingPc = (field === 'assetCode' && value) || (field === 'requestPc' && value);
+  return {
+    ...previous,
+    [field]: value,
+    ...(requestingPc ? { requestPc: true } : {}),
+    ...(requestingPc && !previous.requestPc ? {
+      adapter: Number(previous.adapter) > 0 ? previous.adapter : '1',
+      cable: Number(previous.cable) > 0 ? previous.cable : '1',
+    } : {}),
+    ...(field === 'requestPc' && !value ? { assetCode: '', adapter: '0', cable: '0' } : {}),
+    ...(field === 'monitor' && value ? { requestMonitor: true } : {}),
+    ...(field === 'requestMonitor' && !value ? { monitor: '' } : {}),
+    ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
+    ...(field === 'pickupDate' && !value ? { returnDate: '' } : {}),
+  };
+}
+
 export function equipmentToForm(equipment = {}) {
-  return Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [formKey, equipment[storageKey] || '']));
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [formKey, String(equipment[storageKey] ?? (formKey === 'monitor' ? '' : '0'))]));
 }
 
 /** Pickup/return controls use string values and retain explicit zero quantities. */

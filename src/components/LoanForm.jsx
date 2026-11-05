@@ -3,7 +3,7 @@ import { todayIso } from '../lib/utils';
 import { buildIpAddress, isIpAddressInvalid } from '../lib/ipAddress';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { buildLoanEquipment, equipmentToForm, isBusinessTraveler } from '../lib/loanEquipment';
+import { buildLoanEquipment, newLoanEquipmentForm, updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
 import { findAssetByCode, matchesAssetCategory, PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import AssetAutocomplete from './AssetAutocomplete';
 import DirectorySelect from './DirectorySelect';
@@ -29,8 +29,8 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     pickedUp: false,
     endDate: '',
     location: '',
-    department: (db.departments || []).includes('Operations') ? 'Operations' : '',
-    ...equipmentToForm(),
+    department: '',
+    ...newLoanEquipmentForm(),
     others: '',
     note: '',
   });
@@ -39,13 +39,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   const [submitError, setSubmitError] = useState('');
 
   const updateField = (field, val) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: val,
-      ...(field === 'assigneeType' && !isBusinessTraveler(val) ? { endDate: '' } : {}),
-      ...(field === 'assetCode' && val ? { requestPc: true } : {}),
-      ...(field === 'monitor' && val ? { requestMonitor: true } : {}),
-    }));
+    setForm((prev) => updateLoanFormField(prev, field, val));
     const errorKey = field === 'ipSubnet' || field === 'ipNumber' ? 'ip' : field;
     if (errors[errorKey]) {
       setErrors((prev) => ({ ...prev, [errorKey]: null }));
@@ -55,10 +49,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     }
   };
   const set = (field) => (event) => updateField(field, event.target.value);
-  const setEquipmentRequest = (requestField, assetField) => (event) => {
-    const checked = event.target.checked;
-    setForm((prev) => ({ ...prev, [requestField]: checked, ...(!checked ? { [assetField]: '' } : {}) }));
-  };
+  const setEquipmentRequest = (requestField) => (event) => updateField(requestField, event.target.checked);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -258,16 +249,16 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>}
 
           {/* Location & department */}
-          <DirectorySelect allowCustom id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />
-          <DirectorySelect id="department" label="Department" options={db.departments} value={form.department} onChange={set('department')} />
+          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />
+          <DirectorySelect allowCustom id="department" label="Department" placeholder="Select or type a department" options={db.departments} value={form.department} onChange={set('department')} />
 
           {/* Equipment Checklist */}
           <div className="field full">
             <div className="equipment-header-row">
               <fieldset className="loan-equipment-requests">
                 <legend>Equipment requested</legend>
-                <label><input type="checkbox" checked={form.requestPc} onChange={setEquipmentRequest('requestPc', 'assetCode')} /> Laptop / PC</label>
-                <label><input type="checkbox" checked={form.requestMonitor} onChange={setEquipmentRequest('requestMonitor', 'monitor')} /> Monitor</label>
+                <label><input type="checkbox" checked={form.requestPc} onChange={setEquipmentRequest('requestPc')} /> Laptop / PC</label>
+                <label><input type="checkbox" checked={form.requestMonitor} onChange={setEquipmentRequest('requestMonitor')} /> Monitor</label>
               </fieldset>
               <span className="equipment-header-hint">Asset numbers can be assigned later.</span>
             </div>
@@ -288,7 +279,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                       ...prev,
                       assetCode: asset.code,
                       location: prev.location || ((db.locations || []).includes(asset.location) ? asset.location : ''),
-                      department: ((!prev.department || prev.department === 'Operations') && (db.departments || []).includes(asset.department)) ? asset.department : prev.department,
                     }));
                   }}
                   placeholder="Search laptop or MES PC asset number..."
@@ -302,6 +292,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
                 form={form}
                 errors={errors}
                 searchableMonitor
+                quantities
                 onChange={updateField}
               />
             </div>
@@ -311,6 +302,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
             <label htmlFor="others">Others / Peripherals</label>
             <input
               id="others"
+              type="text"
               placeholder="e.g. Headset, Privacy filter"
               value={form.others}
               onChange={set('others')}

@@ -186,5 +186,24 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       invoke(loansRouter, 'post', '/:id/return', { returnDate: '2026-11-05' }, { id: 'phase-active' });
       assert.equal(db.prepare("SELECT status FROM loans WHERE id = 'phase-active'").get().status, 'Returned');
     });
+    await t.test('pickup retains custom department and exact device and accessory values', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'fields-pc', code: 'FIELDS-PC', category: 'Laptop' });
+      invoke(assetsRouter, 'post', '/', { id: 'fields-monitor', code: 'FIELDS-MON', category: 'Monitor' });
+      invoke(loansRouter, 'post', '/', { id: 'fields-schedule', knoxId: 'fields.user', assignee: 'Fields User', assigneeType: 'Employee' });
+      const result = invoke(loansRouter, 'post', '/:id/pickup', {
+        assetCode: 'FIELDS-PC', pickupDate: '2026-11-05', department: 'Custom team', location: 'Stack',
+        equipment: { Laptop: 'FIELDS-PC', Monitor: 'FIELDS-MON', Adapter: '0', Cable: '2', Keyboard: '3' }, others: 'Headset',
+      }, { id: 'fields-schedule' });
+      assert.equal(result.loan.department, 'Custom team');
+      assert.equal(result.loan.location, 'Stack');
+      assert.equal(result.loan.equipment.Monitor, 'FIELDS-MON');
+      assert.equal(result.loan.equipment.Adapter, '0');
+      assert.equal(result.loan.equipment.Cable, '2');
+      assert.equal(result.loan.others, 'Headset');
+      for (const code of ['FIELDS-PC', 'FIELDS-MON']) {
+        assert.equal(db.prepare('SELECT department FROM assets WHERE code = ?').get(code).department, 'Custom team');
+      }
+    });
   } finally { hook.deregister(); db.close(); delete globalThis.__assetDateTestDb; }
 });

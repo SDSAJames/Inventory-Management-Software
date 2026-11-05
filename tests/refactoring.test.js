@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { isBusinessTravelerType, isLoanReturned } from '../shared/loanRules.js';
 import { findLoanMatchIndex, loanIdentityKeys } from '../shared/loanIdentity.js';
 import { groupLoans, filterLoanGroups, getLoanGroup } from '../src/lib/loanSelectors.js';
-import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, getMissingReturnItems } from '../src/lib/loanEquipment.js';
+import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, equipmentToForm, newLoanEquipmentForm, updateLoanFormField, getMissingReturnItems } from '../src/lib/loanEquipment.js';
 import { parseAssetRows, assetsToRows } from '../src/lib/assetExcel.js';
 import { parseDelimitedText, parseEquipmentsText, normalizeTextDate } from '../src/lib/txtImport.js';
 import { buildCalendarDays, shiftCalendarMonth } from '../src/lib/calendarDates.js';
@@ -73,6 +73,34 @@ test('equipment mapping preserves zeros, monitor asset codes and request metadat
   assert.deepEqual(getMissingReturnItems({ Laptop: 'PC-123' }, buildReturnedEquipment({ returnedLaptopCode: '' })), ['Laptop (PC-123)']);
   assert.deepEqual(getMissingReturnItems({ Laptop: 'PC-123' }, buildReturnedEquipment({ returnedLaptopCode: 'PC-456' })), ['Laptop (PC-123)']);
   assert.deepEqual(getMissingReturnItems({ RequestedPC: true, RequestedMonitor: true }, {}), []);
+});
+
+test('custody forms share PC request defaults without overwriting edited quantities', () => {
+  let form = { ...newLoanEquipmentForm(), requestPc: false, requestMonitor: false, department: '', others: '' };
+  assert.equal(form.adapter, '0');
+  form = updateLoanFormField(form, 'requestPc', true);
+  assert.equal(form.adapter, '1');
+  assert.equal(form.cable, '1');
+  form = updateLoanFormField(form, 'adapter', '3');
+  form = updateLoanFormField(form, 'cable', '0');
+  form = updateLoanFormField(form, 'assetCode', 'PC-123');
+  assert.equal(form.adapter, '3');
+  assert.equal(form.cable, '0');
+  assert.equal(form.department, '');
+  form = updateLoanFormField(form, 'requestPc', false);
+  assert.equal(form.assetCode, '');
+  assert.equal(form.adapter, '0');
+  assert.equal(form.cable, '0');
+  form = updateLoanFormField(form, 'assetCode', 'PC-456');
+  assert.equal(form.requestPc, true);
+  assert.equal(form.adapter, '1');
+  form = updateLoanFormField(form, 'monitor', 'MON-123');
+  assert.equal(form.requestMonitor, true);
+  assert.equal(form.monitor, 'MON-123');
+  const saved = equipmentToForm({ Adapter: 0, Cable: 2, Monitor: 'MON-123' });
+  assert.equal(saved.adapter, '0');
+  assert.equal(saved.cable, '2');
+  assert.equal(saved.monitor, 'MON-123');
 });
 
 test('equipment parsers share aliases while preserving physical blank column positions', () => {

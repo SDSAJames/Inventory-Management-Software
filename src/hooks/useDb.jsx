@@ -576,6 +576,7 @@ export function DbProvider({ children }) {
           status: isBusinessTraveler(merged.assigneeType) ? 'On loan' : 'Assigned',
           owner,
           location: details.location || loan.location || a.location,
+          department: merged.department ?? a.department,
           ownershipHistory: [history, ...(a.ownershipHistory || [])],
           updated: todayIso(),
         };

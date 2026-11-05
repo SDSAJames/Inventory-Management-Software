@@ -504,6 +504,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
   const nextNote = note !== undefined ? note : loan.note;
   const nextOthers = others !== undefined ? others : loan.others;
   const nextLocation = normalizeLocation(location !== undefined ? location : loan.location);
+  const nextDepartment = String(req.body?.department ?? loan.department ?? '').trim();
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -512,7 +513,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
     db.prepare(`
       UPDATE loans
       SET asset_code = ?, pickup_date = ?, start_date = ?, end_date = ?, status = ?,
-          equipment_json = ?, note = ?, others = ?, location = ?,
+          equipment_json = ?, note = ?, others = ?, location = ?, department = ?,
           return_date = '', returned_date = '', is_archived = 0,
           ready_for_pickup = 0, returned_equipment_json = NULL, return_status = NULL
       WHERE id = ?
@@ -526,6 +527,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
       nextNote,
       nextOthers,
       nextLocation,
+      nextDepartment,
       loan.id
     );
 
@@ -541,9 +543,9 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
       if (!asset) continue;
       db.prepare(`
         UPDATE assets
-        SET status = ?, owner = ?, location = ?, updated = ?
+        SET status = ?, owner = ?, location = ?, department = ?, updated = ?
         WHERE code = ?
-      `).run(assetStatus, loan.assignee, nextLocation, todayIso(), assetCode);
+      `).run(assetStatus, loan.assignee, nextLocation, nextDepartment, todayIso(), assetCode);
 
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)

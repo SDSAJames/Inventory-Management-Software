@@ -4,7 +4,7 @@ import { readableTransferNote } from '../lib/transferNotes';
 import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from '../lib/ipAddress';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { buildLoanEquipment, equipmentToForm, isBusinessTraveler } from '../lib/loanEquipment';
+import { buildLoanEquipment, equipmentToForm, updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
 import AssetAutocomplete from './AssetAutocomplete';
 import DirectorySelect from './DirectorySelect';
 import LoanEquipmentFields from './LoanEquipmentFields';
@@ -42,16 +42,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
   });
 
   const updateField = (field, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-      ...(field === 'assetCode' && value ? { requestPc: true } : {}),
-      ...(field === 'monitor' && value ? { requestMonitor: true } : {}),
-      ...(field === 'requestPc' && !value ? { assetCode: '' } : {}),
-      ...(field === 'requestMonitor' && !value ? { monitor: '' } : {}),
-      ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
-      ...(field === 'pickupDate' && !value ? { returnDate: '' } : {}),
-    }));
+    setForm((prev) => updateLoanFormField(prev, field, value));
   };
   const set = (field) => (event) => updateField(field, event.target.value);
 
@@ -140,7 +131,8 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
           {/* IP address */}
           <IPAddressFields form={form} onChange={updateField} />
 
-          <DirectorySelect allowCustom id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} preserveCurrentValue />
+          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} preserveCurrentValue />
+          <DirectorySelect allowCustom id="department" label="Department" placeholder="Select or type a department" options={db.departments} value={form.department} onChange={set('department')} />
           <div className="field">
             <label htmlFor="startDate">Start date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
@@ -225,21 +217,21 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
             </fieldset>
             <div className="equipment-grid">
               <div className="equipment-field asset-autocomplete-wrapper">
-                <label htmlFor="edit-assetCode">Laptop / asset number</label>
+                <label htmlFor="edit-assetCode">PC asset number (Optional)</label>
                 <AssetAutocomplete
                   id="edit-assetCode"
                   categoryFilter={PC_CATEGORIES}
+                  allowCustom
                   value={form.assetCode}
                   onChange={(value) => updateField('assetCode', value)}
                   onSelectAsset={(asset) => {
                     setForm((prev) => ({
                       ...prev,
                       assetCode: asset.code,
-                      location: prev.location || asset.location || prev.location,
-                      department: (prev.department === 'Operations' && asset.department) ? asset.department : prev.department,
+                      location: prev.location || ((db.locations || []).includes(asset.location) ? asset.location : ''),
                     }));
                   }}
-                  placeholder="e.g. 432 or SPE-4321..."
+                  placeholder="Search laptop or MES PC asset number..."
                 />
               </div>
               <LoanEquipmentFields searchableMonitor form={form} idPrefix="edit-" onChange={updateField} />
@@ -247,8 +239,8 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
           </div>
 
           <div className="field">
-            <label htmlFor="others">Others</label>
-            <input id="others" value={form.others} onChange={set('others')} />
+            <label htmlFor="others">Others / Peripherals</label>
+            <input id="others" type="text" placeholder="e.g. Headset, Privacy filter" value={form.others} onChange={set('others')} />
           </div>
           <div className="field full">
             <label htmlFor="note">Note</label>
