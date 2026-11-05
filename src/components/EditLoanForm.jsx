@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { nowLocalIso } from '../lib/utils';
+import { nowLocalIso, dateTimeInputValue } from '../lib/utils';
+import { readableTransferNote } from '../lib/transferNotes';
 import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from '../lib/ipAddress';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
@@ -36,7 +37,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
     requestPc: Boolean(equipment.RequestedPC || loan.assetCode),
     requestMonitor: Boolean(equipment.RequestedMonitor || equipment.Monitor),
     others: loan.others || '',
-    note: loan.note || loan.purpose || '',
+    note: readableTransferNote(loan.note || loan.purpose || ''),
   });
 
   const updateField = (field, value) => {
@@ -162,7 +163,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
               <input
                 id="pickupDate"
                 type="datetime-local"
-                value={form.pickupDate}
+                value={dateTimeInputValue(form.pickupDate)}
                 onChange={set('pickupDate')}
               />
               <button type="button" className="timestamp-button" onClick={stampNow('pickupDate')} title="Stamp current time">◷</button>
@@ -190,7 +191,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
               <input
                 id="returnDate"
                 type="datetime-local"
-                value={form.returnDate}
+                value={dateTimeInputValue(form.returnDate)}
                 onChange={set('returnDate')}
               />
               <button type="button" className="timestamp-button" onClick={stampNow('returnDate')} title="Stamp current time">◷</button>

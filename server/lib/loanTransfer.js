@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { splitLoanEquipment, equipmentForTransferredPickup } from '../../shared/loanTransfer.js';
 import { isBusinessTravelerType, isLoanReturned } from '../../shared/loanRules.js';
+import { formatCalendarDateTime } from '../../shared/dateTime.js';
 
-export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate }) {
+export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate, timeZone = 'UTC' }) {
   const source = database.prepare('SELECT * FROM loans WHERE id = ?').get(id);
   if (!source || !source.pickup_date || isLoanReturned(source)) throw new Error('Only picked-up, outstanding equipment can be transferred');
   const schedule = scheduleId ? database.prepare('SELECT * FROM loans WHERE id = ?').get(scheduleId) : null;
@@ -12,9 +13,12 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const equipment = { ...JSON.parse(source.equipment_json || '{}'), Laptop: source.asset_code || '', Others: source.others || '' };
   const { remaining, transferred, complete } = splitLoanEquipment(equipment, selection);
   const now = new Date().toISOString();
+  const localTimestamp = formatCalendarDateTime(now, { timeZone });
+  const zoneLabel = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' }).formatToParts(new Date(now)).find((part) => part.type === 'timeZoneName').value;
+  const transferTime = `${localTimestamp} ${zoneLabel}`;
   const targetAssignee = String(schedule ? schedule.assignee || '' : assignee).trim();
   const targetType = isBusinessTravelerType(schedule ? schedule.assignee_type : assigneeType) ? 'Business traveler' : 'Employee';
-  const targetStart = startDate ?? schedule?.start_date ?? now.slice(0, 10);
+  const targetStart = startDate ?? schedule?.start_date ?? localTimestamp.slice(0, 10);
   const targetEnd = targetType === 'Business traveler' ? endDate ?? schedule?.end_date ?? '' : '';
   const validDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
   if (targetType === 'Business traveler' && (!validDate(targetStart) || !validDate(targetEnd))) throw new Error('Business traveler transfers require valid start and end dates');
@@ -23,9 +27,10 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const transferredSummary = Object.entries(transferred)
     .map(([key, value]) => `${key === 'Dongle' ? 'USB Dongle' : key}: ${value}`)
     .join(', ');
-  const recipientLabel = `${targetAssignee || targetKnox} (${targetKnox}, ${targetType})`;
-  const sourceTransferNote = `Transferred ${transferredSummary} to ${recipientLabel} on ${now}`;
-  const targetTransferNote = `Pickup by transfer: received ${transferredSummary} from ${source.assignee || source.knox_id} (${source.knox_id}) on ${now}`;
+  const recipientLabel = targetAssignee && targetAssignee !== targetKnox ? `${targetAssignee} (${targetKnox}, ${targetType})` : `${targetKnox} (${targetType})`;
+  const sourceLabel = source.assignee && source.assignee !== source.knox_id ? `${source.assignee} (${source.knox_id})` : source.knox_id;
+  const sourceTransferNote = `Transferred ${transferredSummary} to ${recipientLabel} on ${transferTime}`;
+  const targetTransferNote = `Pickup by transfer: received ${transferredSummary} from ${sourceLabel} on ${transferTime}`;
   const target = {
     ...source,
     ...(schedule || {}),
@@ -37,7 +42,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
     end_date: targetEnd,
     pickup_date: now,
     start_date: targetStart,
-    status: targetEnd && targetEnd < now.slice(0, 10) ? 'Overdue' : 'Active',
+    status: targetEnd && targetEnd < localTimestamp.slice(0, 10) ? 'Overdue' : 'Active',
     equipment_json: JSON.stringify(targetEquipment),
     others: transferred.Others || '',
     note: [schedule?.note, targetTransferNote].filter(Boolean).join('\n'),

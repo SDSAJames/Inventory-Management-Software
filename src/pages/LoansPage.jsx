@@ -16,6 +16,7 @@ import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
 import { LOAN_SEARCH_FIELDS, groupLoans, filterLoanGroups, getLoanGroup } from '../lib/loanSelectors.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { readableTransferNote } from '../lib/transferNotes';
 import AssetAutocomplete from '../components/AssetAutocomplete';
 import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import LoanTransferForm from '../components/LoanTransferForm';
@@ -148,7 +149,7 @@ export default function LoansPage() {
       location: loan.location || DEFAULT_LOCATION,
       ...equipmentQuantitiesToForm(eq, { Adapter: 1, Cable: 1 }),
       others: loan.others || '',
-      note: loan.note || loan.purpose || '',
+      note: readableTransferNote(loan.note || loan.purpose || ''),
     });
   };
 
@@ -213,7 +214,7 @@ export default function LoansPage() {
         returnedLaptopCode: returned.Laptop ?? loan.assetCode ?? eq.Laptop ?? '',
         ...equipmentQuantitiesToForm(returned, eq),
         others: returned.Others ?? loan.others ?? '',
-        note: loan.note || '',
+        note: readableTransferNote(loan.note || ''),
       });
     } else {
       setReturnForm((prev) => ({

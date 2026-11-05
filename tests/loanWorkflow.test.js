@@ -38,7 +38,7 @@ function fixture() {
 test('loan transfer records new custody, preserves history, and supports rollback', () => {
   const db = fixture();
   try {
-    const id = transferLoan(db, 'source', { knoxId: 'new.owner', assignee: 'New Owner', selection: { Laptop: 'PC-1' } });
+    const id = transferLoan(db, 'source', { knoxId: 'new.owner', assignee: 'New Owner', selection: { Laptop: 'PC-1' }, timeZone: 'America/Indiana/Indianapolis' });
     const target = db.prepare('SELECT * FROM loans WHERE id = ?').get(id);
     const source = db.prepare("SELECT * FROM loans WHERE id = 'source'").get();
     assert.equal(target.asset_code, 'PC-1');
@@ -49,6 +49,9 @@ test('loan transfer records new custody, preserves history, and supports rollbac
     assert.equal(source.is_archived, 0);
     assert.match(source.note, /Laptop: PC-1 to New Owner \(new\.owner, Employee\)/);
     assert.doesNotMatch(source.note, /\{"Laptop"/);
+    assert.match(source.note, /on \d{4}-\d{2}-\d{2} \d{2}:\d{2} (?:EST|EDT)/);
+    assert.doesNotMatch(target.note, /from loan |\d{2}:\d{2}:\d{2}\.\d+Z/);
+    assert.match(target.pickup_date, /^\d{4}-\d{2}-\d{2}T.*Z$/);
     assert.equal(db.prepare('SELECT owner FROM assets').get().owner, 'New Owner');
     assert.equal(db.prepare('SELECT status FROM assets').get().status, 'Assigned');
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM ownership_history').get().count, 1);

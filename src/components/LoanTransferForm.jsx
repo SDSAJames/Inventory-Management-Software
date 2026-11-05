@@ -36,7 +36,7 @@ export default function LoanTransferForm({ loan, onClose }) {
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError('');
     try {
-      await api.loans.transfer(loan.id, { knoxId, assignee, assigneeType, selection, scheduleId: scheduleId || undefined, startDate, endDate });
+      await api.loans.transfer(loan.id, { knoxId, assignee, assigneeType, selection, scheduleId: scheduleId || undefined, startDate, endDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
       const result = await api.exchange.exportData();
       setDb((previous) => ({ ...previous, ...result.db })); onClose();
     } catch (err) { setError(err.message); } finally { setBusy(false); }

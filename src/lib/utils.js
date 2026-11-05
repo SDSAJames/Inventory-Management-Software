@@ -1,6 +1,8 @@
 import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
 import { excelSerialDate } from './spreadsheetValues.js';
+import { formatCalendarDateTime } from '../../shared/dateTime.js';
+export { dateTimeInputValue } from '../../shared/dateTime.js';
 export { isLoanReturned } from '../../shared/loanRules.js';
 
 /** Escape special chars for safe XML attribute/element content. */
@@ -25,7 +27,7 @@ export function readableLoanDate(value) {
   if (date) {
     return date.toISOString().slice(0, 16).replace('T', ' ');
   }
-  return String(value).replace('T', ' ');
+  return formatCalendarDateTime(value);
 }
 
 /** Current local datetime formatted for datetime-local inputs (YYYY-MM-DDTHH:mm). */
@@ -57,6 +59,7 @@ export function normalizeDateToIso(raw) {
   if (raw === undefined || raw === null || raw === '') return '';
   const str = String(raw).trim();
   if (!str || str === '1/0/1900' || str === '0' || str === '—') return '';
+  if (/^\d{4}-\d{2}-\d{2}[T ].*(?:Z|[+-]\d{2}:?\d{2})$/i.test(str)) return formatCalendarDateTime(str).slice(0, 10);
 
   // 1. Excel serial date number (e.g. 46202 or 46189.47)
   const d = excelSerialDate(str);

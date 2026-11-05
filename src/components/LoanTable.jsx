@@ -1,7 +1,8 @@
 import { isLoanReturned } from '../../shared/loanRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { Fragment, useMemo, useState } from 'react';
-import { readableLoanDate, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
+import { readableLoanDate, dateTimeInputValue, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
+import { readableTransferNote } from '../lib/transferNotes';
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import { getMissingReturnItems } from '../lib/loanEquipment';
 
@@ -9,7 +10,7 @@ const STATUS_ORDER = { Scheduled: 0, Loaned: 1, Overdue: 2, Returned: 3 };
 
 /** Converts stored date strings into a lexicographically sortable key ('' when empty). */
 function dateSortKey(raw) {
-  const str = String(raw || '').trim();
+  const str = readableLoanDate(raw).trim();
   if (!str) return '';
   const normalized = normalizeDateToIso(str);
   if (normalized) {
@@ -241,7 +242,7 @@ export default function LoanTable({
                       <input
                         className="inline-input"
                         type="datetime-local"
-                        value={draft.pickupDate || ''}
+                        value={dateTimeInputValue(draft.pickupDate)}
                         onChange={(e) => update('pickupDate', e.target.value)}
                         placeholder="Clear to revert"
                       />
@@ -271,7 +272,7 @@ export default function LoanTable({
                       <input
                         className="inline-input"
                         type="datetime-local"
-                        value={draft.returnDate || draft.returnedDate || ''}
+                        value={dateTimeInputValue(draft.returnDate || draft.returnedDate)}
                         onChange={(e) => update('returnDate', e.target.value)}
                         placeholder="Clear to revert"
                       />
@@ -597,7 +598,7 @@ export default function LoanTable({
                               {loan.note && (
                                 <>
                                   <dt>Note:</dt>
-                                  <dd className="detail-note">{loan.note}</dd>
+                                  <dd className="detail-note" style={{ whiteSpace: 'pre-line' }}>{readableTransferNote(loan.note)}</dd>
                                 </>
                               )}
                             </dl>
