@@ -222,61 +222,21 @@ export function DbProvider({ children }) {
   /**
    * Explicitly change the ownership of an asset and record it in the asset's ownership history.
    */
-  const changeAssetOwner = useCallback((assetId, { newOwner, department, location, reason, notes, date }) => {
-    setDb((prev) => {
-      const asset = prev.assets.find((a) => a.id === assetId);
-      if (!asset) return prev;
-
-      const previousOwner = asset.owner || '';
-      const previousLocation = asset.location || '';
-      const effectiveLocation = location !== undefined ? location.trim() : previousLocation;
-
-      const entry = createOwnershipEntry({
-        previousOwner: previousOwner || 'None',
-        newOwner: newOwner || 'None',
-        location: effectiveLocation,
-        department: department !== undefined ? department : asset.department,
-        date: date || todayIso(),
-        reason: reason || (newOwner ? (previousOwner ? 'Transferred' : 'Assigned') : 'Unassigned'),
-        notes: notes || '',
-      });
-
-      const nextAssets = prev.assets.map((a) => {
-        if (a.id !== assetId) return a;
-        const newStatus = !newOwner ? 'Available' : 'Assigned';
-        return validateAssetStatus({
-          ...a,
-          owner: newOwner || '',
-          department: department !== undefined ? department : a.department,
-          location: effectiveLocation,
-          status: newStatus,
-          ownershipHistory: [entry, ...(a.ownershipHistory || [])],
-          updated: todayIso(),
-        });
-      });
-
-      // Also ensure employee directory has new employee if specified
-      let nextEmployees = prev.employees;
-      if (newOwner && !prev.employees.some((e) => e.name.toLowerCase() === newOwner.trim().toLowerCase())) {
-        nextEmployees = [...prev.employees, { name: newOwner.trim(), department: department || '', position: 'Staff' }];
-      }
-
-      // Also ensure locations list contains this location if not empty and not existing
-      const nextLocations = [...(prev.locations || [])];
-      if (effectiveLocation && !nextLocations.includes(effectiveLocation)) {
-        nextLocations.push(effectiveLocation);
-      }
-
+  const changeAssetOwner = useCallback(async (assetId, transfer) => {
+    const result = await api.assets.transfer(assetId, transfer);
+    setDb((previous) => {
+      const returned = new Map((result.loans || []).map((loan) => [loan.id, loan]));
+      const location = result.asset.location;
       return {
-        ...prev,
-        assets: nextAssets,
-        employees: nextEmployees,
-        locations: nextLocations,
+        ...previous,
+        assets: previous.assets.map((asset) => asset.id === assetId ? { ...asset, ...result.asset } : asset),
+        loans: previous.loans.map((loan) => returned.get(loan.id) || loan),
+        locations: location && !previous.locations.includes(location) ? [...previous.locations, location] : previous.locations,
+        employees: result.asset.owner && result.asset.owner !== 'IT department' && !previous.employees.some((employee) => employee.name.toLowerCase() === result.asset.owner.toLowerCase())
+          ? [...previous.employees, { name: result.asset.owner, department: result.asset.department || '', position: 'Staff' }] : previous.employees,
       };
     });
-
-    api.assets.transfer(assetId, { newOwner, department, location, reason, notes, date })
-      .catch((err) => console.warn('Could not sync ownership transfer to server:', err.message));
+    return result.asset;
   }, []);
 
   const deleteAsset = useCallback((id) => {

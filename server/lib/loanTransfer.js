@@ -3,7 +3,7 @@ import { splitLoanEquipment, equipmentForTransferredPickup } from '../../shared/
 import { isBusinessTravelerType, isLoanReturned } from '../../shared/loanRules.js';
 import { formatCalendarDateTime } from '../../shared/dateTime.js';
 
-export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate, timeZone = 'UTC' }) {
+export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate, transferDate, timeZone = 'UTC' }) {
   const source = database.prepare('SELECT * FROM loans WHERE id = ?').get(id);
   if (!source || !source.pickup_date || isLoanReturned(source)) throw new Error('Only picked-up, outstanding equipment can be transferred');
   const schedule = scheduleId ? database.prepare('SELECT * FROM loans WHERE id = ?').get(scheduleId) : null;
@@ -12,7 +12,9 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   if (!targetKnox || targetKnox.toLowerCase() === String(source.knox_id).toLowerCase()) throw new Error('Enter a different new owner Knox ID');
   const equipment = { ...JSON.parse(source.equipment_json || '{}'), Laptop: source.asset_code || '', Others: source.others || '' };
   const { remaining, transferred, complete } = splitLoanEquipment(equipment, selection);
-  const now = new Date().toISOString();
+  const recordedAt = new Date().toISOString();
+  if (transferDate !== undefined && (typeof transferDate !== 'string' || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:?\d{2})$/i.test(transferDate) || Number.isNaN(Date.parse(transferDate)))) throw new Error('Enter a valid transfer date and time');
+  const now = transferDate === undefined ? recordedAt : new Date(transferDate).toISOString();
   const localTimestamp = formatCalendarDateTime(now, { timeZone });
   const zoneLabel = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' }).formatToParts(new Date(now)).find((part) => part.type === 'timeZoneName').value;
   const transferTime = `${localTimestamp} ${zoneLabel}`;
@@ -52,7 +54,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
     return_status: '',
     is_archived: 0,
     ready_for_pickup: 0,
-    created_at: schedule?.created_at || now,
+    created_at: schedule?.created_at || recordedAt,
   };
   database.exec('SAVEPOINT loan_transfer');
   try {

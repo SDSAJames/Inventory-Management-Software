@@ -253,7 +253,7 @@ export function createOwnershipEntry({
 }) {
   return {
     id: crypto.randomUUID(),
-    date: date || new Date().toISOString().slice(0, 19).replace('T', ' '),
+    date: date || new Date().toISOString(),
     previousOwner: normalizeHolder(previousOwner) || 'None',
     newOwner: normalizeHolder(newOwner) || 'None',
     location: location || '',
@@ -323,7 +323,7 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
       // Loan return event: when returned, holder name will be 'IT department'
       const returnDate = readableLoanDate(l.returnDate || l.returnedDate);
       if (returnDate || l.status === 'Returned') {
-        const retDate = returnDate || startDate || todayIso();
+        const retDate = returnDate || l.updated || l.createdAt || startDate || '';
         addEntry({
           id: `loan-in-${l.id}`,
           date: retDate,
@@ -343,13 +343,14 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   // 3. Ensure the current holder is represented in the timeline
   if (asset.owner && asset.owner.trim() !== '') {
     const normCurrentOwner = normalizeHolder(asset.owner);
-    const latest = [...entries].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))[0];
+    const latest = [...entries].sort((a, b) => readableLoanDate(b.date).localeCompare(readableLoanDate(a.date)))[0];
     const hasCurrentOwnerEntry = latest && normalizeHolder(latest.newOwner).toLowerCase() === normCurrentOwner.toLowerCase();
 
     if (!hasCurrentOwnerEntry) {
       addEntry({
         id: `current-owner-${asset.id || asset.code}`,
-        date: latest ? new Date().toISOString() : asset.issuedDate || asset.updated || todayIso(),
+        date: asset.updated || asset.issuedDate || latest?.date || '',
+        isCurrentCustody: true,
         previousOwner: latest?.newOwner || 'None',
         newOwner: normCurrentOwner,
         location: asset.location || '',
@@ -362,7 +363,8 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   }
 
   // 4. Sort ascending (oldest first) to chain and repair continuity
-  const sortedAsc = entries.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  const dateKey = (entry) => readableLoanDate(entry.date);
+  const sortedAsc = entries.sort((a, b) => dateKey(a).localeCompare(dateKey(b)) || Number(Boolean(a.isCurrentCustody)) - Number(Boolean(b.isCurrentCustody)));
 
   for (let i = 0; i < sortedAsc.length; i++) {
     const current = sortedAsc[i];
@@ -392,7 +394,7 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   }
 
   // 5. Sort chronologically descending (latest first) for display
-  return sortedAsc.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return sortedAsc.sort((a, b) => dateKey(b).localeCompare(dateKey(a)) || Number(Boolean(b.isCurrentCustody)) - Number(Boolean(a.isCurrentCustody)));
 }
 
 import { isAssetReturnedOnRecord } from '../../shared/assetReturns.js';

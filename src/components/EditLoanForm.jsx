@@ -5,11 +5,9 @@ import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from '../lib/ipAd
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { buildLoanEquipment, equipmentToForm, updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
-import AssetAutocomplete from './AssetAutocomplete';
-import DirectorySelect from './DirectorySelect';
-import LoanEquipmentFields from './LoanEquipmentFields';
+import LoanDirectoryFields from './LoanDirectoryFields';
+import LoanEquipmentSection from './LoanEquipmentSection';
 import IPAddressFields from './IPAddressFields';
-import { PC_CATEGORIES } from '../lib/assetCategories';
 import { canRecordReturn } from '../../shared/loanRules.js';
 
 export default function EditLoanForm({ loanId, onClose }) {
@@ -131,8 +129,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
           {/* IP address */}
           <IPAddressFields form={form} onChange={updateField} />
 
-          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} preserveCurrentValue />
-          <DirectorySelect allowCustom id="department" label="Department" placeholder="Select or type a department" options={db.departments} value={form.department} onChange={set('department')} />
+          <LoanDirectoryFields form={form} onChange={updateField} locations={db.locations} departments={db.departments} idPrefix="edit-" />
           <div className="field">
             <label htmlFor="startDate">Start date</label>
             <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
@@ -206,37 +203,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
           </div>
           )}
 
-          {/* Equipment */}
-          <div className="field full">
-            <label style={{ fontWeight: 700, fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
-              Equipment Checklist
-            </label>
-            <fieldset className="loan-equipment-requests"><legend>Equipment requested</legend>
-              <label><input type="checkbox" checked={form.requestPc} onChange={(e) => updateField('requestPc', e.target.checked)} /> Laptop / PC</label>
-              <label><input type="checkbox" checked={form.requestMonitor} onChange={(e) => updateField('requestMonitor', e.target.checked)} /> Monitor</label>
-            </fieldset>
-            <div className="equipment-grid">
-              <div className="equipment-field asset-autocomplete-wrapper">
-                <label htmlFor="edit-assetCode">PC asset number (Optional)</label>
-                <AssetAutocomplete
-                  id="edit-assetCode"
-                  categoryFilter={PC_CATEGORIES}
-                  allowCustom
-                  value={form.assetCode}
-                  onChange={(value) => updateField('assetCode', value)}
-                  onSelectAsset={(asset) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      assetCode: asset.code,
-                      location: prev.location || ((db.locations || []).includes(asset.location) ? asset.location : ''),
-                    }));
-                  }}
-                  placeholder="Search laptop or MES PC asset number..."
-                />
-              </div>
-              <LoanEquipmentFields searchableMonitor form={form} idPrefix="edit-" onChange={updateField} />
-            </div>
-          </div>
+          <LoanEquipmentSection form={form} onChange={updateField} locations={db.locations} idPrefix="edit-" />
 
           <div className="field">
             <label htmlFor="others">Others / Peripherals</label>

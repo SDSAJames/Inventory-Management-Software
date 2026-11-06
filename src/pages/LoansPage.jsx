@@ -20,7 +20,7 @@ import { readableTransferNote } from '../lib/transferNotes';
 import AssetAutocomplete from '../components/AssetAutocomplete';
 import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import LoanTransferForm from '../components/LoanTransferForm';
-import DirectorySelect from '../components/DirectorySelect';
+import LoanDirectoryFields from '../components/LoanDirectoryFields';
 import EquipmentQuantityInput from '../components/EquipmentQuantityInput';
 
 export default function LoansPage() {
@@ -840,15 +840,7 @@ export default function LoansPage() {
                 </div>
 
                 <div className="field" style={{ marginTop: '8px' }}>
-                  <DirectorySelect
-                    id="modal-pickupLocation"
-                    label="Rental location"
-                    options={db.locations}
-                    preserveCurrentValue
-                    value={pickupForm.location}
-                    onChange={(e) => updatePickupField('location', e.target.value)}
-                  />
-                  <DirectorySelect allowCustom id="modal-pickupDepartment" label="Department" placeholder="Select or type a department" options={db.departments} value={pickupForm.department || ''} onChange={(e) => updatePickupField('department', e.target.value)} />
+                  <LoanDirectoryFields form={pickupForm} onChange={updatePickupField} locations={db.locations} departments={db.departments} idPrefix="pickup-" />
                 </div>
               </div>
 

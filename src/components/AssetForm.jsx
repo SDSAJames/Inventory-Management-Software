@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { STATUSES } from '../lib/constants';
-import { nextAssetCode, statusClass } from '../lib/utils';
+import { nextAssetCode, statusClass, readableLoanDate } from '../lib/utils';
 import { getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
@@ -19,6 +19,11 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
   const existing = assetId ? db.assets.find((a) => a.id === assetId) : null;
   const currentTab = existing ? activeTab : 'details';
+  const holderLoan = existing && db.loans.find((loan) => loan.pickupDate && !loan.returnDate && !loan.returnedDate
+    && [loan.assetCode, loan.equipment?.Laptop, loan.equipment?.Monitor].includes(existing.code)
+    && [loan.assignee, loan.knoxId].includes(existing.owner));
+  const holderKnoxId = holderLoan?.knoxId || (db.employees || []).find((employee) =>
+    [employee.name, employee.knoxId].includes(existing?.owner))?.knoxId || '';
 
   const makeBlank = () => ({
     code: nextAssetCode(db.assets.length),
@@ -309,7 +314,10 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                   </button>
                 )}
               </div>
-              <input id="owner" value={form.owner} onChange={handleOwnerChange} placeholder="Holder name" />
+              <div className="asset-holder-input">
+                <input id="owner" value={form.owner} onChange={handleOwnerChange} placeholder="Holder name or Knox ID" aria-describedby={holderKnoxId && form.owner === existing?.owner ? 'holder-knox' : undefined} />
+                {holderKnoxId && form.owner === existing?.owner && <span id="holder-knox" className="asset-holder-knox" title={`Knox ID: ${holderKnoxId}`}>{holderKnoxId}</span>}
+              </div>
               {existing?.owner && !String(form.owner || '').trim() && <span className="field-hint">Saving with no holder records a return to IT Department in Ownership History.</span>}
             </div>
 
@@ -391,7 +399,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                   {ownershipHistory.map((item) => (
                     <tr key={item.id} className="history-row">
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        <code style={{ fontSize: '11px', color: 'var(--ink)' }}>{item.date}</code>
+                        <code style={{ fontSize: '11px', color: 'var(--ink)' }}>{readableLoanDate(item.date) || 'Date not recorded'}</code>
                       </td>
                       <td>
                         {item.previousOwner === 'IT department' ? (

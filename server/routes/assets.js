@@ -359,7 +359,7 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
   }
 
   const {
-    newOwner,
+    newOwner: requestedOwner,
     department = '',
     location = asset.location || DEFAULT_LOCATION,
     reason = 'Direct transfer',
@@ -367,12 +367,16 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
     date = todayIso(),
   } = req.body || {};
 
-  if (!newOwner) {
-    return res.status(400).json({ success: false, error: 'New owner is required for transfer.' });
+  const newOwner = String(requestedOwner || '').trim();
+  const returningToIt = !newOwner || newOwner.toLowerCase() === 'it department';
+  const effectiveOwner = returningToIt ? 'IT department' : newOwner;
+  if (!date || !/^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/.test(date) || Number.isNaN(Date.parse(date))) {
+    return res.status(400).json({ success: false, error: 'Enter a valid transfer date and time.' });
   }
 
   const now = new Date().toISOString();
-  const nextStatus = newOwner === 'IT department' ? 'Available' : 'Assigned';
+  const returnChanges = returningToIt ? getHolderReturnChanges(asset, { owner: '' }) || { owner: 'IT department', department: '', status: 'Available', location: DEFAULT_LOCATION } : null;
+  const nextStatus = returnChanges?.status || 'Assigned';
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -384,9 +388,9 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
       `hist-${randomUUID()}`,
       asset.code,
       asset.owner || 'None',
-      newOwner.trim(),
+      effectiveOwner,
       date,
-      reason,
+      returningToIt && reason === 'Direct transfer' ? 'Returned to IT department' : reason,
       notes || `Transferred by ${req.user.username}`,
       now
     );
@@ -397,22 +401,23 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
       SET owner = ?, department = ?, location = ?, status = ?, updated = ?
       WHERE id = ?
     `).run(
-      newOwner.trim(),
-      newOwner === 'IT department' ? '' : department.trim(),
-      normalizeLocation(location),
+      effectiveOwner,
+      returningToIt ? '' : department.trim(),
+      returningToIt ? returnChanges.location : normalizeLocation(location),
       nextStatus,
       date,
       asset.id
     );
 
     // 3. Ensure employee in directory if named staff
-    if (newOwner !== 'IT department') {
+    const returnedLoans = returningToIt ? recordHolderReturn(db, asset.code, date) : [];
+    if (!returningToIt) {
       const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(newOwner.trim());
       if (!empExists) {
         db.prepare(`
           INSERT INTO employees (id, name, department, position, created_at)
           VALUES (?, ?, ?, 'Staff', ?)
-        `).run(`emp-${Date.now()}`, newOwner.trim(), department.trim(), now);
+        `).run(`emp-${Date.now()}`, effectiveOwner, department.trim(), now);
       }
     }
 
@@ -422,8 +427,9 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
     const updatedAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(asset.id);
     return res.json({
       success: true,
-      message: `Asset ${asset.code} transferred to ${newOwner}.`,
-      asset: updatedAsset,
+      message: `Asset ${asset.code} transferred to ${effectiveOwner}.`,
+      asset: formatAssetRow(updatedAsset, db.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC').all(asset.code)),
+      loans: returnedLoans,
     });
   } catch (err) {
     db.exec('ROLLBACK;');

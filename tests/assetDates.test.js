@@ -205,5 +205,21 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         assert.equal(db.prepare('SELECT department FROM assets WHERE code = ?').get(code).department, 'Custom team');
       }
     });
+    await t.test('blank transfer owner returns to IT using the selected fixed date and retains missing accessories', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'blank-transfer', code: 'BLANK-TRANSFER', category: 'Laptop' });
+      invoke(loansRouter, 'post', '/', { id: 'blank-transfer-loan', assetCode: 'BLANK-TRANSFER', knoxId: 'return.user', assignee: 'Return User', pickupDate: '2026-11-01', equipment: { Laptop: 'BLANK-TRANSFER', Keyboard: '1' } });
+      const timestamp = '2026-11-03 14:15:00';
+      const result = invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: '  ', date: timestamp, location: 'Offsite' }, { id: 'blank-transfer' });
+      assert.equal(result.asset.owner, 'IT department');
+      assert.equal(result.asset.status, 'Available');
+      assert.equal(result.asset.location, 'IT Department');
+      const returned = result.asset.ownershipHistory.find((entry) => entry.date === timestamp);
+      assert.equal(returned.newOwner, 'IT department');
+      assert.equal(result.loans[0].returnStatus, 'Partial');
+      assert.equal(result.loans[0].returnedEquipment.Laptop, 'BLANK-TRANSFER');
+      invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: 'Other', date: 'now()' }, { id: 'blank-transfer' }, 400);
+      assert.equal(db.prepare('SELECT owner FROM assets WHERE id = ?').get('blank-transfer').owner, 'IT department');
+    });
   } finally { hook.deregister(); db.close(); delete globalThis.__assetDateTestDb; }
 });

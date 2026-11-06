@@ -3,6 +3,7 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIsoWithSeconds } from '../lib/utils';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import LoanDirectoryFields from './LoanDirectoryFields';
 
 export default function ChangeOwnerModal({ asset, onClose, onDone }) {
   const { db, changeAssetOwner, transferReasons, addTransferReason, removeTransferReason } = useDb();
@@ -19,13 +20,9 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
   // Datetime-local supporting full seconds: YYYY-MM-DDTHH:mm:ss
   const [timestamp, setTimestamp] = useState(() => nowLocalIsoWithSeconds());
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!asset) return null;
-
-  const handleStampCurrentTime = () => {
-    setTimestamp(nowLocalIsoWithSeconds());
-    toast('Effective timestamp set to current time with seconds');
-  };
 
   const handleAddReason = (e) => {
     e.preventDefault();
@@ -37,55 +34,29 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
     toast('Transfer reason added to options');
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const newErrors = {};
-    if (!newOwner.trim()) newErrors.newOwner = 'Please specify a new owner';
-    if (!reason.trim()) newErrors.reason = 'Please enter a transfer reason';
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast('Please fill in required fields marked with *');
-      if (newErrors.newOwner) document.getElementById('newOwnerInput')?.focus();
-      else if (newErrors.reason) document.getElementById('transferReason')?.focus();
+  const saveTransfer = async (returnToIt = false) => {
+    const owner = returnToIt ? '' : newOwner.trim();
+    const returning = !owner || owner.toLowerCase() === 'it department';
+    const effectiveReason = reason.trim() || (returning ? 'Returned to IT department' : '');
+    if (!effectiveReason || !timestamp) {
+      setErrors({ ...(!effectiveReason ? { reason: 'Please enter a transfer reason' } : {}), ...(!timestamp ? { date: 'Enter a transfer date' } : {}) });
       return;
     }
-
-    const effectiveReason = reason.trim();
-
-    // If typed reason is not in the presets, save it so it appears in suggestions
-    if (effectiveReason) {
-      addTransferReason(effectiveReason);
-    }
-
-    changeAssetOwner(asset.id, {
-      newOwner: newOwner.trim(),
-      department: department.trim(),
-      location: location.trim(),
-      reason: effectiveReason,
-      notes: notes.trim(),
-      date: timestamp.replace('T', ' '),
-    });
-
-    toast(`Ownership for ${asset.code} transferred to ${newOwner.trim()}`);
-    if (onDone) onDone();
-    onClose();
+    setSaving(true);
+    try {
+      await changeAssetOwner(asset.id, {
+        newOwner: owner, department: returning ? '' : department.trim(),
+        location: returning ? DEFAULT_LOCATION : location.trim(),
+        reason: effectiveReason, notes: notes.trim(), date: timestamp.replace('T', ' '),
+      });
+      if (reason.trim()) addTransferReason(reason.trim());
+      toast(returning ? 'Asset ' + asset.code + ' returned to IT Department' : 'Ownership for ' + asset.code + ' transferred to ' + owner);
+      onDone?.(); onClose();
+    } catch (error) { setErrors({ submit: error.message || 'Could not save transfer' }); }
+    finally { setSaving(false); }
   };
-
-  const handleClearOwner = () => {
-    changeAssetOwner(asset.id, {
-      newOwner: 'IT department',
-      department: 'IT',
-      location: location.trim() || asset.location || 'IT Store',
-      reason: reason.trim() || 'Returned to IT department',
-      notes: notes.trim() || 'Returned to IT department custody',
-      date: timestamp.replace('T', ' '),
-    });
-    toast(`Asset ${asset.code} returned to IT department`);
-    if (onDone) onDone();
-    onClose();
-  };
+  const handleSubmit = (event) => { event.preventDefault(); return saveTransfer(); };
+  const handleClearOwner = () => saveTransfer(true);
 
   return (
     <div className="change-owner-dialog">
@@ -112,63 +83,37 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {errors.submit && <p role="alert" className="field-error-msg">{errors.submit}</p>}
         <div className="form-grid">
           {/* New Owner */}
           <div className="field full">
-            <label htmlFor="newOwnerInput">New owner / holder <span style={{ color: '#be665a' }}>*</span></label>
+            <label htmlFor="newOwnerInput">New owner / holder</label>
             <input
               id="newOwnerInput"
               list="employeeList"
-              placeholder="Select or enter holder name"
+              placeholder="Holder name or Knox ID; leave blank to return to IT Department"
               value={newOwner}
               className={errors.newOwner ? 'input-error-red' : ''}
               onChange={(e) => {
                 setNewOwner(e.target.value);
                 if (errors.newOwner) setErrors((prev) => ({ ...prev, newOwner: null }));
                 const emp = db.employees.find(
-                  (em) => em.name.toLowerCase() === e.target.value.toLowerCase()
+                  (em) => [em.name, em.knoxId].some((value) => value && value.toLowerCase() === e.target.value.toLowerCase())
                 );
                 if (emp && emp.department) {
                   setDepartment(emp.department);
                 }
               }}
-              required
             />
             {errors.newOwner && <span className="field-error-msg">⚠️ {errors.newOwner}</span>}
             <datalist id="employeeList">
               {db.employees.map((e, idx) => (
-                <option key={idx} value={e.name}>{e.department ? `(${e.department})` : ''}</option>
+                <option key={idx} value={e.knoxId || e.name}>{e.name}{e.department ? ` (${e.department})` : ''}</option>
               ))}
             </datalist>
           </div>
 
-          {/* Department */}
-          <div className="field">
-            <label htmlFor="ownerDepartment">Department</label>
-            <input
-              id="ownerDepartment"
-              placeholder="e.g. IT, Operations, Finance"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            />
-          </div>
-
-          {/* Location */}
-          <div className="field">
-            <label htmlFor="ownerLocation">Location</label>
-            <input
-              id="ownerLocation"
-              list="locationsList"
-              placeholder={`e.g. ${DEFAULT_LOCATION}, Regional Office, IT Store`}
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-            <datalist id="locationsList">
-              {db.locations?.map((loc, idx) => (
-                <option key={idx} value={loc} />
-              ))}
-            </datalist>
-          </div>
+          <LoanDirectoryFields form={{ location, department }} locations={db.locations} departments={db.departments} idPrefix="owner-" onChange={(field, value) => field === 'location' ? setLocation(value) : setDepartment(value)} />
 
           {/* Transfer Reason - Directly typeable with datalist & reason options manager */}
           <div className="field full">
@@ -197,7 +142,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
                   setReason(e.target.value);
                   if (errors.reason) setErrors((prev) => ({ ...prev, reason: null }));
                 }}
-                required
+                required={Boolean(newOwner.trim())}
               />
               {errors.reason && <span className="field-error-msg">⚠️ {errors.reason}</span>}
               <datalist id="transferReasonsList">
@@ -303,7 +248,8 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
 
           {/* Effective Date & Time with full seconds */}
           <div className="field full">
-            <label htmlFor="transferTimestamp">Effective date &amp; time (with minutes &amp; seconds)</label>
+            {errors.date && <span role="alert" className="field-error-msg">{errors.date}</span>}
+            <label htmlFor="transferTimestamp">Transfer date &amp; time</label>
             <div className="timestamp-input-row">
               <input
                 id="transferTimestamp"
@@ -313,15 +259,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
                 onChange={(e) => setTimestamp(e.target.value)}
                 required
               />
-              <button
-                type="button"
-                className="button ghost"
-                style={{ whiteSpace: 'nowrap', padding: '9px 12px' }}
-                onClick={handleStampCurrentTime}
-                title="Timestamp current exact time"
-              >
-                ◷ Now (Exact)
-              </button>
+
             </div>
             <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px' }}>
               Recorded format: <code>{timestamp.replace('T', ' ')}</code>
@@ -347,6 +285,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
               className="button danger-btn"
               style={{ background: '#be665a', borderColor: '#be665a', color: 'white' }}
               onClick={handleClearOwner}
+              disabled={saving}
             >
               Return to IT department
             </button>
@@ -356,7 +295,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
             <button type="button" className="button ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="button">
+            <button type="submit" className="button" disabled={saving}>
               Confirm Ownership Change
             </button>
           </div>

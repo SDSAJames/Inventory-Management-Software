@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { useDb } from '../hooks/useDb';
 import { TRANSFER_ITEMS } from '../../shared/loanTransfer.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
-import { todayIso } from '../lib/utils';
+import { todayIso, nowLocalIso } from '../lib/utils';
 export default function LoanTransferForm({ loan, onClose }) {
   const { db, setDb } = useDb();
   const equipment = { ...loan.equipment, Laptop: loan.assetCode || loan.equipment?.Laptop, Others: loan.others };
@@ -16,6 +16,7 @@ export default function LoanTransferForm({ loan, onClose }) {
   const [scheduleSearch, setScheduleSearch] = useState('');
   const [startDate, setStartDate] = useState(todayIso);
   const [endDate, setEndDate] = useState('');
+  const [transferDate, setTransferDate] = useState(nowLocalIso);
   const schedules = db.loans.filter((record) => !record.pickupDate && !isLoanReturned(record) && record.id !== loan.id && String(record.knoxId || '').trim().toLowerCase() !== String(loan.knoxId || '').trim().toLowerCase());
   const scheduleQuery = scheduleSearch.trim().toLowerCase();
   const matchingSchedules = schedules.filter((record) => String(record.knoxId || '').toLowerCase().includes(scheduleQuery));
@@ -36,12 +37,13 @@ export default function LoanTransferForm({ loan, onClose }) {
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError('');
     try {
-      await api.loans.transfer(loan.id, { knoxId, assignee, assigneeType, selection, scheduleId: scheduleId || undefined, startDate, endDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      await api.loans.transfer(loan.id, { knoxId, assignee, assigneeType, selection, scheduleId: scheduleId || undefined, startDate, endDate, transferDate: new Date(transferDate).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
       const result = await api.exchange.exportData();
       setDb((previous) => ({ ...previous, ...result.db })); onClose();
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
   return <form onSubmit={submit}><h2>Transfer equipment</h2><p>Select items moving to the new holder and record whether they are an employee assignment or business-traveler loan. The previous holder's completed record is preserved.</p>
+    <div className="field"><label htmlFor="equipment-transfer-date">Transfer date &amp; time *</label><input id="equipment-transfer-date" type="datetime-local" required value={transferDate} onChange={(event) => setTransferDate(event.target.value)} /></div>
     <div className="field">
       <label htmlFor="transfer-schedule-search">Search pickup schedules by Knox ID</label>
       <input id="transfer-schedule-search" type="search" value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="Enter all or part of a Knox ID" autoComplete="off" spellCheck={false} aria-controls="transfer-schedule" />

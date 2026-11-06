@@ -35,6 +35,18 @@ function fixture() {
   return db;
 }
 
+test('equipment transfers use the selected date for pickup and ownership history', () => {
+  const db = fixture();
+  try {
+    const transferDate = '2026-11-03T18:25:00.000Z';
+    assert.throws(() => transferLoan(db, 'source', { knoxId: 'new.owner', selection: { Laptop: 'PC-1' }, transferDate: 'now()' }), /valid transfer date/);
+    const id = transferLoan(db, 'source', { knoxId: 'new.owner', selection: { Laptop: 'PC-1' }, transferDate, timeZone: 'America/Indiana/Indianapolis' });
+    assert.equal(db.prepare('SELECT pickup_date FROM loans WHERE id = ?').get(id).pickup_date, transferDate);
+    assert.equal(db.prepare('SELECT date FROM ownership_history').get().date, transferDate);
+    assert.match(db.prepare('SELECT note FROM loans WHERE id = ?').get(id).note, /2026-11-03 13:25 EST/);
+  } finally { db.close(); }
+});
+
 test('loan transfer records new custody, preserves history, and supports rollback', () => {
   const db = fixture();
   try {

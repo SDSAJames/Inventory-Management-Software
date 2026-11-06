@@ -734,6 +734,14 @@ tbody tr:hover { background: #f8fafc; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .field { display: grid; gap: 6px; }
 .field.full { grid-column: 1 / -1; }
+.directory-combobox { position: relative; min-width: 0; }
+.field .directory-combobox input { padding-right: 38px; }
+.directory-combobox-toggle { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 34px; border: 0; border-radius: 0 6px 6px 0; background: transparent; color: var(--muted); cursor: pointer; }
+.directory-combobox-toggle:hover { background: #edf5ff; color: var(--blue); }
+.directory-combobox-options { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; max-height: 220px; overflow-y: auto; padding: 4px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: var(--shadow-sm); }
+.directory-combobox-options button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 4px; text-align: left; background: white; color: var(--ink); cursor: pointer; font: inherit; }
+.directory-combobox-options button:hover, .directory-combobox-options button.active, .directory-combobox-options button[aria-selected="true"] { background: #edf5ff; color: var(--blue); }
+.directory-combobox-empty { display: block; padding: 9px 10px; font-size: 12px; color: var(--muted); }
 .field label { font-size: 11px; color: var(--muted); font-weight: 700; }
 .field-hint { font-size: 11px; color: var(--muted); line-height: 1.4; }
 .field input, .field select, .field textarea {
@@ -995,6 +1003,15 @@ tbody tr:hover { background: #f8fafc; }
 .btn-ready-toggle { background: #edf5ff; color: #2459a8; border: 1px solid #cfe0fb; }
 .btn-ready { background: #e6f6ed; color: #176b43; border: 1px solid #bfe6cf; }
 .pickup-readiness-control { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.pickup-readiness-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 5px 0; border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.pickup-readiness-track { display: inline-flex; align-items: center; width: 32px; height: 19px; padding: 3px; border-radius: 12px; background: #94a3b8; }
+.pickup-readiness-track span { width: 13px; height: 13px; border-radius: 50%; background: white; transition: transform .15s; }
+.pickup-readiness-toggle.is-ready { color: #176b43; }
+.pickup-readiness-toggle.is-ready .pickup-readiness-track { background: #218653; }
+.pickup-readiness-toggle.is-ready .pickup-readiness-track span { transform: translateX(13px); }
+.asset-holder-input { position: relative; }
+.asset-holder-input input { padding-right: 40%; }
+.asset-holder-knox { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); max-width: 38%; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: 11px; }
 .partial-return-badge { display: inline-block; margin: 4px 0 0 5px; padding: 3px 7px; border-radius: 999px; background: #fff0dd; color: #97530d; font-size: 10px; font-weight: 700; white-space: nowrap; }
 .partial-return-warning, .complete-return-note { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 12px; padding: 10px 12px; border-radius: 8px; font-size: 12px; }
 .partial-return-warning { background: #fff3e3; border: 1px solid #f2d5aa; color: #754511; }

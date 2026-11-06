@@ -5,9 +5,8 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { buildLoanEquipment, newLoanEquipmentForm, updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
 import { findAssetByCode, matchesAssetCategory, PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
-import AssetAutocomplete from './AssetAutocomplete';
-import DirectorySelect from './DirectorySelect';
-import LoanEquipmentFields from './LoanEquipmentFields';
+import LoanDirectoryFields from './LoanDirectoryFields';
+import LoanEquipmentSection from './LoanEquipmentSection';
 import IPAddressFields from './IPAddressFields';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 
@@ -49,7 +48,6 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     }
   };
   const set = (field) => (event) => updateField(field, event.target.value);
-  const setEquipmentRequest = (requestField) => (event) => updateField(requestField, event.target.checked);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -249,54 +247,9 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>}
 
           {/* Location & department */}
-          <DirectorySelect id="location" label="Rental location" options={db.locations} value={form.location} onChange={set('location')} />
-          <DirectorySelect allowCustom id="department" label="Department" placeholder="Select or type a department" options={db.departments} value={form.department} onChange={set('department')} />
+          <LoanDirectoryFields form={form} onChange={updateField} locations={db.locations} departments={db.departments} />
 
-          {/* Equipment Checklist */}
-          <div className="field full">
-            <div className="equipment-header-row">
-              <fieldset className="loan-equipment-requests">
-                <legend>Equipment requested</legend>
-                <label><input type="checkbox" checked={form.requestPc} onChange={setEquipmentRequest('requestPc')} /> Laptop / PC</label>
-                <label><input type="checkbox" checked={form.requestMonitor} onChange={setEquipmentRequest('requestMonitor')} /> Monitor</label>
-              </fieldset>
-              <span className="equipment-header-hint">Asset numbers can be assigned later.</span>
-            </div>
-
-            <div className="equipment-grid">
-              {/* Laptop / asset number with searchable autocompletion */}
-              <div className="equipment-field asset-autocomplete-wrapper">
-                <label htmlFor="assetCode">PC asset number <span className="field-hint">(Optional)</span></label>
-                <AssetAutocomplete
-                  id="assetCode"
-                  categoryFilter={PC_CATEGORIES}
-                  allowCustom
-                  value={form.assetCode}
-                  hasError={Boolean(errors.assetCode)}
-                  onChange={(value) => updateField('assetCode', value)}
-                  onSelectAsset={(asset) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      assetCode: asset.code,
-                      location: prev.location || ((db.locations || []).includes(asset.location) ? asset.location : ''),
-                    }));
-                  }}
-                  placeholder="Search laptop or MES PC asset number..."
-                />
-                {errors.assetCode && (
-                  <span className="field-error-msg">⚠️ {errors.assetCode}</span>
-                )}
-              </div>
-
-              <LoanEquipmentFields
-                form={form}
-                errors={errors}
-                searchableMonitor
-                quantities
-                onChange={updateField}
-              />
-            </div>
-          </div>
+          <LoanEquipmentSection form={form} onChange={updateField} locations={db.locations} errors={errors} />
 
           <div className="field">
             <label htmlFor="others">Others / Peripherals</label>

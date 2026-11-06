@@ -40,10 +40,12 @@ const SCHEDULED_COLUMNS = [
 function ScheduleFields({ loan, onToggleReady }) {
   return <>
     <td><div className="pickup-readiness-control">
-      {(loan.readyForPickup || !onToggleReady) && <span className={`status ${loan.readyForPickup ? 'available' : 'scheduled'}`}>{loan.readyForPickup ? 'Ready for pickup' : 'Not ready'}</span>}
-      {onToggleReady && <button type="button" className={`btn-action ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={(event) => { event.stopPropagation(); onToggleReady(loan); }}>
-        {loan.readyForPickup ? 'Mark not ready' : 'Mark ready'}
-      </button>}
+      <button type="button" role="switch" aria-checked={Boolean(loan.readyForPickup)} aria-label="Pickup readiness" disabled={!onToggleReady}
+        className={`pickup-readiness-toggle ${loan.readyForPickup ? 'is-ready' : ''}`}
+        onClick={(event) => { event.stopPropagation(); onToggleReady?.(loan); }}>
+        <span className="pickup-readiness-track" aria-hidden="true"><span /></span>
+        {loan.readyForPickup ? 'Ready' : 'Not ready'}
+      </button>
     </div></td>
     <td><span className="assignee-badge">{isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee'}</span></td>
   </>;

@@ -42,6 +42,20 @@ function fixture() {
   return db;
 }
 
+test('derived current-custody dates use saved values and never move with the clock', () => {
+  const asset = { id: 'stable', code: 'STABLE-PC', status: 'Assigned', owner: 'Jane', updated: '2026-11-01', ownershipHistory: [
+    { id: 'prior', date: '2026-10-01T12:00:00Z', newOwner: 'Other owner', reason: 'Transferred' },
+  ] };
+  const originalDate = globalThis.Date;
+  try {
+    const first = getAssetEffectiveOwnershipHistory(asset);
+    globalThis.Date = class extends originalDate { constructor(...args) { super(...(args.length ? args : ['2035-01-01T00:00:00Z'])); } };
+    const later = getAssetEffectiveOwnershipHistory(asset);
+    assert.deepEqual(later, first);
+    assert.equal(later.find((item) => item.isCurrentCustody).date, '2026-11-01');
+  } finally { globalThis.Date = originalDate; }
+});
+
 test('startup custody repair persists history once and preserves active and repair records', () => {
   const db = fixture();
   try {
