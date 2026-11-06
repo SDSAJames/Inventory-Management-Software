@@ -5,6 +5,7 @@ import { readableLoanDate, dateTimeInputValue, statusClass, getLoanStatus, isLoa
 import { readableTransferNote } from '../lib/transferNotes';
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import { getMissingReturnItems } from '../lib/loanEquipment';
+import PickupReadiness from './PickupReadiness';
 
 const STATUS_ORDER = { Scheduled: 0, Loaned: 1, Overdue: 2, Returned: 3 };
 
@@ -25,6 +26,7 @@ const COLUMNS = [
   { key: 'assetCode', label: 'PC asset #', className: 'col-no', getValue: (loan) => String(loan.assetCode || loan.equipment?.Laptop || '').toLowerCase() },
   { key: 'knoxId', label: 'Knox ID', className: 'col-knox', getValue: (l) => String(l.knoxId || '').toLowerCase() },
   { key: 'assignee', label: 'Assignee', getValue: (l) => String(l.assignee || '').toLowerCase() },
+  { key: 'location', label: 'Location', getValue: (loan) => String(loan.location || '').toLowerCase() },
   { key: 'startDate', label: 'Start date', getValue: (l) => dateSortKey(l.startDate || l.loanDate) },
   { key: 'pickupDate', label: 'Pickup date', getValue: (l) => dateSortKey(l.pickupDate) },
   { key: 'endDate', label: 'End date', getValue: (l) => dateSortKey(getLoanEndDate(l)) },
@@ -32,22 +34,15 @@ const COLUMNS = [
   { key: 'status', label: 'Status', getValue: (l) => STATUS_ORDER[getLoanStatus(l)] },
 ];
 
-const SCHEDULED_COLUMNS = [
+const CONTEXT_COLUMNS = [
   { key: 'readyForPickup', label: 'Pickup readiness', getValue: (loan) => loan.readyForPickup ? 1 : 0 },
   { key: 'assigneeType', label: 'Borrower type', getValue: (loan) => isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee' },
 ];
 
-function ScheduleFields({ loan, onToggleReady }) {
+function LoanContextCells({ loan, onToggleReady, showPickupReadiness, showBorrowerType }) {
   return <>
-    <td><div className="pickup-readiness-control">
-      <button type="button" role="switch" aria-checked={Boolean(loan.readyForPickup)} aria-label="Pickup readiness" disabled={!onToggleReady}
-        className={`pickup-readiness-toggle ${loan.readyForPickup ? 'is-ready' : ''}`}
-        onClick={(event) => { event.stopPropagation(); onToggleReady?.(loan); }}>
-        <span className="pickup-readiness-track" aria-hidden="true"><span /></span>
-        {loan.readyForPickup ? 'Ready' : 'Not ready'}
-      </button>
-    </div></td>
-    <td><span className="assignee-badge">{isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee'}</span></td>
+    {showPickupReadiness && <td><div className="pickup-readiness-control"><PickupReadiness loan={loan} onToggleReady={onToggleReady} /></div></td>}
+    {showBorrowerType && <td><span className="assignee-badge">{isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee'}</span></td>}
   </>;
 }
 
@@ -70,7 +65,9 @@ export default function LoanTable({
   onToggleSelectAll,
   emptyMessage,
   scheduled = false,
+  showPickupReadiness = scheduled,
   hideReturnDate = false,
+  showLocation = false,
   onTransferLoan,
 }) {
   const [editingId, setEditingId] = useState(null);
@@ -79,9 +76,9 @@ export default function LoanTable({
   const [sort, setSort] = useState({ key: null, dir: 'asc' });
 
   const columns = useMemo(() => {
-    const visible = COLUMNS.filter((column) => !hideReturnDate || column.key !== 'returnDate');
-    return scheduled ? [...SCHEDULED_COLUMNS, ...visible] : visible;
-  }, [scheduled, hideReturnDate]);
+    const visible = COLUMNS.filter((column) => (!hideReturnDate || column.key !== 'returnDate') && (showLocation || column.key !== 'location'));
+    return [...CONTEXT_COLUMNS.filter((column) => column.key === 'readyForPickup' ? showPickupReadiness : scheduled), ...visible];
+  }, [scheduled, showPickupReadiness, hideReturnDate, showLocation]);
   const totalColumns = columns.length + 1;
 
   // Keep the original position (No) attached to each loan, then apply sorting.
@@ -228,7 +225,7 @@ export default function LoanTable({
                       <button className="btn-action btn-cancel" onClick={cancelEdit}>Cancel</button>
                     </div>
                   </td>
-                  {scheduled && <ScheduleFields loan={loan} onToggleReady={onToggleReady} />}
+                  <LoanContextCells loan={loan} onToggleReady={onToggleReady} showPickupReadiness={showPickupReadiness} showBorrowerType={scheduled} />
                   <td className="col-no"><strong>{draft.assetCode || draft.equipment?.Laptop || '—'}</strong></td>
                   <td>
                     <input
@@ -240,6 +237,7 @@ export default function LoanTable({
                     />
                   </td>
                   <td><input className="inline-input" value={draft.assignee || ''} onChange={(e) => update('assignee', e.target.value)} /></td>
+                  {showLocation && <td><input aria-label="Location" className="inline-input" value={draft.location || ''} onChange={(event) => update('location', event.target.value)} /></td>}
                   <td>
                     <input
                       className="inline-input"
@@ -376,9 +374,7 @@ export default function LoanTable({
                         </>
                       ) : (
                         <>
-                          {!scheduled && <button type="button" className={`btn-action ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={(e) => { e.stopPropagation(); onToggleReady && onToggleReady(loan); }} title={loan.readyForPickup ? 'Mark as not ready for pickup' : 'Mark laptop as ready for pickup'}>
-                            {loan.readyForPickup ? '✓ Ready' : 'Mark ready'}
-                          </button>}
+                          {!showPickupReadiness && <PickupReadiness loan={loan} onToggleReady={onToggleReady} />}
                           <button
                             className="btn-action btn-pickup"
                             onClick={(e) => {
@@ -394,7 +390,7 @@ export default function LoanTable({
                     </div>
                   </td>
                   )}
-                  {scheduled && <ScheduleFields loan={loan} onToggleReady={onToggleReady} />}
+                  <LoanContextCells loan={loan} onToggleReady={onToggleReady} showPickupReadiness={showPickupReadiness} showBorrowerType={scheduled} />
                   <td className="col-no">
                     <strong>{loan.assetCode || eq.Laptop || '—'}</strong>
                     {!isPickedUp && !isReturned && (eq.RequestedPC || eq.RequestedMonitor) && (
@@ -408,6 +404,7 @@ export default function LoanTable({
                     </div>
                   </td>
                   <td>{loan.assignee || '—'}</td>
+                  {showLocation && <td>{loan.location || '—'}</td>}
                   <td>{readableLoanDate(loan.startDate || loan.loanDate) || '—'}</td>
                   <td>
                     {loan.pickupDate ? (
@@ -459,9 +456,7 @@ export default function LoanTable({
                             {/* Revert / Pickup / Return actions */}
                             {!loan.pickupDate && !isReturned && (
                               <>
-                                {!scheduled && <button className={`button small-btn ${loan.readyForPickup ? 'btn-ready' : 'btn-ready-toggle'}`} onClick={() => onToggleReady && onToggleReady(loan)}>
-                                  {loan.readyForPickup ? '✓ Ready for pickup' : 'Mark ready for pickup'}
-                                </button>}
+                                {!showPickupReadiness && <PickupReadiness loan={loan} onToggleReady={onToggleReady} />}
                                 <button className="button small-btn" onClick={() => onPickupLoan && onPickupLoan(loan)}>↗ Confirm pickup</button>
                               </>
                             )}
