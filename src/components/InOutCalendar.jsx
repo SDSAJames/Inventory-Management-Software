@@ -1,7 +1,8 @@
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import CalendarNavigation from './CalendarNavigation';
 import CalendarWeekdays from './CalendarWeekdays';
-import { indexInOutSchedule, scheduleForDay } from '../lib/inOutSchedule.js';
+import { indexInOutSchedule, scheduleForDay, filterCalendarRecords } from '../lib/inOutSchedule.js';
+import CalendarReturnFilter from './CalendarReturnFilter';
 import { canRecordReturn } from "../../shared/loanRules.js";
 import { useState, useMemo } from 'react';
 import { todayIso, readableLoanDate } from "../lib/utils";
@@ -33,6 +34,7 @@ export default function InOutCalendar({
   const [eventTypeFilter, setEventTypeFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [searchFilter, setSearchFilter] = useState('');
+  const [hideReturned, setHideReturned] = useState(false);
 
   // Day detail modal state
   const [selectedDay, setSelectedDayData] = useState(null);
@@ -112,7 +114,7 @@ export default function InOutCalendar({
   };
 
   /* ── 5. Index Outgoing & Incoming events by Date ────────────── */
-  const scheduleIndex = useMemo(() => indexInOutSchedule(enrichedLoans), [enrichedLoans]);
+  const scheduleIndex = useMemo(() => indexInOutSchedule(filterCalendarRecords(enrichedLoans, hideReturned)), [enrichedLoans, hideReturned]);
   const { outgoingByDate, incomingByDate } = scheduleIndex;
   const selectedDayData = selectedDay ? scheduleForDay(scheduleIndex, selectedDay.dateStr, matchesFilters) : null;
 
@@ -193,6 +195,7 @@ export default function InOutCalendar({
 
       {/* ── Filters Bar (Requester Type, Individual User, Event Flow, Location, Search) ── */}
       <div className="calendar-filters-bar">
+        <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
         {/* Primary Filter: Requester Type Buttons */}
         <div className="filter-block">
           <label className="filter-block-label">Requester Type:</label>

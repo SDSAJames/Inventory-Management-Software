@@ -78,7 +78,8 @@ test('pickup and return checklists share quantity constraints while preserving a
   for (const returning of [false, true]) {
     const app = harness(), changes = [];
     const form = { ...createLoanForm(), monitor: 'MON-1', others: 'Headset' };
-    const tree = nodes(app.render('EquipmentAccessoryList', { form, returning, monitorSearch: !returning, idPrefix: 'check-', onChange: (...args) => changes.push(args) }));
+    const pcField = returning ? 'returnedLaptopCode' : 'assetCode';
+    const tree = nodes(app.render('EquipmentAccessoryList', { form, returning, pcField, monitorSearch: !returning, idPrefix: 'check-', onChange: (...args) => changes.push(args) }));
     const quantities = tree.filter((node) => node.type === 'input' && node.props.type === 'number');
     assert.equal(quantities.length, 6);
     for (const input of quantities) { assert.equal(input.props.min, '0'); assert.equal(input.props.step, '1'); }
@@ -86,6 +87,13 @@ test('pickup and return checklists share quantity constraints while preserving a
     dongle.props.onChange({ target: { value: '3' } });
     dongle.props.onChange({ target: { value: '-1' } });
     assert.deepEqual(changes, [['dongle', '3']]);
+    assert.ok(!tree.some((node) => node.props.className?.includes('highlight-row')));
+    assert.ok(!tree.some((node) => node.props.className?.includes('qty-btn')));
+    const devices = tree.find((node) => node.props.className === 'handover-devices');
+    assert.ok(nodes(devices).some((node) => node.props.id === 'check-pc'));
+    assert.ok(nodes(devices).some((node) => node.props.id === 'check-monitor'));
+    tree.find((node) => node.props.id === 'check-pc').props.onChange('PC-123');
+    assert.deepEqual(changes.at(-1), [pcField, 'PC-123']);
     assert.equal(tree.find((node) => node.props.id === 'check-monitor').props.value, 'MON-1');
     assert.equal(tree.find((node) => node.props.id === 'check-others').props.type, 'text');
   }

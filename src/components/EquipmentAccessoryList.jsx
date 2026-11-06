@@ -1,35 +1,32 @@
 import { EQUIPMENT_FIELDS } from '../../shared/equipment.js';
-import { MONITOR_CATEGORIES } from '../lib/assetCategories';
+import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import AssetAutocomplete from './AssetAutocomplete';
 import EquipmentQuantityInput from './EquipmentQuantityInput';
 
-const fields = [...EQUIPMENT_FIELDS].sort((a, b) => a.panelOrder - b.panelOrder);
+const quantities = EQUIPMENT_FIELDS.filter((field) => field.kind !== 'asset');
 
-export default function EquipmentAccessoryList({ form, onChange, idPrefix, monitorSearch = false, returning = false }) {
-  return <div className="equipment-accessory-list">
-    {fields.map((field) => <div key={field.key} className={`accessory-row${field.highlighted ? ' highlight-row' : ''}`}>
-      <div className="accessory-info">
-        <span className="accessory-icon" aria-hidden="true">{field.icon}</span>
-        <div><label htmlFor={`${idPrefix}${field.key}`}><strong>{field.kind === 'asset' ? 'Monitor' : field.label}</strong></label><span className="accessory-desc">{field.description}</span></div>
-      </div>
-      <div className="accessory-control">
-        {field.kind === 'asset' ? monitorSearch ? <AssetAutocomplete id={`${idPrefix}${field.key}`} categoryFilter={MONITOR_CATEGORIES}
+export default function EquipmentAccessoryList({ form, onChange, idPrefix, monitorSearch = false, returning = false, pcField }) {
+  return <div className="handover-equipment">
+    <div className="handover-devices">
+      {pcField && <div className="field"><label htmlFor={idPrefix + 'pc'}>PC asset number</label>
+        <AssetAutocomplete id={idPrefix + 'pc'} categoryFilter={PC_CATEGORIES} allowCustom={returning}
+          value={form[pcField] || ''} onChange={(value) => onChange(pcField, value)}
+          placeholder={returning ? 'Returned PC, or leave blank if missing' : 'Search laptop or MES PC asset number'} />
+      </div>}
+      <div className="field"><label htmlFor={idPrefix + 'monitor'}>Monitor asset number</label>
+        {monitorSearch ? <AssetAutocomplete id={idPrefix + 'monitor'} categoryFilter={MONITOR_CATEGORIES}
           value={form.monitor === '0' ? '' : form.monitor} onChange={(value) => onChange('monitor', value)} placeholder="Search monitor asset number" />
-          : <input id={`${idPrefix}${field.key}`} type="text" className="accessory-input accessory-input-wide" value={form.monitor}
-            onChange={(event) => onChange('monitor', event.target.value)} placeholder="Tag or 0" />
-          : <>
-            <div className="quick-btn-group">{['0', '1'].map((quantity) => <button key={quantity} type="button"
-              className={`qty-btn ${String(form[field.key] || '0') === quantity ? 'active' : ''}`}
-              aria-label={`Set ${field.label} ${returning ? 'returned ' : ''}quantity to ${quantity}`}
-              onClick={() => onChange(field.key, quantity)}>{quantity}</button>)}</div>
-            <EquipmentQuantityInput id={`${idPrefix}${field.key}`} className="accessory-input" value={form[field.key]}
-              onChange={(event) => onChange(field.key, event.target.value)} placeholder={returning ? 'Returned qty' : 'Qty'} />
-          </>}
+          : <input id={idPrefix + 'monitor'} type="text" value={form.monitor} onChange={(event) => onChange('monitor', event.target.value)} placeholder="Returned monitor, or leave blank if missing" />}
       </div>
-    </div>)}
-    <div className="accessory-row"><div className="accessory-info"><span className="accessory-icon" aria-hidden="true">💼</span>
-      <div><label htmlFor={`${idPrefix}others`}><strong>Others / Peripherals</strong></label><span className="accessory-desc">Bag, lock, headset, etc.</span></div>
-    </div><div className="accessory-control"><input id={`${idPrefix}others`} type="text" className="accessory-input accessory-input-wide" value={form.others}
-      onChange={(event) => onChange('others', event.target.value)} placeholder="e.g. Laptop bag, security lock" /></div></div>
+    </div>
+    <div className="handover-quantity-heading"><strong>Accessories</strong><span>{returning ? 'Enter quantities received. Use 0 for missing items.' : 'Enter quantities handed over. Use 0 for items not included.'}</span></div>
+    <div className="handover-quantities">{quantities.map((field) => <div className="field" key={field.key}>
+      <label htmlFor={idPrefix + field.key}>{field.label}</label>
+      <EquipmentQuantityInput id={idPrefix + field.key} aria-label={field.label + (returning ? ' returned quantity' : ' quantity')}
+        value={form[field.key]} placeholder="0" onChange={(event) => onChange(field.key, event.target.value)} />
+    </div>)}</div>
+    <div className="field"><label htmlFor={idPrefix + 'others'}>Others / Peripherals</label>
+      <input id={idPrefix + 'others'} type="text" value={form.others} onChange={(event) => onChange('others', event.target.value)} placeholder="e.g. Laptop bag, security lock, headset" />
+    </div>
   </div>;
 }

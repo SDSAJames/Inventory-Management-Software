@@ -1,8 +1,6 @@
-import AssetAutocomplete from './AssetAutocomplete';
 import EquipmentAccessoryList from './EquipmentAccessoryList';
 import TimestampField from './TimestampField';
 import LoanSummary from './LoanSummary';
-import { PC_CATEGORIES } from '../lib/assetCategories';
 import { buildLoanReturnDetails } from '../lib/loanForms';
 
 export default function LoanReturnForm({ loan, form, onChange, onConfirm, onClose }) {
@@ -32,19 +30,6 @@ export default function LoanReturnForm({ loan, form, onChange, onConfirm, onClos
 
                 <TimestampField id="modal-returnDate" label="Actual return timestamp" value={form.returnDate} onChange={(value) => onChange('returnDate', value)} required />
 
-                <div className="field">
-                  <label htmlFor="modal-returnLaptop">Laptop returned (asset number)</label>
-                  <AssetAutocomplete
-                    id="modal-returnLaptop"
-                    categoryFilter={PC_CATEGORIES}
-                    allowCustom
-                    value={form.returnedLaptopCode || ''}
-                    onChange={(value) => onChange('returnedLaptopCode', value)}
-                    placeholder="Select returned laptop, or clear if missing"
-                  />
-                  <span className="field-hint">Enter a different laptop if substituted. Leave blank if no laptop was returned.</span>
-                </div>
-
                 <div className="return-status-callout">
                   <span className="callout-icon">ℹ️</span>
                   <div>
@@ -59,7 +44,7 @@ export default function LoanReturnForm({ loan, form, onChange, onConfirm, onClos
               {/* Equipment Return Verification Column */}
               <div className="pickup-modal-panel">
                 <div className="panel-title-row">
-                  <h4>✅ Returned Accessories Checklist</h4>
+                  <h4>Equipment returned</h4>
                   <span className="panel-badge-info">Verify Check-in</span>
                 </div>
                 <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
@@ -67,7 +52,7 @@ export default function LoanReturnForm({ loan, form, onChange, onConfirm, onClos
                 </p>
                 {missingItems.length ? <div className="partial-return-warning"><strong>Partial return</strong><span>Still outstanding: {missingItems.join(', ')}</span></div> : <div className="complete-return-note">All issued accessories are marked returned.</div>}
 
-                <EquipmentAccessoryList form={form} onChange={onChange} idPrefix="return-accessory-" returning />
+                <EquipmentAccessoryList pcField="returnedLaptopCode" form={form} onChange={onChange} idPrefix="return-accessory-" returning />
               </div>
             </div>
 

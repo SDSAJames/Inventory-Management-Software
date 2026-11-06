@@ -1,5 +1,9 @@
 import { isLoanReturned } from '../../shared/loanRules.js';
 
+export function filterCalendarRecords(records, hideReturned = false) {
+  return hideReturned ? records.filter((record) => !record.isReturned && !isLoanReturned(record)) : records;
+}
+
 export function indexInOutSchedule(records) {
   const outgoingByDate = new Map(), incomingByDate = new Map();
   const add = (map, date, record) => { if (!map.has(date)) map.set(date, []); map.get(date).push(record); };

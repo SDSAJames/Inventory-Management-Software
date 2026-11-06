@@ -1,6 +1,7 @@
 import CalendarNavigation from './CalendarNavigation';
 import CalendarWeekdays from './CalendarWeekdays';
-import { indexInOutSchedule } from '../lib/inOutSchedule.js';
+import { indexInOutSchedule, filterCalendarRecords } from '../lib/inOutSchedule.js';
+import CalendarReturnFilter from './CalendarReturnFilter';
 import { canRecordReturn } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
@@ -28,17 +29,18 @@ export default function TravelerCalendar({
   // Filter state
   const [eventTypeFilter, setEventTypeFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
   const [searchFilter, setSearchFilter] = useState('');
+  const [hideReturned, setHideReturned] = useState(false);
 
   // Day detail modal state
   const [selectedDay, setSelectedDayData] = useState(null);
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
 
   /* ── Index travelers by dates ────────────────────────────── */
-  const { outgoingByDate: incomingByDate, incomingByDate: returningByDate } = useMemo(() => indexInOutSchedule(travelers.map((traveler) => ({
+  const { outgoingByDate: incomingByDate, incomingByDate: returningByDate } = useMemo(() => indexInOutSchedule(filterCalendarRecords(travelers, hideReturned).map((traveler) => ({
     ...traveler,
     outIso: normalizeDateToIso(traveler.startDate || traveler.pickupDate || traveler.loanDate),
     inIso: traveler.isReturned ? normalizeDateToIso(traveler.returnDate || traveler.returnedDate || getLoanEndDate(traveler)) : normalizeDateToIso(getLoanEndDate(traveler)),
-  }))), [travelers]);
+  }))), [travelers, hideReturned]);
   const matchesFilters = (traveler) => {
     if (selectedLocation !== 'ALL' && traveler.location !== selectedLocation) return false;
     const query = searchFilter.trim().toLowerCase();
@@ -101,6 +103,7 @@ export default function TravelerCalendar({
 
         {/* ── Filters & Search ──────────────────────────────── */}
         <div className="calendar-controls-group">
+          <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
           {/* Search box */}
           <div className="calendar-search-wrap">
             <span className="cal-search-icon">🔍</span>

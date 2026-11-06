@@ -1,8 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { indexInOutSchedule, scheduleForDay } from '../src/lib/inOutSchedule.js';
+import { indexInOutSchedule, scheduleForDay, filterCalendarRecords } from '../src/lib/inOutSchedule.js';
 import { canRecordReturn } from '../shared/loanRules.js';
 import { groupLoans } from '../src/lib/loanSelectors.js';
+
+test('hide-returned filters calendar events and day details without removing scheduled or active records', () => {
+  const day = '2026-11-06';
+  const records = [
+    { id: 'scheduled', outIso: day },
+    { id: 'active', pickupDate: '2026-11-01', inIso: day },
+    { id: 'returned', returnDate: day, inIso: day },
+    { id: 'legacy', returned_date: day, inIso: day },
+    { id: 'derived', isReturned: true, inIso: day },
+  ];
+  assert.equal(filterCalendarRecords(records, false), records);
+  const filtered = filterCalendarRecords(records, true);
+  assert.deepEqual(filtered.map((record) => record.id), ['scheduled', 'active']);
+  const events = scheduleForDay(indexInOutSchedule(filtered), day);
+  assert.deepEqual(events.outgoing.map((record) => record.id), ['scheduled']);
+  assert.deepEqual(events.incoming.map((record) => record.id), ['active']);
+  assert.equal(scheduleForDay(indexInOutSchedule(filterCalendarRecords(records, false)), day).incoming.length, 4);
+});
 
 test('outgoing schedules exclude actual pickups, completed transfers and returns', () => {
   const day = '2026-11-05';

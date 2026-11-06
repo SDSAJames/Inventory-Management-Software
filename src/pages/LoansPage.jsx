@@ -741,7 +741,7 @@ export default function LoansPage() {
             </div>
 
             {/* Device & Assignee Summary Card */}
-            <LoanSummary loan={pickupTarget} location={pickupForm.location} />
+            <LoanSummary loan={{ ...pickupTarget, assetCode: pickupForm.assetCode }} location={pickupForm.location} />
 
             <div className="pickup-modal-sections">
               {/* Timing & Schedule Column */}
@@ -754,7 +754,7 @@ export default function LoansPage() {
                   Sometimes planned schedule and actual pickup date differ. Adjust either below.
                 </p>
 
-                <EquipmentRequestFields form={pickupForm} onChange={updatePickupField} />                <div className="field"><label htmlFor="pickup-pc">PC picked up</label><AssetAutocomplete id="pickup-pc" categoryFilter={PC_CATEGORIES} value={pickupForm.assetCode || ''} onChange={(value) => updatePickupField('assetCode', value)} placeholder="Search laptop or MES PC asset number" /></div>
+
 
                 <TimestampField id="modal-pickupDate" label="Actual pickup timestamp" value={pickupForm.pickupDate} onChange={(value) => updatePickupField('pickupDate', value)} required />
 
@@ -787,14 +787,15 @@ export default function LoansPage() {
               {/* Equipment Checklist Column */}
               <div className="pickup-modal-panel">
                 <div className="panel-title-row">
-                  <h4>🎒 Equipment Checklist (Accessories)</h4>
-                  <span className="panel-badge-info">Keyboard, Mouse &amp; Cables</span>
+                  <h4>Equipment handed over</h4>
+
                 </div>
                 <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
-                  Verify items handed over. Click quick buttons or enter quantities. PC and monitor use asset numbers.
+                  Select the devices and record the accessories included in this pickup.
                 </p>
 
-                <EquipmentAccessoryList form={pickupForm} onChange={updatePickupField} idPrefix="pickup-accessory-" monitorSearch />
+                <EquipmentRequestFields form={pickupForm} onChange={updatePickupField} />
+                <EquipmentAccessoryList pcField="assetCode" form={pickupForm} onChange={updatePickupField} idPrefix="pickup-accessory-" monitorSearch />
               </div>
             </div>
 
