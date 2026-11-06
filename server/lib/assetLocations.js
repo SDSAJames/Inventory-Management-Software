@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { DEFAULT_LOCATION, REPAIR_LOCATION } from '../../shared/referenceData.js';
+import { DEFAULT_LOCATION, DEFAULT_OWNER, REPAIR_LOCATION } from '../../shared/referenceData.js';
 import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
 
 export function ensureLocation(database, name) {
@@ -117,7 +117,7 @@ function normalizeLocationRecords(database) {
     if (keep.name !== name) database.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, keep.id);
   }
   ensureLocation(database, DEFAULT_LOCATION);
-  database.prepare("UPDATE assets SET owner = 'IT Department' WHERE LOWER(TRIM(owner)) = 'it department'").run();
+  database.prepare('UPDATE assets SET owner = ? WHERE LOWER(TRIM(owner)) = ?').run(DEFAULT_OWNER, DEFAULT_OWNER.toLowerCase());
 
   const updateAsset = database.prepare('UPDATE assets SET location = ? WHERE id = ?');
   for (const asset of database.prepare('SELECT id, status, location FROM assets').all()) {

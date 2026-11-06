@@ -1,3 +1,4 @@
+import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
@@ -7,7 +8,7 @@ import { tracksEndDate } from '../loanRules.js';
 
 import { todayIso } from '../lib/dates.js';
 import { computeLoanStatus, formatLoanRow } from '../lib/loanRows.js';
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+
 import { getAssetStatusForLoanEdit, normalizeLocation } from '../../shared/assetRules.js';
 import { returnAssetToIt } from '../lib/assetLoans.js';
 import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js';
@@ -276,7 +277,7 @@ loansRouter.post('/', authenticate, (req, res) => {
         effectiveAssetCode,
         pickupDate ? assetStatus : 'Available',
         normalizeLocation(location),
-        pickupDate ? effectiveAssignee : 'IT Department',
+        pickupDate ? effectiveAssignee : DEFAULT_OWNER,
         department.trim(),
         todayIso(),
         now
@@ -695,7 +696,7 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
         `hist-${randomUUID()}`,
         assetCode,
         asset.owner || loan.assignee,
-        'IT Department',
+        DEFAULT_OWNER,
         returnDate,
         'Device Returned',
         nextNote ? `Device returned: ${nextNote}` : `Device returned & checked back into IT custody by ${req.user.username}`,

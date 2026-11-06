@@ -1,16 +1,13 @@
 import AssetAutocomplete from './AssetAutocomplete';
 import LoanEquipmentFields from './LoanEquipmentFields';
 import { PC_CATEGORIES } from '../lib/assetCategories';
+import EquipmentRequestFields from './EquipmentRequestFields';
 
 export default function LoanEquipmentSection({ form, onChange, errors = {}, locations = [], idPrefix = '' }) {
   const assetId = `${idPrefix}assetCode`;
   return <div className="field full">
     <div className="equipment-header-row">
-      <fieldset className="loan-equipment-requests">
-        <legend>Equipment requested</legend>
-        <label><input type="checkbox" checked={Boolean(form.requestPc)} onChange={(event) => onChange('requestPc', event.target.checked)} /> Laptop / PC</label>
-        <label><input type="checkbox" checked={Boolean(form.requestMonitor)} onChange={(event) => onChange('requestMonitor', event.target.checked)} /> Monitor</label>
-      </fieldset>
+      <EquipmentRequestFields form={form} onChange={onChange} />
       <span className="equipment-header-hint">Asset numbers can be assigned later.</span>
     </div>
     <div className="equipment-grid">

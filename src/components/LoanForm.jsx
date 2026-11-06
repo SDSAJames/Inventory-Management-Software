@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { todayIso } from '../lib/utils';
-import { buildIpAddress, isIpAddressInvalid } from '../lib/ipAddress';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { buildLoanEquipment, newLoanEquipmentForm, updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
-import { findAssetByCode, matchesAssetCategory, PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
+import { updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
+import { createLoanForm, loanFormErrors, buildLoanFormData } from '../lib/loanForms';
 import LoanDirectoryFields from './LoanDirectoryFields';
 import LoanEquipmentSection from './LoanEquipmentSection';
-import IPAddressFields from './IPAddressFields';
+import AssigneeFields from './AssigneeFields';
+import LoanDateFields from './LoanDateFields';
+import LoanNoteFields from './LoanNoteFields';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { pcAssetCode } from '../../shared/pcReferences.js';
 
@@ -15,25 +16,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   const { db, addLoan } = useDb();
   const toast = useToast();
 
-  const [form, setForm] = useState({
-    assetCode: '',
-    requestPc: false,
-    requestMonitor: false,
-    assigneeType: defaultAssigneeType,
-    assignee: '',
-    knoxId: '',
-    ipSubnet: '',
-    ipNumber: '',
-    startDate: todayIso(),
-    pickupDate: '',
-    pickedUp: false,
-    endDate: '',
-    location: '',
-    department: '',
-    ...newLoanEquipmentForm(),
-    others: '',
-    note: '',
-  });
+  const [form, setForm] = useState(() => createLoanForm(undefined, defaultAssigneeType));
 
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -53,34 +36,10 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const newErrors = {};
     const assetCode = pcAssetCode(form.assetCode);
-    const knoxId = form.knoxId.trim();
     const assignee = form.assignee.trim();
-
-    if (!knoxId) newErrors.knoxId = 'Knox ID is required';
-    if (form.pickedUp && !form.pickupDate) newErrors.pickupDate = 'Enter the pickup date or uncheck Picked up';
-
-    const existingPcCode = findAssetByCode(db.assets, assetCode);
-    if (existingPcCode && !matchesAssetCategory(existingPcCode.category, PC_CATEGORIES)) {
-      newErrors.assetCode = 'Select a Laptop or MES PC asset';
-    }
-
-    const monitorCode = form.monitor.trim();
-    if (monitorCode) {
-      const monitorAsset = findAssetByCode(db.assets, monitorCode);
-      const selectedMonitor = monitorAsset && matchesAssetCategory(monitorAsset.category, MONITOR_CATEGORIES);
-      if (!selectedMonitor) newErrors.monitor = 'Select a monitor from the matching asset list';
-    }
-
-    // Due date is optional. If provided, validate that end date is not earlier than start date
-    if (isBusinessTraveler(form.assigneeType) && form.startDate && form.endDate && form.endDate < form.startDate) {
-      newErrors.endDate = 'Due date cannot be earlier than start date';
-    }
-
-    if (isIpAddressInvalid(form)) {
-      newErrors.ip = 'IP subnet and number must each be between 0 and 255';
-    }
+    const knoxId = form.knoxId.trim();
+    const newErrors = loanFormErrors(form, { assets: db.assets, validateDevices: true, confirmPickup: true });
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -96,31 +55,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
     setSubmitError('');
 
-    const ip = buildIpAddress(form);
-
-    // A pickup date records a handover now; leaving it blank keeps this as a scheduled loan.
-    const loanData = {
-      assetCode,
-      assignee,
-      assigneeType: form.assigneeType,
-      knoxId,
-      ip,
-      startDate: form.startDate,
-      loanDate: form.startDate,
-      endDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
-      dueDate: isBusinessTraveler(form.assigneeType) ? form.endDate : '',
-      pickupDate: form.pickupDate,
-      returnDate: '',
-      location: form.location || DEFAULT_LOCATION,
-      department: form.department,
-      equipment: {
-        ...buildLoanEquipment(form, assetCode),
-        RequestedPC: form.requestPc || Boolean(assetCode),
-        RequestedMonitor: form.requestMonitor || Boolean(monitorCode),
-      },
-      others: form.others,
-      note: form.note,
-    };
+    const loanData = buildLoanFormData(form);
 
     const assetUpdates = assetCode && form.pickupDate
       ? {
@@ -165,72 +100,9 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
         )}
 
         <div className="form-grid">
-          {/* Assignee type (defaults to Business traveler) */}
-          <div className="field">
-            <label htmlFor="assigneeType">Assignee type</label>
-            <select id="assigneeType" value={form.assigneeType} onChange={set('assigneeType')}>
-              <option value="Business traveler">Business traveler</option>
-              <option value="Employee">Employee (Internal)</option>
-            </select>
-          </div>
+          <AssigneeFields form={form} onChange={updateField} errors={errors} />
 
-          {/* Assignee */}
-          <div className="field">
-            <label htmlFor="assignee">Assignee <span className="field-hint">(Optional)</span></label>
-            <input
-              id="assignee"
-              placeholder="Full name or username"
-              value={form.assignee}
-              onChange={set('assignee')}
-              className={errors.assignee ? 'input-error-red' : ''}
-            />
-            {errors.assignee && (
-              <span className="field-error-msg">⚠️ {errors.assignee}</span>
-            )}
-          </div>
-
-          {/* Knox ID */}
-          <div className="field">
-            <label htmlFor="knoxId">
-              Knox ID <span className="required-asterisk">*</span>
-            </label>
-            <input
-              id="knoxId"
-              value={form.knoxId}
-              onChange={set('knoxId')}
-              placeholder="e.g. wnjef.123 or KNOX-1234"
-              className={errors.knoxId ? 'input-error-red' : ''}
-              required
-            />
-            {errors.knoxId && (
-              <span className="field-error-msg">⚠️ {errors.knoxId}</span>
-            )}
-          </div>
-
-          {/* IP address */}
-          <IPAddressFields form={form} optional onChange={updateField} />
-
-          {/* Dates */}
-          <div className="field">
-            <label htmlFor="startDate">Start / Scheduled date</label>
-            <input id="startDate" type="date" value={form.startDate} onChange={set('startDate')} />
-          </div>
-          <div className="field">
-            <label htmlFor="endDate">
-              Due date <span className="field-hint">(Business travelers only)</span>
-            </label>
-            <input
-              id="endDate"
-              type="date"
-              value={form.endDate}
-              onChange={set('endDate')}
-              disabled={!isBusinessTraveler(form.assigneeType)}
-              className={errors.endDate ? 'invalid-input' : ''}
-            />
-            {errors.endDate && (
-              <span className="field-error-msg">{errors.endDate}</span>
-            )}
-          </div>
+          <LoanDateFields form={form} onChange={updateField} errors={errors} />
 
           <div className="field">
             <label htmlFor="pickedUp">Pickup confirmation</label>
@@ -252,27 +124,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
 
           <LoanEquipmentSection form={form} onChange={updateField} locations={db.locations} errors={errors} />
 
-          <div className="field">
-            <label htmlFor="others">Others / Peripherals</label>
-            <input
-              id="others"
-              type="text"
-              placeholder="e.g. Headset, Privacy filter"
-              value={form.others}
-              onChange={set('others')}
-            />
-          </div>
-
-          <div className="field loan-entry-note">
-            <label htmlFor="note">Note / Purpose</label>
-            <textarea
-              id="note"
-              rows={1}
-              placeholder="Project purpose, special requirements, or condition notes..."
-              value={form.note}
-              onChange={set('note')}
-            />
-          </div>
+          <LoanNoteFields form={form} onChange={updateField} compact />
         </div>
 
         <div className="form-actions">

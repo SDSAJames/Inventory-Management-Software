@@ -1,3 +1,4 @@
+import AssigneeFields from './AssigneeFields';
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { useDb } from '../hooks/useDb';
@@ -52,7 +53,8 @@ export default function LoanTransferForm({ loan, onClose }) {
     <div className="field"><label htmlFor="transfer-schedule">Recipient / pickup schedule</label><select id="transfer-schedule" value={scheduleId} onChange={(e) => selectSchedule(e.target.value)}><option value="">New recipient record</option>{selectedOutsideSearch && <option value={selectedSchedule.id}>Selected: {scheduleLabel(selectedSchedule)}</option>}{matchingSchedules.map((record) => <option key={record.id} value={record.id}>{scheduleLabel(record)}</option>)}</select></div>
     {scheduleId && <p className="field-hint">This schedule will move to Active with a pickup timestamp and “Pickup by transfer.” Planned equipment is replaced by the items actually transferred.</p>}
     <fieldset disabled={Boolean(scheduleId)} style={{ border: 0, padding: 0, margin: 0 }}>
-    <div className="form-grid"><div className="field"><label htmlFor="transfer-type">New holder type *</label><select id="transfer-type" required value={assigneeType} onChange={(e) => setAssigneeType(e.target.value)}><option value="Employee">Employee</option><option value="Business traveler">Business traveler</option></select></div><div className="field"><label htmlFor="transfer-knox">New owner Knox ID *</label><input id="transfer-knox" required value={knoxId} onChange={(e) => setKnoxId(e.target.value)} /></div><div className="field"><label htmlFor="transfer-name">Assignee</label><input id="transfer-name" value={assignee} onChange={(e) => setAssignee(e.target.value)} /></div></div>
+    <div className="form-grid"><AssigneeFields form={{ assigneeType, assignee, knoxId }} includeIp={false} idPrefix="transfer-"
+      onChange={(field, value) => ({ assigneeType: setAssigneeType, assignee: setAssignee, knoxId: setKnoxId })[field](value)} /></div>
     </fieldset>
     <div className="form-grid"><div className="field"><label htmlFor="transfer-start">Start date{assigneeType === 'Business traveler' ? ' *' : ''}</label><input id="transfer-start" type="date" required={assigneeType === 'Business traveler'} value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>{assigneeType === 'Business traveler' && <div className="field"><label htmlFor="transfer-end">End date *</label><input id="transfer-end" type="date" required min={startDate || undefined} value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>}</div>
     <button type="button" className="button ghost" onClick={() => setSelection(Object.fromEntries(items.map((key) => [key, String(equipment[key])])))}>Select all</button>

@@ -1,13 +1,18 @@
+import LoanReturnForm from '../components/LoanReturnForm';
+import LoanSummary from '../components/LoanSummary';
+import { createLoanReturnForm, buildLoanReturnDetails } from '../lib/loanForms';
+import TimestampField from '../components/TimestampField';
+import EquipmentRequestFields from '../components/EquipmentRequestFields';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
-import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, updateLoanFormField, getMissingReturnItems, getReturnStatus } from '../lib/loanEquipment';
+import { buildLoanEquipment, buildReturnedEquipment, equipmentQuantitiesToForm, updateLoanFormField, getReturnStatus, getLoanEndDate } from "../lib/loanEquipment";
 import { useToast } from '../hooks/useToast';
 import { nowLocalIso, readableLoanDate, todayIso, statusClass } from '../lib/utils';
 import { parseDelimitedText, parseLoansText, detectFileType } from '../lib/txtImport';
 import { findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { LOAN_HEADERS, XLSX_MIME } from '../lib/constants';
-import { getLoanEndDate } from '../lib/loanEquipment';
+
 import { loansToRows } from '../lib/loanExcel';
 import LoanTable from '../components/LoanTable';
 import SearchBar from '../components/SearchBar';
@@ -18,10 +23,10 @@ import { LOAN_SEARCH_FIELDS, groupLoans, filterLoanGroups, getLoanGroup } from '
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { readableTransferNote } from '../lib/transferNotes';
 import AssetAutocomplete from '../components/AssetAutocomplete';
-import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
+import { PC_CATEGORIES } from '../lib/assetCategories';
 import LoanTransferForm from '../components/LoanTransferForm';
 import LoanDirectoryFields from '../components/LoanDirectoryFields';
-import EquipmentQuantityInput from '../components/EquipmentQuantityInput';
+import EquipmentAccessoryList from '../components/EquipmentAccessoryList';
 
 export default function LoansPage() {
   const { db, updateLoan, pickupLoan, setLoanReadyForPickup, revertPickup, returnLoan, unarchiveLoan, deleteLoan, mergeImportData } = useDb();
@@ -211,15 +216,7 @@ export default function LoansPage() {
 
     if (list.length === 1) {
       const loan = list[0];
-      const eq = loan.equipment || {};
-      const returned = loan.returnedEquipment || eq;
-      setReturnForm({
-        returnDate: nowTime,
-        returnedLaptopCode: returned.Laptop ?? loan.assetCode ?? eq.Laptop ?? '',
-        ...equipmentQuantitiesToForm(returned, eq),
-        others: returned.Others ?? loan.others ?? '',
-        note: readableTransferNote(loan.note || ''),
-      });
+      setReturnForm(createLoanReturnForm(loan, nowTime));
     } else {
       setReturnForm((prev) => ({
         ...prev,
@@ -240,17 +237,7 @@ export default function LoansPage() {
     if (returnTargets.length === 1) {
       const loan = returnTargets[0];
       const timestamp = returnForm.returnDate || returnTime || nowLocalIso();
-      const returnedEquipment = buildReturnedEquipment(returnForm);
-      const issuedEquipment = { ...(loan.equipment || {}), Laptop: loan.assetCode || loan.equipment?.Laptop || '' };
-      const missingItems = getMissingReturnItems(issuedEquipment, returnedEquipment);
-      const returnStatus = getReturnStatus(issuedEquipment, returnedEquipment);
-      const details = {
-        returnedEquipment,
-        returnedAssetCode: returnedEquipment.Laptop,
-        returnStatus,
-        others: returnForm.others,
-        note: returnForm.note,
-      };
+      const { details, missingItems } = buildLoanReturnDetails(loan, returnForm);
       returnLoan(loan.id, timestamp, details);
       toast(missingItems.length ? `Return recorded with missing items: ${missingItems.join(', ')}` : `Laptop and accessories returned & archived (${loan.assetCode})`);
     } else {
@@ -754,31 +741,7 @@ export default function LoansPage() {
             </div>
 
             {/* Device & Assignee Summary Card */}
-            <div className="loan-pickup-summary-card">
-              <div className="loan-summary-item">
-                <span className="summary-label">Assignee</span>
-                <strong className="summary-val">{pickupTarget.assignee || 'Unknown'}</strong>
-                <span className="summary-sub">({pickupTarget.assigneeType || 'Employee'})</span>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Knox ID</span>
-                <code className="summary-code">{pickupTarget.knoxId || '—'}</code>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Laptop / Asset #</span>
-                <strong className="summary-val summary-laptop-badge">{pickupTarget.assetCode}</strong>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Location</span>
-                <span className="summary-val">{pickupForm.location || DEFAULT_LOCATION}</span>
-              </div>
-              {pickupTarget.ip && (
-                <div className="loan-summary-item">
-                  <span className="summary-label">IP Address</span>
-                  <code className="summary-code">{pickupTarget.ip}</code>
-                </div>
-              )}
-            </div>
+            <LoanSummary loan={pickupTarget} location={pickupForm.location} />
 
             <div className="pickup-modal-sections">
               {/* Timing & Schedule Column */}
@@ -791,34 +754,9 @@ export default function LoansPage() {
                   Sometimes planned schedule and actual pickup date differ. Adjust either below.
                 </p>
 
-                <fieldset className="loan-equipment-requests"><legend>Equipment requested</legend>
-                  <label><input type="checkbox" checked={pickupForm.requestPc || false} onChange={(e) => updatePickupField('requestPc', e.target.checked)} /> Laptop / PC</label>
-                  <label><input type="checkbox" checked={pickupForm.requestMonitor || false} onChange={(e) => updatePickupField('requestMonitor', e.target.checked)} /> Monitor</label>
-                </fieldset>
-                <div className="field"><label htmlFor="pickup-pc">PC picked up</label><AssetAutocomplete id="pickup-pc" categoryFilter={PC_CATEGORIES} value={pickupForm.assetCode || ''} onChange={(value) => updatePickupField('assetCode', value)} placeholder="Search laptop or MES PC asset number" /></div>
+                <EquipmentRequestFields form={pickupForm} onChange={updatePickupField} />                <div className="field"><label htmlFor="pickup-pc">PC picked up</label><AssetAutocomplete id="pickup-pc" categoryFilter={PC_CATEGORIES} value={pickupForm.assetCode || ''} onChange={(value) => updatePickupField('assetCode', value)} placeholder="Search laptop or MES PC asset number" /></div>
 
-                <div className="field">
-                  <label htmlFor="modal-pickupDate">
-                    Actual pickup timestamp <span style={{ color: '#be665a' }}>*</span>
-                  </label>
-                  <div className="timestamp-input-row">
-                    <input
-                      id="modal-pickupDate"
-                      type="datetime-local"
-                      value={pickupForm.pickupDate}
-                      onChange={(e) => updatePickupField('pickupDate', e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="button ghost"
-                      style={{ whiteSpace: 'nowrap', padding: '9px 12px' }}
-                      onClick={() => updatePickupField('pickupDate', nowLocalIso())}
-                      title="Reset to current time"
-                    >
-                      ◷ Current time
-                    </button>
-                  </div>
-                </div>
+                <TimestampField id="modal-pickupDate" label="Actual pickup timestamp" value={pickupForm.pickupDate} onChange={(value) => updatePickupField('pickupDate', value)} required />
 
                 <div className="pickup-dates-row">
                   <div className="field">
@@ -856,247 +794,7 @@ export default function LoansPage() {
                   Verify items handed over. Click quick buttons or enter quantities. PC and monitor use asset numbers.
                 </p>
 
-                <div className="equipment-accessory-list">
-                  {/* Keyboard - Highlighted */}
-                  <div className="accessory-row highlight-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">⌨️</span>
-                      <div>
-                        <strong>Keyboard</strong>
-                        <span className="accessory-desc">External keyboard</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.keyboard === '0' || !pickupForm.keyboard ? 'active' : ''}`}
-                          onClick={() => updatePickupField('keyboard', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.keyboard === '1' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('keyboard', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={pickupForm.keyboard}
-                        onChange={(e) => updatePickupField('keyboard', e.target.value)}
-                        placeholder="Qty"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Mouse - Highlighted */}
-                  <div className="accessory-row highlight-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🖱️</span>
-                      <div>
-                        <strong>Mouse</strong>
-                        <span className="accessory-desc">Wireless / wired mouse</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.mouse === '0' || !pickupForm.mouse ? 'active' : ''}`}
-                          onClick={() => updatePickupField('mouse', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.mouse === '1' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('mouse', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={pickupForm.mouse}
-                        onChange={(e) => updatePickupField('mouse', e.target.value)}
-                        placeholder="Qty"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Charging Adapter */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🔌</span>
-                      <div>
-                        <strong>Charging Adapter</strong>
-                        <span className="accessory-desc">Power brick</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.adapter === '0' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('adapter', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.adapter === '1' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('adapter', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={pickupForm.adapter}
-                        onChange={(e) => updatePickupField('adapter', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Charging Cable */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">⚡</span>
-                      <div>
-                        <strong>Charging Cable</strong>
-                        <span className="accessory-desc">AC power cable</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.cable === '0' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('cable', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.cable === '1' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('cable', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={pickupForm.cable}
-                        onChange={(e) => updatePickupField('cable', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dongle */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🔄</span>
-                      <div>
-                        <strong>Dongle / Hub</strong>
-                        <span className="accessory-desc">USB-C multi-adapter</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.dongle === '0' || !pickupForm.dongle ? 'active' : ''}`}
-                          onClick={() => updatePickupField('dongle', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.dongle === '1' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('dongle', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={pickupForm.dongle}
-                        onChange={(e) => updatePickupField('dongle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Monitor */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🖥️</span>
-                      <div>
-                        <strong>Monitor</strong>
-                        <span className="accessory-desc">Monitor asset number</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <AssetAutocomplete id="pickup-monitor" categoryFilter={MONITOR_CATEGORIES} value={pickupForm.monitor === '0' ? '' : pickupForm.monitor} onChange={(value) => updatePickupField('monitor', value)} placeholder="Search monitor asset number" />
-                    </div>
-                  </div>
-
-                  {/* Ethernet Cable */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🌐</span>
-                      <div>
-                        <strong>Ethernet cable</strong>
-                        <span className="accessory-desc">LAN RJ45</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.ethernetCable === '0' || !pickupForm.ethernetCable ? 'active' : ''}`}
-                          onClick={() => updatePickupField('ethernetCable', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${pickupForm.ethernetCable === '1' ? 'active' : ''}`}
-                          onClick={() => updatePickupField('ethernetCable', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={pickupForm.ethernetCable}
-                        onChange={(e) => updatePickupField('ethernetCable', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Others */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">💼</span>
-                      <div>
-                        <strong>Others</strong>
-                        <span className="accessory-desc">Bag, lock, headset, etc.</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <input
-                        type="text"
-                        className="accessory-input accessory-input-wide"
-                        value={pickupForm.others}
-                        onChange={(e) => updatePickupField('others', e.target.value)}
-                        placeholder="e.g. Laptop bag, security lock"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <EquipmentAccessoryList form={pickupForm} onChange={updatePickupField} idPrefix="pickup-accessory-" monitorSearch />
               </div>
             </div>
 
@@ -1136,397 +834,7 @@ export default function LoansPage() {
       {/* Return & Archive timestamp modal (single or bulk) */}
       <Modal open={returnTargets !== null} size={returnTargets?.length === 1 ? 'wide' : undefined} onClose={() => setReturnTargets(null)}>
         {returnTargets && returnTargets.length === 1 && (
-          <div className="return-dialog">
-            <div className="modal-header-section">
-              <h2>Record return &amp; verify accessories</h2>
-              <p className="modal-intro">
-                Confirm return of device and verify all accessories (keyboard, mouse, adapter, etc.). Actual return date and checked-in items can be adjusted below.
-              </p>
-            </div>
-
-            {/* Device & Assignee Summary Card */}
-            <div className="loan-pickup-summary-card">
-              <div className="loan-summary-item">
-                <span className="summary-label">Assignee</span>
-                <strong className="summary-val">{returnTargets[0].assignee || 'Unknown'}</strong>
-                <span className="summary-sub">({returnTargets[0].assigneeType || 'Employee'})</span>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Knox ID</span>
-                <code className="summary-code">{returnTargets[0].knoxId || '—'}</code>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Laptop / Asset #</span>
-                <strong className="summary-val summary-laptop-badge">{returnTargets[0].assetCode}</strong>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Picked up on</span>
-                <span className="summary-val">{readableLoanDate(returnTargets[0].pickupDate) || '—'}</span>
-              </div>
-              <div className="loan-summary-item">
-                <span className="summary-label">Scheduled Due</span>
-                <span className="summary-val">{readableLoanDate(getLoanEndDate(returnTargets[0])) || '—'}</span>
-              </div>
-            </div>
-
-            <div className="pickup-modal-sections">
-              {/* Return Timing Column */}
-              <div className="pickup-modal-panel">
-                <div className="panel-title-row">
-                  <h4>📦 Return Timing</h4>
-                  <span className="panel-badge-info">Actual Check-in</span>
-                </div>
-                <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
-                  Timestamp defaults to current time. Adjust if the equipment was returned earlier or later.
-                </p>
-
-                <div className="field">
-                  <label htmlFor="modal-returnDate">
-                    Actual return timestamp <span style={{ color: '#be665a' }}>*</span>
-                  </label>
-                  <div className="timestamp-input-row">
-                    <input
-                      id="modal-returnDate"
-                      type="datetime-local"
-                      value={returnForm.returnDate}
-                      onChange={(e) => updateReturnField('returnDate', e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="button ghost"
-                      style={{ whiteSpace: 'nowrap', padding: '9px 12px' }}
-                      onClick={() => updateReturnField('returnDate', nowLocalIso())}
-                      title="Reset to current time"
-                    >
-                      ◷ Current time
-                    </button>
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label htmlFor="modal-returnLaptop">Laptop returned (asset number)</label>
-                  <AssetAutocomplete
-                    id="modal-returnLaptop"
-                    categoryFilter={PC_CATEGORIES}
-                    allowCustom
-                    value={returnForm.returnedLaptopCode || ''}
-                    onChange={(value) => updateReturnField('returnedLaptopCode', value)}
-                    placeholder="Select returned laptop, or clear if missing"
-                  />
-                  <span className="field-hint">Enter a different laptop if substituted. Leave blank if no laptop was returned.</span>
-                </div>
-
-                <div className="return-status-callout">
-                  <span className="callout-icon">ℹ️</span>
-                  <div>
-                    <strong>Device Check-in to IT Department</strong>
-                    <p style={{ margin: '3px 0 0', lineHeight: 1.35 }}>
-                      The returned laptop will move to available IT inventory. If this field is blank, the originally assigned laptop remains with the assignee and is marked outstanding.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Equipment Return Verification Column */}
-              <div className="pickup-modal-panel">
-                <div className="panel-title-row">
-                  <h4>✅ Returned Accessories Checklist</h4>
-                  <span className="panel-badge-info">Verify Check-in</span>
-                </div>
-                <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
-                  Verify that keyboard, mouse, and cables were returned. Adjust quantities if any item is retained or missing.
-                </p>
-                {(() => {
-                  const loan = returnTargets[0];
-                  const issuedEquipment = { ...(loan.equipment || {}), Laptop: loan.assetCode || loan.equipment?.Laptop || '' };
-                  const missing = getMissingReturnItems(issuedEquipment, buildReturnedEquipment(returnForm));
-                  return missing.length ? <div className="partial-return-warning"><strong>Partial return</strong><span>Still outstanding: {missing.join(', ')}</span></div> : <div className="complete-return-note">All issued accessories are marked returned.</div>;
-                })()}
-
-                <div className="equipment-accessory-list">
-                  {/* Keyboard - Highlighted */}
-                  <div className="accessory-row highlight-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">⌨️</span>
-                      <div>
-                        <strong>Keyboard</strong>
-                        <span className="accessory-desc">External keyboard</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.keyboard === '0' || !returnForm.keyboard ? 'active' : ''}`}
-                          onClick={() => updateReturnField('keyboard', '0')}
-                          title="0 returned (missing or kept)"
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.keyboard === '1' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('keyboard', '1')}
-                          title="1 returned"
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={returnForm.keyboard}
-                        onChange={(e) => updateReturnField('keyboard', e.target.value)}
-                        placeholder="Returned qty"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Mouse - Highlighted */}
-                  <div className="accessory-row highlight-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🖱️</span>
-                      <div>
-                        <strong>Mouse</strong>
-                        <span className="accessory-desc">Wireless / wired mouse</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.mouse === '0' || !returnForm.mouse ? 'active' : ''}`}
-                          onClick={() => updateReturnField('mouse', '0')}
-                          title="0 returned (missing or kept)"
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.mouse === '1' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('mouse', '1')}
-                          title="1 returned"
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={returnForm.mouse}
-                        onChange={(e) => updateReturnField('mouse', e.target.value)}
-                        placeholder="Returned qty"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Charging Adapter */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🔌</span>
-                      <div>
-                        <strong>Charging Adapter</strong>
-                        <span className="accessory-desc">Power brick</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.adapter === '0' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('adapter', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.adapter === '1' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('adapter', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={returnForm.adapter}
-                        onChange={(e) => updateReturnField('adapter', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Charging Cable */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">⚡</span>
-                      <div>
-                        <strong>Charging Cable</strong>
-                        <span className="accessory-desc">AC power cable</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.cable === '0' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('cable', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.cable === '1' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('cable', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={returnForm.cable}
-                        onChange={(e) => updateReturnField('cable', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dongle */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🔄</span>
-                      <div>
-                        <strong>Dongle / Hub</strong>
-                        <span className="accessory-desc">USB-C multi-adapter</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.dongle === '0' || !returnForm.dongle ? 'active' : ''}`}
-                          onClick={() => updateReturnField('dongle', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.dongle === '1' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('dongle', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={returnForm.dongle}
-                        onChange={(e) => updateReturnField('dongle', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Monitor */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🖥️</span>
-                      <div>
-                        <strong>Monitor</strong>
-                        <span className="accessory-desc">Monitor asset number</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <input
-                        type="text"
-                        className="accessory-input accessory-input-wide"
-                        value={returnForm.monitor}
-                        onChange={(e) => updateReturnField('monitor', e.target.value)}
-                        placeholder="Tag or 0"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Ethernet Cable */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">🌐</span>
-                      <div>
-                        <strong>Ethernet cable</strong>
-                        <span className="accessory-desc">LAN RJ45</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <div className="quick-btn-group">
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.ethernetCable === '0' || !returnForm.ethernetCable ? 'active' : ''}`}
-                          onClick={() => updateReturnField('ethernetCable', '0')}
-                        >
-                          0
-                        </button>
-                        <button
-                          type="button"
-                          className={`qty-btn ${returnForm.ethernetCable === '1' ? 'active' : ''}`}
-                          onClick={() => updateReturnField('ethernetCable', '1')}
-                        >
-                          1
-                        </button>
-                      </div>
-                      <EquipmentQuantityInput
-                        className="accessory-input"
-                        value={returnForm.ethernetCable}
-                        onChange={(e) => updateReturnField('ethernetCable', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Others */}
-                  <div className="accessory-row">
-                    <div className="accessory-info">
-                      <span className="accessory-icon">💼</span>
-                      <div>
-                        <strong>Others</strong>
-                        <span className="accessory-desc">Bag, lock, headset, etc.</span>
-                      </div>
-                    </div>
-                    <div className="accessory-control">
-                      <input
-                        type="text"
-                        className="accessory-input accessory-input-wide"
-                        value={returnForm.others}
-                        onChange={(e) => updateReturnField('others', e.target.value)}
-                        placeholder="e.g. Laptop bag, security lock"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Return Notes / Remarks */}
-            <div className="field" style={{ marginTop: '14px' }}>
-              <label htmlFor="modal-returnNote">Return condition notes / remarks</label>
-              <textarea
-                id="modal-returnNote"
-                rows={2}
-                value={returnForm.note}
-                onChange={(e) => updateReturnField('note', e.target.value)}
-                placeholder="Optional notes regarding return condition (e.g. Good condition, mouse not returned, damaged adapter, etc.)..."
-              />
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="button ghost"
-                onClick={() => setReturnTargets(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="button btn-return"
-                style={{ padding: '9px 18px', fontWeight: 700 }}
-                onClick={handleConfirmReturn}
-              >
-                ↙ Confirm return &amp; archive
-              </button>
-            </div>
-          </div>
+          <LoanReturnForm loan={returnTargets[0]} form={returnForm} onChange={updateReturnField} onConfirm={handleConfirmReturn} onClose={() => setReturnTargets(null)} />
         )}
 
         {/* Multi-loan bulk return dialog */}
@@ -1567,26 +875,7 @@ export default function LoansPage() {
               </ul>
             </div>
 
-            <div className="field">
-              <label htmlFor="returnTimeInput">Return timestamp (default: current time)</label>
-              <div className="timestamp-input-row">
-                <input
-                  id="returnTimeInput"
-                  type="datetime-local"
-                  value={returnTime}
-                  onChange={(e) => setReturnTime(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="button ghost"
-                  style={{ whiteSpace: 'nowrap', padding: '9px 12px' }}
-                  onClick={() => setReturnTime(nowLocalIso())}
-                  title="Reset to current time"
-                >
-                  ◷ Current time
-                </button>
-              </div>
-            </div>
+            <TimestampField id="returnTimeInput" label="Return timestamp" value={returnTime} onChange={setReturnTime} />
 
             <div className="form-actions">
               <button

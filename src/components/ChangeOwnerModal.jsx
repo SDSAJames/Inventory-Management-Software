@@ -1,8 +1,9 @@
+import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { useState } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { nowLocalIsoWithSeconds } from '../lib/utils';
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+
 import LoanDirectoryFields from './LoanDirectoryFields';
 
 export default function ChangeOwnerModal({ asset, onClose, onDone }) {
@@ -279,7 +280,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
         </div>
 
         <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '22px' }}>
-          {asset.owner && asset.owner !== 'IT Department' ? (
+          {asset.owner && asset.owner !== DEFAULT_OWNER ? (
             <button
               type="button"
               className="button danger-btn"

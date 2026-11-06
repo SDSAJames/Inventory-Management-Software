@@ -1,9 +1,11 @@
-import { isLoanReturned } from '../../shared/loanRules.js';
+import { enrichCustodyRecords } from '../lib/custodyRecords';
+import LoanReturnModal from '../components/LoanReturnModal';
+
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { todayIso, readableLoanDate } from '../lib/utils';
+import { readableLoanDate } from "../lib/utils";
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
@@ -11,7 +13,7 @@ import EditLoanForm from '../components/EditLoanForm';
 import TravelerCalendar from '../components/TravelerCalendar';
 
 export default function BusinessTravelersPage() {
-  const { db, returnLoan } = useDb();
+  const { db } = useDb();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -44,58 +46,7 @@ export default function BusinessTravelersPage() {
   }, [isFullScreen]);
 
   /* ── 1. Calculate Traveler Records ────────────────────────── */
-  const allTravelers = useMemo(() => {
-    const travelLoans = (db.loans || []).filter((loan) => isBusinessTraveler(loan.assigneeType));
-
-    return travelLoans.map((loan) => {
-      const asset = (db.assets || []).find(
-        (a) => String(a.code || '').toLowerCase() === String(loan.assetCode || '').toLowerCase()
-      );
-      const isReturned = isLoanReturned(loan);
-      const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
-      const dueDate = getLoanEndDate(loan);
-      const isOverdue = !isReturned && dueDate && dueDate < todayIso();
-
-      let tripStatus = 'Scheduled';
-      if (isReturned) {
-        tripStatus = 'Returned';
-      } else if (isOverdue) {
-        tripStatus = 'Overdue';
-      } else if (hasPickup) {
-        tripStatus = 'In Field';
-      }
-
-      // Equipment accessory count
-      const eq = loan.equipment || {};
-      const accessoryCount = Object.values(eq).reduce((sum, val) => sum + (Number(val) || 0), 0);
-
-      // Remaining days calculation
-      let remainingText = '';
-      if (!isReturned && dueDate) {
-        const diffDays = Math.round(
-          (new Date(dueDate) - new Date(todayIso())) / (1000 * 60 * 60 * 24)
-        );
-        if (diffDays < 0) {
-          remainingText = `${Math.abs(diffDays)}d overdue`;
-        } else if (diffDays === 0) {
-          remainingText = 'Due today';
-        } else {
-          remainingText = `${diffDays}d left`;
-        }
-      }
-
-      return {
-        ...loan,
-        location: loan.location || asset?.location || 'Unspecified',
-        assetModel: asset?.model || '',
-        accessoryCount,
-        tripStatus,
-        isReturned,
-        isOverdue,
-        remainingText,
-      };
-    });
-  }, [db.loans, db.assets]);
+  const allTravelers = useMemo(() => enrichCustodyRecords((db.loans || []).filter((loan) => isBusinessTraveler(loan.assigneeType)), db.assets || []), [db.loans, db.assets]);
 
   const overdueTravelers = useMemo(() => {
     return allTravelers.filter((t) => t.isOverdue || t.tripStatus === 'Overdue');
@@ -194,12 +145,6 @@ export default function BusinessTravelersPage() {
   }, [allTravelers, searchTerm, selectedLocation, statusFilter]);
 
   /* ── 5. Handlers ─────────────────────────────────────────── */
-  const handleConfirmReturn = () => {
-    if (!returnConfirmTarget) return;
-    returnLoan(returnConfirmTarget.id, todayIso());
-    toast(`Asset ${returnConfirmTarget.assetCode} returned to IT Department`);
-    setReturnConfirmTarget(null);
-  };
 
   return (
     <>
@@ -765,48 +710,7 @@ export default function BusinessTravelersPage() {
       </Modal>
 
       {/* ── Modal: Return Confirmation ────────────────────────── */}
-      <Modal open={returnConfirmTarget !== null} onClose={() => setReturnConfirmTarget(null)}>
-        {returnConfirmTarget && (
-          <div>
-            <h2>Process Return to IT Department</h2>
-            <p className="modal-intro">
-              Confirm return of equipment from business traveler <strong>{returnConfirmTarget.assignee}</strong>.
-            </p>
-
-            <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '8px', border: '1px solid var(--line)', marginBottom: '16px', fontSize: '12px' }}>
-              <dl style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '6px 12px', margin: 0 }}>
-                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Traveler:</dt>
-                <dd style={{ margin: 0, fontWeight: 600 }}>{returnConfirmTarget.assignee}</dd>
-                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Asset Number:</dt>
-                <dd style={{ margin: 0 }}>{returnConfirmTarget.assetCode}</dd>
-                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Rental Location:</dt>
-                <dd style={{ margin: 0 }}>📍 {returnConfirmTarget.location}</dd>
-                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Due Date:</dt>
-                <dd style={{ margin: 0 }}>{readableLoanDate(getLoanEndDate(returnConfirmTarget))}</dd>
-                <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Next Status:</dt>
-                <dd style={{ margin: 0, color: '#10b981', fontWeight: 700 }}>Available (Held by IT Department)</dd>
-              </dl>
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="button ghost"
-                onClick={() => setReturnConfirmTarget(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="button"
-                onClick={handleConfirmReturn}
-              >
-                Confirm Return to IT
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <LoanReturnModal loan={returnConfirmTarget} onClose={() => setReturnConfirmTarget(null)} />
     </>
   );
 }

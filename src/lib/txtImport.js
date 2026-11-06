@@ -1,3 +1,4 @@
+import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 /**
  * txtImport.js
  * Universal offline delimited text parser & processor for TXT files extracted from Excel.
@@ -20,7 +21,7 @@ import { createOwnershipEntry } from './assetIntegrity.js';
 import { equipmentColumnIndexes, normalizeEquipmentStatus } from './equipmentSchema.js';
 import { createHeaderLookup, excelSerialDate, normalizeSpreadsheetHeader } from './spreadsheetValues.js';
 import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+
 
 /* ── 1. Delimited Text Parser ──────────────────────────────── */
 
@@ -355,7 +356,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     let knoxId = colKnoxId >= 0 ? String(row[colKnoxId] || '').trim() : '';
 
     if (!assignee) {
-      if (associatedAsset && associatedAsset.owner && associatedAsset.owner !== 'IT Department') {
+      if (associatedAsset && associatedAsset.owner && associatedAsset.owner !== DEFAULT_OWNER) {
         assignee = associatedAsset.owner;
       } else if (knoxId) {
         assignee = knoxId;
@@ -440,14 +441,14 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
         serial: '',
         status: isReturned ? 'Available' : 'On loan',
         location,
-        owner: isReturned ? 'IT Department' : assignee,
+        owner: isReturned ? DEFAULT_OWNER : assignee,
         department: '',
         condition: 'Good',
         notes: note ? `Imported from loan list: ${note}` : 'Imported from loan list',
         ownershipHistory: [
           createOwnershipEntry({
             previousOwner: 'None',
-            newOwner: isReturned ? 'IT Department' : assignee,
+            newOwner: isReturned ? DEFAULT_OWNER : assignee,
             date: pickupDate || startDate || todayIso(),
             reason: isReturned ? 'Returned to IT Department' : 'Loan Check-out',
           }),

@@ -137,6 +137,27 @@ graph TD
 
 ---
 
+### 3.1 Shared UI and workflow ownership
+
+Pages compose shared controls and own only their view state, filters, and workflow entry points. Change the shared implementation when a field or behavior appears in multiple modules.
+
+| Concern | Implementation to change | Consumers |
+| :--- | :--- | :--- |
+| Default owner, default location, statuses | `shared/referenceData.js` | Browser forms, custody rules, server writes and migrations |
+| Equipment keys, labels, descriptions and device types | `shared/equipment.js` | Entry forms, pickup/return checklists, details, transfers and return accounting |
+| Form initialization, validation and payloads | `src/lib/loanForms.js` | Create/edit forms and equipment-return entry points |
+| Custody presentation, asset lookup and calendar dates | `src/lib/custodyRecords.js` | Traveler roster and equipment calendar |
+| Recipient, dates, notes and timestamps | `AssigneeFields`, `LoanDateFields`, `LoanNoteFields`, `TimestampField` | Create/edit, transfers and handover/return windows |
+| Location and department choices | `LoanDirectoryFields` and `DirectorySelect` | Create/edit, pickup and ownership transfer |
+| Equipment requests and quantities | `EquipmentRequestFields`, `LoanEquipmentSection`, `EquipmentAccessoryList`, `EquipmentQuantityInput` | Create/edit and pickup/return windows |
+| Single-record equipment returns | `LoanReturnForm` and `LoanReturnModal` | Assignments & Pickups, Business Travelers and Calendar; bulk selection remains in its page |
+| Pickup readiness and tabular custody records | `PickupReadiness` and `LoanTable` | Scheduled, All records and other custody tabs; visibility is explicit rather than based on CSS column positions |
+| Calendar navigation and weekday headings | `CalendarNavigation`, `CalendarWeekdays` and `useCalendarMonth` | Both custody calendars |
+
+`shared/` modules contain no React or database dependencies. Server adapters retain transactions and audit writes; shared metadata and pure rules define the common values. Historical release notes and saved snapshots retain their original content.
+
+Regression checks cover shared form round trips, explicit zero quantities, exact PC/monitor identifiers, partial returns, timestamp callbacks, calendar navigation, and table header/cell alignment across tabs. Run `npm test` and `npm run build` after changing shared code.
+
 ## 4. States Version & State Machine Specification (v1.0.0)
 
 ### 4.1 Asset States Definition (States Schema v1.0.0)

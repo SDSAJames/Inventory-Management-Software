@@ -1,8 +1,9 @@
-export const TRANSFER_ITEMS = ['Laptop', 'Adapter', 'Cable', 'Dongle', 'Keyboard', 'Mouse', 'Monitor', 'Ethernet cable', 'Others'];
+import { DEVICE_KEYS, EQUIPMENT_KEYS } from './equipment.js';
+export const TRANSFER_ITEMS = EQUIPMENT_KEYS;
 
 /** A schedule's equipment describes planned pickup, not additional held quantities. */
 export function equipmentForTransferredPickup(planned, transferred) {
-  for (const key of ['Laptop', 'Monitor']) {
+  for (const key of DEVICE_KEYS) {
     const hasPlannedCode = planned[key] && (key === 'Laptop' || !Number.isFinite(Number(planned[key])));
     if (hasPlannedCode && transferred[key] && String(planned[key]) !== String(transferred[key])) {
       throw new Error(`The selected schedule specifies a different ${key}; edit the schedule first`);
@@ -18,7 +19,7 @@ export function splitLoanEquipment(equipment, selection) {
     const available = String(equipment[key] ?? '').trim();
     if (!available || available === '0') throw new Error(`${key} is not held on this loan`);
     const count = Number(available), amount = Number(requested);
-    if (!['Laptop', 'Monitor'].includes(key) && Number.isFinite(count) && Number.isFinite(amount)) {
+    if (!DEVICE_KEYS.includes(key) && Number.isFinite(count) && Number.isFinite(amount)) {
       if (amount <= 0 || amount > count || !Number.isInteger(amount)) throw new Error(`Invalid ${key} quantity`);
       remaining[key] = String(count - amount); transferred[key] = requested;
     } else {

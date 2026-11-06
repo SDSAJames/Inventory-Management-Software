@@ -1,10 +1,12 @@
+import CalendarNavigation from './CalendarNavigation';
+import CalendarWeekdays from './CalendarWeekdays';
 import { indexInOutSchedule } from '../lib/inOutSchedule.js';
 import { canRecordReturn } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
 import { getLoanEndDate } from '../lib/loanEquipment';
 import Modal from './Modal';
-import { CALENDAR_YEARS, MONTH_NAMES, WEEKDAYS, calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
+import { calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
 import { useCalendarMonth } from '../hooks/useCalendarMonth.js';
 
 export default function TravelerCalendar({
@@ -95,71 +97,7 @@ export default function TravelerCalendar({
     <div className="traveler-calendar-card">
       {/* ── Calendar Toolbar Header ─────────────────────────── */}
       <div className="calendar-toolbar">
-        <div className="calendar-nav-group">
-          <div className="calendar-month-selector">
-            <button
-              type="button"
-              id="cal-prev-btn"
-              className="button ghost icon-only-btn"
-              onClick={handlePrevMonth}
-              title="Previous month"
-              aria-label="Previous month"
-            >
-              ‹
-            </button>
-            <h3 className="calendar-month-title">
-              {MONTH_NAMES[currentMonth]} {currentYear}
-            </h3>
-            <button
-              type="button"
-              id="cal-next-btn"
-              className="button ghost icon-only-btn"
-              onClick={handleNextMonth}
-              title="Next month"
-              aria-label="Next month"
-            >
-              ›
-            </button>
-          </div>
-
-          <button
-            type="button"
-            id="cal-today-btn"
-            className="button ghost small-btn today-jump-btn"
-            onClick={handleGoToday}
-            title="Jump to current month & date"
-          >
-            Today
-          </button>
-
-          {/* Quick jump dropdowns */}
-          <div className="calendar-jump-selects">
-            <select
-              aria-label="Select month"
-              className="calendar-select"
-              value={currentMonth}
-              onChange={(e) => setCurrentMonth(Number(e.target.value))}
-            >
-              {MONTH_NAMES.map((name, i) => (
-                <option key={name} value={i}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Select year"
-              className="calendar-select"
-              value={currentYear}
-              onChange={(e) => setCurrentYear(Number(e.target.value))}
-            >
-              {CALENDAR_YEARS.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <CalendarNavigation currentYear={currentYear} currentMonth={currentMonth} setCurrentYear={setCurrentYear} setCurrentMonth={setCurrentMonth} handlePrevMonth={handlePrevMonth} handleNextMonth={handleNextMonth} handleGoToday={handleGoToday} idPrefix="traveler-calendar-" />
 
         {/* ── Filters & Search ──────────────────────────────── */}
         <div className="calendar-controls-group">
@@ -258,16 +196,7 @@ export default function TravelerCalendar({
       {/* ── Calendar Grid ───────────────────────────────────── */}
       <div className="calendar-grid-wrapper">
         {/* Weekday Headers */}
-        <div className="calendar-weekdays-row">
-          {WEEKDAYS.map((day, idx) => (
-            <div
-              key={day}
-              className={`calendar-weekday-cell ${idx === 0 || idx === 6 ? 'weekend' : ''}`}
-            >
-              {day}
-            </div>
-          ))}
-        </div>
+        <CalendarWeekdays />
 
         {/* 42-day Month Days Grid */}
         <div className="calendar-days-grid">

@@ -1,3 +1,4 @@
+import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { sortDirectoryOptions } from '../lib/directoryOptions';
 import { useState, useEffect, useMemo } from 'react';
 import { STATUSES } from '../lib/constants';
@@ -7,7 +8,7 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 import { getAssetLocation, getHolderReturnChanges } from '../../shared/assetRules.js';
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+
 import { getAssetDateError, formatAssetDate, normalizeAssetDates } from '../../shared/assetDates.js';
 
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
@@ -34,7 +35,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     serial: '',
     status: 'Available',
     location: DEFAULT_LOCATION,
-    owner: 'IT Department',
+    owner: DEFAULT_OWNER,
     department: '',
     issuedDate: '',
     purchaseDate: '',
@@ -89,9 +90,9 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     setForm((prev) => {
       // If user chooses 'Available', holder defaults to IT Department
       if (nextStatus === 'Available') {
-        return { ...prev, status: 'Available', owner: 'IT Department', department: 'IT' };
+        return { ...prev, status: 'Available', owner: DEFAULT_OWNER, department: 'IT' };
       }
-      if (nextStatus === 'Assigned' && prev.owner === 'IT Department') {
+      if (nextStatus === 'Assigned' && prev.owner === DEFAULT_OWNER) {
         return { ...prev, status: 'Assigned', owner: '', department: '' };
       }
       return { ...prev, status: nextStatus, location: getAssetLocation(nextStatus, prev.location) };
@@ -403,19 +404,19 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                         <code style={{ fontSize: '11px', color: 'var(--ink)' }}>{readableLoanDate(item.date) || 'Date not recorded'}</code>
                       </td>
                       <td>
-                        {item.previousOwner === 'IT Department' ? (
+                        {item.previousOwner === DEFAULT_OWNER ? (
                           <span className="it-dept-badge">IT Department</span>
                         ) : (
                           <span>{item.previousOwner || 'None'}</span>
                         )}
                       </td>
                       <td>
-                        {item.newOwner === 'IT Department' ? (
+                        {item.newOwner === DEFAULT_OWNER ? (
                           <span className="it-dept-badge">IT Department</span>
                         ) : (
                           <strong>{item.newOwner || 'None'}</strong>
                         )}
-                        {item.department && item.newOwner !== 'IT Department' && (
+                        {item.department && item.newOwner !== DEFAULT_OWNER && (
                           <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{item.department}</div>
                         )}
                       </td>

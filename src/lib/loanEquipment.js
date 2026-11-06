@@ -1,23 +1,12 @@
 import { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
+import { EQUIPMENT_FIELDS } from '../../shared/equipment.js';
 export { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
 
-// Storage keys, form keys, labels, and return descriptions live together so
-// create/edit forms and return accounting use the same equipment schema.
-const EQUIPMENT_FIELDS = [
-  ['Adapter', 'adapter', 'Charging Adapter', 'e.g. 65W USB-C', 'Charging adapter'],
-  ['Cable', 'cable', 'Charging Cable', 'e.g. USB-C Cable', 'Charging cable'],
-  ['Dongle', 'dongle', 'Dongle', 'e.g. HDMI/USB-C Multiport', 'Dongle / hub'],
-  ['Keyboard', 'keyboard', 'Keyboard', 'e.g. Wireless keyboard', 'Keyboard'],
-  ['Mouse', 'mouse', 'Mouse', 'e.g. Optical mouse', 'Mouse'],
-  ['Monitor', 'monitor', 'Monitor asset number', 'e.g. SPE-MON-01', 'Monitor'],
-  ['Ethernet cable', 'ethernetCable', 'Ethernet Cable', 'e.g. Cat6 cable', 'Ethernet cable'],
-];
-
-export const LOAN_EQUIPMENT_FIELDS = EQUIPMENT_FIELDS.map(([, key, label, placeholder]) => [label, key, placeholder]);
+export const LOAN_EQUIPMENT_FIELDS = EQUIPMENT_FIELDS.map(({ key, label, placeholder }) => [label, key, placeholder]);
 
 export function newLoanEquipmentForm() {
-  return Object.fromEntries(EQUIPMENT_FIELDS.map(([, key]) => [
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(({ key }) => [
     key, key === 'monitor' ? '' : '0',
   ]));
 }
@@ -42,13 +31,13 @@ export function updateLoanFormField(previous, field, value) {
 }
 
 export function equipmentToForm(equipment = {}) {
-  return Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [formKey, String(equipment[storageKey] ?? (formKey === 'monitor' ? '' : '0'))]));
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [key, String(equipment[storageKey] ?? (key === 'monitor' ? '' : '0'))]));
 }
 
 /** Pickup/return controls use string values and retain explicit zero quantities. */
 export function equipmentQuantitiesToForm(equipment = {}, fallback = {}) {
-  return Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [
-    formKey, String(equipment[storageKey] ?? fallback[storageKey] ?? '0'),
+  return Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [
+    key, String(equipment[storageKey] ?? fallback[storageKey] ?? '0'),
   ]));
 }
 
@@ -67,7 +56,7 @@ export function normalizeLoanEndDate(loan) {
 export function buildLoanEquipment(form, assetCode) {
   return {
     Laptop: pcAssetCode(assetCode),
-    ...Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [storageKey, form[formKey]])),
+    ...Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [storageKey, form[key]])),
   };
 }
 
@@ -81,15 +70,15 @@ function itemCount(value) {
 export function buildReturnedEquipment(form) {
   return {
     Laptop: String(form.returnedLaptopCode || '').trim(),
-    ...Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [storageKey, form[formKey]])),
+    ...Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [storageKey, form[key]])),
     Others: form.others || '',
   };
 }
 
 export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {
   const missing = EQUIPMENT_FIELDS
-    .filter(([key]) => itemCount(equipment[key]) > itemCount(returnedEquipment[key]))
-    .map(([, , , , label]) => label);
+    .filter(({ storageKey }) => itemCount(equipment[storageKey]) > itemCount(returnedEquipment[storageKey]))
+    .map(({ returnLabel }) => returnLabel);
   const expectedLaptop = String(equipment.Laptop || '').trim();
   const returnedLaptop = String(returnedEquipment.Laptop || '').trim();
   if (expectedLaptop && expectedLaptop !== returnedLaptop) {

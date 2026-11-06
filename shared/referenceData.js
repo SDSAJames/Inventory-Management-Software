@@ -1,4 +1,5 @@
 export const DEFAULT_LOCATION = 'IT Office';
+export const DEFAULT_OWNER = 'IT Department';
 export const REPAIR_LOCATION = 'service center';
 
 export const DEFAULT_ASSET_STATUSES = [

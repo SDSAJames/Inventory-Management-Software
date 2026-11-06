@@ -1,4 +1,5 @@
-import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
+import { DEFAULT_OWNER, DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from "../../shared/referenceData.js";
+import { getAssetLocationAfterReturn, getAssetLocation, normalizeLocation } from "../../shared/assetRules.js";
 import { ensureAssetDateColumns } from '../lib/assetDates.js';
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
@@ -7,8 +8,8 @@ import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
 import { seed } from '../../src/data/seed.js';
 import { getDuplicateLoanIds, removeDuplicateLoans } from '../lib/loanDuplicates.js';
-import { DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from '../../shared/referenceData.js';
-import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
+
+
 import { assetLocationForWrite, normalizeStoredLocations } from '../lib/assetLocations.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
 
@@ -378,7 +379,7 @@ function seedDefaultData() {
           'None',
           a.owner,
           a.updated || now.slice(0, 10),
-          a.owner === 'IT Department' ? 'Returned to IT Department' : 'Initial assignment',
+          a.owner === DEFAULT_OWNER ? 'Returned to IT Department' : 'Initial assignment',
           `Initial asset custody assignment (${a.department || 'General'})`,
           now
         );
@@ -558,28 +559,28 @@ export function reconcileAllAssetsInDb() {
       newLoc = asset.location || activeLoan.location || '';
     } else if (asset.status === 'On loan') {
       // Asset marked 'On loan' but has no active picked-up loan
-      const hasOtherHolder = Boolean(asset.owner && asset.owner !== 'IT Department' && asset.owner !== 'None');
+      const hasOtherHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');
       newStatus = hasOtherHolder ? 'Assigned' : 'Available';
-      newOwner = hasOtherHolder ? asset.owner : 'IT Department';
+      newOwner = hasOtherHolder ? asset.owner : DEFAULT_OWNER;
       newDept = hasOtherHolder ? asset.department : '';
     } else {
       // Check if most recent loan was returned
       const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
-      if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === 'IT Department')) {
+      if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === DEFAULT_OWNER)) {
         newLoc = asset.status === 'Available' ? asset.location || getAssetLocationAfterReturn(asset.status) : getAssetLocationAfterReturn(asset.status);
-        newOwner = 'IT Department';
+        newOwner = DEFAULT_OWNER;
         newDept = '';
         if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {
           newStatus = 'Available';
         }
       } else {
         // Enforce invariants:
-        const hasHolder = Boolean(asset.owner && asset.owner !== 'IT Department' && asset.owner !== 'None');
+        const hasHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');
         if (hasHolder && asset.status === 'Available') {
           newStatus = 'Assigned';
         } else if (!hasHolder && asset.status === 'Assigned') {
           newStatus = 'Available';
-          newOwner = 'IT Department';
+          newOwner = DEFAULT_OWNER;
           newDept = '';
         }
       }

@@ -1,10 +1,13 @@
+import { enrichCustodyRecords } from '../lib/custodyRecords';
+import CalendarNavigation from './CalendarNavigation';
+import CalendarWeekdays from './CalendarWeekdays';
 import { indexInOutSchedule, scheduleForDay } from '../lib/inOutSchedule.js';
-import { isLoanReturned, canRecordReturn } from '../../shared/loanRules.js';
+import { canRecordReturn } from "../../shared/loanRules.js";
 import { useState, useMemo } from 'react';
-import { normalizeDateToIso, todayIso, readableLoanDate, isLoanOverdue } from '../lib/utils';
-import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
+import { todayIso, readableLoanDate } from "../lib/utils";
+import { getLoanEndDate } from "../lib/loanEquipment";
 import Modal from './Modal';
-import { CALENDAR_YEARS, MONTH_NAMES, WEEKDAYS, calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
+import { calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
 import { useCalendarMonth } from '../hooks/useCalendarMonth.js';
 
 export default function InOutCalendar({
@@ -36,63 +39,7 @@ export default function InOutCalendar({
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
 
   /* ── 2. Enrich loans with asset details & normalization ──────── */
-  const enrichedLoans = useMemo(() => {
-    const assetMap = new Map();
-    assets.forEach((a) => {
-      if (a.code) assetMap.set(String(a.code).toLowerCase(), a);
-    });
-
-    return loans.map((loan) => {
-      const asset = assetMap.get(String(loan.assetCode || '').toLowerCase());
-      const isReturned = isLoanReturned(loan);
-      const hasPickup = Boolean(loan.pickupDate || loan.status === 'Active');
-      const dueDate = getLoanEndDate(loan);
-      const isOverdue = hasPickup && !isReturned && isLoanOverdue(loan);
-
-      // Normalize requester type
-      const isTraveler = isBusinessTraveler(loan.assigneeType);
-      const userType = isTraveler ? 'Business traveler' : 'Employee';
-      const userTypeLabel = isTraveler ? 'Business Traveler' : 'SPE Employee';
-
-      let computedStatus = 'Scheduled';
-      if (isReturned) {
-        computedStatus = 'Returned';
-      } else if (isOverdue) {
-        computedStatus = 'Overdue';
-      } else if (hasPickup) {
-        computedStatus = 'In Field';
-      }
-
-      const eq = loan.equipment || {};
-      const accessoryCount = Object.values(eq).reduce((sum, val) => sum + (Number(val) || 0), 0);
-
-      // Start / Outgoing date (Checkout / Departure)
-      const outIso = normalizeDateToIso(loan.startDate || loan.pickupDate || loan.loanDate);
-
-      // Due / Incoming date (Return / Due back)
-      const inIso = isReturned
-        ? normalizeDateToIso(loan.returnDate || loan.returnedDate || dueDate)
-        : normalizeDateToIso(dueDate);
-
-      return {
-        ...loan,
-        assignee: loan.assignee || loan.borrower || 'Unknown Staff',
-        userType,
-        userTypeLabel,
-        isTraveler,
-        assetName: asset?.name || '',
-        assetModel: asset?.model || '',
-        location: loan.location || asset?.location || 'Unspecified',
-        outIso,
-        inIso,
-        isReturned,
-        hasPickup,
-        isOverdue,
-        computedStatus,
-        accessoryCount,
-      };
-    });
-  }, [loans, assets]);
+  const enrichedLoans = useMemo(() => enrichCustodyRecords(loans, assets), [loans, assets]);
 
   /* ── 3. Extract unique requesters for dropdown ──────────────── */
   const uniqueRequesters = useMemo(() => {
@@ -226,70 +173,7 @@ export default function InOutCalendar({
       {/* ── Calendar Toolbar Header ─────────────────────────── */}
       <div className="calendar-toolbar">
         {/* Navigation & Month Jump */}
-        <div className="calendar-nav-group">
-          <div className="calendar-month-selector">
-            <button
-              type="button"
-              id="cal-prev-btn"
-              className="button ghost icon-only-btn"
-              onClick={handlePrevMonth}
-              title="Previous month"
-              aria-label="Previous month"
-            >
-              ‹
-            </button>
-            <h3 className="calendar-month-title">
-              {MONTH_NAMES[currentMonth]} {currentYear}
-            </h3>
-            <button
-              type="button"
-              id="cal-next-btn"
-              className="button ghost icon-only-btn"
-              onClick={handleNextMonth}
-              title="Next month"
-              aria-label="Next month"
-            >
-              ›
-            </button>
-          </div>
-
-          <button
-            type="button"
-            id="cal-today-btn"
-            className="button ghost small-btn today-jump-btn"
-            onClick={handleGoToday}
-            title="Jump to current month & date"
-          >
-            Today
-          </button>
-
-          <div className="calendar-jump-selects">
-            <select
-              aria-label="Select month"
-              className="calendar-select"
-              value={currentMonth}
-              onChange={(e) => setCurrentMonth(Number(e.target.value))}
-            >
-              {MONTH_NAMES.map((name, i) => (
-                <option key={name} value={i}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Select year"
-              className="calendar-select"
-              value={currentYear}
-              onChange={(e) => setCurrentYear(Number(e.target.value))}
-            >
-              {CALENDAR_YEARS.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <CalendarNavigation currentYear={currentYear} currentMonth={currentMonth} setCurrentYear={setCurrentYear} setCurrentMonth={setCurrentMonth} handlePrevMonth={handlePrevMonth} handleNextMonth={handleNextMonth} handleGoToday={handleGoToday} idPrefix="in-out-calendar-" />
 
         {/* Action button */}
         {onRecordLoan && (
@@ -531,16 +415,7 @@ export default function InOutCalendar({
       {/* ── Calendar Grid ───────────────────────────────────── */}
       <div className="calendar-grid-wrapper">
         {/* Weekday Headers */}
-        <div className="calendar-weekdays-row">
-          {WEEKDAYS.map((day, idx) => (
-            <div
-              key={day}
-              className={`calendar-weekday-cell ${idx === 0 || idx === 6 ? 'weekend' : ''}`}
-            >
-              {day}
-            </div>
-          ))}
-        </div>
+        <CalendarWeekdays />
 
         {/* 42-day Month Days Grid */}
         <div className="calendar-days-grid">

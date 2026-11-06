@@ -1,10 +1,11 @@
+import LoanEquipmentDetails from './LoanEquipmentDetails';
 import { isLoanReturned, canRecordReturn } from '../../shared/loanRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { Fragment, useMemo, useState } from 'react';
-import { readableLoanDate, dateTimeInputValue, statusClass, getLoanStatus, isLoanOverdue, normalizeDateToIso } from '../lib/utils';
+import { readableLoanDate, dateTimeInputValue, statusClass, getLoanStatus, normalizeDateToIso } from "../lib/utils";
 import { readableTransferNote } from '../lib/transferNotes';
-import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
-import { getMissingReturnItems } from '../lib/loanEquipment';
+import { getLoanEndDate, isBusinessTraveler, getMissingReturnItems } from "../lib/loanEquipment";
+
 import PickupReadiness from './PickupReadiness';
 
 const STATUS_ORDER = { Scheduled: 0, Loaned: 1, Overdue: 2, Returned: 3 };
@@ -74,11 +75,15 @@ export default function LoanTable({
   const [draft, setDraft] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [sort, setSort] = useState({ key: null, dir: 'asc' });
+  const showPickupDate = !scheduled;
+  const showReturnDate = !scheduled && !hideReturnDate;
+  const showStatus = !scheduled;
 
   const columns = useMemo(() => {
-    const visible = COLUMNS.filter((column) => (!hideReturnDate || column.key !== 'returnDate') && (showLocation || column.key !== 'location'));
+    const visibility = { pickupDate: showPickupDate, returnDate: showReturnDate, status: showStatus, location: showLocation };
+    const visible = COLUMNS.filter((column) => visibility[column.key] !== false);
     return [...CONTEXT_COLUMNS.filter((column) => column.key === 'readyForPickup' ? showPickupReadiness : scheduled), ...visible];
-  }, [scheduled, showPickupReadiness, hideReturnDate, showLocation]);
+  }, [scheduled, showPickupReadiness, showPickupDate, showReturnDate, showStatus, showLocation]);
   const totalColumns = columns.length + 1;
 
   // Keep the original position (No) attached to each loan, then apply sorting.
@@ -246,7 +251,7 @@ export default function LoanTable({
                       onChange={(e) => update('startDate', e.target.value)}
                     />
                   </td>
-                  <td>
+                  {showPickupDate && (<td>
                     <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
                       <input
                         className="inline-input"
@@ -266,7 +271,7 @@ export default function LoanTable({
                         </button>
                       )}
                     </div>
-                  </td>
+                  </td>)}
                   <td>
                     <input
                       className="inline-input"
@@ -276,7 +281,7 @@ export default function LoanTable({
                       disabled={!isBusinessTraveler(draft.assigneeType)}
                     />
                   </td>
-                  {!hideReturnDate && (
+                  {showReturnDate && (
                   <td>
                     <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
                       <input
@@ -302,11 +307,11 @@ export default function LoanTable({
                     </div>
                   </td>
                   )}
-                  <td>
+                  {showStatus && (<td>
                     <span className={`status ${statusClass(statusLabel)}`}>
                       {statusLabel}
                     </span>
-                  </td>
+                  </td>)}
                 </tr>
               );
             }
@@ -406,7 +411,7 @@ export default function LoanTable({
                   <td>{loan.assignee || '—'}</td>
                   {showLocation && <td>{loan.location || '—'}</td>}
                   <td>{readableLoanDate(loan.startDate || loan.loanDate) || '—'}</td>
-                  <td>
+                  {showPickupDate && (<td>
                     {loan.pickupDate ? (
                       <span className="timestamp-badge">
                         {readableLoanDate(loan.pickupDate)}
@@ -415,9 +420,9 @@ export default function LoanTable({
                     ) : (
                       <span className="text-muted-badge">Not picked up</span>
                     )}
-                  </td>
+                  </td>)}
                   <td>{readableLoanDate(getLoanEndDate(loan)) || '—'}</td>
-                  {!hideReturnDate && (
+                  {showReturnDate && (
                   <td>
                     {loan.returnDate || loan.returnedDate ? (
                       <span className="timestamp-badge">
@@ -428,12 +433,12 @@ export default function LoanTable({
                     )}
                   </td>
                   )}
-                  <td>
+                  {showStatus && (<td>
                     <span className={`status ${statusClass(statusLabel)}`}>
                       {statusLabel}
                     </span>
                     {loan.returnStatus === 'Partial' && <span className="partial-return-badge" title={`Not returned: ${missingReturnItems.join(', ')}`}>Unreturned: {missingReturnItems.join(', ') || 'items outstanding'}</span>}
-                  </td>
+                  </td>)}
                 </tr>
 
                 {/* Expanded Loaner Information Panel */}
@@ -542,26 +547,7 @@ export default function LoanTable({
                                   <dd>{[eq.RequestedPC && 'Laptop / PC', eq.RequestedMonitor && 'Monitor'].filter(Boolean).join(', ')}</dd>
                                 </>
                               )}
-                              <dt>Charging Adapter:</dt>
-                              <dd>{eq.Adapter || '0'}</dd>
-                              <dt>Charging Cable:</dt>
-                              <dd>{eq.Cable || '0'}</dd>
-                              <dt>Dongle:</dt>
-                              <dd>{eq.Dongle || '0'}</dd>
-                              <dt>Keyboard:</dt>
-                              <dd>{eq.Keyboard || '0'}</dd>
-                              <dt>Mouse:</dt>
-                              <dd>{eq.Mouse || '0'}</dd>
-                              <dt>Monitor:</dt>
-                              <dd>{eq.Monitor || '0'}</dd>
-                              <dt>Ethernet cable:</dt>
-                              <dd>{eq['Ethernet cable'] || '0'}</dd>
-                              {loan.others && (
-                                <>
-                                  <dt>Others:</dt>
-                                  <dd>{loan.others}</dd>
-                                </>
-                              )}
+                              <LoanEquipmentDetails equipment={eq} others={loan.others} />
                             </dl>
                             {loan.returnStatus === 'Partial' && (
                               <div className="partial-return-detail">

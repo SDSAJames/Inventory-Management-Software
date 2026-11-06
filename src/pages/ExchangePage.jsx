@@ -5,7 +5,7 @@ import { LOAN_HEADERS, XLSX_MIME } from '../lib/constants';
 import { DEFAULT_ASSET_HEADERS, assetsToRows } from '../lib/assetExcel';
 import { equipmentFieldForHeader } from '../lib/equipmentSchema.js';
 import { loansToRows } from '../lib/loanExcel';
-import { statusClass, todayIso } from '../lib/utils';
+import { todayIso } from "../lib/utils";
 import { api } from '../lib/api';
 import { parseDelimitedText, detectFileType, parseEquipmentsText, parseLoansText } from '../lib/txtImport';
 import Modal from '../components/Modal';

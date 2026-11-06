@@ -1,10 +1,11 @@
-import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
+import { DEFAULT_OWNER } from '../../shared/referenceData.js';
+import { getAssetLocationAfterReturn, getAssetLocation, getAssetStatusAfterReturn, normalizeAvailableAsset } from "../../shared/assetRules.js";
 /**
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
 import { todayIso, readableLoanDate, isLoanReturned } from './utils.js';
-import { getAssetLocation, getAssetStatusAfterReturn, normalizeAvailableAsset } from '../../shared/assetRules.js';
+
 import { isBusinessTravelerType } from '../../shared/loanRules.js';
 
 /**
@@ -48,7 +49,7 @@ export function isItDepartment(name) {
  */
 export function normalizeHolder(name) {
   if (!name) return '';
-  if (isItDepartment(name)) return 'IT Department';
+  if (isItDepartment(name)) return DEFAULT_OWNER;
   return String(name).trim();
 }
 
@@ -133,7 +134,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     return {
       ...asset,
       status: hasOtherHolder ? 'Assigned' : 'Available',
-      owner: hasOtherHolder ? asset.owner : 'IT Department',
+      owner: hasOtherHolder ? asset.owner : DEFAULT_OWNER,
       department: hasOtherHolder ? asset.department : '',
       updated: todayIso(),
     };
@@ -146,7 +147,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     if (!asset.owner || isItDepartment(asset.owner)) {
       return {
         ...asset,
-        owner: 'IT Department',
+        owner: DEFAULT_OWNER,
         department: '',
         status: getAssetStatusAfterReturn(asset.status),
         location: asset.status === 'Available' ? asset.location : getAssetLocationAfterReturn(asset.status),
@@ -170,7 +171,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     return {
       ...asset,
       status: 'Available',
-      owner: isItDepartment(asset.owner) ? 'IT Department' : '',
+      owner: isItDepartment(asset.owner) ? DEFAULT_OWNER : '',
       department: isItDepartment(asset.owner) ? '' : asset.department,
       updated: asset.updated || todayIso(),
     };
@@ -196,7 +197,7 @@ export function validateAssetStatus(asset) {
   if (isItDept) {
     return {
       ...asset,
-      owner: 'IT Department',
+      owner: DEFAULT_OWNER,
       department: '',
       status: asset.status === 'Assigned' ? 'Available' : asset.status,
     };
@@ -305,7 +306,7 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
         addEntry({
           id: `loan-out-${l.id}`,
           date: startDate,
-          previousOwner: normalizeHolder(l.previousOwner) || 'IT Department',
+          previousOwner: normalizeHolder(l.previousOwner) || DEFAULT_OWNER,
           newOwner: l.assignee || l.borrower || 'Borrower',
           department: l.department || '',
           location: l.location || asset.location || '',
@@ -328,7 +329,7 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
           id: `loan-in-${l.id}`,
           date: retDate,
           previousOwner: l.assignee || l.borrower || 'Borrower',
-          newOwner: 'IT Department',
+          newOwner: DEFAULT_OWNER,
           department: 'IT',
           location: l.location || asset.location || 'IT Store',
           reason: 'Loan Returned',
@@ -374,11 +375,11 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
     if (i === 0) {
       // The very first event in the life of this asset
       if (!current.previousOwner || current.previousOwner === 'Unassigned') {
-        current.previousOwner = current.isLoan ? 'IT Department' : 'None';
+        current.previousOwner = current.isLoan ? DEFAULT_OWNER : 'None';
       }
     } else {
       const priorEvent = sortedAsc[i - 1];
-      const priorHolder = priorEvent.newOwner || 'IT Department';
+      const priorHolder = priorEvent.newOwner || DEFAULT_OWNER;
 
       // If previous holder is 'None', empty, or unassigned, but someone (e.g. IT Department)
       // held the laptop immediately before, chain it!

@@ -1,5 +1,6 @@
 import { getAssetStatusAfterReturn, getAssetLocationAfterReturn } from '../../shared/assetRules.js';
 import { assetLocationForWrite } from './assetLocations.js';
+import { DEFAULT_OWNER } from '../../shared/referenceData.js';
 
 /** Restore IT custody while retaining maintenance state and its automatic location. */
 export function returnAssetToIt(database, assetCode, updated, { clearDepartment = true } = {}) {
@@ -7,10 +8,11 @@ export function returnAssetToIt(database, assetCode, updated, { clearDepartment 
   if (!asset) return;
   const status = getAssetStatusAfterReturn(asset.status);
   database.prepare(`
-    UPDATE assets SET status = ?, owner = 'IT Department', department = ?, location = ?, updated = ?
+    UPDATE assets SET status = ?, owner = ?, department = ?, location = ?, updated = ?
     WHERE id = ?
   `).run(
     status,
+    DEFAULT_OWNER,
     clearDepartment ? '' : asset.department,
     assetLocationForWrite(database, status, getAssetLocationAfterReturn(status)),
     updated,

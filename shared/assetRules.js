@@ -1,4 +1,5 @@
-import { DEFAULT_LOCATION, REPAIR_LOCATION } from './referenceData.js';
+import { DEFAULT_OWNER, DEFAULT_LOCATION, REPAIR_LOCATION } from "./referenceData.js";
+
 import { isLoanReturned } from './loanRules.js';
 
 /** Keep the renamed default consistent when reading older imports and backups. */
@@ -20,10 +21,10 @@ export function getAssetLocation(status, location, fallback = DEFAULT_LOCATION) 
 export function normalizeAvailableAsset(asset) {
   if (!asset) return asset;
   if (asset.status !== 'Available') {
-    return String(asset.owner || '').trim().toLowerCase() === 'it department' && asset.owner !== 'IT Department' ? { ...asset, owner: 'IT Department' } : asset;
+    return String(asset.owner || '').trim().toLowerCase() === 'it department' && asset.owner !== DEFAULT_OWNER ? { ...asset, owner: DEFAULT_OWNER } : asset;
   }
-  if (asset.owner === 'IT Department' && asset.department === '') return asset;
-  return { ...asset, owner: 'IT Department', department: '' };
+  if (asset.owner === DEFAULT_OWNER && asset.department === '') return asset;
+  return { ...asset, owner: DEFAULT_OWNER, department: '' };
 }
 
 /** Returning custody does not clear a device's repair or retirement state. */
@@ -45,7 +46,7 @@ export function getHolderReturnChanges(previous, changes) {
   if (nextOwner === previousOwner && previous.status === 'Available' && changes.status === 'Available') return null;
   if (changes.status !== 'Available' && nextOwner && nextOwner !== 'it department') return null;
   const status = getAssetStatusAfterReturn(changes.status ?? previous.status);
-  return { owner: 'IT Department', department: '', status, location: getAssetLocationAfterReturn(status) };
+  return { owner: DEFAULT_OWNER, department: '', status, location: getAssetLocationAfterReturn(status) };
 }
 
 /** Editing an ongoing loan must not undo a repair recorded on the same device. */
