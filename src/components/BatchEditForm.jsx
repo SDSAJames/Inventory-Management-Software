@@ -1,3 +1,4 @@
+import { sortDirectoryOptions } from '../lib/directoryOptions';
 import { useState } from 'react';
 import { STATUSES } from '../lib/constants';
 import { useDb } from '../hooks/useDb';
@@ -132,7 +133,7 @@ export default function BatchEditForm({ selectedAssets, onClose, onDone }) {
                     onChange={set(f.key)}
                     disabled={!enabled[f.key] || (f.key === 'location' && repairLocation)}
                   >
-                    {f.options.map((o) => (
+                    {sortDirectoryOptions(f.options).map((o) => (
                       <option key={o}>{o}</option>
                     ))}
                   </select>

@@ -1,3 +1,5 @@
+import { sortDirectoryOptions } from '../lib/directoryOptions';
+
 export default function SearchBar({
   id = 'search-input',
   searchTerm = '',
@@ -59,7 +61,7 @@ export default function SearchBar({
           aria-label="Status filter"
         >
           <option value="All statuses">All statuses</option>
-          {statuses.map((s) => (
+          {sortDirectoryOptions(statuses).map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>

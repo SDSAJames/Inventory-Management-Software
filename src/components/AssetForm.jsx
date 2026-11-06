@@ -1,3 +1,4 @@
+import { sortDirectoryOptions } from '../lib/directoryOptions';
 import { useState, useEffect, useMemo } from 'react';
 import { STATUSES } from '../lib/constants';
 import { nextAssetCode, statusClass, readableLoanDate } from '../lib/utils';
@@ -266,7 +267,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                 {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('category')}>+ Add</button>}
               </div>
               <select id="category" value={form.category} onChange={set('category')}>
-                {[...new Set([...(db.categories || []).map((category) => category.name), form.category].filter(Boolean))].map((category) => (
+                {sortDirectoryOptions([...new Set([...(db.categories || []).map((category) => category.name), form.category].filter(Boolean))]).map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
@@ -287,7 +288,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                 {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('status')}>+ Add</button>}
               </div>
               <select id="status" value={form.status} onChange={handleStatusChange}>
-                {[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])].map((s) => <option key={s}>{s}</option>)}
+                {sortDirectoryOptions([...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])]).map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="field">
@@ -296,7 +297,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                 {canAddCategory && form.status !== 'Under repair' && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('location')}>+ Add</button>}
               </div>
               <select id="location" value={getAssetLocation(form.status, form.location)} onChange={set('location')} disabled={form.status === 'Under repair'} aria-describedby={form.status === 'Under repair' ? 'repair-location-hint' : undefined}>
-                {[...new Set([...(db.locations || []), getAssetLocation(form.status, form.location)].filter(Boolean))].map((location) => <option key={location} value={location}>{location}</option>)}
+                {sortDirectoryOptions([...new Set([...(db.locations || []), getAssetLocation(form.status, form.location)].filter(Boolean))]).map((location) => <option key={location} value={location}>{location}</option>)}
               </select>
               {form.status === 'Under repair' && <span id="repair-location-hint" className="field-hint">Set automatically while under repair.</span>}
             </div>
@@ -329,7 +330,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               </div>
               <select id="department" value={form.department || ''} onChange={set('department')}>
                 <option value="">Select department</option>
-                {[...new Set([...(db.departments || []), form.department].filter(Boolean))].map((department) => <option key={department} value={department}>{department}</option>)}
+                {sortDirectoryOptions([...new Set([...(db.departments || []), form.department].filter(Boolean))]).map((department) => <option key={department} value={department}>{department}</option>)}
               </select>
             </div>
             <div className="field">

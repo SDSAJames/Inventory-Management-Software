@@ -1,5 +1,6 @@
 import { getAssetLocation, normalizeLocation, normalizeAvailableAsset } from '../../shared/assetRules.js';
 import { REPAIR_LOCATION } from '../../shared/referenceData.js';
+import { normalizePcRecord } from '../../shared/pcReferences.js';
 
 /** Keep the local cache, imports, and server snapshots on the same location rules. */
 export function normalizeDatabaseLocations(database) {
@@ -15,8 +16,9 @@ export function normalizeDatabaseLocations(database) {
     });
     return changed ? normalized : rows;
   };
-  const assets = normalizeRows(database.assets, (asset) => getAssetLocation(asset.status, asset.location), normalizeAvailableAsset);
-  const loans = normalizeRows(database.loans, (loan) => normalizeLocation(loan.location, ''));
+  const trackedAssets = database.assets?.some((asset) => String(asset.code).trim() === '1') ? database.assets.filter((asset) => String(asset.code).trim() !== '1') : database.assets;
+  const assets = normalizeRows(trackedAssets, (asset) => getAssetLocation(asset.status, asset.location), normalizeAvailableAsset);
+  const loans = normalizeRows(database.loans, (loan) => normalizeLocation(loan.location, ''), normalizePcRecord);
   const locations = [...new Set([
     ...(database.locations || []),
     ...(assets || []).map((asset) => asset.location),

@@ -259,7 +259,7 @@ directoryRouter.delete('/departments/:name', authenticate, requireRole('ADMIN', 
 // GET /api/directory/locations
 directoryRouter.get('/locations', (req, res) => {
   const locations = db.prepare('SELECT * FROM locations ORDER BY name ASC').all();
-  const assetCountStmt = db.prepare('SELECT COUNT(*) as count FROM assets WHERE LOWER(location) = LOWER(?)');
+  const assetCountStmt = db.prepare("SELECT COUNT(*) as count FROM assets WHERE TRIM(code) <> '1' AND LOWER(TRIM(location)) = LOWER(TRIM(?))");
 
   const enriched = locations.map((l) => ({
     id: l.id,

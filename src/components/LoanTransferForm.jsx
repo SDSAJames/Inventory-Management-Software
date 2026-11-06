@@ -11,7 +11,7 @@ export default function LoanTransferForm({ loan, onClose }) {
   const [selection, setSelection] = useState({});
   const [knoxId, setKnoxId] = useState('');
   const [assignee, setAssignee] = useState('');
-  const [assigneeType, setAssigneeType] = useState('Employee');
+  const [assigneeType, setAssigneeType] = useState('Business traveler');
   const [scheduleId, setScheduleId] = useState('');
   const [scheduleSearch, setScheduleSearch] = useState('');
   const [startDate, setStartDate] = useState(todayIso);
@@ -27,7 +27,7 @@ export default function LoanTransferForm({ loan, onClose }) {
     setScheduleId(id);
     const record = schedules.find((item) => item.id === id);
     setKnoxId(record?.knoxId || ''); setAssignee(record?.assignee || '');
-    setAssigneeType(record ? record.assigneeType || 'Business traveler' : 'Employee');
+    setAssigneeType(record?.assigneeType || 'Business traveler');
     setStartDate(record?.startDate?.slice(0, 10) || todayIso());
     setEndDate(record?.endDate?.slice(0, 10) || '');
     setError('');

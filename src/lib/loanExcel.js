@@ -1,4 +1,5 @@
 import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
+import { normalizePcRecord } from '../../shared/pcReferences.js';
 
 /** Format loan records using the standard loan spreadsheet column order. */
 export function loansToRows(loans, assets) {
@@ -7,6 +8,7 @@ export function loansToRows(loans, assets) {
   );
 
   return loans.map((loan, index) => {
+    loan = normalizePcRecord(loan);
     const asset = assetMap.get(String(loan.assetCode || '').trim().toLowerCase()) || {};
     const equipment = loan.equipment || {};
     const hasEndDate = isBusinessTraveler(loan.assigneeType);

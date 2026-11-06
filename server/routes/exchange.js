@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { Router } from 'express';
 import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
@@ -17,7 +18,7 @@ export const exchangeRouter = Router();
 
 // GET /api/exchange/export (Export entire database as structured JSON)
 exchangeRouter.get('/export', (req, res) => {
-  const assets = db.prepare('SELECT * FROM assets ORDER BY code ASC').all();
+  const assets = db.prepare("SELECT * FROM assets WHERE TRIM(code) <> '1' ORDER BY code ASC").all();
   const getHistory = db.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC, created_at DESC');
 
   const enrichedAssets = assets.map((asset) => formatAssetRow(asset, getHistory.all(asset.code), exportOwnershipRow));
@@ -91,7 +92,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
-      for (const a of assets) {
+      for (const a of assets.filter((asset) => String(asset.code).trim() !== '1')) {
         if (!a.code) continue;
         const codeTrimmed = String(a.code).trim();
         const existing = getAssetStmt.get(codeTrimmed);
@@ -198,7 +199,8 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
       `);
       const existingLoans = db.prepare('SELECT * FROM loans').all();
 
-      for (const l of loans) {
+      for (const rawLoan of loans) {
+        const l = normalizePcRecord(rawLoan);
         const matchingIndex = findLoanMatchIndex(existingLoans, l);
         const matchingLoan = matchingIndex >= 0 ? existingLoans[matchingIndex] : null;
         const newLoanId = matchingLoan?.id || l.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

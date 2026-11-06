@@ -58,6 +58,7 @@ export default function DirectoryPanel({ panel, canManage, selecting = false, se
         </div>
       </div>
       <ul className="directory-list">
+        {!panel.entries.length && <li className="empty">No matching entries.</li>}
         {panel.entries.map((entry) => <DirectoryEntry key={entry.key} entry={entry} selecting={selecting} selected={selectedKeys.includes(entry.key)} editable={!panel.addOnly} onActivate={onActivate} onToggleSelection={onToggleSelection} onBrowse={onBrowse} />)}
       </ul>
     </section>

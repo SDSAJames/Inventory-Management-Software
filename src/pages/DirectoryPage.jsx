@@ -8,6 +8,7 @@ import DirectoryPanel from '../components/DirectoryPanel';
 import AssetTable from '../components/AssetTable';
 import AssetForm from '../components/AssetForm';
 import SearchBar from '../components/SearchBar';
+import { directoryLocationOptions, filterDirectoryEntries, matchesDirectoryAsset } from '../lib/directoryOptions';
 
 export default function DirectoryPage() {
   const { db, addCategory, addStatus, addDepartment, addLocation, renameCategory, deleteCategory, renameDepartment, deleteDepartment, renameLocation, deleteLocation } = useDb();
@@ -15,22 +16,24 @@ export default function DirectoryPage() {
   const toast = useToast();
   const canManageDirectory = ['ADMIN', 'OPERATOR'].includes(user?.role);
   const assets = db.assets || [];
+  const [directorySearch, setDirectorySearch] = useState('');
+  const [sortDirection, setSortDirection] = useState('asc');
   const panelDefinitions = [
     { type: 'Category', title: 'Asset categories', description: 'Equipment type, such as Laptop or Printer.', items: db.categories || [], assetField: 'category', add: addCategory, rename: (entry, name) => renameCategory(entry.id, name), remove: (entry) => deleteCategory(entry.id) },
     { type: 'Department', title: 'Departments', description: 'Teams assigned to company assets.', items: db.departments || [], assetField: 'department', add: addDepartment, rename: (entry, name) => renameDepartment(entry.name, name), remove: (entry) => deleteDepartment(entry.name) },
-    { type: 'Location', title: 'Locations', description: 'Sites where company assets are held.', items: db.locations || [], assetField: 'location', showCount: true, add: addLocation, rename: (entry, name) => renameLocation(entry.name, name), remove: (entry) => deleteLocation(entry.name) },
+    { type: 'Location', title: 'Locations', description: 'Sites where company assets are held.', items: directoryLocationOptions(db.locations, assets), assetField: 'location', showCount: true, add: addLocation, rename: (entry, name) => renameLocation(entry.name, name), remove: (entry) => deleteLocation(entry.name) },
   ];
   const panels = panelDefinitions.map((definition) => ({
     ...definition,
-    entries: definition.items.map((item) => {
+    entries: filterDirectoryEntries(definition.items.map((item) => {
       const entry = typeof item === 'string' ? { name: item, key: item } : { ...item, key: item.id };
-      const count = assets.filter((asset) => asset[definition.assetField]?.toLowerCase() === entry.name.toLowerCase()).length;
+      const count = assets.filter((asset) => matchesDirectoryAsset(asset, definition.assetField, entry.name)).length;
       return { ...entry, type: definition.type, used: count > 0, ...(definition.showCount ? { count } : {}) };
-    }),
+    }), directorySearch, sortDirection),
   }));
   const statusPanel = {
     type: 'Asset status', title: 'Asset statuses', description: 'Lifecycle state shown on every asset record.', addOnly: true, add: addStatus,
-    entries: (db.statuses?.length ? db.statuses.map((item) => item.name) : STATUSES).map((name) => ({ key: name, name, used: assets.some((asset) => asset.status?.toLowerCase() === name.toLowerCase()) })),
+    entries: filterDirectoryEntries((db.statuses?.length ? db.statuses.map((item) => item.name) : STATUSES).map((name) => ({ key: name, name, used: assets.some((asset) => matchesDirectoryAsset(asset, 'status', name)) })), directorySearch, sortDirection),
   };
   const panelForType = (type) => panels.find((panel) => panel.type === type);
   const handleAddOption = async (label, addOption) => {
@@ -79,7 +82,7 @@ export default function DirectoryPage() {
       setManageTarget(null);
     } catch (error) { toast(error.message || `Could not remove ${manageTarget.type.toLowerCase()}`); }
   };
-  const selectedAssets = assetTarget ? assets.filter((asset) => String(asset[assetTarget.field] || '').trim().toLowerCase() === assetTarget.name.trim().toLowerCase()) : [];
+  const selectedAssets = assetTarget ? assets.filter((asset) => matchesDirectoryAsset(asset, assetTarget.field, assetTarget.name)) : [];
   const visibleAssets = selectedAssets.filter((asset) => [asset.code, asset.name, asset.category, asset.model, asset.serial, asset.owner, asset.department, asset.location].some((value) => String(value || '').toLowerCase().includes(assetSearch.trim().toLowerCase())));
   const entriesForType = (type) => panelForType(type)?.entries || [];
   const toggleSelection = (key) => setSelectedKeys((prev) => prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]);
@@ -117,6 +120,12 @@ export default function DirectoryPage() {
         </div>
       </div>
 
+      <SearchBar id="directory-search" searchTerm={directorySearch} onSearchChange={(value) => { setDirectorySearch(value); setSelectedKeys([]); }} placeholder="Search statuses, categories, departments, or locations">
+        <select className="filter" aria-label="Sort directory by name" value={sortDirection} onChange={(event) => setSortDirection(event.target.value)}>
+          <option value="asc">Name: A–Z</option>
+          <option value="desc">Name: Z–A</option>
+        </select>
+      </SearchBar>
       <div className="directory-columns">
         {[statusPanel, ...panels].map((panel) => (
           <DirectoryPanel

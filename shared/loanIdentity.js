@@ -1,3 +1,5 @@
+import { pcAssetCode } from './pcReferences.js';
+
 const FIELDS = {
   assetCode: ['assetCode', 'asset_code'],
   knoxId: ['knoxId', 'knox_id'],
@@ -83,7 +85,7 @@ function loanIdentityDates(loan) {
 
 function loanPartyKeys(loan) {
   const equipment = parseJsonValue(fieldValue(loan, FIELDS.equipment));
-  const asset = normalizedText(fieldValue(loan, FIELDS.assetCode) || equipment?.Laptop) || 'no-asset';
+  const asset = normalizedText(pcAssetCode(fieldValue(loan, FIELDS.assetCode) || equipment?.Laptop)) || 'no-asset';
   const people = [
     ['knox', normalizedText(fieldValue(loan, FIELDS.knoxId))],
     ['name', normalizedText(fieldValue(loan, FIELDS.assignee))],

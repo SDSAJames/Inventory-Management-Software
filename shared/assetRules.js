@@ -36,6 +36,9 @@ export function getHolderReturnChanges(previous, changes) {
   if (!previous || (!String(previous.owner || '').trim() && changes.status !== 'Available')) return null;
   if (!Object.hasOwn(changes, 'owner') && changes.status !== 'Available') return null;
   const nextOwner = String(changes.owner || '').trim().toLowerCase();
+  const previousOwner = String(previous.owner || '').trim().toLowerCase();
+  // Saving unchanged IT custody must allow an independent location edit.
+  if (nextOwner === previousOwner && previous.status === 'Available' && changes.status === 'Available') return null;
   if (changes.status !== 'Available' && nextOwner && nextOwner !== 'it department') return null;
   const status = getAssetStatusAfterReturn(changes.status ?? previous.status);
   return { owner: 'IT department', department: '', status, location: getAssetLocationAfterReturn(status) };

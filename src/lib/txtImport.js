@@ -15,6 +15,7 @@
  */
 
 import { todayIso } from './utils.js';
+import { pcAssetCode } from '../../shared/pcReferences.js';
 import { createOwnershipEntry } from './assetIntegrity.js';
 import { equipmentColumnIndexes, normalizeEquipmentStatus } from './equipmentSchema.js';
 import { createHeaderLookup, excelSerialDate, normalizeSpreadsheetHeader } from './spreadsheetValues.js';
@@ -333,8 +334,9 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const assetCode = String(row[colLaptop] || '').trim();
-    if (!assetCode) continue;
+    const rawPc = String(row[colLaptop] || '').trim();
+    if (!rawPc) continue;
+    const assetCode = pcAssetCode(rawPc);
 
     const no = colNo >= 0 ? String(row[colNo] || '').trim() : String(i);
     const startDate = colStartDate >= 0 ? normalizeTextDate(row[colStartDate]) : '';
@@ -412,6 +414,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
       returnedDate: returnDate || '',
       status,
       equipment: {
+        ...(rawPc === '1' ? { RequestedPC: true } : {}),
         Adapter: adapter !== '' ? adapter : '1',
         Cable: cable !== '' ? cable : '1',
         Dongle: dongle !== '' ? dongle : '0',
@@ -427,7 +430,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     addedCount++;
 
     // If this asset doesn't exist yet in the asset index, synthesize a placeholder asset
-    if (!associatedAsset && !synthesizedAssets.some((a) => a.code.toLowerCase() === assetCode.toLowerCase())) {
+    if (assetCode && !associatedAsset && !synthesizedAssets.some((a) => a.code.toLowerCase() === assetCode.toLowerCase())) {
       synthesizedAssets.push({
         id: crypto.randomUUID(),
         code: assetCode,

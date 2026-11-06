@@ -530,6 +530,7 @@ export function reconcileAllAssetsInDb() {
   `);
 
   for (const asset of assets) {
+    if (String(asset.code).trim() === '1') continue;
     const assetLoans = loans.filter(
       (l) => String(l.asset_code || '').trim().toLowerCase() === String(asset.code || '').trim().toLowerCase()
     );
@@ -554,7 +555,7 @@ export function reconcileAllAssetsInDb() {
       newStatus = 'On loan';
       newOwner = activeLoan.assignee || asset.owner || '';
       newDept = activeLoan.department || asset.department || '';
-      newLoc = activeLoan.location || asset.location || '';
+      newLoc = asset.location || activeLoan.location || '';
     } else if (asset.status === 'On loan') {
       // Asset marked 'On loan' but has no active picked-up loan
       const hasOtherHolder = Boolean(asset.owner && asset.owner !== 'IT department' && asset.owner !== 'None');
@@ -565,7 +566,7 @@ export function reconcileAllAssetsInDb() {
       // Check if most recent loan was returned
       const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
       if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === 'IT department')) {
-        newLoc = getAssetLocationAfterReturn(asset.status);
+        newLoc = asset.status === 'Available' ? asset.location || getAssetLocationAfterReturn(asset.status) : getAssetLocationAfterReturn(asset.status);
         newOwner = 'IT department';
         newDept = '';
         if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {

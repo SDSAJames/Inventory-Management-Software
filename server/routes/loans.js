@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
+import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
 import { db, logAudit } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { tracksEndDate } from '../loanRules.js';
@@ -169,6 +170,7 @@ loansRouter.get('/:id', (req, res) => {
 
 // POST /api/loans (Protected)
 loansRouter.post('/', authenticate, (req, res) => {
+  req.body = normalizePcRecord(req.body);
   const {
     assetCode,
     assignee,
@@ -353,6 +355,7 @@ loansRouter.post('/', authenticate, (req, res) => {
 
 // PUT /api/loans/:id (Protected: Edit loan record)
 loansRouter.put('/:id', authenticate, (req, res) => {
+  req.body = normalizePcRecord(req.body);
   const existing = db.prepare('SELECT * FROM loans WHERE id = ?').get(req.params.id);
   if (!existing) {
     return res.status(404).json({ success: false, error: 'Loan record not found.' });
@@ -376,7 +379,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     assigneeType = existing.assignee_type,
   } = req.body || {};
 
-  const effectiveAssetCode = (assetCode || equipment?.Laptop || existing.asset_code || '').trim();
+  const effectiveAssetCode = pcAssetCode(assetCode || equipment?.Laptop || existing.asset_code);
   const effectiveLocation = normalizeLocation(location);
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const mergedEquipment = {
@@ -469,6 +472,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
 
 // POST /api/loans/:id/pickup (Protected: Handover workflow)
 loansRouter.post('/:id/pickup', authenticate, (req, res) => {
+  req.body = normalizePcRecord(req.body);
   const loan = db.prepare('SELECT * FROM loans WHERE id = ?').get(req.params.id);
   if (!loan) {
     return res.status(404).json({ success: false, error: 'Loan not found.' });
@@ -484,7 +488,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
     location,
   } = req.body || {};
 
-  const effectiveAssetCode = String(req.body?.assetCode ?? equipment?.Laptop ?? loan.asset_code ?? '').trim();
+  const effectiveAssetCode = pcAssetCode(req.body?.assetCode ?? equipment?.Laptop ?? loan.asset_code);
   if (equipment?.RequestedPC && !effectiveAssetCode) return res.status(400).json({ success: false, error: 'Select the PC being picked up' });
   if (equipment?.RequestedMonitor && (!equipment.Monitor || equipment.Monitor === '0')) return res.status(400).json({ success: false, error: 'Select the monitor being picked up' });
   if (effectiveAssetCode && !db.prepare('SELECT id FROM assets WHERE code = ?').get(effectiveAssetCode)) return res.status(400).json({ success: false, error: 'Select a registered PC asset' });

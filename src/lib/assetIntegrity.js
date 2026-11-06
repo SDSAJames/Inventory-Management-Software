@@ -112,14 +112,14 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     const needsUpdate =
       asset.status !== activeStatus ||
       asset.owner !== (activeLoan.assignee || '') ||
-      (activeLoan.location && asset.location !== activeLoan.location);
+      (!asset.location && Boolean(activeLoan.location));
 
     if (needsUpdate) {
       return {
         ...asset,
         status: activeStatus,
         owner: activeLoan.assignee || asset.owner || '',
-        location: activeLoan.location || asset.location,
+        location: asset.location || activeLoan.location,
         department: activeLoan.department || asset.department,
         updated: todayIso(),
       };
@@ -149,7 +149,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
         owner: 'IT department',
         department: '',
         status: getAssetStatusAfterReturn(asset.status),
-        location: getAssetLocationAfterReturn(asset.status),
+        location: asset.status === 'Available' ? asset.location : getAssetLocationAfterReturn(asset.status),
         updated: asset.updated || todayIso(),
       };
     }

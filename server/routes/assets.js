@@ -63,7 +63,7 @@ assetsRouter.get('/', (req, res) => {
   // Attach ownership history
   const getHistory = db.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC, created_at DESC');
 
-  const assets = rows.map((asset) => formatAssetRow(asset, getHistory.all(asset.code)));
+  const assets = rows.filter((asset) => String(asset.code).trim() !== '1').map((asset) => formatAssetRow(asset, getHistory.all(asset.code)));
 
   return res.json({
     success: true,
@@ -169,6 +169,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
   if (!trimmedCode) {
     return res.status(400).json({ success: false, error: 'Asset number is required.' });
   }
+  if (trimmedCode === '1') return res.status(400).json({ success: false, error: '1 is a PC quantity, not an asset number.' });
 
   const existing = db.prepare('SELECT id FROM assets WHERE LOWER(code) = LOWER(?)').get(trimmedCode);
   if (existing) {
@@ -255,6 +256,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
   }
 
   const code = String(req.body?.code ?? asset.code).trim();
+  if (code === '1') return res.status(400).json({ success: false, error: '1 is a PC quantity, not an asset number.' });
   if (!code) return res.status(400).json({ success: false, error: 'Asset number is required.' });
   const duplicate = db.prepare('SELECT id FROM assets WHERE LOWER(code) = LOWER(?) AND id <> ?').get(code, asset.id);
   if (duplicate) return res.status(409).json({ success: false, error: `Asset with number ${code} already exists.` });

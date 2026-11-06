@@ -9,6 +9,7 @@ import LoanDirectoryFields from './LoanDirectoryFields';
 import LoanEquipmentSection from './LoanEquipmentSection';
 import IPAddressFields from './IPAddressFields';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { pcAssetCode } from '../../shared/pcReferences.js';
 
 export default function LoanForm({ onClose, defaultAssigneeType = 'Business traveler', onSuccess }) {
   const { db, addLoan } = useDb();
@@ -53,7 +54,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     e.preventDefault();
 
     const newErrors = {};
-    const assetCode = form.assetCode.trim();
+    const assetCode = pcAssetCode(form.assetCode);
     const knoxId = form.knoxId.trim();
     const assignee = form.assignee.trim();
 

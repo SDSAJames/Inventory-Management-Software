@@ -221,5 +221,27 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: 'Other', date: 'now()' }, { id: 'blank-transfer' }, 400);
       assert.equal(db.prepare('SELECT owner FROM assets WHERE id = ?').get('blank-transfer').owner, 'IT department');
     });
+    await t.test('asset location edits persist for IT custody and assigned equipment', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'location-edit', code: 'LOCATION-EDIT', status: 'Available', owner: 'IT department' });
+      let result = invoke(assetsRouter, 'put', '/:id', { owner: 'IT department', status: 'Available', location: 'Stack' }, { id: 'location-edit' });
+      assert.equal(result.asset.location, 'Stack');
+      invoke(loansRouter, 'post', '/', { id: 'location-edit-loan', assetCode: 'LOCATION-EDIT', assignee: 'Jane', knoxId: 'jane.id', assigneeType: 'Employee', pickupDate: '2026-11-01', location: 'Original location' });
+      result = invoke(assetsRouter, 'put', '/:id', { owner: 'Jane', status: 'Assigned', location: 'New location' }, { id: 'location-edit' });
+      assert.equal(result.asset.location, 'New location');
+      assert.equal(db.prepare('SELECT location FROM assets WHERE id = ?').get('location-edit').location, 'New location');
+    });
+    await t.test('quantity-only PC imports and API records never register asset number 1', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      const result = invoke(loansRouter, 'post', '/', { id: 'quantity-only', assetCode: '1', equipment: { Laptop: '1', Mouse: '2' }, knoxId: 'quantity.user', pickupDate: '2026-11-01' });
+      assert.equal(result.loan.assetCode, '');
+      assert.equal(result.loan.equipment.RequestedPC, true);
+      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM assets WHERE code = '1'").get().count, 0);
+      invoke(assetsRouter, 'post', '/', { code: '1' }, {}, 400);
+      invoke(exchangeRouter, 'post', '/import', { assets: [{ code: '1' }], loans: [{ id: 'quantity-import', assetCode: '1', knoxId: 'import.user', equipment: { Laptop: '1' } }] });
+      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM assets WHERE code = '1'").get().count, 0);
+      const exported = invoke(exchangeRouter, 'get', '/export', {});
+      assert.equal(exported.db.loans.find((loan) => loan.id === 'quantity-import').assetCode, '');
+    });
   } finally { hook.deregister(); db.close(); delete globalThis.__assetDateTestDb; }
 });

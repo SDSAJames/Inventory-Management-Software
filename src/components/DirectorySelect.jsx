@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { sortDirectoryOptions } from '../lib/directoryOptions';
 
 function DirectoryCombobox({ id, label, options, value, onChange, placeholder }) {
   const [open, setOpen] = useState(false);
@@ -42,12 +43,12 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
 }
 
 export default function DirectorySelect({ id, label, options = [], value, onChange, placeholder, preserveCurrentValue = false, allowCustom = false }) {
+  options = sortDirectoryOptions(preserveCurrentValue && value && !options.includes(value) ? [...options, value] : options);
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
       {allowCustom ? <DirectoryCombobox id={id} label={label} options={options} value={value} onChange={onChange} placeholder={placeholder} /> : <select id={id} value={value} onChange={onChange}>
         <option value="">{placeholder || `Select ${label.toLowerCase()}`}</option>
-        {preserveCurrentValue && value && !options.includes(value) && <option value={value}>{value}</option>}
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>}
     </div>

@@ -1,4 +1,5 @@
 import { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
+import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
 export { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
 
 // Storage keys, form keys, labels, and return descriptions live together so
@@ -57,6 +58,7 @@ export function getLoanEndDate(loan) {
 }
 
 export function normalizeLoanEndDate(loan) {
+  loan = normalizePcRecord(loan);
   return isBusinessTraveler(loan?.assigneeType)
     ? loan
     : { ...loan, endDate: '', dueDate: '' };
@@ -64,7 +66,7 @@ export function normalizeLoanEndDate(loan) {
 
 export function buildLoanEquipment(form, assetCode) {
   return {
-    Laptop: assetCode,
+    Laptop: pcAssetCode(assetCode),
     ...Object.fromEntries(EQUIPMENT_FIELDS.map(([storageKey, formKey]) => [storageKey, form[formKey]])),
   };
 }

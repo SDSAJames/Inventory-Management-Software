@@ -2,6 +2,7 @@ import { tracksEndDate } from '../loanRules.js';
 import { todayIso } from './dates.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { normalizePcRecord } from '../../shared/pcReferences.js';
 
 export function computeLoanStatus(loan, { today = todayIso(), tracksDueDate = tracksEndDate(loan.assignee_type) } = {}) {
   if (isLoanReturned(loan)) return 'Returned';
@@ -13,7 +14,7 @@ export function computeLoanStatus(loan, { today = todayIso(), tracksDueDate = tr
 
 function serializeLoanRow(loan, forExport) {
   const text = (value, fallback = '') => forExport ? value : (value || fallback);
-  return {
+  return normalizePcRecord({
     id: loan.id,
     assetCode: loan.asset_code,
     assignee: loan.assignee,
@@ -37,7 +38,7 @@ function serializeLoanRow(loan, forExport) {
     assigneeType: text(loan.assignee_type, 'Business traveler'),
     isArchived: Boolean(forExport ? loan.is_archived : (loan.is_archived || loan.return_date || loan.returned_date)),
     ...(!forExport ? { createdAt: loan.created_at } : {}),
-  };
+  });
 }
 
 /** Public loans API derives lifecycle status and supplies its established defaults. */
