@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { normalizeLocation } from '../../shared/assetRules.js';
+import { deleteUnusedLocation } from '../lib/assetLocations.js';
 
 export const directoryRouter = Router();
 
@@ -315,18 +316,13 @@ directoryRouter.put('/locations/:name', authenticate, requireRole('ADMIN', 'OPER
 
 // DELETE /api/directory/locations/:name (Protected)
 directoryRouter.delete('/locations/:name', authenticate, requireRole('ADMIN', 'OPERATOR'), (req, res) => {
-  const loc = db.prepare('SELECT * FROM locations WHERE LOWER(name) = LOWER(?) OR id = ?').get(req.params.name, req.params.name);
-  if (!loc) {
-    return res.status(404).json({ success: false, error: 'Location not found.' });
+  try {
+    const removed = deleteUnusedLocation(db, req.params.name);
+    logAudit('DELETE_LOCATION', 'locations', removed.ids[0] || removed.name, { name: removed.name }, req.user);
+    return res.json({ success: true, message: `Location ${removed.name} removed.` });
+  } catch (error) {
+    return res.status(error.status || 500).json({ success: false, error: error.message });
   }
-
-  const used = db.prepare('SELECT COUNT(*) AS count FROM assets WHERE LOWER(location) = LOWER(?)').get(loc.name).count;
-  if (used) return res.status(409).json({ success: false, error: `Cannot remove ${loc.name}; it is assigned to ${used} asset${used === 1 ? '' : 's'}.` });
-
-  db.prepare('DELETE FROM locations WHERE id = ?').run(loc.id);
-  logAudit('DELETE_LOCATION', 'locations', loc.id, { name: loc.name }, req.user);
-
-  return res.json({ success: true, message: `Location ${loc.name} removed.` });
 });
 
 /* ── 4. Transfer Reasons ──────────────────────────────── */

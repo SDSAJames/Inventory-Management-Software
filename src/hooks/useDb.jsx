@@ -1,4 +1,4 @@
-import { getAssetLocationAfterReturn } from '../../shared/assetRules.js';
+import { getAssetLocationAfterReturn, normalizeLocation } from '../../shared/assetRules.js';
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   loadDb,
@@ -128,7 +128,7 @@ export function DbProvider({ children }) {
             loans: serverDb.loans || [],
             employees: serverDb.employees?.length ? serverDb.employees : prev.employees,
             departments: serverDb.departments?.length ? serverDb.departments : prev.departments,
-            locations: serverDb.locations?.length ? serverDb.locations : prev.locations,
+            locations: Array.isArray(serverDb.locations) ? serverDb.locations : prev.locations,
             categories: categoryRes?.categories?.length ? categoryRes.categories : prev.categories,
             statuses: statusRes?.statuses?.length ? statusRes.statuses : prev.statuses,
           }));
@@ -412,6 +412,7 @@ export function DbProvider({ children }) {
         assets: nextAssets,
         loans: [effectiveLoan, ...prev.loans],
         employees: nextEmployees,
+        locations: effectiveLoan.location ? [...new Set([...(prev.locations || []), effectiveLoan.location])] : prev.locations,
       };
     });
 
@@ -482,7 +483,7 @@ export function DbProvider({ children }) {
         });
       }
 
-      return { ...prev, loans: nextLoans, assets: nextAssets };
+      return { ...prev, loans: nextLoans, assets: nextAssets, locations: merged.location ? [...new Set([...(prev.locations || []), merged.location])] : prev.locations };
     });
 
     api.loans.update(id, changes).catch((err) => console.warn('Could not sync loan update to server:', err.message));
@@ -912,7 +913,7 @@ export function DbProvider({ children }) {
 
   const deleteLocation = useCallback(async (name) => {
     await api.directory.deleteLocation(name);
-    setDb((prev) => ({ ...prev, locations: (prev.locations || []).filter((item) => item !== name) }));
+    setDb((prev) => ({ ...prev, locations: (prev.locations || []).filter((item) => normalizeLocation(item, '').toLowerCase() !== normalizeLocation(name, '').toLowerCase()) }));
   }, []);
 
   const value = useMemo(() => ({

@@ -7,7 +7,7 @@ import { normalizeDatabaseLocations } from '../src/lib/databaseLocations.js';
 import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 import { parseAssetRows } from '../src/lib/assetExcel.js';
 import { parseEquipmentsText } from '../src/lib/txtImport.js';
-import { ensureLocation, normalizeStoredLocations } from '../server/lib/assetLocations.js';
+import { ensureLocation, normalizeStoredLocations, deleteUnusedLocation } from '../server/lib/assetLocations.js';
 import { returnAssetToIt } from '../server/lib/assetLoans.js';
 
 function locationDatabase() {
@@ -38,13 +38,14 @@ test('shared location rules normalize defaults and force the repair destination'
   assert.equal(getAssetLocation('Damaged', 'Head Office'), DEFAULT_LOCATION);
 });
 
-test('loan locations are added to the client directory and server entries are idempotent', () => {
+test('rental history does not recreate deleted directory values and new server entries are idempotent', () => {
   const cached = normalizeDatabaseLocations({
     locations: ['Plant 1'],
     assets: [],
     loans: [{ location: 'New Lab' }],
   });
-  assert.deepEqual(cached.locations, ['Plant 1', 'New Lab']);
+  assert.deepEqual(cached.locations, ['Plant 1']);
+  assert.equal(cached.loans[0].location, 'New Lab');
 
   const connection = locationDatabase();
   try {
@@ -54,6 +55,45 @@ test('loan locations are added to the client directory and server entries are id
   } finally {
     connection.close();
   }
+});
+
+test('unused location deletion handles names, IDs, aliases and stale cache-only entries', () => {
+  const connection = locationDatabase();
+  try {
+    const removed = deleteUnusedLocation(connection, ' plant 1 ');
+    assert.deepEqual(removed.ids, ['other']);
+    assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE id = ?').get('other').count, 0);
+    assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('other-loan').location, 'Plant 1');
+    const cached = normalizeDatabaseLocations({ locations: connection.prepare('SELECT name FROM locations').all().map((row) => row.name), assets: connection.prepare('SELECT * FROM assets').all(), loans: connection.prepare('SELECT * FROM loans').all() });
+    assert.ok(!cached.locations.includes('Plant 1'));
+    assert.deepEqual(deleteUnusedLocation(connection, 'Plant 1').ids, []);
+    assert.deepEqual(deleteUnusedLocation(connection, 'Cache-only location').ids, []);
+    connection.prepare('INSERT INTO locations VALUES (?, ?)').run('unused-id', ' Spaced location ');
+    assert.deepEqual(deleteUnusedLocation(connection, 'unused-id').ids, ['unused-id']);
+    connection.prepare('DELETE FROM assets').run();
+    assert.deepEqual(deleteUnusedLocation(connection, 'it department').ids.sort(), ['canonical', 'legacy']);
+  } finally { connection.close(); }
+});
+
+test('location deletion protects assigned assets even when the directory entry is missing', () => {
+  const connection = locationDatabase();
+  try {
+    connection.prepare('INSERT INTO assets (id, code, status, location) VALUES (?, ?, ?, ?)').run('assigned', 'PC-3', 'Assigned', ' Missing location ');
+    assert.throws(() => deleteUnusedLocation(connection, 'missing LOCATION'), (error) => error.status === 409 && /assigned to 1 asset/.test(error.message));
+    assert.throws(() => deleteUnusedLocation(connection, 'IT Department'), (error) => error.status === 409);
+    assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE id IN (?, ?)').get('legacy', 'canonical').count, 2);
+    assert.throws(() => deleteUnusedLocation(connection, 'service center'), (error) => error.status === 409);
+  } finally { connection.close(); }
+});
+
+test('failed directory deletion rolls back all aliases', () => {
+  const connection = locationDatabase();
+  try {
+    connection.prepare('DELETE FROM assets').run();
+    connection.exec("CREATE TRIGGER reject_location_delete BEFORE DELETE ON locations WHEN OLD.id = 'canonical' BEGIN SELECT RAISE(ABORT, 'delete failure'); END");
+    assert.throws(() => deleteUnusedLocation(connection, 'IT Department'), /delete failure/);
+    assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE id IN (?, ?)').get('legacy', 'canonical').count, 2);
+  } finally { connection.close(); }
 });
 
 test('cache normalization merges renamed locations without changing rental locations to repair destinations', () => {

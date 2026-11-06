@@ -9,6 +9,32 @@ export function ensureLocation(database, name) {
   }
 }
 
+/** Remove unused directory entries, including stale names known only to a cache. */
+export function deleteUnusedLocation(database, reference) {
+  const value = String(reference || '').trim();
+  const key = normalizeLocation(value, '').toLowerCase();
+  const rows = database.prepare('SELECT id, name FROM locations').all().filter((row) =>
+    row.id === value || normalizeLocation(row.name, '').toLowerCase() === key);
+  const name = normalizeLocation(rows[0]?.name || value, '');
+  const used = database.prepare('SELECT code, status, location FROM assets').all().filter((asset) =>
+    String(asset.code).trim() !== '1' && getAssetLocation(asset.status, asset.location).toLowerCase() === name.toLowerCase()).length;
+  if (used) {
+    const error = new Error(`Cannot remove ${name}; it is assigned to ${used} asset${used === 1 ? '' : 's'}.`);
+    error.status = 409;
+    throw error;
+  }
+  database.exec('SAVEPOINT delete_location');
+  try {
+    for (const row of rows) database.prepare('DELETE FROM locations WHERE id = ?').run(row.id);
+    database.exec('RELEASE SAVEPOINT delete_location');
+  } catch (error) {
+    database.exec('ROLLBACK TO SAVEPOINT delete_location');
+    database.exec('RELEASE SAVEPOINT delete_location');
+    throw error;
+  }
+  return { name, ids: rows.map((row) => row.id) };
+}
+
 /** Resolve the shared rule and register the automatic destination for dropdowns. */
 export function assetLocationForWrite(database, status, location, fallback = DEFAULT_LOCATION) {
   const resolved = getAssetLocation(status, location, fallback);
