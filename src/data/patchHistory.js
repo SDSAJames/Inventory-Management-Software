@@ -9,6 +9,27 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-06',
+    title: 'Day-First Asset Dates & Location in Every Custody Tab',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Use DD-MM-YYYY for asset lifecycle date entry and show sortable locations throughout Assignments & Pickups.',
+    highlights: [
+      'Enter and edit purchase and warranty expiration dates in DD-MM-YYYY format for every asset type.',
+      'See and sort Location in Scheduled, Assigned, Loans, Overdue, Returned, Unreturned and All records.',
+    ],
+    sections: [
+      { heading: 'Asset Dates', badge: 'Fix', items: [
+        'Convert day-first form entries to ISO calendar dates before saving; validate calendar dates and warranty ordering using the same format.',
+        'Keep existing stored dates and import date conventions intact.',
+      ] },
+      { heading: 'Assignments & Pickups', badge: 'UI', items: [
+        'Reuse the sortable Location column in every tab, including matching inline edits and expanded row spans.',
+      ] },
+    ],
+  },
+  {
+    version: '1.8.0',
+    date: '2026-11-06',
     title: 'Shared Workflows, Directory Merging & Clearer Equipment Handover',
     tag: 'Feature Release',
     type: 'minor',

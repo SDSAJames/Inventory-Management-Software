@@ -6,6 +6,27 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] — 2026-11-06
+
+### Day-First Asset Dates & Location in Every Custody Tab
+
+Use DD-MM-YYYY for asset lifecycle date entry and show sortable locations throughout Assignments & Pickups.
+
+#### Highlights
+- Enter and edit purchase and warranty expiration dates in DD-MM-YYYY format for every asset type.
+- See and sort Location in Scheduled, Assigned, Loans, Overdue, Returned, Unreturned and All records.
+
+#### Asset Dates
+
+- Convert day-first form entries to ISO calendar dates before saving; validate calendar dates and warranty ordering using the same format.
+- Keep existing stored dates and import date conventions intact.
+
+#### Assignments & Pickups
+
+- Reuse the sortable Location column in every tab, including matching inline edits and expanded row spans.
+
+---
+
 ## [1.8.0] — 2026-11-06
 
 ### Shared Workflows, Directory Merging & Clearer Equipment Handover

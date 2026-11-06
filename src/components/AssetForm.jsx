@@ -11,6 +11,8 @@ import { getAssetLocation, getHolderReturnChanges } from '../../shared/assetRule
 
 import { getAssetDateError, formatAssetDate, normalizeAssetDates } from '../../shared/assetDates.js';
 
+const ASSET_DATE_FORMAT = 'DD-MM-YYYY';
+
 export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const { db, addAsset, updateAsset, addCategory, addStatus, addLocation, addDepartment } = useDb();
   const toast = useToast();
@@ -44,7 +46,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   });
 
   const [form, setForm] = useState(() => {
-    if (existing) return { ...existing, purchaseDate: formatAssetDate(existing.purchaseDate), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate) };
+    if (existing) return { ...existing, purchaseDate: formatAssetDate(existing.purchaseDate, ASSET_DATE_FORMAT), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate, ASSET_DATE_FORMAT) };
     return makeBlank();
   });
 
@@ -55,7 +57,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   // Re-sync form when assetId changes
   useEffect(() => {
     if (existing) {
-      setForm({ ...existing, purchaseDate: formatAssetDate(existing.purchaseDate), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate) });
+      setForm({ ...existing, purchaseDate: formatAssetDate(existing.purchaseDate, ASSET_DATE_FORMAT), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate, ASSET_DATE_FORMAT) });
     } else {
       setForm(makeBlank());
       setActiveTab('details');
@@ -142,7 +144,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     e.preventDefault();
     if (saving) return;
 
-    const dateError = getAssetDateError(form);
+    const dateError = getAssetDateError(form, ASSET_DATE_FORMAT);
     if (dateError) { setSubmitError(dateError); toast(dateError); return; }
 
     const code = String(form.code || '').trim();
@@ -171,7 +173,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
 
     const payload = {
       ...form,
-      ...normalizeAssetDates(form),
+      ...normalizeAssetDates(form, ASSET_DATE_FORMAT),
       code,
       name: form.name || code,
       owner: form.owner ? form.owner.trim() : '',
@@ -338,8 +340,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
               <label htmlFor="issuedDate">Issued date</label>
               <input id="issuedDate" type="date" value={form.issuedDate || ''} onChange={set('issuedDate')} />
             </div>
-            <div className="field"><label htmlFor="purchaseDate">Purchase date <span className="field-hint">(MM-DD-YYYY)</span></label><input id="purchaseDate" type="text" inputMode="numeric" maxLength={10} placeholder="10-07-2023" value={form.purchaseDate || ''} onChange={set('purchaseDate')} /></div>
-            <div className="field"><label htmlFor="warrantyExpirationDate">Warranty expiration date <span className="field-hint">(MM-DD-YYYY)</span></label><input id="warrantyExpirationDate" type="text" inputMode="numeric" maxLength={10} placeholder="10-07-2026" value={form.warrantyExpirationDate || ''} onChange={set('warrantyExpirationDate')} /></div>
+            <div className="field"><label htmlFor="purchaseDate">Purchase date <span className="field-hint">({ASSET_DATE_FORMAT})</span></label><input id="purchaseDate" type="text" inputMode="numeric" maxLength={10} placeholder="07-10-2023" value={form.purchaseDate || ''} onChange={set('purchaseDate')} /></div>
+            <div className="field"><label htmlFor="warrantyExpirationDate">Warranty expiration date <span className="field-hint">({ASSET_DATE_FORMAT})</span></label><input id="warrantyExpirationDate" type="text" inputMode="numeric" maxLength={10} placeholder="07-10-2026" value={form.warrantyExpirationDate || ''} onChange={set('warrantyExpirationDate')} /></div>
             <div className="field col-span-2">
               <label htmlFor="notes">Notes</label>
               <input id="notes" value={form.notes} onChange={set('notes')} placeholder="Optional notes or asset condition" />

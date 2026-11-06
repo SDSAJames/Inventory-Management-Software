@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.8.0** |
+| **Document Version** | **v1.8.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 6, 2026 |
@@ -151,7 +151,7 @@ Pages compose shared controls and own only their view state, filters, and workfl
 | Location and department choices | `LoanDirectoryFields` and `DirectorySelect` | Create/edit, pickup and ownership transfer |
 | Equipment requests and quantities | `EquipmentRequestFields`, `LoanEquipmentSection`, `EquipmentAccessoryList`, `EquipmentQuantityInput` | Create/edit and pickup/return windows |
 | Single-record equipment returns | `LoanReturnForm` and `LoanReturnModal` | Assignments & Pickups, Business Travelers and Calendar; bulk selection remains in its page |
-| Pickup readiness and tabular custody records | `PickupReadiness` and `LoanTable` | Scheduled, All records and other custody tabs; visibility is explicit rather than based on CSS column positions |
+| Pickup readiness and tabular custody records | `PickupReadiness` and `LoanTable` | All custody tabs share a sortable Location column; Scheduled and All records share pickup readiness. Visibility is explicit rather than based on CSS column positions |
 | Calendar navigation and weekday headings | `CalendarNavigation`, `CalendarWeekdays` and `useCalendarMonth` | Both custody calendars |
 
 `shared/` modules contain no React or database dependencies. Server adapters retain transactions and audit writes; shared metadata and pure rules define the common values. Historical release notes and saved snapshots retain their original content.
@@ -317,7 +317,7 @@ The frontend application provides eight core operational views accessed via the 
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
    - Click and drag row selection with bulk status updates and bulk deletion.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
-   - Purchase and warranty expiration dates apply to every asset type and accept MM-DD-YYYY entry. Date validation and persistence cover asset editing, imports, exports, and restores.
+   - Purchase and warranty expiration dates apply to every asset type and accept DD-MM-YYYY entry, converted to ISO before submission without changing existing stored dates or import conventions. Date validation and persistence cover asset editing, imports, exports, and restores.
    - Asset-number edits update linked custody and ownership-history references atomically; failed saves remain open with an error.
    - Clearing Current holder or selecting Available records IT custody and ownership history. Existing missing history is reconciled once with an explicit observation-time note when the original return date is unknown.
 3. **Assignments & Pickups (`/loans`)**:
@@ -381,4 +381,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.8.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.8.1**.

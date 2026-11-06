@@ -691,7 +691,7 @@ export default function LoansPage() {
           scheduled={category === 'scheduled'}
           showPickupReadiness={category === 'scheduled' || category === 'all'}
           hideReturnDate={category === 'overdue'}
-          showLocation={category === 'all'}
+          showLocation
           onTransferLoan={setTransferTarget}
           loans={displayedLoans}
           assets={db.assets}

@@ -52,6 +52,20 @@ test('MM-DD-YYYY dates convert without timezone shifts and compare by calendar d
   }
 });
 
+test('day-first asset forms round-trip dates and reject invalid dates and warranty ordering', () => {
+  const format = 'DD-MM-YYYY';
+  for (const [input, iso] of [['07-10-2023', '2023-10-07'], ['31-12-2023', '2023-12-31'], ['29-02-2024', '2024-02-29'], ['', '']]) {
+    assert.equal(normalizeAssetDate(input, format), iso);
+    assert.equal(formatAssetDate(iso, format), input);
+    assert.equal(formatAssetDate(input, format), input);
+  }
+  assert.equal(getAssetDateError({ purchaseDate: '31-12-2023', warrantyExpirationDate: '01-01-2024' }, format), '');
+  assert.match(getAssetDateError({ purchaseDate: '29-02-2023' }, format), /valid date in DD-MM-YYYY/);
+  assert.match(getAssetDateError({ purchaseDate: '31-04-2023' }, format), /valid date/);
+  assert.match(getAssetDateError({ purchaseDate: '07-10-2023', warrantyExpirationDate: '06-10-2023' }, format), /earlier/);
+  assert.equal(normalizeAssetDate('2023-10-07', format), '2023-10-07');
+});
+
 test('asset routes persist lifecycle dates through editing and exchange', async (t) => {
   const db = new DatabaseSync(':memory:');
   globalThis.__assetDateTestDb = db;

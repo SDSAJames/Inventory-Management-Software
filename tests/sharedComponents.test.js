@@ -115,11 +115,13 @@ test('shared return dialog submits accessory shortages with the selected fixed t
 
 test('all table modes align headers, row cells, readiness and expanded detail spans', () => {
   const loan = { id: 'one', knoxId: 'person', location: 'Stack', equipment: {}, readyForPickup: false };
-  for (const options of [{ scheduled: true }, { showPickupReadiness: true, showLocation: true }, { hideReturnDate: true }]) {
+  for (const options of [{ scheduled: true, showLocation: true }, { showPickupReadiness: true, showLocation: true }, { hideReturnDate: true, showLocation: true }, { showLocation: true }]) {
     const app = harness();
     let tree = nodes(app.render('LoanTable', { loans: [loan], assets: [], ...options }));
     const headers = tree.filter((node) => node.type === 'th');
     assert.equal(headers.length, tree.filter((node) => node.type === 'td').length);
+    assert.ok(headers.some((node) => node.props.key === 'location'));
+    assert.ok(tree.some((node) => node.type === 'td' && node.props.children.includes('Stack')));
     if (options.scheduled) assert.ok(!headers.some((node) => ['pickupDate', 'returnDate', 'status'].includes(node.props.key)));
     const row = tree.find((node) => node.type === 'tr' && node.props.onClick);
     row.props.onClick({ target: { tagName: 'TD' } });

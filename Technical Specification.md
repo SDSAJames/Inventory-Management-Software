@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.8.0** |
+| **Specification Version** | **v1.8.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 6, 2026 |
@@ -130,7 +130,7 @@ Update the shared module for a rule or field mapping, then import it at each cal
 | :--- | :--- |
 | `shared/referenceData.js` | Default asset statuses, transfer reasons, and location names used by both application tiers. |
 | `shared/assetRules.js` | Location normalization, repair destinations, and asset status transitions during loan edits and returns. |
-| `shared/assetDates.js`, `shared/dateTime.js` | Calendar-date validation and MM-DD-YYYY entry conversion; local display of zoned timestamps without changing their stored instant. |
+| `shared/assetDates.js`, `shared/dateTime.js` | Calendar-date validation and explicit DD-MM-YYYY form / MM-DD-YYYY legacy import conversion; local display of zoned timestamps without changing their stored instant. |
 | `shared/assetReferences.js`, `shared/assetReturns.js` | Exact device-reference renaming and per-device return accounting across linked custody records. |
 | `shared/loanRules.js`, `shared/loanIdentity.js` | Returned-loan detection, traveler classification, and import matching identities. |
 | `src/lib/equipmentSchema.js`, `spreadsheetValues.js` | Equipment column aliases, status translations, header lookup, and spreadsheet value parsing shared by TXT and XLSX paths. |
@@ -153,7 +153,7 @@ Run `npm test` for the built-in Node.js regression suite. Tests cover shared rul
 
 ### 3.1 Asset Master Record (`Asset`)
 
-Purchase and warranty expiration dates are available for every asset category. Forms display and accept `MM-DD-YYYY` (for example, `10-07-2023` for October 7, 2023). Shared date helpers convert values to `YYYY-MM-DD` for storage and validate calendar dates and warranty ordering without timezone shifts. Existing ISO inputs remain supported.
+Purchase and warranty expiration dates are available for every asset category. Forms display and accept `DD-MM-YYYY` (for example, `07-10-2023` for 7 October 2023). AssetForm passes the explicit entry format for display, validation and serialization; import and API conventions retain their existing behavior. Shared date helpers convert values to `YYYY-MM-DD` for storage and validate calendar dates and warranty ordering without timezone shifts. Existing ISO inputs remain supported.
 
 ```typescript
 interface Asset {
@@ -456,6 +456,6 @@ The patch history system is accessible via:
 - Directory location rename accepts names or IDs. It updates asset and assignment/loan references atomically; naming an existing destination merges into that entry and preserves its ID. Trim outer whitespace, preserve internal spaces, and reject deletion while assets use a location. Historical rental records do not recreate deleted directory values.
 - New transfer recipients default to Business traveler; selecting a pickup schedule retains its borrower type. Transfer windows persist the selected effective timestamp. Ownership history uses saved dates rather than generating a new date during rendering.
 - Shared pickup/return forms group PC and monitor asset-number fields with accessory quantity inputs. Quantities are whole numbers at least zero; adapter/cable default to 1 only when PC is requested. Others / Peripherals is text. A standalone PC value of 1 denotes a quantity/request and is not tracked as an asset number.
-- Scheduled and All records share the pickup-readiness switch; readiness is inapplicable after pickup or return. All records includes a sortable Location column. Calendar Hide returned filters the event index used by grid cells, summary counts and open-day details.
+- Scheduled and All records share the pickup-readiness switch; readiness is inapplicable after pickup or return. Every custody tab includes the shared sortable Location column. Calendar Hide returned filters the event index used by grid cells, summary counts and open-day details.
 - Common form initialization, validation, payload creation and partial-return accounting live in src/lib/loanForms.js. Equipment metadata lives in shared/equipment.js; defaults live in shared/referenceData.js. The design document lists component ownership.
 - Every completed code update includes a SemVer increment, a new structured release-history entry and affected-document updates. npm run docs:sync generates patch notes and synchronizes manifest, lockfile and document metadata; previous releases remain unchanged.
