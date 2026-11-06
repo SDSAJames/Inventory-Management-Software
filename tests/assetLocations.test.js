@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { DEFAULT_LOCATION, REPAIR_LOCATION } from '../shared/referenceData.js';
 import { normalizeLocation, getAssetLocation, getAssetStatusAfterReturn, getAssetStatusForLoanEdit } from '../shared/assetRules.js';
-import { normalizeDatabaseLocations } from '../src/lib/databaseLocations.js';
+import { normalizeDatabaseLocations, remapDatabaseLocation } from '../src/lib/databaseLocations.js';
 import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 import { parseAssetRows } from '../src/lib/assetExcel.js';
 import { parseEquipmentsText } from '../src/lib/txtImport.js';
-import { ensureLocation, normalizeStoredLocations, deleteUnusedLocation } from '../server/lib/assetLocations.js';
+import { ensureLocation, normalizeStoredLocations, deleteUnusedLocation, renameDirectoryLocation } from '../server/lib/assetLocations.js';
 import { returnAssetToIt } from '../server/lib/assetLoans.js';
 
 function locationDatabase() {
@@ -25,6 +25,75 @@ function locationDatabase() {
   `);
   return connection;
 }
+
+test('renaming an in-use location updates all asset and loan references while preserving its ID', () => {
+  const connection = locationDatabase();
+  try {
+    connection.prepare('INSERT INTO locations VALUES (?, ?)').run('office', '1321');
+    connection.prepare('INSERT INTO assets (id, code, status, location, owner) VALUES (?, ?, ?, ?, ?)').run('assigned-office', 'PC-1321', 'Assigned', ' 1321 ', 'Jane');
+    connection.prepare('INSERT INTO loans VALUES (?, ?)').run('office-schedule', '1321');
+    connection.prepare('INSERT INTO loans VALUES (?, ?)').run('office-history', ' 1321 ');
+    const result = renameDirectoryLocation(connection, 'office', ' \t1321 (Stack Office) \n');
+    assert.deepEqual(result.location, { id: 'office', name: '1321 (Stack Office)' });
+    assert.equal(result.merged, false);
+    assert.equal(result.updatedAssets, 1);
+    assert.equal(result.updatedLoans, 2);
+    assert.equal(connection.prepare('SELECT location FROM assets WHERE id = ?').get('assigned-office').location, '1321 (Stack Office)');
+    assert.deepEqual(connection.prepare('SELECT location FROM loans WHERE id LIKE ?').all('office-%').map((row) => row.location), ['1321 (Stack Office)', '1321 (Stack Office)']);
+    assert.equal(connection.prepare('SELECT status FROM assets WHERE id = ?').get('assigned-office').status, 'Assigned');
+    assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('other-loan').location, 'Plant 1');
+  } finally { connection.close(); }
+});
+
+test('location names trim outer whitespace while retaining spaces between words', () => {
+  const connection = locationDatabase();
+  try {
+    ensureLocation(connection, ' \tNorth  Office\n ');
+    ensureLocation(connection, 'North  Office ');
+    assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE name = ?').get('North  Office').count, 1);
+    connection.prepare('INSERT INTO locations VALUES (?, ?)').run('old-spaced', ' Stack Office ');
+    normalizeStoredLocations(connection);
+    assert.equal(connection.prepare('SELECT name FROM locations WHERE id = ?').get('old-spaced').name, 'Stack Office');
+    const result = renameDirectoryLocation(connection, 'old-spaced', '  South  Office  ');
+    assert.equal(result.location.name, 'South  Office');
+  } finally { connection.close(); }
+});
+
+test('renaming to an existing location merges references and keeps the target ID', () => {
+  const connection = locationDatabase();
+  try {
+    connection.prepare('INSERT INTO locations VALUES (?, ?)').run('old-office', '1321');
+    connection.prepare('INSERT INTO locations VALUES (?, ?)').run('stack-office', '1321 (Stack Office)');
+    connection.prepare('INSERT INTO assets (id, code, status, location) VALUES (?, ?, ?, ?)').run('old-pc', 'OFFICE-PC', 'Assigned', '1321');
+    connection.prepare('INSERT INTO loans VALUES (?, ?)').run('old-record', '1321');
+    connection.prepare('INSERT INTO loans VALUES (?, ?)').run('target-record', '1321 (Stack Office)');
+    const result = renameDirectoryLocation(connection, '1321', ' 1321 (stack office) ');
+    assert.equal(result.merged, true);
+    assert.deepEqual(result.location, { id: 'stack-office', name: '1321 (Stack Office)' });
+    assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE id = ?').get('old-office').count, 0);
+    assert.equal(connection.prepare('SELECT location FROM assets WHERE id = ?').get('old-pc').location, result.location.name);
+    assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('old-record').location, result.location.name);
+    assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('target-record').location, result.location.name);
+    const cached = remapDatabaseLocation({ locations: ['1321', result.location.name], assets: [{ id: 'pc', location: ' 1321 ' }], loans: [{ id: 'person', location: '1321' }] }, result.previousName, result.location.name);
+    assert.deepEqual(cached.locations, [result.location.name]);
+    assert.equal(cached.assets[0].location, result.location.name);
+    assert.equal(cached.loans[0].location, result.location.name);
+    assert.equal(normalizeDatabaseLocations(cached).locations.length, 1);
+  } finally { connection.close(); }
+});
+
+test('failed location rename or merge rolls back directory and linked data together', () => {
+  const connection = locationDatabase();
+  try {
+    connection.exec("CREATE TRIGGER reject_loan_location BEFORE UPDATE OF location ON loans BEGIN SELECT RAISE(ABORT, 'location update failure'); END");
+    assert.throws(() => renameDirectoryLocation(connection, 'Plant 1', 'IT Department'), /location update failure/);
+    assert.equal(connection.prepare('SELECT name FROM locations WHERE id = ?').get('other').name, 'Plant 1');
+    assert.equal(connection.prepare('SELECT location FROM assets WHERE id = ?').get('repair').location, 'Plant 1');
+    assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('other-loan').location, 'Plant 1');
+    assert.throws(() => renameDirectoryLocation(connection, 'Missing', 'New name'), (error) => error.status === 404);
+    assert.throws(() => renameDirectoryLocation(connection, 'Plant 1', ' '), (error) => error.status === 400);
+  } finally { connection.close(); }
+});
 
 test('shared location rules normalize defaults and force the repair destination', () => {
   for (const location of ['Head Office', ' head OFFICE ', 'it department', '', null, undefined]) {

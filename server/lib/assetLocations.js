@@ -3,10 +3,50 @@ import { DEFAULT_LOCATION, REPAIR_LOCATION } from '../../shared/referenceData.js
 import { getAssetLocation, normalizeLocation } from '../../shared/assetRules.js';
 
 export function ensureLocation(database, name) {
-  const existing = database.prepare('SELECT id FROM locations WHERE LOWER(name) = LOWER(?)').get(name);
+  name = normalizeLocation(name, '');
+  if (!name) return;
+  const existing = database.prepare('SELECT id FROM locations WHERE LOWER(TRIM(name)) = LOWER(?)').get(name);
   if (!existing) {
     database.prepare('INSERT INTO locations (id, name) VALUES (?, ?)').run(`loc-${randomUUID()}`, name);
   }
+}
+
+/** Rename or merge a location and all relational references as one transaction. */
+export function renameDirectoryLocation(database, reference, requestedName) {
+  const key = (value) => normalizeLocation(value, '').toLowerCase();
+  const name = normalizeLocation(requestedName, '');
+  if (!name) {
+    const error = new Error('Location name is required.'); error.status = 400; throw error;
+  }
+  const rows = database.prepare('SELECT id, name FROM locations').all();
+  const byId = rows.find((row) => row.id === reference);
+  const previousName = normalizeLocation(byId?.name || reference, '');
+  const previousKey = key(previousName);
+  const sourceRows = rows.filter((row) => key(row.name) === previousKey);
+  const destinations = rows.filter((row) => key(row.name) === key(name) && key(row.name) !== previousKey);
+  const destination = destinations.find((row) => row.name === name) || destinations[0];
+  const targetName = destination ? normalizeLocation(destination.name, '') : name;
+  const related = (row) => key(row.location) === previousKey || (destination && key(row.location) === key(targetName));
+  const assets = database.prepare('SELECT id, location FROM assets').all().filter(related);
+  const loans = database.prepare('SELECT id, location FROM loans').all().filter(related);
+  if (!sourceRows.length && !assets.some((row) => key(row.location) === previousKey) && !loans.some((row) => key(row.location) === previousKey)) {
+    const error = new Error('Location not found.'); error.status = 404; throw error;
+  }
+  const targetId = destination?.id || sourceRows[0]?.id || `loc-${randomUUID()}`;
+  database.exec('SAVEPOINT rename_location');
+  try {
+    for (const row of [...sourceRows, ...destinations]) {
+      if (row.id !== targetId) database.prepare('DELETE FROM locations WHERE id = ?').run(row.id);
+    }
+    if (destination || sourceRows.length) database.prepare('UPDATE locations SET name = ? WHERE id = ?').run(targetName, targetId);
+    else database.prepare('INSERT INTO locations (id, name) VALUES (?, ?)').run(targetId, targetName);
+    for (const row of assets) database.prepare('UPDATE assets SET location = ? WHERE id = ?').run(targetName, row.id);
+    for (const row of loans) database.prepare('UPDATE loans SET location = ? WHERE id = ?').run(targetName, row.id);
+    database.exec('RELEASE SAVEPOINT rename_location');
+  } catch (error) {
+    database.exec('ROLLBACK TO SAVEPOINT rename_location'); database.exec('RELEASE SAVEPOINT rename_location'); throw error;
+  }
+  return { location: { id: targetId, name: targetName }, previousName, merged: Boolean(destination), updatedAssets: assets.length, updatedLoans: loans.length };
 }
 
 /** Remove unused directory entries, including stale names known only to a cache. */
@@ -63,7 +103,7 @@ function normalizeLocationRecords(database) {
   ]);
   const groups = new Map();
   for (const row of database.prepare('SELECT id, name FROM locations').all()) {
-    const name = canonicalNames.get(row.name.trim().toLowerCase());
+    const name = canonicalNames.get(row.name.trim().toLowerCase()) || row.name.trim();
     if (!name) continue;
     if (!groups.has(name)) groups.set(name, []);
     groups.get(name).push(row);

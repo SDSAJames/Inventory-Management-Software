@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { normalizeLocation } from '../../shared/assetRules.js';
-import { deleteUnusedLocation } from '../lib/assetLocations.js';
+import { deleteUnusedLocation, renameDirectoryLocation } from '../lib/assetLocations.js';
 
 export const directoryRouter = Router();
 
@@ -282,7 +282,7 @@ directoryRouter.post('/locations', authenticate, (req, res) => {
   }
 
   const trimmed = normalizeLocation(name, '');
-  const existing = db.prepare('SELECT id FROM locations WHERE LOWER(name) = LOWER(?)').get(trimmed);
+  const existing = db.prepare('SELECT id FROM locations WHERE LOWER(TRIM(name)) = LOWER(?)').get(trimmed);
   if (existing) {
     return res.status(409).json({ success: false, error: `Location ${trimmed} already exists.` });
   }
@@ -300,18 +300,13 @@ directoryRouter.post('/locations', authenticate, (req, res) => {
 });
 
 directoryRouter.put('/locations/:name', authenticate, requireRole('ADMIN', 'OPERATOR'), (req, res) => {
-  const location = db.prepare('SELECT id, name FROM locations WHERE LOWER(name) = LOWER(?) OR id = ?').get(req.params.name, req.params.name);
-  if (!location) return res.status(404).json({ success: false, error: 'Location not found.' });
-  const name = normalizeLocation(req.body?.name, '');
-  if (!name) return res.status(400).json({ success: false, error: 'Location name is required.' });
-  if (db.prepare('SELECT id FROM locations WHERE LOWER(name) = LOWER(?) AND id <> ?').get(name, location.id)) {
-    return res.status(409).json({ success: false, error: 'That location already exists.' });
+  try {
+    const result = renameDirectoryLocation(db, req.params.name, req.body?.name);
+    logAudit(result.merged ? 'MERGE_LOCATION' : 'RENAME_LOCATION', 'locations', result.location.id, result, req.user);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return res.status(error.status || 500).json({ success: false, error: error.message });
   }
-  const used = db.prepare('SELECT COUNT(*) AS count FROM assets WHERE LOWER(location) = LOWER(?)').get(location.name).count;
-  if (used) return res.status(409).json({ success: false, error: `Cannot rename ${location.name}; it is assigned to ${used} asset${used === 1 ? '' : 's'}.` });
-  db.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, location.id);
-  logAudit('RENAME_LOCATION', 'locations', location.id, { from: location.name, to: name }, req.user);
-  return res.json({ success: true, location: { id: location.id, name } });
 });
 
 // DELETE /api/directory/locations/:name (Protected)

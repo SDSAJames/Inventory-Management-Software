@@ -8,6 +8,7 @@ import DirectoryPanel from '../components/DirectoryPanel';
 import AssetTable from '../components/AssetTable';
 import AssetForm from '../components/AssetForm';
 import SearchBar from '../components/SearchBar';
+import DirectorySelect from '../components/DirectorySelect';
 import { directoryLocationOptions, filterDirectoryEntries, matchesDirectoryAsset } from '../lib/directoryOptions';
 
 export default function DirectoryPage() {
@@ -28,7 +29,7 @@ export default function DirectoryPage() {
     entries: filterDirectoryEntries(definition.items.map((item) => {
       const entry = typeof item === 'string' ? { name: item, key: item } : { ...item, key: item.id };
       const count = assets.filter((asset) => matchesDirectoryAsset(asset, definition.assetField, entry.name)).length;
-      return { ...entry, type: definition.type, used: count > 0, ...(definition.showCount ? { count } : {}) };
+      return { ...entry, type: definition.type, used: count > 0, canRenameUsed: definition.type === 'Location', ...(definition.showCount ? { count } : {}) };
     }), directorySearch, sortDirection),
   }));
   const statusPanel = {
@@ -59,7 +60,7 @@ export default function DirectoryPage() {
   const [selectedKeys, setSelectedKeys] = useState([]);
   const openManage = (target) => { setManageTarget(target); setEditedName(target.name); };
   const activateEntry = (entry) => {
-    if (entry.used) return;
+    if (entry.used && !entry.canRenameUsed) return;
     if (selectionType === entry.type) {
       toggleSelection(entry.key);
       return;
@@ -67,10 +68,12 @@ export default function DirectoryPage() {
     openManage(entry);
   };
   const handleRename = async () => {
-    if (!manageTarget || manageTarget.used || !editedName.trim()) return;
+    if (!manageTarget || (manageTarget.used && !manageTarget.canRenameUsed) || !editedName.trim()) return;
     try {
-      await panelForType(manageTarget.type).rename(manageTarget, editedName);
-      toast(`${manageTarget.type} renamed`);
+      const result = await panelForType(manageTarget.type).rename(manageTarget, editedName);
+      toast(result?.merged ? `Location merged into ${result.location.name}` : `${manageTarget.type} renamed`);
+      if (manageTarget.type === 'Location') setAssetTarget((target) => target?.field === 'location' && target.name === manageTarget.name ? { ...target, name: result.location.name } : target);
+      setSelectedKeys([]);
       setManageTarget(null);
     } catch (error) { toast(error.message || `Could not rename ${manageTarget.type.toLowerCase()}`); }
   };
@@ -91,11 +94,11 @@ export default function DirectoryPage() {
     else { setSelectionType(type); setSelectedKeys([]); }
   };
   const selectAll = (type) => {
-    const eligible = entriesForType(type).filter((entry) => !entry.used).map((entry) => entry.key);
+    const eligible = entriesForType(type).filter((entry) => !entry.used || entry.canRenameUsed).map((entry) => entry.key);
     setSelectedKeys((prev) => eligible.length && eligible.every((key) => prev.includes(key)) ? [] : eligible);
   };
   const manageActions = (type) => {
-    const selected = entriesForType(type).filter((entry) => !entry.used && selectedKeys.includes(entry.key));
+    const selected = entriesForType(type).filter((entry) => (!entry.used || entry.canRenameUsed) && selectedKeys.includes(entry.key));
     if (selected.length !== 1) return;
     const entry = selected[0];
     openManage({ ...entry });
@@ -116,7 +119,7 @@ export default function DirectoryPage() {
     <>
       <div className="view-header">
         <div>
-          <p className="view-subtitle">Click a status, category, department, or location to view its assets and edit their details. Use Select to rename or delete unused directory values.</p>
+          <p className="view-subtitle">Click a directory value to view its assets. Use Select to manage values. Renaming a location updates all linked records; using an existing name merges locations. Only unused values can be deleted.</p>
         </div>
       </div>
 
@@ -164,14 +167,14 @@ export default function DirectoryPage() {
           <div className="directory-manage-dialog">
             <h2>{manageTarget.type}</h2>
             <p className="modal-intro">
-              {manageTarget.used
+              {manageTarget.type === 'Location' ? 'Renaming updates all assets and assignment or loan records using this location. Choose an existing location to merge into it.' : manageTarget.used
                 ? 'This value is assigned to an asset and cannot be edited or deleted.'
                 : 'Edit this directory value or remove it from the list.'}
             </p>
-            <div className="field">
+            {manageTarget.type === 'Location' ? <DirectorySelect allowCustom id="directoryValueName" label="Location name" options={db.locations} value={editedName} onChange={(event) => setEditedName(event.target.value)} /> : <div className="field">
               <label htmlFor="directoryValueName">{manageTarget.type} name</label>
               <input id="directoryValueName" value={editedName} onChange={(event) => setEditedName(event.target.value)} disabled={!canManageDirectory || manageTarget.used} />
-            </div>
+            </div>}
             {manageTarget.type === 'Location' && (
               <button type="button" className="text-button" onClick={() => { openAssets(panelForType(manageTarget.type), manageTarget); setManageTarget(null); }}>
                 View {manageTarget.count} {manageTarget.count === 1 ? 'asset' : 'assets'}
@@ -181,7 +184,7 @@ export default function DirectoryPage() {
               <button type="button" className="button ghost" onClick={() => setManageTarget(null)}>Close</button>
               {canManageDirectory && <>
                 <button type="button" className="button danger" disabled={manageTarget.used} onClick={handleDelete}>Delete</button>
-                <button type="button" className="button" disabled={manageTarget.used || !editedName.trim() || editedName.trim() === manageTarget.name} onClick={handleRename}>Save</button>
+                <button type="button" className="button" disabled={(manageTarget.used && !manageTarget.canRenameUsed) || !editedName.trim() || editedName.trim() === manageTarget.name} onClick={handleRename}>Save</button>
               </>}
             </div>
           </div>

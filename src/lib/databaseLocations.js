@@ -2,6 +2,18 @@ import { getAssetLocation, normalizeLocation, normalizeAvailableAsset } from '..
 import { REPAIR_LOCATION } from '../../shared/referenceData.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 
+export function remapDatabaseLocation(database, oldName, newName) {
+  const key = (name) => normalizeLocation(name, '').toLowerCase();
+  const matches = (name) => key(name) === key(oldName);
+  const remap = (row) => matches(row.location) ? { ...row, location: newName } : row;
+  const locations = new Map();
+  for (const name of [...(database.locations || []), newName]) {
+    const value = matches(name) || key(name) === key(newName) ? newName : name;
+    locations.set(key(value), value);
+  }
+  return { ...database, assets: (database.assets || []).map(remap), loans: (database.loans || []).map(remap), locations: [...locations.values()] };
+}
+
 /** Keep the local cache, imports, and server snapshots on the same location rules. */
 export function normalizeDatabaseLocations(database) {
   if (!database) return database;

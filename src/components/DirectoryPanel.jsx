@@ -1,5 +1,5 @@
 export function DirectoryEntry({ entry, selecting = false, selected = false, editable = true, onActivate, onToggleSelection, onBrowse }) {
-  const canSelect = editable && !entry.used;
+  const canSelect = editable && (!entry.used || entry.canRenameUsed);
   const browsing = !selecting && Boolean(onBrowse);
   const interactive = browsing || canSelect;
   const checked = canSelect && selected;
@@ -18,7 +18,7 @@ export function DirectoryEntry({ entry, selecting = false, selected = false, edi
       className={rowClasses}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      aria-disabled={(selecting && editable && entry.used) || undefined}
+      aria-disabled={(selecting && editable && !canSelect) || undefined}
       aria-pressed={selecting && interactive ? checked : undefined}
       title={browsing ? `View assets: ${entry.name}` : undefined}
       onClick={interactive ? activate : undefined}
@@ -26,7 +26,7 @@ export function DirectoryEntry({ entry, selecting = false, selected = false, edi
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); activate(); }
       } : undefined}
     >
-      {selecting && editable && <input aria-label={`Select ${entry.name}`} type="checkbox" checked={checked} disabled={entry.used} onClick={(event) => event.stopPropagation()} onChange={() => { if (interactive) onToggleSelection(entry.key); }} />}
+      {selecting && editable && <input aria-label={`Select ${entry.name}`} type="checkbox" checked={checked} disabled={!canSelect} onClick={(event) => event.stopPropagation()} onChange={() => { if (interactive) onToggleSelection(entry.key); }} />}
       <span className={showCount ? 'directory-location-name' : undefined}>
         {entry.name}
         {showCount && <small>{entry.count} {entry.count === 1 ? 'asset' : 'assets'}</small>}
@@ -37,7 +37,8 @@ export function DirectoryEntry({ entry, selecting = false, selected = false, edi
 }
 
 export default function DirectoryPanel({ panel, canManage, selecting = false, selectedKeys = [], onAdd, onToggleMode, onSelectAll, onEditSelected, onDeleteSelected, onActivate, onToggleSelection, onBrowse }) {
-  const eligible = panel.entries.filter((entry) => !entry.used);
+  const eligible = panel.entries.filter((entry) => !entry.used || entry.canRenameUsed);
+  const deletableCount = eligible.filter((entry) => !entry.used && selectedKeys.includes(entry.key)).length;
   const selectedCount = eligible.filter((entry) => selectedKeys.includes(entry.key)).length;
   const allSelected = eligible.length > 0 && eligible.every((entry) => selectedKeys.includes(entry.key));
   return (
@@ -49,7 +50,7 @@ export default function DirectoryPanel({ panel, canManage, selecting = false, se
             <button type="button" className="button ghost directory-add-button" onClick={onSelectAll}>{allSelected ? 'Clear all' : 'Select all'}</button>
             <span className="directory-selection-count">{selectedCount} selected</span>
             {selectedCount === 1 && <button type="button" className="button ghost directory-add-button" onClick={onEditSelected}>Edit</button>}
-            {selectedCount > 0 && <button type="button" className="button danger directory-add-button" onClick={onDeleteSelected}>Delete</button>}
+            {deletableCount > 0 && <button type="button" className="button danger directory-add-button" onClick={onDeleteSelected}>{deletableCount === selectedCount ? 'Delete' : `Delete unused (${deletableCount})`}</button>}
             <button type="button" className="text-button" onClick={onToggleMode}>Done</button>
           </> : canManage && <>
             <button type="button" className="button ghost directory-add-button" onClick={onAdd}>+ Add</button>

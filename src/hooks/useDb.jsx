@@ -17,7 +17,7 @@ import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
 import { isBusinessTraveler, normalizeLoanEndDate } from '../lib/loanEquipment';
 import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { api } from '../lib/api';
-import { normalizeDatabaseLocations } from '../lib/databaseLocations';
+import { normalizeDatabaseLocations, remapDatabaseLocation } from '../lib/databaseLocations';
 import { getAssetStatusAfterReturn, getAssetStatusForLoanEdit } from '../../shared/assetRules.js';
 
 const DbContext = createContext(null);
@@ -908,7 +908,8 @@ export function DbProvider({ children }) {
 
   const renameLocation = useCallback(async (currentName, name) => {
     const result = await api.directory.renameLocation(currentName, String(name || '').trim());
-    setDb((prev) => ({ ...prev, locations: (prev.locations || []).map((item) => item === currentName ? result.location.name : item) }));
+    setDb((prev) => remapDatabaseLocation(prev, result.previousName || currentName, result.location.name));
+    return result;
   }, []);
 
   const deleteLocation = useCallback(async (name) => {
