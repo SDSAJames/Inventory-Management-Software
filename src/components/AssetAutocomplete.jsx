@@ -55,7 +55,7 @@ export default function AssetAutocomplete({
     const all = db.assets || [];
     const q = query.toLowerCase();
 
-    // If query is empty, show all assignable equipment (Available or held by IT department)
+    // If query is empty, show all assignable equipment (Available or held by IT Department)
     if (!q) {
       return all
         .filter((a) => {
@@ -93,7 +93,7 @@ export default function AssetAutocomplete({
     // 1. Exact code match
     // 2. Code starts with query
     // 3. Code contains query (e.g. '432' in 'SPE-4321')
-    // 4. Assignable status (Available or IT department holder)
+    // 4. Assignable status (Available or IT Department holder)
     // 5. Category === 'Laptop'
     return filtered
       .sort((a, b) => {
@@ -283,7 +283,7 @@ export default function AssetAutocomplete({
                         <span className="asset-item-model">{highlightMatch(asset.model, query)}</span>
                       )}
                       {isItDept && (
-                        <span className="asset-it-pool-tag" title="Held in IT department pool - ready to assign">
+                        <span className="asset-it-pool-tag" title="Held in IT Department pool - ready to assign">
                           🏛️ IT pool
                         </span>
                       )}

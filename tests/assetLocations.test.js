@@ -17,7 +17,7 @@ function locationDatabase() {
     CREATE TABLE assets (id TEXT PRIMARY KEY, code TEXT, status TEXT, location TEXT, owner TEXT, department TEXT, updated TEXT);
     CREATE TABLE loans (id TEXT PRIMARY KEY, location TEXT);
     CREATE TABLE snapshots (id TEXT PRIMARY KEY, data_json TEXT);
-    INSERT INTO locations VALUES ('legacy', 'Head Office'), ('canonical', 'IT Department'), ('repair', 'Service Center'), ('other', 'Plant 1');
+    INSERT INTO locations VALUES ('legacy', 'Head Office'), ('canonical', 'IT Office'), ('repair', 'Service Center'), ('other', 'Plant 1');
     INSERT INTO assets VALUES ('available', 'PC-1', 'Available', 'Head Office', '', '', '2026-11-01');
     INSERT INTO assets VALUES ('repair', 'PC-2', 'Under repair', 'Plant 1', 'Jane', 'Operations', '2026-11-01');
     INSERT INTO loans VALUES ('old-loan', 'Head Office'), ('other-loan', 'Plant 1');
@@ -86,7 +86,7 @@ test('failed location rename or merge rolls back directory and linked data toget
   const connection = locationDatabase();
   try {
     connection.exec("CREATE TRIGGER reject_loan_location BEFORE UPDATE OF location ON loans BEGIN SELECT RAISE(ABORT, 'location update failure'); END");
-    assert.throws(() => renameDirectoryLocation(connection, 'Plant 1', 'IT Department'), /location update failure/);
+    assert.throws(() => renameDirectoryLocation(connection, 'Plant 1', 'IT Office'), /location update failure/);
     assert.equal(connection.prepare('SELECT name FROM locations WHERE id = ?').get('other').name, 'Plant 1');
     assert.equal(connection.prepare('SELECT location FROM assets WHERE id = ?').get('repair').location, 'Plant 1');
     assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('other-loan').location, 'Plant 1');
@@ -105,6 +105,28 @@ test('shared location rules normalize defaults and force the repair destination'
   assert.equal(getAssetLocation('Under repair', 'Plant 1'), REPAIR_LOCATION);
   assert.equal(getAssetLocation('Available', 'Plant 1'), 'Plant 1');
   assert.equal(getAssetLocation('Damaged', 'Head Office'), DEFAULT_LOCATION);
+});
+
+test('legacy default locations migrate to IT Office independently of the IT Department owner', () => {
+  const connection = locationDatabase();
+  try {
+    connection.prepare('INSERT INTO locations VALUES (?, ?)').run('old-it-location', ' IT Department ');
+    connection.prepare('INSERT INTO assets (id, code, status, location, owner) VALUES (?, ?, ?, ?, ?)').run('old-it-asset', 'PC-IT', 'Available', 'IT Department', 'IT department');
+    connection.prepare('INSERT INTO loans VALUES (?, ?)').run('old-it-loan', 'IT Department');
+    normalizeStoredLocations(connection);
+    assert.equal(connection.prepare("SELECT COUNT(*) AS count FROM locations WHERE name = 'IT Office'").get().count, 1);
+    assert.equal(connection.prepare("SELECT COUNT(*) AS count FROM locations WHERE LOWER(TRIM(name)) IN ('head office', 'it department')").get().count, 0);
+    const asset = connection.prepare('SELECT location, owner FROM assets WHERE id = ?').get('old-it-asset');
+    assert.equal(asset.location, 'IT Office');
+    assert.equal(asset.owner, 'IT Department');
+    assert.equal(connection.prepare('SELECT location FROM loans WHERE id = ?').get('old-it-loan').location, 'IT Office');
+    const snapshot = connection.prepare('SELECT data_json FROM snapshots WHERE id = ?').get('old').data_json;
+    assert.equal(JSON.parse(snapshot).location, 'Head Office');
+    const cached = normalizeDatabaseLocations({ assets: [{ status: 'Available', location: 'IT Department', owner: 'IT department' }], loans: [{ location: 'Head Office' }], locations: ['Head Office', 'IT Department', 'IT Office'] });
+    assert.deepEqual(cached.locations, ['IT Office']);
+    assert.equal(cached.assets[0].owner, 'IT Department');
+    assert.equal(cached.assets[0].location, 'IT Office');
+  } finally { connection.close(); }
 });
 
 test('rental history does not recreate deleted directory values and new server entries are idempotent', () => {
@@ -149,7 +171,7 @@ test('location deletion protects assigned assets even when the directory entry i
   try {
     connection.prepare('INSERT INTO assets (id, code, status, location) VALUES (?, ?, ?, ?)').run('assigned', 'PC-3', 'Assigned', ' Missing location ');
     assert.throws(() => deleteUnusedLocation(connection, 'missing LOCATION'), (error) => error.status === 409 && /assigned to 1 asset/.test(error.message));
-    assert.throws(() => deleteUnusedLocation(connection, 'IT Department'), (error) => error.status === 409);
+    assert.throws(() => deleteUnusedLocation(connection, 'IT Office'), (error) => error.status === 409);
     assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE id IN (?, ?)').get('legacy', 'canonical').count, 2);
     assert.throws(() => deleteUnusedLocation(connection, 'service center'), (error) => error.status === 409);
   } finally { connection.close(); }
@@ -160,14 +182,14 @@ test('failed directory deletion rolls back all aliases', () => {
   try {
     connection.prepare('DELETE FROM assets').run();
     connection.exec("CREATE TRIGGER reject_location_delete BEFORE DELETE ON locations WHEN OLD.id = 'canonical' BEGIN SELECT RAISE(ABORT, 'delete failure'); END");
-    assert.throws(() => deleteUnusedLocation(connection, 'IT Department'), /delete failure/);
+    assert.throws(() => deleteUnusedLocation(connection, 'IT Office'), /delete failure/);
     assert.equal(connection.prepare('SELECT COUNT(*) AS count FROM locations WHERE id IN (?, ?)').get('legacy', 'canonical').count, 2);
   } finally { connection.close(); }
 });
 
 test('cache normalization merges renamed locations without changing rental locations to repair destinations', () => {
   const input = {
-    locations: ['Head Office', 'IT Department', 'Service Center', 'Plant 1'],
+    locations: ['Head Office', 'IT Office', 'Service Center', 'Plant 1'],
     assets: [{ code: 'PC-1', status: 'Under repair', location: 'Head Office' }],
     loans: [{ assetCode: 'PC-1', location: 'Head Office' }],
   };
@@ -186,11 +208,11 @@ test('cache normalization merges renamed locations without changing rental locat
 
 test('asset reconciliation tracks monitor handovers with employee and traveler statuses', () => {
   const travelerMonitor = reconcileAssetWithLoans(
-    { code: 'MON-1', status: 'Available', owner: 'IT department' },
+    { code: 'MON-1', status: 'Available', owner: 'IT Department' },
     [{ assigneeType: 'Business traveler', assignee: 'Taylor', pickupDate: '2026-11-01', equipment: { Monitor: 'MON-1' } }],
   );
   const employeeMonitor = reconcileAssetWithLoans(
-    { code: 'MON-2', status: 'Available', owner: 'IT department' },
+    { code: 'MON-2', status: 'Available', owner: 'IT Department' },
     [{ assigneeType: 'Employee', assignee: 'Jordan', pickupDate: '2026-11-01', equipment: { Monitor: 'MON-2' } }],
   );
   assert.equal(travelerMonitor.status, 'On loan');
@@ -271,7 +293,7 @@ test('loan returns and edits retain repair status while a new pickup can change 
     const repaired = connection.prepare("SELECT * FROM assets WHERE code = 'PC-2'").get();
     assert.equal(repaired.status, 'Under repair');
     assert.equal(repaired.location, REPAIR_LOCATION);
-    assert.equal(repaired.owner, 'IT department');
+    assert.equal(repaired.owner, 'IT Department');
     assert.equal(repaired.department, '');
   } finally {
     connection.close();

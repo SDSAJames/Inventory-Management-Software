@@ -197,7 +197,7 @@ export default function BusinessTravelersPage() {
   const handleConfirmReturn = () => {
     if (!returnConfirmTarget) return;
     returnLoan(returnConfirmTarget.id, todayIso());
-    toast(`Asset ${returnConfirmTarget.assetCode} returned to IT department`);
+    toast(`Asset ${returnConfirmTarget.assetCode} returned to IT Department`);
     setReturnConfirmTarget(null);
   };
 
@@ -485,7 +485,7 @@ export default function BusinessTravelersPage() {
                           className="button secondary small-btn"
                           style={{ marginRight: '6px', background: '#0284c7', color: 'white', borderColor: '#0284c7' }}
                           onClick={() => setReturnConfirmTarget(t)}
-                          title="Record equipment return to IT department"
+                          title="Record equipment return to IT Department"
                         >
                           ↙ Return to IT
                         </button>
@@ -734,7 +734,7 @@ export default function BusinessTravelersPage() {
                           className="text-button"
                           style={{ color: 'var(--blue)', fontWeight: 600 }}
                           onClick={() => setReturnConfirmTarget(t)}
-                          title="Record equipment return to IT department"
+                          title="Record equipment return to IT Department"
                         >
                           Return
                         </button>
@@ -784,7 +784,7 @@ export default function BusinessTravelersPage() {
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Due Date:</dt>
                 <dd style={{ margin: 0 }}>{readableLoanDate(getLoanEndDate(returnConfirmTarget))}</dd>
                 <dt style={{ color: 'var(--muted)', fontWeight: 700 }}>Next Status:</dt>
-                <dd style={{ margin: 0, color: '#10b981', fontWeight: 700 }}>Available (Held by IT department)</dd>
+                <dd style={{ margin: 0, color: '#10b981', fontWeight: 700 }}>Available (Held by IT Department)</dd>
               </dl>
             </div>
 

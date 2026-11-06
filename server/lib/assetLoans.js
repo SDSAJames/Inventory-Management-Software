@@ -7,7 +7,7 @@ export function returnAssetToIt(database, assetCode, updated, { clearDepartment 
   if (!asset) return;
   const status = getAssetStatusAfterReturn(asset.status);
   database.prepare(`
-    UPDATE assets SET status = ?, owner = 'IT department', department = ?, location = ?, updated = ?
+    UPDATE assets SET status = ?, owner = 'IT Department', department = ?, location = ?, updated = ?
     WHERE id = ?
   `).run(
     status,

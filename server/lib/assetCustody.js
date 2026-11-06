@@ -15,12 +15,12 @@ export function ensureAvailableAssetCustody(database, observedAt = new Date().to
     for (const asset of database.prepare("SELECT * FROM assets WHERE status = 'Available'").all()) {
       if (activeCodes.has(asset.code.trim().toLowerCase())) continue;
       const latest = database.prepare('SELECT * FROM ownership_history WHERE asset_code = ? ORDER BY date DESC, created_at DESC LIMIT 1').get(asset.code);
-      database.prepare("UPDATE assets SET owner = 'IT department', department = '' WHERE id = ?").run(asset.id);
+      database.prepare("UPDATE assets SET owner = 'IT Department', department = '' WHERE id = ?").run(asset.id);
       if (String(latest?.new_owner || '').trim().toLowerCase() === 'it department') continue;
       const previous = latest?.new_owner || asset.owner || 'None';
       database.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
-        `hist-it-${randomUUID()}`, asset.code, previous, 'IT department', observedAt,
-        latest ? 'Returned to IT department' : 'IT custody recorded',
+        `hist-it-${randomUUID()}`, asset.code, previous, 'IT Department', observedAt,
+        latest ? 'Returned to IT Department' : 'IT custody recorded',
         'IT custody confirmed from Available status. Earlier return date was not recorded; this is the custody reconciliation time.', observedAt,
       );
     }

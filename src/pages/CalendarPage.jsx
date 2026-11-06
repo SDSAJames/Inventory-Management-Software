@@ -64,7 +64,7 @@ export default function CalendarPage() {
   const handleConfirmReturn = () => {
     if (!returnConfirmTarget) return;
     returnLoan(returnConfirmTarget.id, returnDate || todayIso());
-    toast(`Asset ${returnConfirmTarget.assetCode} successfully returned to IT department`);
+    toast(`Asset ${returnConfirmTarget.assetCode} successfully returned to IT Department`);
     setReturnConfirmTarget(null);
   };
 
@@ -167,7 +167,7 @@ export default function CalendarPage() {
             <p style={{ color: 'var(--muted)', fontSize: '13px', margin: '0 0 16px', lineHeight: 1.5 }}>
               Return asset <strong>{returnConfirmTarget.assetCode}</strong> from{' '}
               <strong>{returnConfirmTarget.assignee}</strong> back to the{' '}
-              <strong>IT department</strong>. The asset status will be restored to{' '}
+              <strong>IT Department</strong>. The asset status will be restored to{' '}
               <strong style={{ color: '#059669' }}>Available</strong> while retaining borrower audit lineage.
             </p>
 

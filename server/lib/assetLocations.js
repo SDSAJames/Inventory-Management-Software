@@ -98,6 +98,7 @@ export function normalizeStoredLocations(database) {
 function normalizeLocationRecords(database) {
   const canonicalNames = new Map([
     ['head office', DEFAULT_LOCATION],
+    ['it department', DEFAULT_LOCATION],
     [DEFAULT_LOCATION.toLowerCase(), DEFAULT_LOCATION],
     [REPAIR_LOCATION.toLowerCase(), REPAIR_LOCATION],
   ]);
@@ -116,6 +117,7 @@ function normalizeLocationRecords(database) {
     if (keep.name !== name) database.prepare('UPDATE locations SET name = ? WHERE id = ?').run(name, keep.id);
   }
   ensureLocation(database, DEFAULT_LOCATION);
+  database.prepare("UPDATE assets SET owner = 'IT Department' WHERE LOWER(TRIM(owner)) = 'it department'").run();
 
   const updateAsset = database.prepare('UPDATE assets SET location = ? WHERE id = ?');
   for (const asset of database.prepare('SELECT id, status, location FROM assets').all()) {

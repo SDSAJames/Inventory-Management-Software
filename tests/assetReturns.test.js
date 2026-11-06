@@ -6,7 +6,7 @@ import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 
 test('holder removal means IT custody only for an explicit edit of a held asset', () => {
   const asset = { owner: 'Jane', status: 'Assigned', location: 'Stack' };
-  assert.deepEqual(getHolderReturnChanges(asset, { owner: '' }), { owner: 'IT department', status: 'Available', department: '', location: 'IT Department' });
+  assert.deepEqual(getHolderReturnChanges(asset, { owner: '' }), { owner: 'IT Department', status: 'Available', department: '', location: 'IT Office' });
   assert.equal(getHolderReturnChanges(asset, { notes: 'Update' }), null);
   assert.equal(getHolderReturnChanges(asset, { owner: 'Alex' }), null);
   assert.equal(getHolderReturnChanges({ ...asset, owner: '' }, { owner: '' }), null);
@@ -21,8 +21,8 @@ test('returning one monitor does not return the PC and survives asset reconcilia
   assert.equal(returned.returnedEquipment.Laptop, undefined);
   assert.equal(isAssetReturnedOnRecord(returned, 'MON-1'), true);
   assert.equal(loan.returnedEquipment, undefined);
-  const monitor = { code: 'MON-1', owner: 'IT department', status: 'Available', location: 'IT Department' };
-  assert.equal(reconcileAssetWithLoans(monitor, [returned]).owner, 'IT department');
+  const monitor = { code: 'MON-1', owner: 'IT Department', status: 'Available', location: 'IT Office' };
+  assert.equal(reconcileAssetWithLoans(monitor, [returned]).owner, 'IT Department');
   const pcReturn = recordAssetReturn(returned, 'PC-1', '2026-11-05');
   assert.equal(pcReturn.status, 'Returned');
   assert.equal(pcReturn.returnStatus, 'Partial');

@@ -355,7 +355,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     let knoxId = colKnoxId >= 0 ? String(row[colKnoxId] || '').trim() : '';
 
     if (!assignee) {
-      if (associatedAsset && associatedAsset.owner && associatedAsset.owner !== 'IT department') {
+      if (associatedAsset && associatedAsset.owner && associatedAsset.owner !== 'IT Department') {
         assignee = associatedAsset.owner;
       } else if (knoxId) {
         assignee = knoxId;
@@ -440,16 +440,16 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
         serial: '',
         status: isReturned ? 'Available' : 'On loan',
         location,
-        owner: isReturned ? 'IT department' : assignee,
+        owner: isReturned ? 'IT Department' : assignee,
         department: '',
         condition: 'Good',
         notes: note ? `Imported from loan list: ${note}` : 'Imported from loan list',
         ownershipHistory: [
           createOwnershipEntry({
             previousOwner: 'None',
-            newOwner: isReturned ? 'IT department' : assignee,
+            newOwner: isReturned ? 'IT Department' : assignee,
             date: pickupDate || startDate || todayIso(),
-            reason: isReturned ? 'Returned to IT department' : 'Loan Check-out',
+            reason: isReturned ? 'Returned to IT Department' : 'Loan Check-out',
           }),
         ],
         updated: todayIso(),

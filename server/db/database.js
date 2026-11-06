@@ -378,7 +378,7 @@ function seedDefaultData() {
           'None',
           a.owner,
           a.updated || now.slice(0, 10),
-          a.owner === 'IT department' ? 'Returned to IT department' : 'Initial assignment',
+          a.owner === 'IT Department' ? 'Returned to IT Department' : 'Initial assignment',
           `Initial asset custody assignment (${a.department || 'General'})`,
           now
         );
@@ -558,28 +558,28 @@ export function reconcileAllAssetsInDb() {
       newLoc = asset.location || activeLoan.location || '';
     } else if (asset.status === 'On loan') {
       // Asset marked 'On loan' but has no active picked-up loan
-      const hasOtherHolder = Boolean(asset.owner && asset.owner !== 'IT department' && asset.owner !== 'None');
+      const hasOtherHolder = Boolean(asset.owner && asset.owner !== 'IT Department' && asset.owner !== 'None');
       newStatus = hasOtherHolder ? 'Assigned' : 'Available';
-      newOwner = hasOtherHolder ? asset.owner : 'IT department';
+      newOwner = hasOtherHolder ? asset.owner : 'IT Department';
       newDept = hasOtherHolder ? asset.department : '';
     } else {
       // Check if most recent loan was returned
       const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
-      if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === 'IT department')) {
+      if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === 'IT Department')) {
         newLoc = asset.status === 'Available' ? asset.location || getAssetLocationAfterReturn(asset.status) : getAssetLocationAfterReturn(asset.status);
-        newOwner = 'IT department';
+        newOwner = 'IT Department';
         newDept = '';
         if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {
           newStatus = 'Available';
         }
       } else {
         // Enforce invariants:
-        const hasHolder = Boolean(asset.owner && asset.owner !== 'IT department' && asset.owner !== 'None');
+        const hasHolder = Boolean(asset.owner && asset.owner !== 'IT Department' && asset.owner !== 'None');
         if (hasHolder && asset.status === 'Available') {
           newStatus = 'Assigned';
         } else if (!hasHolder && asset.status === 'Assigned') {
           newStatus = 'Available';
-          newOwner = 'IT department';
+          newOwner = 'IT Department';
           newDept = '';
         }
       }

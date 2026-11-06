@@ -34,7 +34,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     serial: '',
     status: 'Available',
     location: DEFAULT_LOCATION,
-    owner: 'IT department',
+    owner: 'IT Department',
     department: '',
     issuedDate: '',
     purchaseDate: '',
@@ -87,11 +87,11 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const handleStatusChange = (e) => {
     const nextStatus = e.target.value;
     setForm((prev) => {
-      // If user chooses 'Available', holder defaults to IT department
+      // If user chooses 'Available', holder defaults to IT Department
       if (nextStatus === 'Available') {
-        return { ...prev, status: 'Available', owner: 'IT department', department: 'IT' };
+        return { ...prev, status: 'Available', owner: 'IT Department', department: 'IT' };
       }
-      if (nextStatus === 'Assigned' && prev.owner === 'IT department') {
+      if (nextStatus === 'Assigned' && prev.owner === 'IT Department') {
         return { ...prev, status: 'Assigned', owner: '', department: '' };
       }
       return { ...prev, status: nextStatus, location: getAssetLocation(nextStatus, prev.location) };
@@ -403,19 +403,19 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
                         <code style={{ fontSize: '11px', color: 'var(--ink)' }}>{readableLoanDate(item.date) || 'Date not recorded'}</code>
                       </td>
                       <td>
-                        {item.previousOwner === 'IT department' ? (
-                          <span className="it-dept-badge">IT department</span>
+                        {item.previousOwner === 'IT Department' ? (
+                          <span className="it-dept-badge">IT Department</span>
                         ) : (
                           <span>{item.previousOwner || 'None'}</span>
                         )}
                       </td>
                       <td>
-                        {item.newOwner === 'IT department' ? (
-                          <span className="it-dept-badge">IT department</span>
+                        {item.newOwner === 'IT Department' ? (
+                          <span className="it-dept-badge">IT Department</span>
                         ) : (
                           <strong>{item.newOwner || 'None'}</strong>
                         )}
-                        {item.department && item.newOwner !== 'IT department' && (
+                        {item.department && item.newOwner !== 'IT Department' && (
                           <div style={{ fontSize: '10px', color: 'var(--muted)' }}>{item.department}</div>
                         )}
                       </td>

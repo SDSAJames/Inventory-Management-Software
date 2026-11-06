@@ -1,4 +1,4 @@
-export const DEFAULT_LOCATION = 'IT Department';
+export const DEFAULT_LOCATION = 'IT Office';
 export const REPAIR_LOCATION = 'service center';
 
 export const DEFAULT_ASSET_STATUSES = [
@@ -11,6 +11,6 @@ export const DEFAULT_TRANSFER_REASONS = [
   'Department Transfer',
   'Temporary Handover',
   'Permanent Allocation',
-  'Returned to IT department',
+  'Returned to IT Department',
   'Repaired & Reassigned',
 ];

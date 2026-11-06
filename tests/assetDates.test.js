@@ -132,25 +132,25 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       invoke(assetsRouter, 'put', '/:id', { notes: 'No holder edit' }, { id: 'holder-return' });
       assert.equal(db.prepare("SELECT owner FROM assets WHERE id = 'holder-return'").get().owner, 'Holder Return Test');
       const result = invoke(assetsRouter, 'put', '/:id', { owner: '  ' }, { id: 'holder-return' });
-      assert.equal(result.asset.owner, 'IT department');
+      assert.equal(result.asset.owner, 'IT Department');
       assert.equal(result.asset.status, 'Available');
-      assert.equal(result.asset.location, 'IT Department');
+      assert.equal(result.asset.location, 'IT Office');
       assert.equal(result.asset.department, '');
-      const history = result.asset.ownershipHistory.find((entry) => entry.reason === 'Returned to IT department');
+      const history = result.asset.ownershipHistory.find((entry) => entry.reason === 'Returned to IT Department');
       assert.equal(history.previousOwner, 'Holder Return Test');
-      assert.equal(history.newOwner, 'IT department');
+      assert.equal(history.newOwner, 'IT Department');
       assert.ok(history.date);
       assert.equal(result.loans[0].returnedEquipment.Laptop, 'RETURN-PC');
       assert.equal(result.loans[0].returnedEquipment.Keyboard, undefined);
       assert.equal(result.loans[0].returnStatus, 'Partial');
       assert.equal(result.loans[0].status, 'Returned');
       invoke(assetsRouter, 'put', '/:id', { owner: '' }, { id: 'holder-return' });
-      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = 'RETURN-PC' AND reason = 'Returned to IT department'").get().count, 1);
+      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = 'RETURN-PC' AND reason = 'Returned to IT Department'").get().count, 1);
     });
     await t.test('failed return history rolls back the holder and linked pickup', () => {
       invoke(assetsRouter, 'post', '/', { id: 'failed-return', code: 'ROLLBACK-PC', owner: 'Holder Return Test', status: 'Assigned', location: 'Stack' });
       db.prepare('INSERT INTO loans (id, asset_code, assignee, pickup_date, status, equipment_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run('rollback-linked', 'ROLLBACK-PC', 'Holder Return Test', '2026-11-01', 'Active', '{"Laptop":"ROLLBACK-PC"}', '2026-11-01');
-      db.exec("CREATE TRIGGER reject_return_history BEFORE INSERT ON ownership_history WHEN NEW.reason = 'Returned to IT department' BEGIN SELECT RAISE(ABORT, 'history failed'); END");
+      db.exec("CREATE TRIGGER reject_return_history BEFORE INSERT ON ownership_history WHEN NEW.reason = 'Returned to IT Department' BEGIN SELECT RAISE(ABORT, 'history failed'); END");
       invoke(assetsRouter, 'put', '/:id', { owner: '' }, { id: 'failed-return' }, 500);
       assert.equal(db.prepare("SELECT owner FROM assets WHERE id = 'failed-return'").get().owner, 'Holder Return Test');
       assert.equal(db.prepare("SELECT status FROM loans WHERE id = 'rollback-linked'").get().status, 'Active');
@@ -165,10 +165,10 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       invoke(assetsRouter, 'post', '/batch-update', { ids: ['bulk-available'], changes: { status: 'Available' } });
       for (const id of ['single-available', 'bulk-available']) {
         const asset = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
-        assert.equal(asset.owner, 'IT department');
+        assert.equal(asset.owner, 'IT Department');
         assert.equal(asset.status, 'Available');
-        assert.equal(asset.location, 'IT Department');
-        assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = ? AND reason = 'Returned to IT department'").get(id).count, 1);
+        assert.equal(asset.location, 'IT Office');
+        assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = ? AND reason = 'Returned to IT Department'").get(id).count, 1);
       }
     });
     await t.test('scheduled records cannot be returned through full edit, return, or mixed bulk return', async () => {
@@ -211,20 +211,20 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       invoke(loansRouter, 'post', '/', { id: 'blank-transfer-loan', assetCode: 'BLANK-TRANSFER', knoxId: 'return.user', assignee: 'Return User', pickupDate: '2026-11-01', equipment: { Laptop: 'BLANK-TRANSFER', Keyboard: '1' } });
       const timestamp = '2026-11-03 14:15:00';
       const result = invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: '  ', date: timestamp, location: 'Offsite' }, { id: 'blank-transfer' });
-      assert.equal(result.asset.owner, 'IT department');
+      assert.equal(result.asset.owner, 'IT Department');
       assert.equal(result.asset.status, 'Available');
-      assert.equal(result.asset.location, 'IT Department');
+      assert.equal(result.asset.location, 'IT Office');
       const returned = result.asset.ownershipHistory.find((entry) => entry.date === timestamp);
-      assert.equal(returned.newOwner, 'IT department');
+      assert.equal(returned.newOwner, 'IT Department');
       assert.equal(result.loans[0].returnStatus, 'Partial');
       assert.equal(result.loans[0].returnedEquipment.Laptop, 'BLANK-TRANSFER');
       invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: 'Other', date: 'now()' }, { id: 'blank-transfer' }, 400);
-      assert.equal(db.prepare('SELECT owner FROM assets WHERE id = ?').get('blank-transfer').owner, 'IT department');
+      assert.equal(db.prepare('SELECT owner FROM assets WHERE id = ?').get('blank-transfer').owner, 'IT Department');
     });
     await t.test('asset location edits persist for IT custody and assigned equipment', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
-      invoke(assetsRouter, 'post', '/', { id: 'location-edit', code: 'LOCATION-EDIT', status: 'Available', owner: 'IT department' });
-      let result = invoke(assetsRouter, 'put', '/:id', { owner: 'IT department', status: 'Available', location: 'Stack' }, { id: 'location-edit' });
+      invoke(assetsRouter, 'post', '/', { id: 'location-edit', code: 'LOCATION-EDIT', status: 'Available', owner: 'IT Department' });
+      let result = invoke(assetsRouter, 'put', '/:id', { owner: 'IT Department', status: 'Available', location: 'Stack' }, { id: 'location-edit' });
       assert.equal(result.asset.location, 'Stack');
       invoke(loansRouter, 'post', '/', { id: 'location-edit-loan', assetCode: 'LOCATION-EDIT', assignee: 'Jane', knoxId: 'jane.id', assigneeType: 'Employee', pickupDate: '2026-11-01', location: 'Original location' });
       result = invoke(assetsRouter, 'put', '/:id', { owner: 'Jane', status: 'Assigned', location: 'New location' }, { id: 'location-edit' });

@@ -220,13 +220,13 @@ assetsRouter.post('/', authenticate, (req, res) => {
         'None',
         effectiveOwner,
         todayIso(),
-        effectiveOwner === 'IT department' ? 'IT custody recorded' : 'Initial assignment',
+        effectiveOwner === 'IT Department' ? 'IT custody recorded' : 'Initial assignment',
         notes || `Registered by ${req.user.username}`,
         now
       );
 
       // Also ensure employee exists if named owner
-      if (effectiveOwner !== 'IT department') {
+      if (effectiveOwner !== 'IT Department') {
         const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(effectiveOwner.trim());
         if (!empExists) {
           db.prepare(`
@@ -325,12 +325,12 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
         asset.owner || 'None',
         effectiveOwner || 'None',
         now,
-        returnChanges ? 'Returned to IT department' : effectiveOwner === 'IT department' ? 'IT custody recorded' : effectiveOwner ? (asset.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
-        returnChanges ? `Returned to IT department through asset details by ${req.user.username}` : `Asset modified by ${req.user.username}`,
+        returnChanges ? 'Returned to IT Department' : effectiveOwner === 'IT Department' ? 'IT custody recorded' : effectiveOwner ? (asset.owner ? 'Transferred' : 'Assigned') : 'Unassigned',
+        returnChanges ? `Returned to IT Department through asset details by ${req.user.username}` : `Asset modified by ${req.user.username}`,
         now
       );
 
-      if (effectiveOwner && effectiveOwner !== 'IT department') {
+      if (effectiveOwner && effectiveOwner !== 'IT Department') {
         const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(effectiveOwner.trim());
         if (!empExists) {
           db.prepare(`
@@ -371,13 +371,13 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
 
   const newOwner = String(requestedOwner || '').trim();
   const returningToIt = !newOwner || newOwner.toLowerCase() === 'it department';
-  const effectiveOwner = returningToIt ? 'IT department' : newOwner;
+  const effectiveOwner = returningToIt ? 'IT Department' : newOwner;
   if (!date || !/^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/.test(date) || Number.isNaN(Date.parse(date))) {
     return res.status(400).json({ success: false, error: 'Enter a valid transfer date and time.' });
   }
 
   const now = new Date().toISOString();
-  const returnChanges = returningToIt ? getHolderReturnChanges(asset, { owner: '' }) || { owner: 'IT department', department: '', status: 'Available', location: DEFAULT_LOCATION } : null;
+  const returnChanges = returningToIt ? getHolderReturnChanges(asset, { owner: '' }) || { owner: 'IT Department', department: '', status: 'Available', location: DEFAULT_LOCATION } : null;
   const nextStatus = returnChanges?.status || 'Assigned';
 
   db.exec('BEGIN TRANSACTION;');
@@ -392,7 +392,7 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
       asset.owner || 'None',
       effectiveOwner,
       date,
-      returningToIt && reason === 'Direct transfer' ? 'Returned to IT department' : reason,
+      returningToIt && reason === 'Direct transfer' ? 'Returned to IT Department' : reason,
       notes || `Transferred by ${req.user.username}`,
       now
     );
@@ -480,8 +480,8 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
           returnAssetToIt(db, asset.code, todayIso());
           if (String(asset.owner || '').trim().toLowerCase() !== 'it department') {
             db.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
-              `hist-${randomUUID()}`, asset.code, asset.owner || 'None', 'IT department', returnedAt,
-              'Returned to IT department', `Available status selected in bulk update by ${req.user.username}`, returnedAt,
+              `hist-${randomUUID()}`, asset.code, asset.owner || 'None', 'IT Department', returnedAt,
+              'Returned to IT Department', `Available status selected in bulk update by ${req.user.username}`, returnedAt,
             );
           }
         }

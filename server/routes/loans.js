@@ -276,7 +276,7 @@ loansRouter.post('/', authenticate, (req, res) => {
         effectiveAssetCode,
         pickupDate ? assetStatus : 'Available',
         normalizeLocation(location),
-        pickupDate ? effectiveAssignee : 'IT department',
+        pickupDate ? effectiveAssignee : 'IT Department',
         department.trim(),
         todayIso(),
         now
@@ -623,7 +623,7 @@ loansRouter.post('/:id/revert-pickup', authenticate, (req, res) => {
   }
 });
 
-// POST /api/loans/:id/return (Protected: Return to IT department workflow)
+// POST /api/loans/:id/return (Protected: Return to IT Department workflow)
 loansRouter.post('/:id/return', authenticate, (req, res) => {
   const loan = db.prepare('SELECT * FROM loans WHERE id = ?').get(req.params.id);
   if (!loan) {
@@ -695,7 +695,7 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
         `hist-${randomUUID()}`,
         assetCode,
         asset.owner || loan.assignee,
-        'IT department',
+        'IT Department',
         returnDate,
         'Device Returned',
         nextNote ? `Device returned: ${nextNote}` : `Device returned & checked back into IT custody by ${req.user.username}`,
@@ -709,7 +709,7 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     const updated = db.prepare('SELECT * FROM loans WHERE id = ?').get(loan.id);
     return res.json({
       success: true,
-      message: `Asset ${loan.asset_code} successfully returned to IT department.`,
+      message: `Asset ${loan.asset_code} successfully returned to IT Department.`,
       loan: formatLoanRow(updated),
     });
   } catch (err) {
@@ -783,7 +783,7 @@ loansRouter.post('/batch-return', authenticate, (req, res) => {
 
     const insertHistStmt = db.prepare(`
       INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
-      VALUES (?, ?, ?, 'IT department', ?, 'Returned to IT department', ?, ?)
+      VALUES (?, ?, ?, 'IT Department', ?, 'Returned to IT Department', ?, ?)
     `);
 
     let returnedCount = 0;
@@ -809,7 +809,7 @@ loansRouter.post('/batch-return', authenticate, (req, res) => {
 
     return res.json({
       success: true,
-      message: `Successfully returned ${returnedCount} loans to IT department.`,
+      message: `Successfully returned ${returnedCount} loans to IT Department.`,
       count: returnedCount,
     });
   } catch (err) {

@@ -23,16 +23,16 @@ test('location counts and asset browsing include assigned devices and normalize 
     { code: 'PC-4', status: 'Assigned', location: 'New location' },
   ];
   assert.deepEqual(assets.filter((asset) => matchesDirectoryAsset(asset, 'location', 'Stack')).map((asset) => asset.code), ['PC-1', 'PC-2']);
-  assert.equal(matchesDirectoryAsset(assets[2], 'location', 'IT Department'), true);
-  assert.deepEqual(directoryLocationOptions(['Stack', 'Head Office'], assets), ['IT Department', 'New location', 'Stack']);
+  assert.equal(matchesDirectoryAsset(assets[2], 'location', 'IT Office'), true);
+  assert.deepEqual(directoryLocationOptions(['Stack', 'Head Office'], assets), ['IT Office', 'New location', 'Stack']);
 });
 
 test('saved asset locations survive active and historical loan reconciliation', () => {
   const asset = { code: 'PC-1', status: 'Assigned', owner: 'Jane', location: 'Stack' };
   const active = { assetCode: 'PC-1', assignee: 'Jane', assigneeType: 'Employee', pickupDate: '2026-11-01', location: 'Old location' };
   assert.equal(reconcileAssetWithLoans(asset, [active]).location, 'Stack');
-  const available = { ...asset, status: 'Available', owner: 'IT department' };
-  assert.equal(getHolderReturnChanges(available, { owner: 'IT department', status: 'Available', location: 'Stack' }), null);
+  const available = { ...asset, status: 'Available', owner: 'IT Department' };
+  assert.equal(getHolderReturnChanges(available, { owner: 'IT Department', status: 'Available', location: 'Stack' }), null);
   assert.equal(reconcileAssetWithLoans(available, [{ ...active, returnDate: '2026-11-02' }]).location, 'Stack');
 });
 

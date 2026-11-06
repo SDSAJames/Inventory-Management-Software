@@ -42,7 +42,7 @@ export default function DirectoryPanel({ panel, canManage, selecting = false, se
   const selectedCount = eligible.filter((entry) => selectedKeys.includes(entry.key)).length;
   const allSelected = eligible.length > 0 && eligible.every((entry) => selectedKeys.includes(entry.key));
   return (
-    <section className="panel">
+    <section className="panel directory-panel">
       <div className="directory-panel-heading">
         <div><h3>{panel.title}</h3><p className="directory-panel-description">{panel.description}</p></div>
         <div className="directory-panel-actions">

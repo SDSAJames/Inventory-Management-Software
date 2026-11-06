@@ -27,7 +27,7 @@ import { isBusinessTravelerType } from '../../shared/loanRules.js';
  * @returns {object} reconciled asset
  */
 /**
- * Helper to identify IT department or pool variants
+ * Helper to identify IT Department or pool variants
  */
 export function isItDepartment(name) {
   if (!name) return false;
@@ -44,17 +44,17 @@ export function isItDepartment(name) {
 }
 
 /**
- * Normalizes holder name: legacy pool/return texts become 'IT department'
+ * Normalizes holder name: legacy pool/return texts become 'IT Department'
  */
 export function normalizeHolder(name) {
   if (!name) return '';
-  if (isItDepartment(name)) return 'IT department';
+  if (isItDepartment(name)) return 'IT Department';
   return String(name).trim();
 }
 
 /**
  * Returns true if the asset can be assigned or loaned to someone else.
- * Assets held by IT department, in pool, unassigned, or marked 'Available' are all assignable.
+ * Assets held by IT Department, in pool, unassigned, or marked 'Available' are all assignable.
  */
 export function isAssetAssignable(asset) {
   if (!asset) return false;
@@ -64,7 +64,7 @@ export function isAssetAssignable(asset) {
   }
   // If marked Available, it is assignable
   if (status === 'Available') return true;
-  // If holder is IT department (or empty), it is in IT custody and assignable to someone else
+  // If holder is IT Department (or empty), it is in IT custody and assignable to someone else
   if (!asset.owner || isItDepartment(asset.owner)) return true;
   return false;
 }
@@ -81,7 +81,7 @@ export function isAssetAssignable(asset) {
  * 2. If the asset has Scheduled loans (not picked up yet):
  *    - Status is NOT 'On loan' yet (e.g. 'Available' or 'Assigned'), unless marked otherwise
  * 3. If all loans for this asset are Returned (or loan is returned):
- *    - Holder name will be 'IT department'
+ *    - Holder name will be 'IT Department'
  *    - Status is reconciled to 'Available' (unless marked damaged/under repair)
  *
  * @param {object} asset
@@ -133,7 +133,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     return {
       ...asset,
       status: hasOtherHolder ? 'Assigned' : 'Available',
-      owner: hasOtherHolder ? asset.owner : 'IT department',
+      owner: hasOtherHolder ? asset.owner : 'IT Department',
       department: hasOtherHolder ? asset.department : '',
       updated: todayIso(),
     };
@@ -142,11 +142,11 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   // Check if asset's most recent loan was returned
   const returnedLoan = assetLoans.find((l) => Boolean(l.returnDate || l.returnedDate || l.status === 'Returned'));
   if (returnedLoan) {
-    // If asset has no holder, or holder was pool/legacy text, normalize to IT department
+    // If asset has no holder, or holder was pool/legacy text, normalize to IT Department
     if (!asset.owner || isItDepartment(asset.owner)) {
       return {
         ...asset,
-        owner: 'IT department',
+        owner: 'IT Department',
         department: '',
         status: getAssetStatusAfterReturn(asset.status),
         location: asset.status === 'Available' ? asset.location : getAssetLocationAfterReturn(asset.status),
@@ -155,7 +155,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     }
   }
 
-  // VALIDATION RULE: If there is an employee holder (other than IT department), it must be 'Assigned', NOT 'Available'!
+  // VALIDATION RULE: If there is an employee holder (other than IT Department), it must be 'Assigned', NOT 'Available'!
   const hasHolder = Boolean(asset.owner && String(asset.owner).trim() !== '' && !isItDepartment(asset.owner));
   if (hasHolder && asset.status === 'Available') {
     return {
@@ -170,7 +170,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     return {
       ...asset,
       status: 'Available',
-      owner: isItDepartment(asset.owner) ? 'IT department' : '',
+      owner: isItDepartment(asset.owner) ? 'IT Department' : '',
       department: isItDepartment(asset.owner) ? '' : asset.department,
       updated: asset.updated || todayIso(),
     };
@@ -181,9 +181,9 @@ export function reconcileAssetWithLoans(asset, loans = []) {
 
 /**
  * Validates and enforces consistency between asset holder and status:
- * - If holder is IT department: status is Available (ready for deployment) or damage state.
+ * - If holder is IT Department: status is Available (ready for deployment) or damage state.
  * - If there is an employee holder, status cannot be 'Available'; it must be 'Assigned'.
- * - If status is 'Available' without holder, holder remains empty or IT department.
+ * - If status is 'Available' without holder, holder remains empty or IT Department.
  */
 export function validateAssetStatus(asset) {
   if (!asset) return asset;
@@ -196,7 +196,7 @@ export function validateAssetStatus(asset) {
   if (isItDept) {
     return {
       ...asset,
-      owner: 'IT department',
+      owner: 'IT Department',
       department: '',
       status: asset.status === 'Assigned' ? 'Available' : asset.status,
     };
@@ -305,7 +305,7 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
         addEntry({
           id: `loan-out-${l.id}`,
           date: startDate,
-          previousOwner: normalizeHolder(l.previousOwner) || 'IT department',
+          previousOwner: normalizeHolder(l.previousOwner) || 'IT Department',
           newOwner: l.assignee || l.borrower || 'Borrower',
           department: l.department || '',
           location: l.location || asset.location || '',
@@ -320,7 +320,7 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
         });
       }
 
-      // Loan return event: when returned, holder name will be 'IT department'
+      // Loan return event: when returned, holder name will be 'IT Department'
       const returnDate = readableLoanDate(l.returnDate || l.returnedDate);
       if (returnDate || l.status === 'Returned') {
         const retDate = returnDate || l.updated || l.createdAt || startDate || '';
@@ -328,11 +328,11 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
           id: `loan-in-${l.id}`,
           date: retDate,
           previousOwner: l.assignee || l.borrower || 'Borrower',
-          newOwner: 'IT department',
+          newOwner: 'IT Department',
           department: 'IT',
           location: l.location || asset.location || 'IT Store',
           reason: 'Loan Returned',
-          notes: `Returned to IT department (was borrowed by ${l.assignee || l.borrower || 'borrower'})`,
+          notes: `Returned to IT Department (was borrowed by ${l.assignee || l.borrower || 'borrower'})`,
           isLoan: true,
           loanStatus: 'Returned',
         });
@@ -374,13 +374,13 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
     if (i === 0) {
       // The very first event in the life of this asset
       if (!current.previousOwner || current.previousOwner === 'Unassigned') {
-        current.previousOwner = current.isLoan ? 'IT department' : 'None';
+        current.previousOwner = current.isLoan ? 'IT Department' : 'None';
       }
     } else {
       const priorEvent = sortedAsc[i - 1];
-      const priorHolder = priorEvent.newOwner || 'IT department';
+      const priorHolder = priorEvent.newOwner || 'IT Department';
 
-      // If previous holder is 'None', empty, or unassigned, but someone (e.g. IT department)
+      // If previous holder is 'None', empty, or unassigned, but someone (e.g. IT Department)
       // held the laptop immediately before, chain it!
       if (!current.previousOwner || current.previousOwner === 'None' || current.previousOwner === 'Unassigned') {
         current.previousOwner = priorHolder;

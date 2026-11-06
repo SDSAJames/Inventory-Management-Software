@@ -974,6 +974,8 @@ tbody tr:hover { background: #f8fafc; }
 
 /* ── Directory ────────────────────────────────────────── */
 .directory-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; align-items: start; }
+.directory-panel { max-height: max(300px, calc(100dvh - 190px)); overflow-y: auto; padding-top: 0; scrollbar-gutter: stable; }
+.directory-panel .directory-panel-heading { position: sticky; top: 0; z-index: 2; flex-shrink: 0; background: var(--panel); padding-top: 14px; padding-bottom: 14px; margin-bottom: 0; }
 .directory-columns h3 { font-family: inherit; font-weight: 700; font-size: 16px; margin-top: 0; color: var(--ink); }
 .directory-list { list-style: none; padding: 0; margin: 0; }
 .directory-list li { padding: 12px 0; border-top: 1px solid #edf2f7; font-size: 12px; }

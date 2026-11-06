@@ -37,7 +37,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
   const saveTransfer = async (returnToIt = false) => {
     const owner = returnToIt ? '' : newOwner.trim();
     const returning = !owner || owner.toLowerCase() === 'it department';
-    const effectiveReason = reason.trim() || (returning ? 'Returned to IT department' : '');
+    const effectiveReason = reason.trim() || (returning ? 'Returned to IT Department' : '');
     if (!effectiveReason || !timestamp) {
       setErrors({ ...(!effectiveReason ? { reason: 'Please enter a transfer reason' } : {}), ...(!timestamp ? { date: 'Enter a transfer date' } : {}) });
       return;
@@ -279,7 +279,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
         </div>
 
         <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '22px' }}>
-          {asset.owner && asset.owner !== 'IT department' ? (
+          {asset.owner && asset.owner !== 'IT Department' ? (
             <button
               type="button"
               className="button danger-btn"
@@ -287,7 +287,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
               onClick={handleClearOwner}
               disabled={saving}
             >
-              Return to IT department
+              Return to IT Department
             </button>
           ) : <div />}
 

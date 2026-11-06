@@ -7,7 +7,7 @@ export function normalizeLocation(location, fallback = DEFAULT_LOCATION) {
   const name = typeof value === 'string' ? value.trim() : value;
   if (typeof name !== 'string') return name;
   const key = name.toLowerCase();
-  if (key === 'head office' || key === DEFAULT_LOCATION.toLowerCase()) return DEFAULT_LOCATION;
+  if (key === 'head office' || key === 'it department' || key === DEFAULT_LOCATION.toLowerCase()) return DEFAULT_LOCATION;
   return key === REPAIR_LOCATION.toLowerCase() ? REPAIR_LOCATION : name;
 }
 
@@ -18,8 +18,12 @@ export function getAssetLocation(status, location, fallback = DEFAULT_LOCATION) 
 
 /** Available equipment is held by IT, never an unnamed or employee holder. */
 export function normalizeAvailableAsset(asset) {
-  if (!asset || asset.status !== 'Available' || (asset.owner === 'IT department' && asset.department === '')) return asset;
-  return { ...asset, owner: 'IT department', department: '' };
+  if (!asset) return asset;
+  if (asset.status !== 'Available') {
+    return String(asset.owner || '').trim().toLowerCase() === 'it department' && asset.owner !== 'IT Department' ? { ...asset, owner: 'IT Department' } : asset;
+  }
+  if (asset.owner === 'IT Department' && asset.department === '') return asset;
+  return { ...asset, owner: 'IT Department', department: '' };
 }
 
 /** Returning custody does not clear a device's repair or retirement state. */
@@ -41,7 +45,7 @@ export function getHolderReturnChanges(previous, changes) {
   if (nextOwner === previousOwner && previous.status === 'Available' && changes.status === 'Available') return null;
   if (changes.status !== 'Available' && nextOwner && nextOwner !== 'it department') return null;
   const status = getAssetStatusAfterReturn(changes.status ?? previous.status);
-  return { owner: 'IT department', department: '', status, location: getAssetLocationAfterReturn(status) };
+  return { owner: 'IT Department', department: '', status, location: getAssetLocationAfterReturn(status) };
 }
 
 /** Editing an ongoing loan must not undo a repair recorded on the same device. */

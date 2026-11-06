@@ -36,7 +36,7 @@ export function DbProvider({ children }) {
       // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
       const assetsWithHistory = raw.assets.map((a) => {
         const normOwner = normalizeHolder(a.owner);
-        const normDept = normOwner === 'IT department' ? '' : a.department;
+        const normDept = normOwner === 'IT Department' ? '' : a.department;
         const assetWithNorm = { ...a, owner: normOwner, department: normDept };
         if ((!assetWithNorm.ownershipHistory || assetWithNorm.ownershipHistory.length === 0) && assetWithNorm.owner) {
           return {
@@ -46,7 +46,7 @@ export function DbProvider({ children }) {
                 previousOwner: 'None',
                 newOwner: assetWithNorm.owner,
                 date: assetWithNorm.issuedDate || assetWithNorm.updated || todayIso(),
-                reason: assetWithNorm.owner === 'IT department' ? 'IT custody recorded' : 'Initial assignment',
+                reason: assetWithNorm.owner === 'IT Department' ? 'IT custody recorded' : 'Initial assignment',
                 notes: assetWithNorm.department ? `Department: ${assetWithNorm.department}` : (assetWithNorm.notes || ''),
               }),
             ],
@@ -171,7 +171,7 @@ export function DbProvider({ children }) {
   const addAsset = useCallback((asset) => {
     const validated = validateAssetStatus(asset);
     const initialHistory = validated.owner
-      ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: validated.owner === 'IT department' ? 'IT custody recorded' : 'Initial assignment' })]
+      ? [createOwnershipEntry({ previousOwner: 'None', newOwner: validated.owner, reason: validated.owner === 'IT Department' ? 'IT custody recorded' : 'Initial assignment' })]
       : [];
     const newAsset = {
       id: asset.id || crypto.randomUUID(),
@@ -232,7 +232,7 @@ export function DbProvider({ children }) {
         assets: previous.assets.map((asset) => asset.id === assetId ? { ...asset, ...result.asset } : asset),
         loans: previous.loans.map((loan) => returned.get(loan.id) || loan),
         locations: location && !previous.locations.includes(location) ? [...previous.locations, location] : previous.locations,
-        employees: result.asset.owner && result.asset.owner !== 'IT department' && !previous.employees.some((employee) => employee.name.toLowerCase() === result.asset.owner.toLowerCase())
+        employees: result.asset.owner && result.asset.owner !== 'IT Department' && !previous.employees.some((employee) => employee.name.toLowerCase() === result.asset.owner.toLowerCase())
           ? [...previous.employees, { name: result.asset.owner, department: result.asset.department || '', position: 'Staff' }] : previous.employees,
       };
     });
@@ -356,7 +356,7 @@ export function DbProvider({ children }) {
       const nextAssets = prev.assets.map((a) => {
         if (!handoverAssetCodes.has(a.code)) return a;
         const history = createOwnershipEntry({
-          previousOwner: a.owner || 'IT department',
+          previousOwner: a.owner || 'IT Department',
           newOwner: owner,
           date: effectiveLoan.pickupDate.replace('T', ' '),
           reason: 'Device Handover',
@@ -386,10 +386,10 @@ export function DbProvider({ children }) {
             ? (isBusinessTraveler(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned')
             : 'Available',
           location: assetUpdates.location || '',
-          owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : 'IT department'),
+          owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : 'IT Department'),
           ownershipHistory: effectiveLoan.pickupDate
             ? [createOwnershipEntry({
-                previousOwner: 'IT department',
+                previousOwner: 'IT Department',
                 newOwner: effectiveLoan.assignee || '',
                 date: effectiveLoan.pickupDate.replace('T', ' '),
                 reason: 'Device Handover',
@@ -525,7 +525,7 @@ export function DbProvider({ children }) {
       const nextAssets = prev.assets.map((a) => {
         if (!handoverAssetCodes.has(a.code)) return a;
         const history = createOwnershipEntry({
-          previousOwner: a.owner || 'IT department',
+          previousOwner: a.owner || 'IT Department',
           newOwner: owner,
           date: timestamp.replace('T', ' '),
           reason: 'Device Handover',
@@ -624,18 +624,18 @@ export function DbProvider({ children }) {
         if (returnedAssetCodes.has(a.code)) {
           const returnEntry = createOwnershipEntry({
             previousOwner: a.owner || details.assignee || loan.assignee || 'Borrower',
-            newOwner: 'IT department',
+            newOwner: 'IT Department',
             department: 'IT',
             location: getAssetLocationAfterReturn(a.status),
             reason: 'Device Returned',
-            notes: details.note || `Returned to IT department by ${details.assignee || loan.assignee || 'borrower'}`,
+            notes: details.note || `Returned to IT Department by ${details.assignee || loan.assignee || 'borrower'}`,
             date: timestamp.replace('T', ' '),
           });
           return {
             ...a,
             status: getAssetStatusAfterReturn(a.status),
             location: getAssetLocationAfterReturn(a.status),
-            owner: 'IT department',
+            owner: 'IT Department',
             department: '',
             ownershipHistory: [returnEntry, ...(a.ownershipHistory || [])],
             updated: todayIso(),
@@ -787,7 +787,7 @@ export function DbProvider({ children }) {
             nextAssets.push(inc);
           }
           if (inc.location) nextLocations.add(inc.location);
-          if (inc.owner && inc.owner !== 'IT department' && !nextEmployees.some((e) => e.name === inc.owner)) {
+          if (inc.owner && inc.owner !== 'IT Department' && !nextEmployees.some((e) => e.name === inc.owner)) {
             nextEmployees.push({ name: inc.owner, department: inc.department || '', position: '' });
           }
         });
@@ -807,7 +807,7 @@ export function DbProvider({ children }) {
             nextLoans.push(incLoan);
           }
           if (incLoan.location) nextLocations.add(incLoan.location);
-          if (incLoan.assignee && incLoan.assignee !== 'IT department' && !nextEmployees.some((e) => e.name === incLoan.assignee)) {
+          if (incLoan.assignee && incLoan.assignee !== 'IT Department' && !nextEmployees.some((e) => e.name === incLoan.assignee)) {
             nextEmployees.push({
               name: incLoan.assignee,
               department: incLoan.department || '',
