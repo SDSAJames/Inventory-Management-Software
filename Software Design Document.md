@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.7.0** |
+| **Document Version** | **v1.8.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 5, 2026 |
+| **Release Date** | November 6, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -22,7 +22,7 @@ The application serves as the **single source of truth** for company hardware (l
 1. **Asset as Master Record**: Every physical device carries a unique asset code (`SPE-XXXX` or serial number) that remains perpetual regardless of reassignments, temporary loans, maintenance cycles, or returns.
 2. **Corporate Intranet Operation**: Deployed centrally on the corporate network (`0.0.0.0:5000`) with zero dependencies on external cloud APIs, remote CDNs, or external typography services (Google Fonts). All assets, styling, and data storage operate strictly within the company network.
 3. **Deterministic State Lifecycle & Passive Sync**: A strict state machine enforces valid operational states (`Available`, `Assigned`, `On loan`, `Damaged`, `Under repair`, `Retired`) supported by a non-intrusive background verification engine that actively reconciles custody states.
-4. **Unified Custody & Return Lineage**: Full chronological tracking of ownership transfers. When an asset is returned from custody, it is formally received by the **IT department**, returning its status to **Available** while preserving its prior holder lineage.
+4. **Unified Custody & Return Lineage**: Full chronological tracking of ownership transfers. When an asset is returned from custody, it is formally received by the **IT Department**, returning its status to **Available** while preserving its prior holder lineage.
 
 ---
 
@@ -166,11 +166,11 @@ The system recognizes exactly six mutually exclusive operational states for all 
 
 | Status | Code | Description | Permitted Current Holder |
 | :--- | :--- | :--- | :--- |
-| **Available** | `Available` | Asset is in storage/fleet, tested, and ready for immediate deployment or checkout. | Strictly `IT department`; legacy blank holders are repaired |
+| **Available** | `Available` | Asset is in storage/fleet, tested, and ready for immediate deployment or checkout. | Strictly `IT Department`; legacy blank holders are repaired |
 | **Assigned** | `Assigned` | Asset is assigned to a specific employee or department for day-to-day work duties. | Must be a named employee or department |
 | **On loan** | `On loan` | Asset is out on active temporary custody under a formal loan agreement. | Must match the active loan's `assignee` |
-| **Damaged** | `Damaged` | Asset has reported physical or functional defects; held for evaluation. | `IT department` or reporting employee |
-| **Under repair** | `Under repair` | Asset is actively undergoing internal repair or external vendor service. | `IT department` or Vendor |
+| **Damaged** | `Damaged` | Asset has reported physical or functional defects; held for evaluation. | `IT Department` or reporting employee |
+| **Under repair** | `Under repair` | Asset is actively undergoing internal repair or external vendor service. | `IT Department` or Vendor |
 | **Retired** | `Retired` | Asset decommissioned, disposed of, or parted out; retained for audit history. | Decommissioned archive |
 
 ### 4.2 State Transition Diagram
@@ -189,11 +189,11 @@ stateDiagram-v2
     Assigned --> Damaged: Defect Reported
     Assigned --> Under_repair: Maintenance
     
-    On_loan --> Available: Loan Returned (Holder to IT department)
+    On_loan --> Available: Loan Returned (Holder to IT Department)
     On_loan --> Damaged: Defect on Return
     
     Damaged --> Under_repair: Sent for Servicing
-    Under_repair --> Available: Repair Completed (Holder to IT department)
+    Under_repair --> Available: Repair Completed (Holder to IT Department)
     Under_repair --> Retired: Beyond Economic Repair
     
     Retired --> [*]
@@ -202,24 +202,24 @@ stateDiagram-v2
 ### 4.3 State Invariants & Business Transition Rules
 
 1. **Active Holder Invariant**:
-   - If an asset has an assigned employee or department holder (`owner != ''` and `owner != 'IT department'`), its status **cannot** be `Available`. The system automatically normalizes the status to `Assigned` (or `On loan` if tied to an active checkout).
-   - If an asset is marked `Available`, its holder is normalized to `IT department` (or empty).
+   - If an asset has an assigned employee or department holder (`owner != ''` and `owner != 'IT Department'`), its status **cannot** be `Available`. The system automatically normalizes the status to `Assigned` (or `On loan` if tied to an active checkout).
+   - If an asset is marked `Available`, its holder is normalized to `IT Department` (or empty).
 2. **Return to IT Department Workflow**:
    - When any asset is returned from an assignment or loan checkout:
-     - The holder is explicitly set to **`IT department`**.
+     - The holder is explicitly set to **`IT Department`**.
      - The status transitions to **`Available`** (unless flagged as damaged).
-     - An immutable entry is appended to the asset's `ownershipHistory`, recording the previous borrower as `previousOwner`, `IT department` as `newOwner`, the return timestamp, and the reason `"Returned to IT department"`.
+     - An immutable entry is appended to the asset's `ownershipHistory`, recording the previous borrower as `previousOwner`, `IT Department` as `newOwner`, the return timestamp, and the reason `"Returned to IT Department"`.
 3. **Passive Verification & Sync Service**:
    - Rather than requiring manual administrative triggers, a passive background integrity service runs automatically during database initialization and state mutations across both client and server tiers:
      - **Frontend Client (`src/lib/assetIntegrity.js` via `useDb.jsx`)**: `reconcileAllAssets()` continuously reconciles local state upon initialization, loan pickup/return, periodic polling (every 15s), and window focus.
      - **Shared Backend Server (`server/db/database.js`)**: `reconcileAllAssetsInDb()` runs directly against the SQLite database during server boot, loan checkout/pickup, return processing, and data exchange imports (`/api/exchange/import`), committing synchronized state updates across all connected intranet hosts.
    - It continuously reconciles loan records against the asset register:
      - If an active loan is picked up and unreturned, the asset status is enforced as `On loan`, and its location and holder reflect the loan record.
-     - When all loans for an asset are returned, the asset is automatically freed from `On loan` status and restored to `Available` held by `IT department`.
-     - Normalizes legacy references (e.g. `"pool"`, `"returned to pool"`) directly to `"IT department"`.
+     - When all loans for an asset are returned, the asset is automatically freed from `On loan` status and restored to `Available` held by `IT Department`.
+     - Normalizes legacy references (e.g. `"pool"`, `"returned to pool"`) directly to `"IT Department"`.
 4. **Direct Ownership Transfer**:
    - Clicking on any holder badge in the Assets table directly launches the **Change Ownership Modal**, eliminating the need for a redundant "Actions" column in the table layout.
-   - Provides selectable standardized reasons (*"Reassigned to new staff"*, *"New Hire onboarding"*, *"Department Transfer"*, *"Returned to IT department"*, *"Temporary Handover"*, *"Repaired & Reassigned"*) alongside custom entry.
+   - Provides selectable standardized reasons (*"Reassigned to new staff"*, *"New Hire onboarding"*, *"Department Transfer"*, *"Returned to IT Department"*, *"Temporary Handover"*, *"Repaired & Reassigned"*) alongside custom entry.
 
 ---
 
@@ -233,7 +233,7 @@ Every asset maintains a nested, chronological `ownershipHistory` array:
   "code": "SPE-1002",
   "name": "ThinkPad T14s Gen 3",
   "category": "Laptop",
-  "owner": "IT department",
+  "owner": "IT Department",
   "department": "",
   "status": "Available",
   "location": "HQ - Storage Room 2B",
@@ -243,14 +243,14 @@ Every asset maintains a nested, chronological `ownershipHistory` array:
       "id": "hist-101",
       "date": "2026-10-07 14:15:00",
       "previousOwner": "Sarah Connor",
-      "newOwner": "IT department",
-      "reason": "Returned to IT department",
+      "newOwner": "IT Department",
+      "reason": "Returned to IT Department",
       "notes": "Project completed, clean condition"
     },
     {
       "id": "hist-100",
       "date": "2026-03-15 09:00:00",
-      "previousOwner": "IT department",
+      "previousOwner": "IT Department",
       "newOwner": "Sarah Connor",
       "reason": "Department Transfer",
       "notes": "Engineering allocation"
@@ -345,15 +345,16 @@ The frontend application provides eight core operational views accessed via the 
    - Its separate day dialog also uses full-width rows. Pending arrivals exclude completed pickups and refresh while the dialog is open.
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
-   - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Department) with one-click filtering.
+   - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Office) with one-click filtering.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
-   - **Integrated Workflows**: Direct Return confirmation returning hardware to IT department, trip editor, and new business traveler dispatch recording.
+   - **Integrated Workflows**: Direct Return confirmation returning hardware to IT Department, trip editor, and new business traveler dispatch recording.
 6. **Asset & Organization Directory (`/directory`)**:
-   - Manage asset categories, statuses, departments, and locations. Custom statuses can also be added from asset forms.
-   - Items referenced by assets are marked in use and cannot be edited or deleted; unused values remain manageable.
+   - Manage asset categories, statuses, departments, and locations. Custom statuses can also be added from asset forms. Search and A–Z/Z–A sorting apply across the Directory; dropdowns default to ascending order.
+   - Keep each card heading and its Add/Select actions visible while the list scrolls. Enter submits reference-value edits. Trim outer whitespace while preserving internal spaces.
+   - In-use categories and departments remain protected. In-use locations can be renamed or merged into an existing location, updating all matching asset and assignment/loan location references in one transaction. Only unused values can be deleted.
    - Clicking any Directory value opens its matching asset list. Operators can search and edit those assets, then return to the refreshed list; reference-value protection remains separate.
-   - IT Department is the default location. Legacy Head Office values are normalized during startup, import, and restore. Under repair assets automatically use service center, with the location locked in single and batch asset forms while that status is selected.
+   - IT Office is the default location; IT Department is the owner. Legacy Head Office and IT Department location values are normalized during startup, import, and restore. Under repair assets automatically use service center, with the location locked in single and batch asset forms while that status is selected.
 7. **Data Exchange (`/exchange`)**:
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
    - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
@@ -380,4 +381,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.7.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.8.0**.

@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.7.0)
+# StarPlus Energy Asset Management System (v1.8.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -10,6 +10,7 @@
 The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central operational index for corporate IT hardware, laptops, peripherals, and device loans. The system is engineered to run on a **corporate intranet web server**, binding to all network interfaces (`0.0.0.0:5000`) so staff across the corporate network can access the central portal from their workstations with zero external internet dependencies, remote fonts, or telemetry.
 
 ### Core Highlights
+- **Shared Workflow Components**: Create/edit, transfer, pickup and return windows reuse common controls, equipment metadata and form builders. See the shared-implementation map in [Software Design Document.md](Software%20Design%20Document.md#31-shared-ui-and-workflow-ownership).
 - **Corporate Intranet Multi-Host Network Architecture**: Hosted centrally on the intranet server and accessible from any workstation or host on the corporate network (`http://<server-ip>:5000`). Zero external cloud dependencies, no remote CDN scripts, and zero telemetry. All fonts use the native operating system typography stack.
 - **Centralized SQLite Database**: Uses Node.js's native high-performance SQLite engine (`node:sqlite`) in WAL mode (`server/data/inventory.db`). All client workstations share the exact same synchronized database in real time with client-side offline cache resilience.
 - **Corporate Brand Identity**: Built in accordance with StarPlus Energy design standards featuring Corporate Blue (`#1449d6`), Deep Navy (`#0a2547`), Slate (`#141519`), and the geometric SVG hexagon brand mark.
@@ -19,7 +20,7 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 - **Excel OpenXML Export**: Pure client-side `.xlsx` generator exporting the equipment register in its 10-column SPE format and maintaining 19-column parity with corporate loan spreadsheets, backed by automated pre-import restore snapshots.
 - **States Version 1.0.0 State Engine**: Strict operational states (`Available`, `Assigned`, `On loan`, `Damaged`, `Under repair`, `Retired`) with invariant validation.
 - **Passive Verification & Sync Service**: Background synchronization engine that automatically reconciles loan checkouts and returns with the asset inventory register without manual user intervention.
-- **Return to IT Department Workflow**: Assets returned from custody automatically default to holder **IT department** with status **Available**, maintaining an unbroken audit lineage of prior borrowers.
+- **Return to IT Department Workflow**: Returned assets use owner **IT Department** and default location **IT Office**, with status **Available** unless maintenance or retirement rules apply. Prior custody remains in the audit history.
 - **Direct Click-to-Transfer**: Clicking an asset holder's badge in the table opens the **Change Ownership Modal** directly, eliminating redundant table action columns.
 
 ---
@@ -45,10 +46,10 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
 2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
-3. **Assignments & Pickups (`/loans`)**: Manage employee laptop assignments and business-traveler equipment checkouts together. Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Check Picked up to reveal the pickup date and record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, pickup readiness, return details, and an Unreturned section for partial returns.
-4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, and keyword search.
+3. **Assignments & Pickups (`/loans`)**: Manage employee laptop assignments and business-traveler equipment checkouts together. Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Check Picked up to reveal the pickup date and record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, a shared pickup-readiness toggle, a sortable Location column in All records, return details, and an Unreturned section for partial returns. Pickup and return windows group PC/monitor asset searches with plain accessory quantity inputs; Others / Peripherals remains text.
+4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, keyword search, and a shared **Hide returned** checkbox that updates events, counts and day details.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
-6. **Asset & Organization Directory (`/directory`)**: Manage asset categories, statuses, departments, and locations. Add custom statuses here or from asset forms. Selection, select-all, edit, and bulk-delete actions protect reference values currently used by assets.
+6. **Asset & Organization Directory (`/directory`)**: Manage asset categories, statuses, departments, and locations. Add custom statuses here or from asset forms. Search and sort directory entries, and manage them with Select, Edit and bulk deletion. Rename in-use locations to update linked asset and assignment/loan records; an existing destination name merges the locations. Deletion is restricted to unused values. Card headings stay pinned while lists scroll.
 7. **Data Exchange (`/exchange`)**: Tab-delimited TXT import, reference-format `.xlsx` export, interactive preview, and saved restore point history with restoration of a selected snapshot. Loan imports share matching rules with the preview and client merge to update existing records even when import IDs change.
 8. **Patch History & Changelog (`/patch-history` & `/changelog`)**: Dedicated release notes view with version filtering, keyword search, type toggles, and detailed per-version changelogs. Also accessible anywhere via the TopBar version button and bottom-left Sidebar footer.
 
@@ -64,9 +65,9 @@ All asset types include optional **Purchase date** and **Warranty expiration dat
 
 Returned devices move to **IT Department**. The existing **Under repair → service center** location rule remains in effect, and the original rental location remains on the custody record.
 
-Clearing an existing asset's **Current holder** and saving records a return to **IT department** in Ownership History, including the previous holder and timestamp. The linked pickup records the returned device so synchronization keeps it in IT custody. Other devices and accessories remain outstanding until checked in.
+Clearing an existing asset's **Current holder** and saving records a return to **IT Department** in Ownership History, including the previous holder and timestamp. The linked pickup records the returned device so synchronization keeps it in IT custody. Other devices and accessories remain outstanding until checked in.
 
-**Available** means IT custody: the current holder is **IT department**, including after single or bulk status changes. Startup repairs existing Available records with blank or stale holders and fills missing ownership history once. When an earlier return date is unknown, the added entry identifies the custody reconciliation time rather than claiming a historical return date.
+**Available** means IT custody: the current holder is **IT Department**, including after single or bulk status changes. Startup repairs existing Available records with blank or stale holders and fills missing ownership history once. When an earlier return date is unknown, the added entry identifies the custody reconciliation time rather than claiming a historical return date.
 
 **Assignments & Pickups** brings employee laptop assignments and business-traveler equipment checkouts together. Both use the same Scheduled pickup list; picked-up employee equipment appears under **Assigned**, while business-traveler checkouts appear under **Loans**. Return records capture the laptop asset number actually received, including missing or substituted laptops. The existing `/loans` address continues to open this page.
 

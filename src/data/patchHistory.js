@@ -8,6 +8,53 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-06',
+    title: 'Shared Workflows, Directory Merging & Clearer Equipment Handover',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Reuse common controls across assignment, calendar, and traveler modules; add linked location renaming and merging, consistent pickup readiness, and a compact equipment handover UI.',
+    highlights: [
+      'Shared forms and return dialogs keep field changes consistent across modules.',
+      'Rename or merge locations and update all linked assets and assignment or loan records together.',
+      'Group PC and monitor searches with accessory quantities; remove special keyboard/mouse highlighting and 0/1 buttons.',
+      'Use IT Office as the default location and IT Department as the owner.',
+    ],
+    sections: [
+      { heading: 'Shared Components & Equipment Entry', badge: 'Architecture', items: [
+        'Share recipient, date, note, directory, timestamp, equipment-request, quantity and summary controls across create, edit, pickup, transfer and return windows.',
+        'Use a common return form in Assignments & Pickups, Business Travelers and Calendar, including missing-accessory quantities and partial returns.',
+        'Centralize equipment field metadata, device keys, default owner values, form initialization, validation and payload builders.',
+        'Share calendar navigation and record presentation; control table columns explicitly instead of hiding numbered columns with CSS.',
+        'Record accessory quantities as nonnegative whole numbers. Default charging adapter and cable to 1 when PC is requested and reset them to 0 when unchecked; keep Others / Peripherals as text.',
+        'Offer directory choices and custom typing for rental location and department; leave Department blank for new schedules.',
+        'Group PC and monitor asset-number fields in the handover equipment panel, followed by equal-weight accessory quantity inputs and a peripherals text field.',
+      ] },
+      { heading: 'Directory Management & Location Integrity', badge: 'Directory', items: [
+        'Add Directory search and ascending/descending name sorting; sort directory dropdown options ascending by default.',
+        'Allow in-use locations to be renamed through Select and Edit. Update every matching asset and assignment or loan location in one transaction.',
+        'Merge into an existing destination location, retain its ID, remove the old entry, and update linked records and the browser cache together.',
+        'Trim leading and trailing whitespace while preserving spaces between words. Normalize legacy location names consistently for counts and asset browsing.',
+        'Delete unused stale/cache-only locations without a location-not-found error; stop rental history from recreating deleted directory entries.',
+        'Keep Directory panel headings and Add/Select controls visible while each card list scrolls. Save Directory edits with Enter.',
+        'Preserve manually saved Asset Register locations through reconciliation. Migrate legacy default locations to IT Office while keeping IT Department as the owner.',
+      ] },
+      { heading: 'Pickup, Calendar & Custody Records', badge: 'Workflow', items: [
+        'Use the same Ready / Not ready switch in Scheduled and All records. Hide readiness actions after pickup or return.',
+        'Add a sortable Location column to All records and default new transfer recipients to Business traveler while respecting the selected schedule type.',
+        'Provide a shared Hide returned checkbox in both calendars, updating events, counts and day details together.',
+        'Treat a standalone PC value of 1 as a quantity/request rather than an asset number; retain the record without registering or tracking asset 1.',
+        'Treat a blank new ownership holder as a return to IT. Record selected transfer dates and display fixed, readable custody timestamps without regenerating dates while viewing history.',
+        'Display a matching Knox ID alongside the asset current holder when available.',
+      ] },
+      { heading: 'Verification & Release Maintenance', badge: 'Quality', items: [
+        'Pass 74 automated checks covering custody, imports, location merging/deletion, shared form round trips, partial returns, calendar filtering and table alignment.',
+        'Validate the production build and preserve lazy-loaded route and spreadsheet modules.',
+        'Require version, patch-note and affected-document updates with each completed code change; regenerate release metadata using npm run docs:sync.',
+      ] },
+    ],
+  },
+  {
+    version: '1.7.0',
     date: '2026-11-05',
     title: 'Assignments & Pickups, Reliable Asset History & Schedule Rows',
     tag: 'Feature Release',

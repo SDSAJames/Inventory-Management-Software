@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.7.0** |
+| **Specification Version** | **v1.8.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 5, 2026 |
+| **Release Date** | November 6, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -143,7 +143,7 @@ Update the shared module for a rule or field mapping, then import it at each cal
 | `server/lib/assetLocations.js`, `assetLoans.js`, `loanDuplicates.js` | Transactional location migration, custody resets, and exact duplicate loan cleanup. |
 | `server/lib/assetCustody.js`, `assetReferences.js`, `assetReturns.js`, `assetDates.js` | Idempotent IT-custody history repair, transactional reference updates, linked device returns, and additive date-column migration. |
 
-The default location is **IT Department**. Legacy **Head Office** labels normalize to that value on startup, import, and restore. Assets with status **Under repair** always use **service center**, which is registered in the location directory automatically. Single and batch asset forms display this destination without allowing it to be overridden while the repair status is selected. Editing an ongoing loan or returning custody preserves a repair recorded on its asset; an explicit new pickup follows the normal handover transition. Rental locations remain independent of an asset's repair destination.
+The default location is **IT Office**, distinct from the **IT Department** owner. Legacy **Head Office** and **IT Department** location labels normalize to IT Office on startup, import, and restore. Assets with status **Under repair** always use **service center**, which is registered in the location directory automatically. Single and batch asset forms display this destination without allowing it to be overridden while the repair status is selected. Editing an ongoing loan or returning custody preserves a repair recorded on its asset; an explicit new pickup follows the normal handover transition. Rental locations remain independent of an asset's repair destination.
 
 Run `npm test` for the built-in Node.js regression suite. Tests cover shared rules, import mappings, calendar dates, loan identities and grouping, serializers, and database migration rollback using in-memory SQLite. Run `npm run build` to check the complete frontend. Browser-local date formatting and server UTC dates retain their separate purposes.
 
@@ -167,7 +167,7 @@ interface Asset {
   location: string;                // Facility / Room (e.g., "HQ - Storage Room 2B", "Kokomo Plant")
   purchaseDate?: string;           // Optional purchase date for any asset type (ISO storage)
   warrantyExpirationDate?: string; // Optional warranty end date for any asset type (ISO storage)
-  owner: string;                   // Current holder name (Employee Name or "IT department")
+  owner: string;                   // Current holder name (Employee Name or "IT Department")
   department: string;              // Assigned department (e.g., "Engineering", "Quality Control")
   condition: string;               // "New" | "Good" | "Fair" | "Needs Maintenance"
   notes: string;                   // General administrative notes
@@ -183,8 +183,8 @@ interface Asset {
 interface OwnershipEntry {
   id: string;                      // UUID primary key
   date: string;                    // Timestamp of event ("YYYY-MM-DD HH:mm:ss")
-  previousOwner: string;           // Prior holder (e.g., "John Doe", "IT department", or "None")
-  newOwner: string;                // Incoming holder (e.g., "Jane Smith" or "IT department")
+  previousOwner: string;           // Prior holder (e.g., "John Doe", "IT Department", or "None")
+  newOwner: string;                // Incoming holder (e.g., "Jane Smith" or "IT Department")
   location?: string;               // Physical location at time of transfer
   department?: string;             // Department at time of transfer
   reason: string;                  // Standardized or custom transfer reason
@@ -243,11 +243,11 @@ interface EquipmentChecklist {
 +------------------+-----------------------+------------------------------+
 | State Code       | Semantics             | Holder Constraint            |
 +------------------+-----------------------+------------------------------+
-| Available        | Available in IT custody | IT department             |
+| Available        | Available in IT custody | IT Department             |
 | Assigned         | Dedicated allocation  | Named employee / department  |
 | On loan          | Temporary checkout    | Active loan assignee         |
-| Damaged          | Defective / offline   | IT department / Reporting    |
-| Under repair     | Active maintenance    | IT department / Vendor       |
+| Damaged          | Defective / offline   | IT Department / Reporting    |
+| Under repair     | Active maintenance    | IT Department / Vendor       |
 | Retired          | Decommissioned asset  | Decommissioned Archive       |
 +------------------+-----------------------+------------------------------+
 ```
@@ -268,17 +268,17 @@ flowchart TD
     
     CheckCurrentStatus -- Yes --> FreeFromLoan["Check if Asset has Employee Holder"]
     FreeFromLoan -- Has Employee Holder --> SetAssigned["Set Status: Assigned"]
-    FreeFromLoan -- No Employee Holder --> SetAvailable["Set Status: Available<br>Holder: IT department"]
+    FreeFromLoan -- No Employee Holder --> SetAvailable["Set Status: Available<br>Holder: IT Department"]
     
     CheckCurrentStatus -- No --> CheckReturnedLoan{"Asset Loan was Returned?"}
     CheckReturnedLoan -- Yes --> CheckHolder{"Holder is empty or pool?"}
-    CheckHolder -- Yes --> NormIT["Set Holder: IT department<br>Set Status: Available"]
+    CheckHolder -- Yes --> NormIT["Set Holder: IT Department<br>Set Status: Available"]
     CheckHolder -- No --> CheckHolderInvariant
     
     CheckReturnedLoan -- No --> CheckHolderInvariant{"Asset has Employee Holder<br>AND Status == Available?"}
     CheckHolderInvariant -- Yes --> FixAssigned["Enforce Status: Assigned"]
     CheckHolderInvariant -- No --> CheckAssignedWithoutHolder{"Status == Assigned<br>AND No Holder?"}
-    CheckAssignedWithoutHolder -- Yes --> FixAvailable["Set Status: Available<br>Holder: IT department"]
+    CheckAssignedWithoutHolder -- Yes --> FixAvailable["Set Status: Available<br>Holder: IT Department"]
     CheckAssignedWithoutHolder -- No --> NextAsset["Proceed to Next Asset"]
     
     SetOnLoan --> NextAsset
@@ -295,16 +295,16 @@ When a loan is returned via `returnLoan(loanId)`:
 1. `loan.returnDate` is stamped with the current date (`todayIso()`).
 2. `loan.status` transitions to `'Returned'`.
 3. The associated asset is retrieved:
-   - `asset.owner` is set strictly to `'IT department'`.
+   - `asset.owner` is set strictly to `'IT Department'`.
    - `asset.department` is cleared (`''`).
    - `asset.status` transitions to `'Available'` while preserving Damaged, Under repair, Retired, or legacy Disposed maintenance states.
-   - `asset.location` becomes `IT Department`; Under repair equipment retains its automatic `service center` destination.
+   - `asset.location` becomes `IT Office`; Under repair equipment retains its automatic `service center` destination.
    - An `ownershipHistory` entry is created:
      ```javascript
      createOwnershipEntry({
        previousOwner: loan.assignee,
-       newOwner: 'IT department',
-       reason: 'Returned to IT department',
+       newOwner: 'IT Department',
+       reason: 'Returned to IT Department',
        notes: `Loan completed. Returned on ${todayIso()}`
      })
      ```
@@ -327,15 +327,15 @@ The Assets table allows instantaneous ownership reassignment by clicking directl
 1. **Trigger**: User clicks `<button className="badge-clickable">` showing the current holder name.
 2. **Modal Presentation**: `ChangeOwnerModal.jsx` mounts with target asset metadata pre-populated.
 3. **Data Inputs**:
-   - **New Owner**: Typeahead or manual input of employee name or `"IT department"`.
+   - **New Owner**: Typeahead or manual input of employee name or `"IT Department"`.
    - **Department**: Optional department affiliation.
    - **Effective Date**: Defaults to current ISO timestamp.
    - **Transfer Reason**: Standard dropdown selection or custom text.
    - **Notes**: Operational commentary.
 4. **Execution (`changeAssetOwner(assetId, transferData)`)**:
    - Updates `asset.owner` and `asset.department`.
-   - If `newOwner === 'IT department'`, enforces `status: 'Available'`.
-   - If `newOwner !== 'IT department'`, enforces `status: 'Assigned'`.
+   - If the new owner is blank or `newOwner === 'IT Department'`, records IT custody and enforces `status: 'Available'`.
+   - If `newOwner !== 'IT Department'`, enforces `status: 'Assigned'`.
    - Appends audit entry to `asset.ownershipHistory` retaining `previousOwner`.
    - Persists state to the shared SQLite database via `api.assets.transfer` (recording audit entry in `ownership_history` and logging to `audit_logs`), updates local storage cache, and broadcasts toast notification.
 
@@ -449,3 +449,13 @@ The patch history system is accessible via:
 - **Container Constraints**: `.main-content` is styled with `max-width: calc(100vw - 252px); overflow-x: hidden; min-width: 0;` to ensure wide tabular or calendar content never expands the viewport horizontally.
 - **Component Horizontal Scrollers**: `TravelerCalendar` and tables are wrapped in containers with `overflow-x: auto; max-width: 100%;`, preserving the visibility of `.top-actions` and TopBar version pills regardless of display resolution.
 - **Exclusive Calendar View**: On `/business-travelers`, activating Calendar View cleanly hides KPI stat cards, location breakdown lists, overdue blocks, and roster tables, ensuring the schedule calendar receives 100% of the focus area.
+
+
+## 9. Shared Workflow Contracts & Release Maintenance
+
+- Directory location rename accepts names or IDs. It updates asset and assignment/loan references atomically; naming an existing destination merges into that entry and preserves its ID. Trim outer whitespace, preserve internal spaces, and reject deletion while assets use a location. Historical rental records do not recreate deleted directory values.
+- New transfer recipients default to Business traveler; selecting a pickup schedule retains its borrower type. Transfer windows persist the selected effective timestamp. Ownership history uses saved dates rather than generating a new date during rendering.
+- Shared pickup/return forms group PC and monitor asset-number fields with accessory quantity inputs. Quantities are whole numbers at least zero; adapter/cable default to 1 only when PC is requested. Others / Peripherals is text. A standalone PC value of 1 denotes a quantity/request and is not tracked as an asset number.
+- Scheduled and All records share the pickup-readiness switch; readiness is inapplicable after pickup or return. All records includes a sortable Location column. Calendar Hide returned filters the event index used by grid cells, summary counts and open-day details.
+- Common form initialization, validation, payload creation and partial-return accounting live in src/lib/loanForms.js. Equipment metadata lives in shared/equipment.js; defaults live in shared/referenceData.js. The design document lists component ownership.
+- Every completed code update includes a SemVer increment, a new structured release-history entry and affected-document updates. npm run docs:sync generates patch notes and synchronizes manifest, lockfile and document metadata; previous releases remain unchanged.
