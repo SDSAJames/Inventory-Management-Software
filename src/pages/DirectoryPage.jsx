@@ -56,6 +56,7 @@ export default function DirectoryPage() {
   };
   const [manageTarget, setManageTarget] = useState(null);
   const [editedName, setEditedName] = useState('');
+  const [savingName, setSavingName] = useState(false);
   const [selectionType, setSelectionType] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const openManage = (target) => { setManageTarget(target); setEditedName(target.name); };
@@ -68,7 +69,8 @@ export default function DirectoryPage() {
     openManage(entry);
   };
   const handleRename = async () => {
-    if (!manageTarget || (manageTarget.used && !manageTarget.canRenameUsed) || !editedName.trim()) return;
+    if (!canManageDirectory || savingName || !manageTarget || (manageTarget.used && !manageTarget.canRenameUsed) || !editedName.trim() || editedName.trim() === manageTarget.name) return;
+    setSavingName(true);
     try {
       const result = await panelForType(manageTarget.type).rename(manageTarget, editedName);
       toast(result?.merged ? `Location merged into ${result.location.name}` : `${manageTarget.type} renamed`);
@@ -76,6 +78,7 @@ export default function DirectoryPage() {
       setSelectedKeys([]);
       setManageTarget(null);
     } catch (error) { toast(error.message || `Could not rename ${manageTarget.type.toLowerCase()}`); }
+    finally { setSavingName(false); }
   };
   const handleDelete = async () => {
     if (!manageTarget || manageTarget.used) return;
@@ -164,7 +167,7 @@ export default function DirectoryPage() {
 
       <Modal open={Boolean(manageTarget)} onClose={() => setManageTarget(null)} size="sm">
         {manageTarget && (
-          <div className="directory-manage-dialog">
+          <form className="directory-manage-dialog" onSubmit={(event) => { event.preventDefault(); return handleRename(); }}>
             <h2>{manageTarget.type}</h2>
             <p className="modal-intro">
               {manageTarget.type === 'Location' ? 'Renaming updates all assets and assignment or loan records using this location. Choose an existing location to merge into it.' : manageTarget.used
@@ -184,10 +187,10 @@ export default function DirectoryPage() {
               <button type="button" className="button ghost" onClick={() => setManageTarget(null)}>Close</button>
               {canManageDirectory && <>
                 <button type="button" className="button danger" disabled={manageTarget.used} onClick={handleDelete}>Delete</button>
-                <button type="button" className="button" disabled={(manageTarget.used && !manageTarget.canRenameUsed) || !editedName.trim() || editedName.trim() === manageTarget.name} onClick={handleRename}>Save</button>
+                <button type="submit" className="button" disabled={savingName || (manageTarget.used && !manageTarget.canRenameUsed) || !editedName.trim() || editedName.trim() === manageTarget.name}>{savingName ? 'Saving…' : 'Save'}</button>
               </>}
             </div>
-          </div>
+          </form>
         )}
       </Modal>
     </>
