@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.9.4)
+# StarPlus Energy Asset Management System (v1.10.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -151,3 +151,5 @@ Calendar day dialogs use compact, content-sized rows with wrapping for long valu
 Changing an asset to **Under repair** returns custody to **IT Department**, clears the employee department, and sets Location to **service center**. Saving a single or bulk change records the return and checks in that device from active custody; missing accessories remain outstanding.
 
 A scheduled monitor request does not require a monitor at actual pickup. Leave its asset field blank if none can be provided; the request remains recorded, and no monitor is assigned.
+
+Both Business Travelers and In & Out calendars show **Picked up** events on the actual pickup date. Open a date to see the shared pickup row with recipient, pickup time, PC, monitor and location. **Hide returned** is also available inside each day dialog and stays synchronized with the calendar toolbar, rows and counts.

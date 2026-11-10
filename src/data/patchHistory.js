@@ -9,6 +9,23 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-10',
+    title: 'Calendar Pickup Information & Day Return Filters',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Show actual pickup events in both calendars and synchronize Hide returned inside day details.',
+    highlights: [
+      'See completed pickups on the actual pickup date in Business Travelers and In & Out calendars.',
+      'Use the same compact pickup row and Hide returned switch in both day dialogs.',
+    ],
+    sections: [{ heading: 'Calendar Pickup Events', badge: 'Feature', items: [
+      'Share pickup indexing and detail rows with recipient, Knox ID, actual pickup time, PC, monitor and location.',
+      'Add Picked up calendar and day filters and include actual pickups in event counts.',
+      'Keep pending schedules separate from completed pickups. Hide returned removes completed-return records from grid events, counts and open day details through the same state.',
+    ] }],
+  },
+  {
+    version: '1.9.4',
+    date: '2026-11-10',
     title: 'Allow Pickup Without an Unavailable Monitor',
     tag: 'Patch',
     type: 'patch',

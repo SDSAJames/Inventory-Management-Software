@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.9.4** |
+| **Specification Version** | **v1.10.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 10, 2026 |
@@ -471,3 +471,5 @@ The asset-transfer endpoint applies `recordHolderReturn` for both returns to IT 
 `normalizeAvailableAsset` also enforces IT custody for Under repair. `getHolderReturnChanges` recognizes a repair status change even when a stale employee holder is supplied. Single and bulk asset writes check in the affected device through `recordHolderReturn`, clear department, retain maintenance status and service-center location, and record ownership changes. Regression coverage exercises both write paths, fresh exports and reconciliation while verifying accessory shortages remain partial.
 
 Both pickup form and pickup API permit RequestedMonitor=true with an empty Monitor field. This records the request without forcing an unavailable monitor assignment; PC validation remains unchanged. Regression coverage confirms pickup succeeds and retains the request with no monitor asset assignment.
+
+`indexInOutSchedule` adds `pickedUpByDate` using the normalized actual pickup timestamp; `scheduleForDay` returns filtered `pickedUp` records along with pending outgoing and incoming returns. Both calendar modules render CalendarPickedUpSection and support Picked up filters. CalendarReturnFilter is a shared accessible switch with role=switch and aria-checked; toolbar and modal instances update the same hideReturned state. Regression coverage verifies date placement, return exclusion and restoration, and custom day filtering.

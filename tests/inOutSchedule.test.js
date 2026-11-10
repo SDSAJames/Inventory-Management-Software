@@ -57,3 +57,19 @@ test('a return date excludes a record from Overdue even if its stored status is 
   assert.deepEqual(groups.overdue.map((record) => record.id), ['due']);
   assert.deepEqual(groups.returned.map((record) => record.id), ['returned', 'legacy-return']);
 });
+
+test('pickup events use actual dates and hide returned applies to both grid and open-day data', () => {
+  const records = [
+    { id: 'active', pickupDate: '2026-11-10 09:30:00', outIso: '2026-11-01' },
+    { id: 'returned', pickupDate: '2026-11-10', returnDate: '2026-11-11', inIso: '2026-11-11' },
+    { id: 'scheduled', outIso: '2026-11-10' },
+  ];
+  const visible = indexInOutSchedule(filterCalendarRecords(records, true));
+  assert.deepEqual(scheduleForDay(visible, '2026-11-10').pickedUp.map((row) => row.id), ['active']);
+  assert.deepEqual(visible.pickedUpByDate.get('2026-11-10').map((row) => row.id), ['active']);
+  assert.equal(scheduleForDay(visible, '2026-11-11').incoming.length, 0);
+  const all = indexInOutSchedule(filterCalendarRecords(records, false));
+  assert.equal(scheduleForDay(all, '2026-11-10').pickedUp.length, 2);
+  assert.equal(scheduleForDay(all, '2026-11-10', (row) => row.id === 'active').pickedUp.length, 1);
+  assert.equal(scheduleForDay(all, '2026-11-01').outgoing.length, 0);
+});

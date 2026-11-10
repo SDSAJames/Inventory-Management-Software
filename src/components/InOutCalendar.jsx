@@ -1,3 +1,4 @@
+import CalendarPickedUpSection from './CalendarPickedUpSection';
 import CalendarPickupReadiness from './CalendarPickupReadiness';
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import CalendarNavigation from './CalendarNavigation';
@@ -116,7 +117,7 @@ export default function InOutCalendar({
 
   /* ── 5. Index Outgoing & Incoming events by Date ────────────── */
   const scheduleIndex = useMemo(() => indexInOutSchedule(filterCalendarRecords(enrichedLoans, hideReturned)), [enrichedLoans, hideReturned]);
-  const { outgoingByDate, incomingByDate } = scheduleIndex;
+  const { outgoingByDate, incomingByDate, pickedUpByDate } = scheduleIndex;
   const selectedDayData = selectedDay ? scheduleForDay(scheduleIndex, selectedDay.dateStr, matchesFilters) : null;
 
 
@@ -141,6 +142,15 @@ export default function InOutCalendar({
       }
     });
 
+    let pickedUpCount = 0;
+    pickedUpByDate.forEach((list, dateStr) => {
+      if (dateStr.startsWith(prefix)) {
+        const filtered = list.filter(matchesFilters);
+        pickedUpCount += filtered.length;
+        filtered.forEach((loan) => { if (loan.isTraveler) travelerEvents += 1; else employeeEvents += 1; });
+      }
+    });
+
     incomingByDate.forEach((list, dateStr) => {
       if (dateStr.startsWith(prefix)) {
         const filtered = list.filter(matchesFilters);
@@ -161,9 +171,10 @@ export default function InOutCalendar({
       completedReturns,
       travelerEvents,
       employeeEvents,
-      total: outgoingCount + incomingCount,
+      total: outgoingCount + incomingCount + pickedUpCount,
+      pickedUpCount,
     };
-  }, [currentYear, currentMonth, outgoingByDate, incomingByDate, requesterTypeFilter, selectedRequester, selectedLocation, searchFilter]);
+  }, [currentYear, currentMonth, outgoingByDate, incomingByDate, pickedUpByDate, requesterTypeFilter, selectedRequester, selectedLocation, searchFilter]);
 
   /* ── 8. Open Day Detail Modal ───────────────────────────────── */
   const handleOpenDay = (dateStr) => {
@@ -197,6 +208,7 @@ export default function InOutCalendar({
       {/* ── Filters Bar (Requester Type, Individual User, Event Flow, Location, Search) ── */}
       <div className="calendar-filters-bar">
         <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
+          <button type="button" className={`cal-filter-pill ${eventTypeFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setEventTypeFilter(eventTypeFilter === 'pickedup' ? 'all' : 'pickedup')}>Picked up ({monthStats.pickedUpCount})</button>
         {/* Primary Filter: Requester Type Buttons */}
         <div className="filter-block">
           <label className="filter-block-label">Requester Type:</label>
@@ -425,13 +437,15 @@ export default function InOutCalendar({
         <div className="calendar-days-grid">
           {calendarDays.map((cell) => {
             const isToday = cell.dateStr === today;
+            const pickedUpList = (pickedUpByDate.get(cell.dateStr) || []).filter(matchesFilters);
+            const showPickedUp = eventTypeFilter === 'all' || eventTypeFilter === 'pickedup';
             const outgoingList = (outgoingByDate.get(cell.dateStr) || []).filter(matchesFilters);
             const incomingList = (incomingByDate.get(cell.dateStr) || []).filter(matchesFilters);
 
             const showOutgoing = eventTypeFilter === 'all' || eventTypeFilter === 'outgoing';
             const showIncoming = eventTypeFilter === 'all' || eventTypeFilter === 'incoming';
 
-            const totalEvents =
+            const totalEvents = (showPickedUp ? pickedUpList.length : 0) +
               (showOutgoing ? outgoingList.length : 0) +
               (showIncoming ? incomingList.length : 0);
 
@@ -478,6 +492,7 @@ export default function InOutCalendar({
 
                 {/* Event Chips Container */}
                 <div className="cal-chips-container">
+                  {showPickedUp && pickedUpList.slice(0, 2).map((loan) => <div key={`pickedup-${loan.id}`} className="cal-chip returned-chip" title={`Picked up: ${loan.knoxId || loan.assignee} · ${loan.assetCode || 'No PC'}`}><span className="chip-icon">✓</span><span className="chip-name">Picked up · {loan.knoxId || loan.assignee}</span></div>)}
                   {/* Outgoing (Checkouts / Departures) */}
                   {showOutgoing &&
                     outgoingList.slice(0, 2).map((l) => (
@@ -563,18 +578,19 @@ export default function InOutCalendar({
               <span className="day-modal-eyebrow">EQUIPMENT IN & OUT SCHEDULE</span>
               <h2 className="day-modal-title">{formatDayTitle(selectedDayData.dateStr)}</h2>
               <span className="day-modal-subtitle">
-                {(selectedDayData.outgoing?.length || 0) + (selectedDayData.incoming?.length || 0)} schedule requests recorded for this date
+                {(selectedDayData.outgoing?.length || 0) + (selectedDayData.incoming?.length || 0) + selectedDayData.pickedUp.length} schedule requests recorded for this date
               </span>
             </div>
 
             {/* Quick Filter tabs inside modal */}
             <div className="calendar-type-pills day-modal-pills">
+              <button type="button" className={`loan-tab ${dayModalFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setDayModalFilter('pickedup')}>Picked up ({selectedDayData.pickedUp.length})</button>
               <button
                 type="button"
                 className={`cal-filter-pill ${dayModalFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setDayModalFilter('all')}
               >
-                All ({selectedDayData.outgoing.length + selectedDayData.incoming.length})
+                All ({selectedDayData.outgoing.length + selectedDayData.incoming.length + selectedDayData.pickedUp.length})
               </button>
               <button
                 type="button"
@@ -593,7 +609,10 @@ export default function InOutCalendar({
             </div>
           </div>
 
+          <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
+
           <div className="day-modal-content-stream">
+            {(dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditLoan ? (id) => { setSelectedDayData(null); onEditLoan(id); } : undefined} />}
             {/* 1. Outgoing Section (Checkouts & Departures) */}
             {(dayModalFilter === 'all' || dayModalFilter === 'outgoing') && (
               <div className="day-modal-section">

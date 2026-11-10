@@ -1,3 +1,4 @@
+import CalendarPickedUpSection from './CalendarPickedUpSection';
 import CalendarPickupReadiness from './CalendarPickupReadiness';
 import CalendarNavigation from './CalendarNavigation';
 import CalendarWeekdays from './CalendarWeekdays';
@@ -37,7 +38,7 @@ export default function TravelerCalendar({
   const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
 
   /* ── Index travelers by dates ────────────────────────────── */
-  const { outgoingByDate: incomingByDate, incomingByDate: returningByDate } = useMemo(() => indexInOutSchedule(filterCalendarRecords(travelers, hideReturned).map((traveler) => ({
+  const { outgoingByDate: incomingByDate, incomingByDate: returningByDate, pickedUpByDate } = useMemo(() => indexInOutSchedule(filterCalendarRecords(travelers, hideReturned).map((traveler) => ({
     ...traveler,
     outIso: normalizeDateToIso(traveler.startDate || traveler.pickupDate || traveler.loanDate),
     inIso: traveler.isReturned ? normalizeDateToIso(traveler.returnDate || traveler.returnedDate || getLoanEndDate(traveler)) : traveler.hasPickup || traveler.pickupDate ? normalizeDateToIso(getLoanEndDate(traveler)) : '',
@@ -52,6 +53,7 @@ export default function TravelerCalendar({
     dateStr: selectedDay.dateStr,
     incoming: (incomingByDate.get(selectedDay.dateStr) || []).filter(matchesFilters),
     returning: (returningByDate.get(selectedDay.dateStr) || []).filter(matchesFilters),
+    pickedUp: (pickedUpByDate.get(selectedDay.dateStr) || []).filter(matchesFilters),
   } : null;
 
 
@@ -73,6 +75,15 @@ export default function TravelerCalendar({
       }
     });
 
+    let pickedUpCount = 0;
+    pickedUpByDate.forEach((list, dateStr) => {
+      if (dateStr.startsWith(prefix)) {
+        const filtered = list.filter(matchesFilters);
+        pickedUpCount += filtered.length;
+
+      }
+    });
+
     returningByDate.forEach((list, dateStr) => {
       if (dateStr.startsWith(prefix)) {
         const filtered = list.filter(filterFn);
@@ -89,9 +100,10 @@ export default function TravelerCalendar({
       returningCount,
       overdueCount,
       completedReturns,
-      total: incomingCount + returningCount + overdueCount + completedReturns,
+      total: incomingCount + returningCount + overdueCount + completedReturns + pickedUpCount,
+      pickedUpCount,
     };
-  }, [currentYear, currentMonth, incomingByDate, returningByDate, selectedLocation, searchFilter]);
+  }, [currentYear, currentMonth, incomingByDate, returningByDate, pickedUpByDate, selectedLocation, searchFilter]);
 
   /* ── Open day detail modal ───────────────────────────────── */
   const handleOpenDay = (dateStr) => {
@@ -108,6 +120,7 @@ export default function TravelerCalendar({
         {/* ── Filters & Search ──────────────────────────────── */}
         <div className="calendar-controls-group">
           <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
+          <button type="button" className={`cal-filter-pill ${eventTypeFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setEventTypeFilter(eventTypeFilter === 'pickedup' ? 'all' : 'pickedup')}>Picked up ({monthStats.pickedUpCount})</button>
           {/* Search box */}
           <div className="calendar-search-wrap">
             <span className="cal-search-icon">🔍</span>
@@ -225,13 +238,15 @@ export default function TravelerCalendar({
               return true;
             };
 
+            const pickedUpList = (pickedUpByDate.get(cell.dateStr) || []).filter(matchesFilters);
+            const showPickedUp = eventTypeFilter === 'all' || eventTypeFilter === 'pickedup';
             const incomingList = (incomingByDate.get(cell.dateStr) || []).filter(filterFn);
             const returningList = (returningByDate.get(cell.dateStr) || []).filter(filterFn).filter((t) => eventTypeFilter === 'all' || returnType(t) === eventTypeFilter);
 
             const showIncoming = eventTypeFilter === 'all' || eventTypeFilter === 'incoming';
-            const showReturning = eventTypeFilter !== 'incoming';
+            const showReturning = eventTypeFilter !== 'incoming' && eventTypeFilter !== 'pickedup';
 
-            const totalEvents =
+            const totalEvents = (showPickedUp ? pickedUpList.length : 0) +
               (showIncoming ? incomingList.length : 0) +
               (showReturning ? returningList.length : 0);
 
@@ -278,6 +293,7 @@ export default function TravelerCalendar({
 
                 {/* Event Chips Container */}
                 <div className="cal-chips-container">
+                  {showPickedUp && pickedUpList.slice(0, 2).map((loan) => <div key={`pickedup-${loan.id}`} className="cal-chip returned-chip" title={`Picked up: ${loan.knoxId || loan.assignee} · ${loan.assetCode || 'No PC'}`}><span className="chip-icon">✓</span><span className="chip-name">Picked up · {loan.knoxId || loan.assignee}</span></div>)}
                   {/* Incoming travelers list */}
                   {showIncoming &&
                     incomingList.slice(0, 2).map((t) => (
@@ -364,14 +380,18 @@ export default function TravelerCalendar({
             </div>
 
             <div className="day-modal-stats">{['returned', 'overdue'].map((type) => <span key={type} className="cal-stat-badge">{type === 'returned' ? 'Returned' : 'Overdue'}: {selectedDayData.returning.filter((t) => returnType(t) === type).length}</span>)}</div>
+            <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
+
+
             {/* Sub-filter tabs inside modal */}
             <div className="loan-tabs" style={{ marginTop: '14px', marginBottom: '16px' }}>
+              <button type="button" className={`loan-tab ${dayModalFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setDayModalFilter('pickedup')}>Picked up ({selectedDayData.pickedUp.length})</button>
               <button
                 type="button"
                 className={`loan-tab ${dayModalFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setDayModalFilter('all')}
               >
-                All Schedules ({selectedDayData.incoming.length + selectedDayData.returning.length})
+                All Schedules ({selectedDayData.incoming.length + selectedDayData.returning.length + selectedDayData.pickedUp.length})
               </button>
               <button
                 type="button"
@@ -390,8 +410,9 @@ export default function TravelerCalendar({
             </div>
 
             <div className="loan-tabs">{['returned', 'overdue'].map((type) => <button type="button" key={type} className={`loan-tab ${dayModalFilter === type ? 'active' : ''}`} onClick={() => setDayModalFilter(type)}>{type === 'returned' ? 'Returned' : 'Overdue'} ({selectedDayData.returning.filter((t) => returnType(t) === type).length})</button>)}</div>
+            {(dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditTraveler ? (id) => { setSelectedDayData(null); onEditTraveler(id); } : undefined} />}
             {/* Empty state for the selected day */}
-            {selectedDayData.incoming.length === 0 && selectedDayData.returning.length === 0 && (
+            {selectedDayData.incoming.length === 0 && selectedDayData.returning.length === 0 && selectedDayData.pickedUp.length === 0 && (
               <div className="empty" style={{ padding: '36px 12px' }}>
                 <p>No business traveler arrivals or returns recorded on {selectedDayData.dateStr}.</p>
                 {onRecordTraveler && (
@@ -410,7 +431,7 @@ export default function TravelerCalendar({
               </div>
             )}
 
-            {dayModalFilter !== 'all' && dayModalFilter !== 'incoming' && selectedReturns.length === 0 && <p className="empty">No {dayModalFilter} records for this date.</p>}
+            {dayModalFilter !== 'all' && dayModalFilter !== 'incoming' && dayModalFilter !== 'pickedup' && selectedReturns.length === 0 && <p className="empty">No {dayModalFilter} records for this date.</p>}
             {/* 1. Incoming Travelers Section */}
             {(dayModalFilter === 'all' || dayModalFilter === 'incoming') &&
               selectedDayData.incoming.length > 0 && (
@@ -518,7 +539,7 @@ export default function TravelerCalendar({
               )}
 
             {/* 2. Returning Travelers Section */}
-            {dayModalFilter !== 'incoming' &&
+            {dayModalFilter !== 'incoming' && dayModalFilter !== 'pickedup' &&
               selectedReturns.length > 0 && (
                 <div className="day-schedule-section" style={{ marginTop: '20px' }}>
                   <div className="section-title-row returning-header">

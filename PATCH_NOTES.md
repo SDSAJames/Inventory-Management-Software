@@ -6,6 +6,24 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] — 2026-11-10
+
+### Calendar Pickup Information & Day Return Filters
+
+Show actual pickup events in both calendars and synchronize Hide returned inside day details.
+
+#### Highlights
+- See completed pickups on the actual pickup date in Business Travelers and In & Out calendars.
+- Use the same compact pickup row and Hide returned switch in both day dialogs.
+
+#### Calendar Pickup Events
+
+- Share pickup indexing and detail rows with recipient, Knox ID, actual pickup time, PC, monitor and location.
+- Add Picked up calendar and day filters and include actual pickups in event counts.
+- Keep pending schedules separate from completed pickups. Hide returned removes completed-return records from grid events, counts and open day details through the same state.
+
+---
+
 ## [1.9.4] — 2026-11-10
 
 ### Allow Pickup Without an Unavailable Monitor
