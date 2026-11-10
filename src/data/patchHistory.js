@@ -9,6 +9,19 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-10',
+    title: 'Allow Pickup Without an Unavailable Monitor',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Complete pickup when a requested monitor could not be provided.',
+    highlights: ['Leave the monitor asset field blank at pickup even when Monitor was requested in the schedule.'],
+    sections: [{ heading: 'Pickup Validation', badge: 'Fix', items: [
+      'Remove the blocking monitor-selection message in the pickup form and API.',
+      'Preserve the original monitor request while recording only equipment actually handed over.',
+    ] }],
+  },
+  {
+    version: '1.9.3',
+    date: '2026-11-10',
     title: 'Repair Returns to IT Custody',
     tag: 'Patch',
     type: 'patch',

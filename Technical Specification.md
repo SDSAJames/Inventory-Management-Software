@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.9.3** |
+| **Specification Version** | **v1.9.4** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 10, 2026 |
@@ -469,3 +469,5 @@ The asset-transfer endpoint applies `recordHolderReturn` for both returns to IT 
 `DbProvider` captures the current database revision before background export requests and rejects the response if a local state write occurred before completion. This prevents pre-transfer snapshots from overwriting the saved holder in the browser cache. Calendar row CSS shares content-sized flex regions in both calendar modules, with wrapping values, compact actions and an 850px breakpoint for details wrapping.
 
 `normalizeAvailableAsset` also enforces IT custody for Under repair. `getHolderReturnChanges` recognizes a repair status change even when a stale employee holder is supplied. Single and bulk asset writes check in the affected device through `recordHolderReturn`, clear department, retain maintenance status and service-center location, and record ownership changes. Regression coverage exercises both write paths, fresh exports and reconciliation while verifying accessory shortages remain partial.
+
+Both pickup form and pickup API permit RequestedMonitor=true with an empty Monitor field. This records the request without forcing an unavailable monitor assignment; PC validation remains unchanged. Regression coverage confirms pickup succeeds and retains the request with no monitor asset assignment.

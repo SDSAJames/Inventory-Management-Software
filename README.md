@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.9.3)
+# StarPlus Energy Asset Management System (v1.9.4)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -149,3 +149,5 @@ Ownership changes are saved when **Confirm Ownership Change** succeeds; closing 
 Calendar day dialogs use compact, content-sized rows with wrapping for long values and smaller screens. Background refreshes discard older snapshots when a newer local database change has occurred, so a confirmed ownership transfer stays visible without saving the parent asset form.
 
 Changing an asset to **Under repair** returns custody to **IT Department**, clears the employee department, and sets Location to **service center**. Saving a single or bulk change records the return and checks in that device from active custody; missing accessories remain outstanding.
+
+A scheduled monitor request does not require a monitor at actual pickup. Leave its asset field blank if none can be provided; the request remains recorded, and no monitor is assigned.

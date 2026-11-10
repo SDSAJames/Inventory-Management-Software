@@ -243,6 +243,16 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         assert.equal(db.prepare('SELECT department FROM assets WHERE code = ?').get(code).department, 'Custom team');
       }
     });
+    await t.test('requested monitor may remain unfulfilled at pickup without assigning a monitor', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(loansRouter, 'post', '/', { id: 'unfulfilled-monitor', knoxId: 'monitor.request', assigneeType: 'Business traveler', equipment: { RequestedMonitor: true } });
+      const result = invoke(loansRouter, 'post', '/:id/pickup', { pickupDate: '2026-11-10', equipment: { RequestedMonitor: true, Monitor: '' } }, { id: 'unfulfilled-monitor' });
+      assert.equal(result.loan.pickupDate, '2026-11-10');
+      assert.equal(result.loan.equipment.RequestedMonitor, true);
+      assert.equal(result.loan.equipment.Monitor, '');
+      assert.equal(result.loan.status, 'Active');
+      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM assets WHERE owner = 'monitor.request'").get().count, 0);
+    });
     await t.test('blank transfer owner returns to IT using the selected fixed date and retains missing accessories', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(assetsRouter, 'post', '/', { id: 'blank-transfer', code: 'BLANK-TRANSFER', category: 'Laptop' });

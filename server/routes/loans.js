@@ -491,7 +491,6 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
 
   const effectiveAssetCode = pcAssetCode(req.body?.assetCode ?? equipment?.Laptop ?? loan.asset_code);
   if (equipment?.RequestedPC && !effectiveAssetCode) return res.status(400).json({ success: false, error: 'Select the PC being picked up' });
-  if (equipment?.RequestedMonitor && (!equipment.Monitor || equipment.Monitor === '0')) return res.status(400).json({ success: false, error: 'Select the monitor being picked up' });
   if (effectiveAssetCode && !db.prepare('SELECT id FROM assets WHERE code = ?').get(effectiveAssetCode)) return res.status(400).json({ success: false, error: 'Select a registered PC asset' });
   const now = new Date().toISOString();
   const effectiveEndDate = tracksEndDate(loan.assignee_type)

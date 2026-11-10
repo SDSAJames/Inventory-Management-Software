@@ -169,7 +169,6 @@ export default function LoansPage() {
     if (!pickupTarget) return;
     const timestamp = pickupForm.pickupDate || nowLocalIso();
     if (pickupForm.requestPc && !pickupForm.assetCode.trim()) return toast('Select the PC being picked up');
-    if (pickupForm.requestMonitor && (!pickupForm.monitor || pickupForm.monitor === '0')) return toast('Select the monitor being picked up');
     const details = {
       assetCode: pickupForm.assetCode.trim(),
       startDate: pickupForm.startDate,

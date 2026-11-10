@@ -6,6 +6,22 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] — 2026-11-10
+
+### Allow Pickup Without an Unavailable Monitor
+
+Complete pickup when a requested monitor could not be provided.
+
+#### Highlights
+- Leave the monitor asset field blank at pickup even when Monitor was requested in the schedule.
+
+#### Pickup Validation
+
+- Remove the blocking monitor-selection message in the pickup form and API.
+- Preserve the original monitor request while recording only equipment actually handed over.
+
+---
+
 ## [1.9.3] — 2026-11-10
 
 ### Repair Returns to IT Custody
