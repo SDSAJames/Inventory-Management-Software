@@ -125,6 +125,7 @@ test('transfer fulfills the selected schedule once with actual equipment and pic
   const db = fixture();
   try {
     addSchedule(db);
+    db.prepare("UPDATE loans SET asset_code = ?, equipment_json = ? WHERE id = 'schedule'").run('PLANNED-PC', JSON.stringify({ Laptop: 'PLANNED-PC', Monitor: 'PLANNED-MON', RequestedPC: true, Adapter: '5' }));
     const id = transferLoan(db, 'source', { scheduleId: 'schedule', selection: { Laptop: 'PC-1', Dongle: '1' }, startDate: '2026-11-05', endDate: '2026-11-25' });
     assert.equal(id, 'schedule');
     assert.equal(db.prepare('SELECT COUNT(*) AS count FROM loans').get().count, 2);
@@ -141,6 +142,9 @@ test('transfer fulfills the selected schedule once with actual equipment and pic
     assert.equal(equipment.PickupMethod, 'Transfer');
     assert.equal(equipment.RequestedPC, true);
     assert.equal(equipment.Dongle, '1');
+    assert.equal(equipment.Laptop, 'PC-1');
+    assert.equal(equipment.Monitor, undefined);
+    assert.equal(equipment.Adapter, undefined);
     assert.equal(schedule.asset_code, 'PC-1');
     assert.equal(db.prepare('SELECT owner FROM assets').get().owner, 'Scheduled Traveler');
     assert.throws(() => transferLoan(db, 'source', { scheduleId: 'schedule', selection: { Dongle: '1' } }), /awaiting pickup/);

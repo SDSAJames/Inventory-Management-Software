@@ -64,7 +64,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     }
     setErrors({});
     setSubmitError('');
-  }, [assetId]);
+  }, [assetId, existing]);
 
   // Effective ownership history for this asset including all loans and assignments
   const ownershipHistory = useMemo(() => {

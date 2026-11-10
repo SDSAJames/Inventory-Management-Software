@@ -8,6 +8,32 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-10',
+    title: 'Traveler Follow-up & Calendar Readiness',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Collect overdue and unreturned traveler recipients, distinguish calendar return stages, and improve transfer handovers.',
+    highlights: [
+      'Use the Business Travelers Follow-up tab to copy unique Knox IDs as knoxid_1;knoxid_2; for email follow-up.',
+      'Filter traveler calendar events by Incoming, Returning, Returned or Overdue.',
+      'View and toggle pickup readiness in both calendar day detail windows.',
+      'Transfer actual equipment over the selected schedule plan and immediately refresh current-holder details after ownership changes.',
+    ],
+    sections: [
+      { heading: 'Traveler Follow-up', badge: 'Feature', items: [
+        'List overdue travelers and partial returns with equipment outstanding using the existing custody grouping rules.',
+        'Copy trimmed, case-insensitively deduplicated Knox IDs with semicolon separators and a trailing semicolon. Offer selectable text when clipboard access fails.',
+      ] },
+      { heading: 'Calendar & Transfers', badge: 'Workflow', items: [
+        'Separate expected, completed and overdue returns in calendar filters and counts; keep unpicked schedules out of expected returns.',
+        'Reuse the pickup-readiness switch in calendar day details and update the shared custody record.',
+        'Replace planned schedule equipment with the actual transferred items without requiring a separate schedule edit.',
+        'Resynchronize open asset forms when saved ownership changes, including blank-owner returns to IT Department at IT Office.',
+      ] },
+    ],
+  },
+  {
+    version: '1.8.1',
     date: '2026-11-06',
     title: 'Day-First Asset Dates & Location in Every Custody Tab',
     tag: 'Patch',

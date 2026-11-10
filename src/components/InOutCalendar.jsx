@@ -1,3 +1,4 @@
+import CalendarPickupReadiness from './CalendarPickupReadiness';
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import CalendarNavigation from './CalendarNavigation';
 import CalendarWeekdays from './CalendarWeekdays';
@@ -631,6 +632,7 @@ export default function InOutCalendar({
                           </span>
                         </div>
 
+                        <CalendarPickupReadiness loan={loan} />
                         <div className="day-card-body">
                           <div className="day-card-info-item">
                             <span className="info-lbl">Asset Number:</span>

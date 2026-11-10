@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.8.1** |
+| **Specification Version** | **v1.9.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 6, 2026 |
+| **Release Date** | November 10, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -459,3 +459,7 @@ The patch history system is accessible via:
 - Scheduled and All records share the pickup-readiness switch; readiness is inapplicable after pickup or return. Every custody tab includes the shared sortable Location column. Calendar Hide returned filters the event index used by grid cells, summary counts and open-day details.
 - Common form initialization, validation, payload creation and partial-return accounting live in src/lib/loanForms.js. Equipment metadata lives in shared/equipment.js; defaults live in shared/referenceData.js. The design document lists component ownership.
 - Every completed code update includes a SemVer increment, a new structured release-history entry and affected-document updates. npm run docs:sync generates patch notes and synchronizes manifest, lockfile and document metadata; previous releases remain unchanged.
+
+### Traveler follow-up and transfer synchronization
+
+`src/lib/travelerFollowUp.js` uses `groupLoans` for overdue and partial-return eligibility. Recipient output excludes blank IDs, deduplicates case-insensitively, sorts IDs, and appends `;` after every recipient. Clipboard failure leaves a read-only selectable list available. Traveler calendar return filters distinguish future/current expected returns, actual returns and overdue picked-up equipment; pending pickups do not produce return events. `CalendarPickupReadiness` uses the shared `PickupReadiness` control and `setLoanReadyForPickup` in both day dialogs. Scheduled transfer equipment is replaced rather than checked against the plan; existing transaction rollback and recipient/date validation remain enforced. AssetForm resynchronizes its draft when the saved asset object changes, so ownership transfers update open details immediately.

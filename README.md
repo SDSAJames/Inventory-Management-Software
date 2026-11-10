@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.8.1)
+# StarPlus Energy Asset Management System (v1.9.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -141,3 +141,5 @@ Shared functions and controls own repeated business rules, import mappings, loan
 - **[Software Design Document (SDD)](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md)**: Product scope, business rules, corporate palette, state transitions, and user workflows.
 - **[Technical Specification](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md)**: Component architecture, data schemas, passive reconciliation algorithm, and OpenXML mapping.
 - **[Patch Notes](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md)**: Comprehensive release history and changelog.
+
+Business Travelers includes a **Follow-up** tab for overdue equipment and partial returns. **Copy Knox IDs** copies unique recipients as `knoxid_1;knoxid_2;...;` for email follow-up; the list is also selectable manually. Its calendar distinguishes **Incoming**, **Returning**, **Returned**, and **Overdue**, and both calendar day dialogs expose the shared pickup-readiness toggle. Transfers into a schedule replace its planned equipment with the actual transferred items. Open asset forms refresh Current holder after ownership changes, including returns to IT Department at IT Office.

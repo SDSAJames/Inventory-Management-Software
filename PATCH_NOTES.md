@@ -6,6 +6,32 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] — 2026-11-10
+
+### Traveler Follow-up & Calendar Readiness
+
+Collect overdue and unreturned traveler recipients, distinguish calendar return stages, and improve transfer handovers.
+
+#### Highlights
+- Use the Business Travelers Follow-up tab to copy unique Knox IDs as knoxid_1;knoxid_2; for email follow-up.
+- Filter traveler calendar events by Incoming, Returning, Returned or Overdue.
+- View and toggle pickup readiness in both calendar day detail windows.
+- Transfer actual equipment over the selected schedule plan and immediately refresh current-holder details after ownership changes.
+
+#### Traveler Follow-up
+
+- List overdue travelers and partial returns with equipment outstanding using the existing custody grouping rules.
+- Copy trimmed, case-insensitively deduplicated Knox IDs with semicolon separators and a trailing semicolon. Offer selectable text when clipboard access fails.
+
+#### Calendar & Transfers
+
+- Separate expected, completed and overdue returns in calendar filters and counts; keep unpicked schedules out of expected returns.
+- Reuse the pickup-readiness switch in calendar day details and update the shared custody record.
+- Replace planned schedule equipment with the actual transferred items without requiring a separate schedule edit.
+- Resynchronize open asset forms when saved ownership changes, including blank-owner returns to IT Department at IT Office.
+
+---
+
 ## [1.8.1] — 2026-11-06
 
 ### Day-First Asset Dates & Location in Every Custody Tab

@@ -3,12 +3,6 @@ export const TRANSFER_ITEMS = EQUIPMENT_KEYS;
 
 /** A schedule's equipment describes planned pickup, not additional held quantities. */
 export function equipmentForTransferredPickup(planned, transferred) {
-  for (const key of DEVICE_KEYS) {
-    const hasPlannedCode = planned[key] && (key === 'Laptop' || !Number.isFinite(Number(planned[key])));
-    if (hasPlannedCode && transferred[key] && String(planned[key]) !== String(transferred[key])) {
-      throw new Error(`The selected schedule specifies a different ${key}; edit the schedule first`);
-    }
-  }
   return { RequestedPC: Boolean(planned.RequestedPC), RequestedMonitor: Boolean(planned.RequestedMonitor), ...transferred, PickupMethod: 'Transfer' };
 }
 export function splitLoanEquipment(equipment, selection) {

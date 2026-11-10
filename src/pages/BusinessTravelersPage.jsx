@@ -1,3 +1,4 @@
+import { travelerFollowUp, knoxRecipientList } from '../lib/travelerFollowUp';
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import LoanReturnModal from '../components/LoanReturnModal';
 
@@ -51,6 +52,8 @@ export default function BusinessTravelersPage() {
   const overdueTravelers = useMemo(() => {
     return allTravelers.filter((t) => t.isOverdue || t.tripStatus === 'Overdue');
   }, [allTravelers]);
+
+  const followUpTravelers = useMemo(() => travelerFollowUp(allTravelers), [allTravelers]);
 
   /* ── 2. Summary Metrics ("How many they are") ─────────────── */
   const metrics = useMemo(() => {
@@ -156,6 +159,7 @@ export default function BusinessTravelersPage() {
         </div>
         <div className="view-header-actions">
           <div className="view-mode-toggle">
+            <button type="button" className={`view-mode-btn ${viewMode === 'followup' ? 'active' : ''}`} onClick={() => setViewMode('followup')}>Follow-up ({followUpTravelers.length})</button>
             <button
               type="button"
               className={`view-mode-btn ${viewMode === 'overdue' ? 'active overdue-toggle-active' : ''}`}
@@ -451,6 +455,19 @@ export default function BusinessTravelersPage() {
           )}
         </section>
       )}
+
+      {viewMode === 'followup' && <section className="panel">
+        <div className="panel-heading"><h3>Overdue &amp; unreturned follow-up ({followUpTravelers.length})</h3>
+          <button type="button" className="button" disabled={!knoxRecipientList(followUpTravelers)} onClick={async () => {
+            try { await navigator.clipboard.writeText(knoxRecipientList(followUpTravelers)); toast('Knox ID list copied'); }
+            catch { toast('Clipboard unavailable. Select and copy the recipient list below.'); }
+          }}>Copy Knox IDs</button></div>
+        <p>Copy the unique Knox IDs below for email follow-up. This includes overdue equipment and partial returns with items outstanding.</p>
+        <textarea aria-label="Follow-up Knox IDs" readOnly value={knoxRecipientList(followUpTravelers)} rows={2} style={{ width: '100%' }} />
+        <div className="table-wrap"><table className="loan-table"><thead><tr><th>Knox ID</th><th>Assignee</th><th>PC asset #</th><th>Location</th><th>Due date</th><th>Follow-up reason</th><th>Action</th></tr></thead>
+        <tbody>{followUpTravelers.map((loan) => <tr key={loan.id}><td>{loan.knoxId || 'Missing Knox ID'}</td><td>{loan.assignee}</td><td>{loan.assetCode || '—'}</td><td>{loan.location}</td><td>{readableLoanDate(getLoanEndDate(loan)) || '—'}</td><td>{loan.followUpReason}</td><td><button type="button" className="text-button" onClick={() => setEditLoanId(loan.id)}>View / edit</button></td></tr>)}
+        {!followUpTravelers.length && <tr><td colSpan={7}>No overdue or unreturned travelers.</td></tr>}</tbody></table></div>
+      </section>}
 
       {/* ── Monthly Travel Schedule Calendar ────────────────── */}
       {(viewMode === 'calendar' || viewMode === 'both') && (
