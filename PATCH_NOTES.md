@@ -6,6 +6,25 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] — 2026-11-10
+
+### Keep Deployment Separate from Inventory Data
+
+Remove automatic operational-data imports and reseeding after reloads and server restarts.
+
+#### Highlights
+- Keep npm run build limited to generating application files in dist.
+- Never upload a cached browser database automatically or reinsert sample assets and loans into empty tables.
+
+#### Data Preservation
+
+- Accept successful server snapshots, including empty collections, as authoritative without triggering an import.
+- Start missing or unreadable browser caches with empty operational records and stop injecting sample assets on reload.
+- Retain schema, account and reference-data initialization while removing sample asset, loan and employee seeding.
+- Verify edited loan end dates survive repeated startup and empty operational tables remain empty.
+
+---
+
 ## [1.10.0] — 2026-11-10
 
 ### Calendar Pickup Information & Day Return Filters

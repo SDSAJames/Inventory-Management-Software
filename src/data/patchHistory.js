@@ -9,6 +9,24 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-10',
+    title: 'Keep Deployment Separate from Inventory Data',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Remove automatic operational-data imports and reseeding after reloads and server restarts.',
+    highlights: [
+      'Keep npm run build limited to generating application files in dist.',
+      'Never upload a cached browser database automatically or reinsert sample assets and loans into empty tables.',
+    ],
+    sections: [{ heading: 'Data Preservation', badge: 'Fix', items: [
+      'Accept successful server snapshots, including empty collections, as authoritative without triggering an import.',
+      'Start missing or unreadable browser caches with empty operational records and stop injecting sample assets on reload.',
+      'Retain schema, account and reference-data initialization while removing sample asset, loan and employee seeding.',
+      'Verify edited loan end dates survive repeated startup and empty operational tables remain empty.',
+    ] }],
+  },
+  {
+    version: '1.10.0',
+    date: '2026-11-10',
     title: 'Calendar Pickup Information & Day Return Filters',
     tag: 'Feature Release',
     type: 'minor',

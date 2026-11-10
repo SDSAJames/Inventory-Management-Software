@@ -341,53 +341,7 @@ function seedDefaultData() {
   }
 
   // Seed initial assets if table is empty
-  const countAssets = db.prepare('SELECT COUNT(*) as count FROM assets').get();
-  if (countAssets.count === 0 && seed.assets?.length) {
-    const insertAsset = db.prepare(`
-      INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, condition, notes, updated, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const insertHistory = db.prepare(`
-      INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const a of seed.assets) {
-      const now = new Date().toISOString();
-      insertAsset.run(
-        a.id,
-        a.code,
-        a.name,
-        a.category || 'Laptop',
-        a.model || '',
-        a.serial || '',
-        a.status || 'Available',
-        getAssetLocation(a.status || 'Available', a.location),
-        a.owner || '',
-        a.department || '',
-        a.condition || 'Good',
-        a.notes || '',
-        a.updated || now.slice(0, 10),
-        now
-      );
-
-      if (a.owner) {
-        insertHistory.run(
-          `hist-${a.id}-init`,
-          a.code,
-          'None',
-          a.owner,
-          a.updated || now.slice(0, 10),
-          a.owner === DEFAULT_OWNER ? 'Returned to IT Department' : 'Initial assignment',
-          `Initial asset custody assignment (${a.department || 'General'})`,
-          now
-        );
-      }
-    }
-    console.log(`✓ Seeded ${seed.assets.length} baseline inventory assets into SQLite`);
-  }
-
+  // Operational records are created only by explicit edits or imports.
   const knownCategories = new Set(db.prepare('SELECT name FROM asset_categories').all().map((row) => row.name.toLowerCase()));
   const categoryRows = db.prepare("SELECT DISTINCT category FROM assets WHERE category IS NOT NULL AND TRIM(category) <> ''").all();
   const addCategory = db.prepare('INSERT OR IGNORE INTO asset_categories (id, name) VALUES (?, ?)');
@@ -397,42 +351,6 @@ function seedDefaultData() {
       knownCategories.add(row.category.toLowerCase());
     }
   });
-
-  // Seed initial loans if table is empty
-  const countLoans = db.prepare('SELECT COUNT(*) as count FROM loans').get();
-  if (countLoans.count === 0 && seed.loans?.length) {
-    const insertLoan = db.prepare(`
-      INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, others, note, purpose, assignee_type, is_archived, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    for (const l of seed.loans) {
-      const now = new Date().toISOString();
-      insertLoan.run(
-        l.id,
-        l.assetCode,
-        l.assignee,
-        l.department || '',
-        l.knoxId || '',
-        normalizeLocation(l.location),
-        l.ip || '',
-        l.loanDate || l.startDate || now.slice(0, 10),
-        l.pickupDate || l.loanDate || now.slice(0, 10),
-        l.dueDate || l.endDate || '',
-        l.returnDate || '',
-        l.returnedDate || '',
-        l.status || 'Active',
-        JSON.stringify({ Adapter: 1, Cable: 1 }),
-        '',
-        l.purpose || l.note || '',
-        l.purpose || '',
-        'Business traveler',
-        l.returnDate || l.returnedDate ? 1 : 0,
-        now
-      );
-    }
-    console.log(`✓ Seeded ${seed.loans.length} baseline loans into SQLite`);
-  }
 
   // Seed reference departments
   const countDepts = db.prepare('SELECT COUNT(*) as count FROM departments').get();
@@ -450,26 +368,6 @@ function seedDefaultData() {
     seed.locations.forEach((loc, idx) => {
       insertLoc.run(`loc-${idx + 1}`, normalizeLocation(loc));
     });
-  }
-
-  // Seed employees directory
-  const countEmployees = db.prepare('SELECT COUNT(*) as count FROM employees').get();
-  if (countEmployees.count === 0 && seed.employees?.length) {
-    const insertEmp = db.prepare(`
-      INSERT INTO employees (id, name, department, position, knox_id, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    seed.employees.forEach((emp, idx) => {
-      insertEmp.run(
-        `emp-${idx + 1}`,
-        emp.name,
-        emp.department || '',
-        emp.position || 'Staff',
-        `KNOX-${String(idx + 1).padStart(3, '0')}`,
-        new Date().toISOString()
-      );
-    });
-    console.log(`✓ Seeded ${seed.employees.length} employees into SQLite`);
   }
 
   // Seed transfer reasons

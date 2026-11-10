@@ -1,11 +1,13 @@
 import { STORAGE_KEY, IMPORT_BACKUP_KEY } from './constants';
-import { seed } from '../data/seed';
+import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+
+const emptyDatabase = () => ({ assets: [], loans: [], employees: [], departments: [], locations: [DEFAULT_LOCATION], categories: [], statuses: [] });
 
 export function loadDb() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(seed);
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || emptyDatabase();
   } catch {
-    return structuredClone(seed);
+    return emptyDatabase();
   }
 }
 

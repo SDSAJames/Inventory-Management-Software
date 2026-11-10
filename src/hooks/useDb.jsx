@@ -11,7 +11,6 @@ import {
   loadTransferReasons,
   saveTransferReasons,
 } from '../lib/db';
-import { seed } from '../data/seed';
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
@@ -27,13 +26,6 @@ export function DbProvider({ children }) {
   const [db, setDbState] = useState(() => {
     const raw = normalizeDatabaseLocations(loadDb());
     if (raw && raw.assets && raw.loans) {
-      // Ensure baseline seed assets like SPE-4321 are present
-      const existingCodes = new Set(raw.assets.map((a) => a.code));
-      for (const sa of (seed.assets || [])) {
-        if (!existingCodes.has(sa.code) && !raw.assets.some((asset) => asset.id === sa.id)) {
-          raw.assets.push(sa);
-        }
-      }
       // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
       const assetsWithHistory = raw.assets.map((a) => {
         const normOwner = normalizeHolder(a.owner);
@@ -59,7 +51,7 @@ export function DbProvider({ children }) {
 
       return {
         ...raw,
-        categories: raw.categories || [...new Set([...(seed.assets || []).map((a) => a.category), ...raw.assets.map((a) => a.category)].filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
+        categories: raw.categories || [...new Set(raw.assets.map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
         loans,
         assets: reconcileAllAssets(assetsWithHistory, loans),
       };
@@ -67,7 +59,7 @@ export function DbProvider({ children }) {
     return raw ? {
       ...raw,
       loans: (raw.loans || []).map(normalizeLoanEndDate),
-      categories: raw.categories || [...new Set((seed.assets || []).map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
+      categories: raw.categories || [...new Set((raw.assets || []).map((a) => a.category).filter(Boolean))].map((name, i) => ({ id: `local-cat-${i}`, name })),
     } : raw;
   });
 
@@ -125,28 +117,18 @@ export function DbProvider({ children }) {
         if (!active || requestedRevision !== dbRevision.current || !res?.success || !res?.db) return;
         const serverDb = res.db;
 
-        if (serverDb.assets?.length || serverDb.loans?.length) {
-          setDb((prev) => ({
-            ...prev,
-            assets: reconcileAllAssets(serverDb.assets || [], serverDb.loans || []),
-            loans: serverDb.loans || [],
-            employees: serverDb.employees?.length ? serverDb.employees : prev.employees,
-            departments: serverDb.departments?.length ? serverDb.departments : prev.departments,
-            locations: Array.isArray(serverDb.locations) ? serverDb.locations : prev.locations,
-            categories: categoryRes?.categories?.length ? categoryRes.categories : prev.categories,
-            statuses: statusRes?.statuses?.length ? statusRes.statuses : prev.statuses,
-          }));
-        } else {
-          // If server database is newly created, seed it with initial baseline data
-          const local = loadDb();
-          if (local?.assets?.length || local?.loans?.length) {
-            await api.exchange.importData({
-              assets: local.assets || [],
-              loans: local.loans || [],
-              overwrite: true,
-            });
-          }
-        }
+        // Server snapshots, including empty collections, are authoritative.
+        // Refreshes never import browser cache or bundled sample data.
+        setDb((prev) => ({
+          ...prev,
+          assets: reconcileAllAssets(serverDb.assets || [], serverDb.loans || []),
+          loans: serverDb.loans || [],
+          employees: serverDb.employees || [],
+          departments: serverDb.departments || [],
+          locations: serverDb.locations || [],
+          categories: categoryRes?.categories ?? prev.categories,
+          statuses: statusRes?.statuses ?? prev.statuses,
+        }));
       } catch (err) {
         // Operates smoothly offline/from local cache if server is offline
       }

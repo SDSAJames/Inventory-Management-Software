@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.10.0** |
+| **Specification Version** | **v1.10.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 10, 2026 |
@@ -117,7 +117,7 @@ Inventory-Management-Software/
 │   │   └── xlsx.js              # Pure JavaScript OpenXML (.xlsx) builder and parser
 │   └── data/
 │       ├── patchHistory.js      # Structured release notes data per version (SemVer 2.0.0)
-│       └── seed.js              # Initial seed database (assets, loans, employees, locations)
+│       └── seed.js              # Sample fixtures and reference defaults; operational samples are not automatically loaded
 ```
 
 ---
@@ -473,3 +473,7 @@ The asset-transfer endpoint applies `recordHolderReturn` for both returns to IT 
 Both pickup form and pickup API permit RequestedMonitor=true with an empty Monitor field. This records the request without forcing an unavailable monitor assignment; PC validation remains unchanged. Regression coverage confirms pickup succeeds and retains the request with no monitor asset assignment.
 
 `indexInOutSchedule` adds `pickedUpByDate` using the normalized actual pickup timestamp; `scheduleForDay` returns filtered `pickedUp` records along with pending outgoing and incoming returns. Both calendar modules render CalendarPickedUpSection and support Picked up filters. CalendarReturnFilter is a shared accessible switch with role=switch and aria-checked; toolbar and modal instances update the same hideReturned state. Regression coverage verifies date placement, return exclusion and restoration, and custom day filtering.
+
+### Build and restart data preservation
+
+The build script remains vite build and has no database or TXT-import hooks. DbProvider no longer invokes exchange.importData during background refresh; all successful exports replace cached collections even when empty. loadDb uses an empty operational database for absent/corrupt cache entries, and cached assets are not supplemented with samples. seedDefaultData initializes accounts and references but does not reseed assets, loans or employees. Startup regression tests use a temporary DB_PATH and separate processes to verify edited end_date values and intentionally empty tables survive restarts. Keep DB_PATH and SQLite files separate from frontend deployment artifacts.

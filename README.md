@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.10.0)
+# StarPlus Energy Asset Management System (v1.10.1)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -153,3 +153,5 @@ Changing an asset to **Under repair** returns custody to **IT Department**, clea
 A scheduled monitor request does not require a monitor at actual pickup. Leave its asset field blank if none can be provided; the request remains recorded, and no monitor is assigned.
 
 Both Business Travelers and In & Out calendars show **Picked up** events on the actual pickup date. Open a date to see the shared pickup row with recipient, pickup time, PC, monitor and location. **Hide returned** is also available inside each day dialog and stays synchronized with the calendar toolbar, rows and counts.
+
+**Build and data preservation:** `npm run build` generates frontend code in `dist`; it does not import TXT files or replace the SQLite database. Keep the existing database and its configured `DB_PATH` when deploying code. Reloads never upload browser cache automatically, and server restarts do not repopulate sample assets, loans or employees. Missing browser caches start empty; a successful server snapshot is authoritative even when it contains no records. Import or restore data explicitly through Data Exchange.
