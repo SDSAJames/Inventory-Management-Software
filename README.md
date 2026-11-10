@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.9.0)
+# StarPlus Energy Asset Management System (v1.9.3)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -143,3 +143,9 @@ Shared functions and controls own repeated business rules, import mappings, loan
 - **[Patch Notes](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md)**: Comprehensive release history and changelog.
 
 Business Travelers includes a **Follow-up** tab for overdue equipment and partial returns. **Copy Knox IDs** copies unique recipients as `knoxid_1;knoxid_2;...;` for email follow-up; the list is also selectable manually. Its calendar distinguishes **Incoming**, **Returning**, **Returned**, and **Overdue**, and both calendar day dialogs expose the shared pickup-readiness toggle. Transfers into a schedule replace its planned equipment with the actual transferred items. Open asset forms refresh Current holder after ownership changes, including returns to IT Department at IT Office.
+
+Ownership changes are saved when **Confirm Ownership Change** succeeds; closing the parent asset window without saving does not undo the transfer. Previous device custody is checked in while missing accessories remain outstanding. Pending calendar rows show only the Ready / Not ready control without redundant Scheduled or Pickup readiness text.
+
+Calendar day dialogs use compact, content-sized rows with wrapping for long values and smaller screens. Background refreshes discard older snapshots when a newer local database change has occurred, so a confirmed ownership transfer stays visible without saving the parent asset form.
+
+Changing an asset to **Under repair** returns custody to **IT Department**, clears the employee department, and sets Location to **service center**. Saving a single or bulk change records the return and checks in that device from active custody; missing accessories remain outstanding.

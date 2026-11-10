@@ -6,6 +6,66 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.3] — 2026-11-10
+
+### Repair Returns to IT Custody
+
+Treat Under repair as a return to IT Department followed by service-center custody.
+
+#### Highlights
+- Selecting Under repair sets Current holder to IT Department and Location to service center.
+- Close previous device custody and record the IT return for single and bulk status changes.
+
+#### Repair Custody
+
+- Share repair holder, department and location rules across form entry, normalization and persistence.
+- Preserve Under repair status, clear the employee department, and retain missing accessories as partial returns.
+- Use unique history IDs when creating pickups to prevent rapid loan creation from colliding.
+
+---
+
+## [1.9.2] — 2026-11-10
+
+### Compact Calendar Rows & Stable Saved Ownership
+
+Fit calendar details into tighter rows and prevent stale background refreshes from replacing saved ownership on screen.
+
+#### Highlights
+- Size calendar row sections to their content and keep actions beside recipient, readiness, equipment and dates where space permits.
+- Discard background snapshots started before a newer local database change, including successful ownership transfers.
+
+#### Calendar Layout
+
+- Reuse compact spacing in both calendar day dialogs. Wrap long values and stack sections on smaller screens without clipping details or actions.
+
+#### Ownership Synchronization
+
+- Keep independently saved transfers visible when an older background refresh completes. No parent asset Save changes is required for a confirmed transfer.
+
+---
+
+## [1.9.1] — 2026-11-10
+
+### Persistent Ownership Transfers & Cleaner Calendar Details
+
+Keep ownership transfers saved independently of the asset form and simplify scheduled calendar rows.
+
+#### Highlights
+- Remove the redundant Scheduled badge and Pickup readiness label; retain the Ready / Not ready toggle.
+- Close previous device custody in the ownership-transfer transaction so reconciliation cannot restore the old holder.
+
+#### Ownership Persistence
+
+- Save transfers directly to the database without requiring Save changes in the parent asset window.
+- Check in only the transferred device from previous active custody; preserve outstanding accessories as partial returns.
+- Use unique employee IDs to prevent collisions during rapid ownership changes.
+
+#### Calendar Details
+
+- Hide Scheduled text for pending pickups in both calendar day dialogs while keeping the shared readiness toggle.
+
+---
+
 ## [1.9.0] — 2026-11-10
 
 ### Traveler Follow-up & Calendar Readiness

@@ -7,7 +7,7 @@ import { getAssetEffectiveOwnershipHistory } from '../lib/assetIntegrity';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
-import { getAssetLocation, getHolderReturnChanges } from '../../shared/assetRules.js';
+import { getAssetLocation, getHolderReturnChanges, normalizeAvailableAsset } from '../../shared/assetRules.js';
 
 import { getAssetDateError, formatAssetDate, normalizeAssetDates } from '../../shared/assetDates.js';
 
@@ -90,9 +90,8 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const handleStatusChange = (e) => {
     const nextStatus = e.target.value;
     setForm((prev) => {
-      // If user chooses 'Available', holder defaults to IT Department
-      if (nextStatus === 'Available') {
-        return { ...prev, status: 'Available', owner: DEFAULT_OWNER, department: 'IT' };
+      if (nextStatus === 'Available' || nextStatus === 'Under repair') {
+        return normalizeAvailableAsset({ ...prev, status: nextStatus, location: getAssetLocation(nextStatus, prev.location) });
       }
       if (nextStatus === 'Assigned' && prev.owner === DEFAULT_OWNER) {
         return { ...prev, status: 'Assigned', owner: '', department: '' };

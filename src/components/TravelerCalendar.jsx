@@ -432,7 +432,7 @@ export default function TravelerCalendar({
                               </code>
                             )}
                           </div>
-                          <span
+                          {t.tripStatus !== 'Scheduled' && (<span
                             className={`status ${
                               t.tripStatus === 'In Field'
                                 ? 'status-warning'
@@ -444,7 +444,7 @@ export default function TravelerCalendar({
                             }`}
                           >
                             {t.tripStatus}
-                          </span>
+                          </span>)}
                         </div>
 
                         <CalendarPickupReadiness loan={t} />

@@ -51,7 +51,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
         reason: effectiveReason, notes: notes.trim(), date: timestamp.replace('T', ' '),
       });
       if (reason.trim()) addTransferReason(reason.trim());
-      toast(returning ? 'Asset ' + asset.code + ' returned to IT Department' : 'Ownership for ' + asset.code + ' transferred to ' + owner);
+      toast(returning ? 'Return to IT Department saved for ' + asset.code : 'Ownership change saved for ' + asset.code + ' to ' + owner);
       onDone?.(); onClose();
     } catch (error) { setErrors({ submit: error.message || 'Could not save transfer' }); }
     finally { setSaving(false); }

@@ -619,7 +619,7 @@ export default function InOutCalendar({
                               Knox ID: <code>{loan.knoxId || 'N/A'}</code> • Dept: {loan.department || 'Operations'}
                             </span>
                           </div>
-                          <span className={`status ${
+                          {loan.computedStatus !== 'Scheduled' && (<span className={`status ${
                             loan.computedStatus === 'In Field'
                               ? 'status-warning'
                               : loan.computedStatus === 'Overdue'
@@ -629,7 +629,7 @@ export default function InOutCalendar({
                               : 'status-archived'
                           }`}>
                             {loan.computedStatus}
-                          </span>
+                          </span>)}
                         </div>
 
                         <CalendarPickupReadiness loan={loan} />

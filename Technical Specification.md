@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.9.0** |
+| **Specification Version** | **v1.9.3** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 10, 2026 |
@@ -463,3 +463,9 @@ The patch history system is accessible via:
 ### Traveler follow-up and transfer synchronization
 
 `src/lib/travelerFollowUp.js` uses `groupLoans` for overdue and partial-return eligibility. Recipient output excludes blank IDs, deduplicates case-insensitively, sorts IDs, and appends `;` after every recipient. Clipboard failure leaves a read-only selectable list available. Traveler calendar return filters distinguish future/current expected returns, actual returns and overdue picked-up equipment; pending pickups do not produce return events. `CalendarPickupReadiness` uses the shared `PickupReadiness` control and `setLoanReadyForPickup` in both day dialogs. Scheduled transfer equipment is replaced rather than checked against the plan; existing transaction rollback and recipient/date validation remain enforced. AssetForm resynchronizes its draft when the saved asset object changes, so ownership transfers update open details immediately.
+
+The asset-transfer endpoint applies `recordHolderReturn` for both returns to IT and changes to another holder, inside the same asset/history transaction. Responses include affected loans for cache synchronization. Employee creation uses UUID-based IDs. Regression coverage transfers without an asset PUT, reads a fresh export and reconciles it, verifying that the new holder persists and missing accessories remain outstanding. Calendar day rows omit Scheduled badges for pending pickups, and the readiness wrapper renders only the shared switch.
+
+`DbProvider` captures the current database revision before background export requests and rejects the response if a local state write occurred before completion. This prevents pre-transfer snapshots from overwriting the saved holder in the browser cache. Calendar row CSS shares content-sized flex regions in both calendar modules, with wrapping values, compact actions and an 850px breakpoint for details wrapping.
+
+`normalizeAvailableAsset` also enforces IT custody for Under repair. `getHolderReturnChanges` recognizes a repair status change even when a stale employee holder is supplied. Single and bulk asset writes check in the affected device through `recordHolderReturn`, clear department, retain maintenance status and service-center location, and record ownership changes. Regression coverage exercises both write paths, fresh exports and reconciliation while verifying accessory shortages remain partial.

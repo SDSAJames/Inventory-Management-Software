@@ -4697,16 +4697,19 @@ textarea.input-error-red {
 }
 .pickup-confirmation-control { display: flex; align-items: center; gap: 8px; min-height: 40px; }
 .pickup-confirmation-control input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; margin: 0; }
-.in-out-day-modal .day-modal-cards-grid, .day-schedule-modal .schedule-cards-grid { grid-template-columns: minmax(0, 1fr); }
-.in-out-day-modal .day-detail-card, .day-schedule-modal .schedule-card { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr) auto; align-items: center; gap: 16px; }
-.in-out-day-modal .day-card-header, .day-schedule-modal .card-top-row { flex-wrap: wrap; gap: 8px; min-width: 0; }
-.in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-width: 0; gap: 8px 16px; }
-.in-out-day-modal .day-card-info-item { flex-wrap: wrap; align-items: baseline; justify-content: flex-start; }
-.in-out-day-modal .day-card-info-item .info-val { overflow-wrap: anywhere; }
-.in-out-day-modal .day-card-accessories { grid-column: 1 / -1; }
-.in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex-direction: column; align-items: stretch; border-top: 0; border-left: 1px solid var(--line); padding: 0 0 0 14px; margin-top: 0; }
+.in-out-day-modal .day-modal-cards-grid, .day-schedule-modal .schedule-cards-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+/* Content-sized regions keep readiness from displacing actions onto another grid row. */
+.in-out-day-modal .day-detail-card, .day-schedule-modal .schedule-card { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 12px; }
+.in-out-day-modal .day-card-header, .day-schedule-modal .card-top-row { flex: 0 1 220px; flex-wrap: wrap; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.calendar-pickup-readiness { flex: 0 0 auto; }
+.calendar-pickup-readiness .pickup-readiness-toggle { font-size: 12px; gap: 6px; }
+.in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { display: flex; flex: 1 1 340px; flex-direction: row; flex-wrap: wrap; align-items: baseline; min-width: 0; gap: 6px 14px; padding: 0; border: 0; background: transparent; }
+.in-out-day-modal .day-card-info-item, .day-schedule-modal .card-detail-grid > div { display: flex; flex: 0 1 auto; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; max-width: 100%; }
+.in-out-day-modal .day-card-info-item .info-val, .day-schedule-modal .detail-value { overflow-wrap: anywhere; }
+.in-out-day-modal .day-card-accessories { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 6px; padding-top: 0; margin-top: 0; border-top: 0; }
+.in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex: 0 1 auto; flex-direction: column; align-items: stretch; gap: 4px; border-top: 0; border-left: 1px solid var(--line); padding: 0 0 0 10px; margin: 0 0 0 auto; }
+.in-out-day-modal .day-card-footer button, .day-schedule-modal .card-action-row button { padding: 5px 8px; font-size: 12px; white-space: normal; }
 @media (max-width: 850px) {
-  .in-out-day-modal .day-detail-card, .day-schedule-modal .schedule-card { grid-template-columns: minmax(0, 1fr); }
-  .in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex-direction: row; flex-wrap: wrap; border-left: 0; border-top: 1px solid var(--line); padding: 8px 0 0; }
+  .in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { flex-basis: 100%; }
+  .in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex-direction: row; flex-wrap: wrap; border-left: 0; padding: 0; margin-left: 0; }
 }
-@media (max-width: 520px) { .in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { grid-template-columns: minmax(0, 1fr); } }

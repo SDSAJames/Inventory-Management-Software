@@ -17,9 +17,13 @@ export function getAssetLocation(status, location, fallback = DEFAULT_LOCATION) 
   return status === 'Under repair' ? REPAIR_LOCATION : normalizeLocation(location, fallback);
 }
 
-/** Available equipment is held by IT, never an unnamed or employee holder. */
+/** Available and repair equipment are held in IT custody. */
 export function normalizeAvailableAsset(asset) {
   if (!asset) return asset;
+  if (asset.status === 'Under repair') {
+    if (asset.owner === DEFAULT_OWNER && asset.department === '' && asset.location === REPAIR_LOCATION) return asset;
+    return { ...asset, owner: DEFAULT_OWNER, department: '', location: REPAIR_LOCATION };
+  }
   if (asset.status !== 'Available') {
     return String(asset.owner || '').trim().toLowerCase() === 'it department' && asset.owner !== DEFAULT_OWNER ? { ...asset, owner: DEFAULT_OWNER } : asset;
   }
@@ -38,6 +42,9 @@ export function getAssetLocationAfterReturn(status) {
 
 /** An explicitly cleared holder on an existing asset means return to IT custody. */
 export function getHolderReturnChanges(previous, changes) {
+  if (previous && changes.status === 'Under repair') {
+    return { owner: DEFAULT_OWNER, department: '', status: 'Under repair', location: REPAIR_LOCATION };
+  }
   if (!previous || (!String(previous.owner || '').trim() && changes.status !== 'Available')) return null;
   if (!Object.hasOwn(changes, 'owner') && changes.status !== 'Available') return null;
   const nextOwner = String(changes.owner || '').trim().toLowerCase();

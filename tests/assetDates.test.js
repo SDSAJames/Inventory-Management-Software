@@ -1,3 +1,4 @@
+import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
@@ -185,6 +186,29 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         assert.equal(db.prepare("SELECT COUNT(*) AS count FROM ownership_history WHERE asset_code = ? AND reason = 'Returned to IT Department'").get(id).count, 1);
       }
     });
+    await t.test('repair status returns single and bulk assets to IT and closes only their device custody', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      for (const id of ['repair-single', 'repair-bulk']) {
+        invoke(assetsRouter, 'post', '/', { id, code: id, category: 'Laptop' });
+        invoke(loansRouter, 'post', '/', { id: id + '-loan', assetCode: id, knoxId: id, assignee: 'Repair Holder', pickupDate: '2026-11-01', equipment: { Laptop: id, Mouse: '1' } });
+      }
+      invoke(assetsRouter, 'put', '/:id', { status: 'Under repair', owner: 'Repair Holder', location: 'Stack' }, { id: 'repair-single' });
+      invoke(assetsRouter, 'post', '/batch-update', { ids: ['repair-bulk'], changes: { status: 'Under repair' } });
+      const exported = invoke(exchangeRouter, 'get', '/export', {}).db;
+      for (const id of ['repair-single', 'repair-bulk']) {
+        const asset = exported.assets.find((row) => row.id === id);
+        const loan = exported.loans.find((row) => row.id === id + '-loan');
+        assert.equal(asset.owner, 'IT Department');
+        assert.equal(asset.status, 'Under repair');
+        assert.equal(asset.location, 'service center');
+        assert.equal(asset.department, '');
+        assert.equal(loan.returnedEquipment.Laptop, id);
+        assert.equal(loan.returnStatus, 'Partial');
+        assert.equal(loan.returnedEquipment.Mouse, undefined);
+        assert.equal(asset.ownershipHistory[0].newOwner, 'IT Department');
+        assert.equal(reconcileAssetWithLoans(asset, exported.loans).owner, 'IT Department');
+      }
+    });
     await t.test('scheduled records cannot be returned through full edit, return, or mixed bulk return', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(assetsRouter, 'post', '/', { id: 'phase-pc', code: 'PHASE-PC', status: 'Assigned', owner: 'Holder Return Test' });
@@ -234,6 +258,23 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(result.loans[0].returnedEquipment.Laptop, 'BLANK-TRANSFER');
       invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: 'Other', date: 'now()' }, { id: 'blank-transfer' }, 400);
       assert.equal(db.prepare('SELECT owner FROM assets WHERE id = ?').get('blank-transfer').owner, 'IT Department');
+    });
+    await t.test('standalone ownership transfer survives reload and reconciliation without an asset edit', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'standalone-transfer', code: 'STANDALONE', category: 'Laptop' });
+      invoke(loansRouter, 'post', '/', { id: 'standalone-loan', assetCode: 'STANDALONE', knoxId: 'old.holder', assignee: 'Old Holder', pickupDate: '2026-11-01', equipment: { Laptop: 'STANDALONE', Mouse: '1' } });
+      const result = invoke(assetsRouter, 'post', '/:id/transfer', { newOwner: 'New Holder', department: 'IT', location: 'Stack', reason: 'Reassignment', date: '2026-11-10 10:15:00' }, { id: 'standalone-transfer' });
+      assert.equal(result.asset.owner, 'New Holder');
+      assert.equal(result.loans[0].returnedEquipment.Laptop, 'STANDALONE');
+      assert.equal(result.loans[0].returnStatus, 'Partial');
+      assert.equal(result.loans[0].returnedEquipment.Mouse, undefined);
+      // Read the database again, as a browser reload does. No PUT /assets call.
+      const exported = invoke(exchangeRouter, 'get', '/export', {}).db;
+      const saved = exported.assets.find((asset) => asset.id === 'standalone-transfer');
+      assert.equal(saved.owner, 'New Holder');
+      assert.equal(saved.location, 'Stack');
+      assert.equal(reconcileAssetWithLoans(saved, exported.loans).owner, 'New Holder');
+      assert.equal(saved.ownershipHistory[0].newOwner, 'New Holder');
     });
     await t.test('asset location edits persist for IT custody and assigned equipment', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');

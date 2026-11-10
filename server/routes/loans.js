@@ -255,7 +255,7 @@ loansRouter.post('/', authenticate, (req, res) => {
           INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          `hist-${Date.now()}`,
+          `hist-${randomUUID()}`,
           effectiveAssetCode,
           asset.owner || 'None',
           effectiveAssignee,

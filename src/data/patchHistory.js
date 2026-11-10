@@ -9,6 +9,67 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-10',
+    title: 'Repair Returns to IT Custody',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Treat Under repair as a return to IT Department followed by service-center custody.',
+    highlights: [
+      'Selecting Under repair sets Current holder to IT Department and Location to service center.',
+      'Close previous device custody and record the IT return for single and bulk status changes.',
+    ],
+    sections: [
+      { heading: 'Repair Custody', badge: 'Fix', items: [
+        'Share repair holder, department and location rules across form entry, normalization and persistence.',
+        'Preserve Under repair status, clear the employee department, and retain missing accessories as partial returns.',
+        'Use unique history IDs when creating pickups to prevent rapid loan creation from colliding.',
+      ] },
+    ],
+  },
+  {
+    version: '1.9.2',
+    date: '2026-11-10',
+    title: 'Compact Calendar Rows & Stable Saved Ownership',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Fit calendar details into tighter rows and prevent stale background refreshes from replacing saved ownership on screen.',
+    highlights: [
+      'Size calendar row sections to their content and keep actions beside recipient, readiness, equipment and dates where space permits.',
+      'Discard background snapshots started before a newer local database change, including successful ownership transfers.',
+    ],
+    sections: [
+      { heading: 'Calendar Layout', badge: 'UI', items: [
+        'Reuse compact spacing in both calendar day dialogs. Wrap long values and stack sections on smaller screens without clipping details or actions.',
+      ] },
+      { heading: 'Ownership Synchronization', badge: 'Fix', items: [
+        'Keep independently saved transfers visible when an older background refresh completes. No parent asset Save changes is required for a confirmed transfer.',
+      ] },
+    ],
+  },
+  {
+    version: '1.9.1',
+    date: '2026-11-10',
+    title: 'Persistent Ownership Transfers & Cleaner Calendar Details',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Keep ownership transfers saved independently of the asset form and simplify scheduled calendar rows.',
+    highlights: [
+      'Remove the redundant Scheduled badge and Pickup readiness label; retain the Ready / Not ready toggle.',
+      'Close previous device custody in the ownership-transfer transaction so reconciliation cannot restore the old holder.',
+    ],
+    sections: [
+      { heading: 'Ownership Persistence', badge: 'Fix', items: [
+        'Save transfers directly to the database without requiring Save changes in the parent asset window.',
+        'Check in only the transferred device from previous active custody; preserve outstanding accessories as partial returns.',
+        'Use unique employee IDs to prevent collisions during rapid ownership changes.',
+      ] },
+      { heading: 'Calendar Details', badge: 'UI', items: [
+        'Hide Scheduled text for pending pickups in both calendar day dialogs while keeping the shared readiness toggle.',
+      ] },
+    ],
+  },
+  {
+    version: '1.9.0',
+    date: '2026-11-10',
     title: 'Traveler Follow-up & Calendar Readiness',
     tag: 'Feature Release',
     type: 'minor',

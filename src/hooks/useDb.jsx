@@ -1,6 +1,6 @@
 import { DEFAULT_OWNER } from '../../shared/referenceData.js';
 import { getAssetLocationAfterReturn, normalizeLocation, getAssetStatusAfterReturn, getAssetStatusForLoanEdit } from "../../shared/assetRules.js";
-import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   loadDb,
   saveDb as persistDb,
@@ -71,7 +71,9 @@ export function DbProvider({ children }) {
     } : raw;
   });
 
+  const dbRevision = useRef(0);
   const setDb = useCallback((update) => {
+    dbRevision.current += 1;
     setDbState((previous) => normalizeDatabaseLocations(
       typeof update === 'function' ? update(previous) : update,
     ));
@@ -115,11 +117,12 @@ export function DbProvider({ children }) {
       const authUser = typeof window !== 'undefined' ? localStorage.getItem('starplusenergy-auth-user') : null;
       if (!token && !authUser) return;
 
+      const requestedRevision = dbRevision.current;
       try {
         const res = await api.exchange.exportData();
         const categoryRes = await api.directory.getCategories().catch(() => null);
         const statusRes = await api.directory.getStatuses().catch(() => null);
-        if (!active || !res?.success || !res?.db) return;
+        if (!active || requestedRevision !== dbRevision.current || !res?.success || !res?.db) return;
         const serverDb = res.db;
 
         if (serverDb.assets?.length || serverDb.loans?.length) {

@@ -233,7 +233,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
           db.prepare(`
             INSERT INTO employees (id, name, department, position, created_at)
             VALUES (?, ?, ?, 'Staff', ?)
-          `).run(`emp-${Date.now()}`, effectiveOwner.trim(), effectiveDepartment, now);
+          `).run(`emp-${randomUUID()}`, effectiveOwner.trim(), effectiveDepartment, now);
         }
       }
     }
@@ -337,7 +337,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
           db.prepare(`
             INSERT INTO employees (id, name, department, position, created_at)
             VALUES (?, ?, ?, 'Staff', ?)
-          `).run(`emp-${Date.now()}`, effectiveOwner.trim(), effectiveDepartment || '', now);
+          `).run(`emp-${randomUUID()}`, effectiveOwner.trim(), effectiveDepartment || '', now);
         }
       }
     }
@@ -413,14 +413,17 @@ assetsRouter.post('/:id/transfer', authenticate, (req, res) => {
     );
 
     // 3. Ensure employee in directory if named staff
-    const returnedLoans = returningToIt ? recordHolderReturn(db, asset.code, date) : [];
+    // End the previous device custody before assigning a new holder. Otherwise
+    // reconciliation can restore the previous active loan's owner on reload.
+    const returnedLoans = returningToIt || effectiveOwner !== asset.owner
+      ? recordHolderReturn(db, asset.code, date) : [];
     if (!returningToIt) {
       const empExists = db.prepare('SELECT id FROM employees WHERE LOWER(name) = LOWER(?)').get(newOwner.trim());
       if (!empExists) {
         db.prepare(`
           INSERT INTO employees (id, name, department, position, created_at)
           VALUES (?, ?, ?, 'Staff', ?)
-        `).run(`emp-${Date.now()}`, effectiveOwner, department.trim(), now);
+        `).run(`emp-${randomUUID()}`, effectiveOwner, department.trim(), now);
       }
     }
 
@@ -475,14 +478,14 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
           todayIso(),
           asset.id
         );
-        if (status === 'Available') {
+        if (status === 'Available' || status === 'Under repair') {
           const returnedAt = new Date().toISOString();
           recordHolderReturn(db, asset.code, returnedAt);
           returnAssetToIt(db, asset.code, todayIso());
           if (String(asset.owner || '').trim().toLowerCase() !== 'it department') {
             db.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
               `hist-${randomUUID()}`, asset.code, asset.owner || 'None', DEFAULT_OWNER, returnedAt,
-              'Returned to IT Department', `Available status selected in bulk update by ${req.user.username}`, returnedAt,
+              'Returned to IT Department', `${status} status selected in bulk update by ${req.user.username}`, returnedAt,
             );
           }
         }

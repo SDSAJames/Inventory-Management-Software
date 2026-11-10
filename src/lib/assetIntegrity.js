@@ -91,6 +91,7 @@ export function isAssetAssignable(asset) {
  */
 export function reconcileAssetWithLoans(asset, loans = []) {
   if (!asset || !asset.code) return asset;
+  if (asset.status === 'Under repair') return normalizeAvailableAsset(asset);
 
   const location = getAssetLocation(asset.status, asset.location);
   if (location !== asset.location) asset = { ...asset, location };
