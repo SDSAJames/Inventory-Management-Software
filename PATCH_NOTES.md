@@ -6,6 +6,23 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.4] — 2026-11-12
+
+### Start Menu Pages at the Top
+
+Reset page scroll when opening or switching menu pages.
+
+#### Highlights
+- Open each menu page at the top instead of retaining the previous page scroll position.
+
+#### Navigation
+
+- Centralize route scroll handling in AppShell for initial load and pathname changes.
+- Reset window and main-content scrolling before paint, and disable automatic browser scroll restoration while the shell is mounted.
+- Keep within-page tab and search changes from triggering a route scroll reset.
+
+---
+
 ## [1.12.3] — 2026-11-12
 
 ### Preserve Transferred Sender Records When Editing

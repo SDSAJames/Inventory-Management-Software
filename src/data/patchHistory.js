@@ -9,6 +9,20 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'Start Menu Pages at the Top',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Reset page scroll when opening or switching menu pages.',
+    highlights: ['Open each menu page at the top instead of retaining the previous page scroll position.'],
+    sections: [{ heading: 'Navigation', badge: 'Fix', items: [
+      'Centralize route scroll handling in AppShell for initial load and pathname changes.',
+      'Reset window and main-content scrolling before paint, and disable automatic browser scroll restoration while the shell is mounted.',
+      'Keep within-page tab and search changes from triggering a route scroll reset.',
+    ] }],
+  },
+  {
+    version: '1.12.3',
+    date: '2026-11-12',
     title: 'Preserve Transferred Sender Records When Editing',
     tag: 'Patch',
     type: 'patch',
