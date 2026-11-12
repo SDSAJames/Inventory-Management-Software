@@ -22,7 +22,7 @@ export default function LoanTransferForm({ loan, onClose }) {
   const [transferDate, setTransferDate] = useState(nowLocalIso);
   const schedules = db.loans.filter((record) => !record.pickupDate && !isLoanReturned(record) && record.id !== loan.id && String(record.knoxId || '').trim().toLowerCase() !== String(loan.knoxId || '').trim().toLowerCase());
   const scheduleQuery = scheduleSearch.trim().toLowerCase();
-  const matchingSchedules = schedules.filter((record) => String(record.knoxId || '').toLowerCase().includes(scheduleQuery));
+  const matchingSchedules = schedules.filter((record) => [record.knoxId, record.assignee].some((value) => String(value || '').toLowerCase().includes(scheduleQuery)));
   const selectedSchedule = schedules.find((record) => record.id === scheduleId);
   const selectedOutsideSearch = selectedSchedule && !matchingSchedules.some((record) => record.id === scheduleId);
   const scheduleLabel = (record) => `${record.knoxId} — ${record.assignee || 'Unnamed recipient'} — ${record.assigneeType || 'Business traveler'} — ${record.startDate?.slice(0, 10) || 'No scheduled date'}`;
@@ -48,8 +48,8 @@ export default function LoanTransferForm({ loan, onClose }) {
   return <form onSubmit={submit}><h2>Transfer equipment</h2><p>Select items moving to the new holder and record whether they are an employee assignment or business-traveler loan. The previous holder's completed record is preserved.</p>
     <div className="field"><label htmlFor="equipment-transfer-date">Transfer date &amp; time *</label><DateInput id="equipment-transfer-date" type="datetime-local" required value={transferDate} onChange={(event) => setTransferDate(event.target.value)} /></div>
     <div className="field">
-      <label htmlFor="transfer-schedule-search">Search pickup schedules by Knox ID</label>
-      <input id="transfer-schedule-search" type="search" value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="Enter all or part of a Knox ID" autoComplete="off" spellCheck={false} aria-controls="transfer-schedule" />
+      <label htmlFor="transfer-schedule-search">Search pickup schedules by Knox ID or name</label>
+      <input id="transfer-schedule-search" type="search" value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="Enter all or part of a Knox ID or name" autoComplete="off" spellCheck={false} aria-controls="transfer-schedule" />
       <span className="field-hint" role="status">{matchingSchedules.length ? `${matchingSchedules.length} matching schedule${matchingSchedules.length === 1 ? '' : 's'}` : 'No matching pickup schedules.'}{selectedOutsideSearch ? ' Your selected schedule is retained below.' : ''}</span>
     </div>
     <div className="field"><label htmlFor="transfer-schedule">Recipient / pickup schedule</label><select id="transfer-schedule" value={scheduleId} onChange={(e) => selectSchedule(e.target.value)}><option value="">New recipient record</option>{selectedOutsideSearch && <option value={selectedSchedule.id}>Selected: {scheduleLabel(selectedSchedule)}</option>}{matchingSchedules.map((record) => <option key={record.id} value={record.id}>{scheduleLabel(record)}</option>)}</select></div>

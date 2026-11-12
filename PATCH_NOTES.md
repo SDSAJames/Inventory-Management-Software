@@ -6,6 +6,22 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2] — 2026-11-12
+
+### Transfer Schedule Search by Name or Knox ID
+
+Find pickup schedules by either recipient name or Knox ID when transferring equipment.
+
+#### Highlights
+- Search with all or part of a Knox ID or assignee name, ignoring case and surrounding search whitespace.
+
+#### Equipment Transfers
+
+- Expand the existing search and update its label and placeholder.
+- Retain the selected schedule when the search changes, and continue excluding completed pickups and returns.
+
+---
+
 ## [1.12.1] — 2026-11-12
 
 ### Show the Full Prefilled Due Year

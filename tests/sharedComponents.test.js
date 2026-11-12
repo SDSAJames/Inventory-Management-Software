@@ -181,3 +181,23 @@ test('scheduled due date prefills only the year and emits no date until month an
   input('Due day').props.onChange({ target: { value: '12' } });
   assert.match(values.at(-1), /^\d{4}-02-12$/);
 });
+
+test('transfer schedule search matches names and Knox IDs while retaining the selected schedule', () => {
+  const loan = { id: 'source', knoxId: 'source.user', equipment: { Mouse: '1' } };
+  const app = harness({ loans: [loan,
+    { id: 'jane', knoxId: 'jane.smith', assignee: 'Jane Smith' },
+    { id: 'alex', knoxId: 'ax123', assignee: 'Alex Rivera' },
+    { id: 'picked', knoxId: 'picked.user', assignee: 'Jane Smith', pickupDate: '2026-11-12' },
+  ] });
+  const props = { loan, onClose() {} };
+  let tree = nodes(app.render('LoanTransferForm', props));
+  tree.find((node) => node.props.id === 'transfer-schedule-search').props.onChange({ target: { value: '  RIVERA  ' } });
+  tree = nodes(app.render('LoanTransferForm', props));
+  assert.deepEqual(tree.filter((node) => node.type === 'option' && ['alex', 'jane', 'picked'].includes(node.props.value)).map((node) => node.props.value), ['alex']);
+  tree.find((node) => node.props.id === 'transfer-schedule').props.onChange({ target: { value: 'alex' } });
+  tree = nodes(app.render('LoanTransferForm', props));
+  tree.find((node) => node.props.id === 'transfer-schedule-search').props.onChange({ target: { value: 'JANE.S' } });
+  tree = nodes(app.render('LoanTransferForm', props));
+  assert.equal(tree.find((node) => node.props.id === 'transfer-schedule').props.value, 'alex');
+  assert.deepEqual(tree.filter((node) => node.type === 'option' && ['alex', 'jane', 'picked'].includes(node.props.value)).map((node) => node.props.value), ['alex', 'jane']);
+});

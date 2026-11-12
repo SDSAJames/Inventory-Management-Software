@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.12.1** |
+| **Specification Version** | **v1.12.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 12, 2026 |
@@ -487,3 +487,5 @@ DateInput wraps native date and datetime-local controls with a maximum of 9999-1
 shared/loanLocations.js exposes isPendingPickup and getLoanLocation for camelCase/API and SQLite rows. Empty pending locations remain empty; completed custody keeps the existing default. ScheduleDueDateInput initializes month/day as empty and year from local todayIso, accepts up to four year digits, validates the complete date against an ISO calendar round trip, and emits an empty string for incomplete or invalid dates. Its native DateInput picker fills all segments; existing complete values are preserved. Regression tests cover blank location through create/edit/list/import and calendar enrichment, plus year-only, incomplete and invalid due-date drafts.
 
 ScheduleDueDateInput assigns dedicated date-part and year classes. Scoped CSS gives month/day 3.5ch and year 5.5ch nonshrinking widths, removes inherited horizontal padding, and reserves 30px for the native picker. Date validation and persistence behavior are unchanged.
+
+LoanTransferForm matches its trimmed, lowercased schedule query against both knoxId and assignee using partial substring matching. Existing eligibility checks and selectedOutsideSearch handling are reused. Component coverage exercises name and ID searches, exclusion of picked-up records and selection retention.

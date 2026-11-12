@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.12.1** |
+| **Document Version** | **v1.12.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 12, 2026 |
@@ -381,4 +381,4 @@ The frontend application provides eight core operational views accessed via the 
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.12.1**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.12.2**.

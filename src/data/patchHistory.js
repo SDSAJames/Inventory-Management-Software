@@ -9,6 +9,19 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'Transfer Schedule Search by Name or Knox ID',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Find pickup schedules by either recipient name or Knox ID when transferring equipment.',
+    highlights: ['Search with all or part of a Knox ID or assignee name, ignoring case and surrounding search whitespace.'],
+    sections: [{ heading: 'Equipment Transfers', badge: 'UI', items: [
+      'Expand the existing search and update its label and placeholder.',
+      'Retain the selected schedule when the search changes, and continue excluding completed pickups and returns.',
+    ] }],
+  },
+  {
+    version: '1.12.1',
+    date: '2026-11-12',
     title: 'Show the Full Prefilled Due Year',
     tag: 'Patch',
     type: 'patch',
