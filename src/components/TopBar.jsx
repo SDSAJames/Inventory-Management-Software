@@ -1,3 +1,4 @@
+import UndoSavedChange from './UndoSavedChange';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { CUSTODY_PAGE_TITLE } from '../lib/constants';
@@ -76,6 +77,7 @@ export default function TopBar() {
         <span className="topbar-tag">{current.eyebrow}</span>
       </div>
       <div className="top-actions">
+        <UndoSavedChange />
         <div className="network-pill" title="Connected to StarPlus Energy Corporate Intranet Server">
           <span className="status-indicator-dot" />
           <span>Corporate Intranet</span>

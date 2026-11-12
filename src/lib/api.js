@@ -39,6 +39,10 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
+  changes: {
+    latest: () => request('/changes/latest'),
+    undo: (changeId) => request('/changes/undo', { method: 'POST', body: { changeId } }),
+  },
   // ── Health ──
   getHealth: () => request('/health'),
 

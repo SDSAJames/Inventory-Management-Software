@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.12.4)
+# StarPlus Energy Asset Management System (v1.13.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -171,3 +171,5 @@ When transferring equipment to a pickup schedule, search by all or part of eithe
 Editing a completed transfer sender preserves **Transferred** status and does not move equipment back from the receiver. Explicitly clearing an incorrect PC reference remains saved. If a correction after partial transfer leaves no equipment outstanding, the sender closes as Transferred. Loan edits wait for database confirmation; failed saves remain open for retry.
 
 Opening or switching menu pages starts at the top. Changing a tab or search within the same page keeps its current scroll position.
+
+**Revert last change** in the top bar undoes the most recent successful inventory save made after this update. Review the action, author and time, then confirm. Linked assets, custody records and directory changes are restored together. One undo is available; failed/no-op saves leave it intact, and undo consumes it. Operators can undo their own latest change; admins can undo the latest shared change. A newer or externally changed database state requires reviewing the latest action again. Import restore history, security accounts and audit logs remain separate. Restart the backend after upgrading to enable the undo checkpoint table and endpoints.

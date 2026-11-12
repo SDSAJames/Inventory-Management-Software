@@ -1,3 +1,4 @@
+import { ensureSavedChangeUndo } from '../lib/savedChangeUndo.js';
 import { DEFAULT_OWNER, DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from "../../shared/referenceData.js";
 import { getAssetLocationAfterReturn, getAssetLocation, normalizeLocation } from "../../shared/assetRules.js";
 import { ensureAssetDateColumns } from '../lib/assetDates.js';
@@ -224,6 +225,7 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at);
   `);
 
+  ensureSavedChangeUndo(db);
   seedDefaultData();
   normalizeStoredLocations(db);
   removeExactDuplicateLoans();

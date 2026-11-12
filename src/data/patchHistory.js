@@ -9,6 +9,25 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'Revert the Last Saved Inventory Change',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Add a shared Revert last change control for the most recent successful inventory write.',
+    highlights: [
+      'Review the latest change, its author and save time before reverting it from the top bar.',
+      'Restore linked assets, loans, ownership history and directory data together, then refresh the displayed records.',
+    ],
+    sections: [{ heading: 'Last-Change Undo', badge: 'Feature', items: [
+      'Track successful changes from asset, loan, directory and exchange routes through one shared server middleware.',
+      'Persist a single undo checkpoint separately from import restore points. Failed writes, reads and no-ops do not replace it.',
+      'Verify the review ID and current database state before restoring in a transaction; retain the checkpoint if restoration fails.',
+      'Operators can undo their own latest change; administrators can undo the latest shared change. Security accounts and audit history are not restored.',
+      'Offer one-level undo for new writes after this update. Undo consumes its checkpoint and does not act as redo or restore older changes.',
+    ] }],
+  },
+  {
+    version: '1.12.4',
+    date: '2026-11-12',
     title: 'Start Menu Pages at the Top',
     tag: 'Patch',
     type: 'patch',

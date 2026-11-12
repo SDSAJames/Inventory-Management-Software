@@ -1,3 +1,5 @@
+import { changesRouter } from './routes/changes.js';
+import { trackSavedChanges } from './lib/savedChangeUndo.js';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -91,11 +93,13 @@ app.get('/api/health', (req, res) => {
 
 // 3. API Routers
 app.use('/api/auth', authRouter);
-app.use('/api/assets', authenticate, assetsRouter);
-app.use('/api/loans', authenticate, loansRouter);
-app.use('/api/directory', authenticate, directoryRouter);
+app.use('/api/changes', authenticate, changesRouter);
+const recordSavedChange = trackSavedChanges(db);
+app.use('/api/assets', authenticate, recordSavedChange, assetsRouter);
+app.use('/api/loans', authenticate, recordSavedChange, loansRouter);
+app.use('/api/directory', authenticate, recordSavedChange, directoryRouter);
 app.use('/api/stats', authenticate, statsRouter);
-app.use('/api/exchange', authenticate, exchangeRouter);
+app.use('/api/exchange', authenticate, recordSavedChange, exchangeRouter);
 
 // 4. Serve Frontend static files if production build exists
 if (fs.existsSync(config.clientDistPath)) {
