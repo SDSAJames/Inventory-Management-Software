@@ -17,7 +17,8 @@ test('create and edit share defaults and persist explicit quantities, request fl
   assert.equal(form.cable, '1');
   Object.assign(form, { knoxId: ' user.id ', assignee: ' Jane ', assetCode: 'PC-1', monitor: 'MON-1', adapter: '0', cable: '2', department: 'Custom team', others: 'Headset' });
   const first = buildLoanFormData(form);
-  assert.equal(first.location, DEFAULT_LOCATION);
+  assert.equal(first.location, '');
+  assert.equal(buildLoanFormData({ ...form, pickupDate: '2026-11-12' }).location, DEFAULT_LOCATION);
   assert.equal(first.equipment.Adapter, '0');
   assert.equal(first.equipment.Cable, '2');
   assert.equal(first.equipment.RequestedPC, true);
@@ -78,11 +79,21 @@ test('calendar and traveler records use the same custody state and asset lookup'
   assert.equal(records[0].tripStatus, 'Scheduled');
   assert.equal(records[0].isOverdue, false);
   assert.equal(records[0].assetModel, 'Latitude');
-  assert.equal(records[0].location, 'Stack');
+  assert.equal(records[0].location, '');
+  assert.equal(records[1].location, 'Stack');
   assert.equal(records[1].computedStatus, 'Overdue');
   assert.equal(records[2].computedStatus, 'In Field');
   assert.equal(records[2].inIso, '');
   assert.equal(records[3].computedStatus, 'Returned');
   assert.equal(records[3].isOverdue, false);
   assert.equal(records[3].inIso, '2001-01-02');
+});
+
+test('scheduled location stays blank through forms and calendar enrichment even when a PC has a location', () => {
+  const form = { ...createLoanForm(), knoxId: 'schedule.user', assetCode: 'PC-1', location: '  ' };
+  const payload = buildLoanFormData(form);
+  assert.equal(payload.location, '');
+  assert.equal(createLoanForm(payload).location, '');
+  const [displayed] = enrichCustodyRecords([payload], [{ code: 'PC-1', location: 'IT Office' }]);
+  assert.equal(displayed.location, '');
 });

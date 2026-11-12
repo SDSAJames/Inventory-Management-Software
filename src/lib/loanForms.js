@@ -1,4 +1,4 @@
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
 import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from './ipAddress.js';
 import { buildLoanEquipment, buildReturnedEquipment, equipmentToForm, equipmentQuantitiesToForm, newLoanEquipmentForm, isBusinessTraveler, getMissingReturnItems } from './loanEquipment.js';
@@ -49,7 +49,7 @@ export function buildLoanFormData(form, { equipment = {}, includeReturn = false 
     ip: buildIpAddress(form), startDate: form.startDate, loanDate: form.startDate, endDate, dueDate: endDate,
     pickupDate: form.pickupDate, returnDate: includeReturn ? form.returnDate : '',
     ...(includeReturn ? { returnedDate: form.returnDate } : {}),
-    location: form.location || DEFAULT_LOCATION, department: form.department, others: form.others, note: form.note,
+    location: getLoanLocation(form), department: form.department, others: form.others, note: form.note,
     equipment: { ...equipment, ...buildLoanEquipment(form, assetCode), RequestedPC: form.requestPc || Boolean(assetCode), RequestedMonitor: form.requestMonitor || Boolean(form.monitor) },
   };
 }

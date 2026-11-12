@@ -1,7 +1,7 @@
 import { tracksEndDate } from '../loanRules.js';
 import { todayIso } from './dates.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 
 export function computeLoanStatus(loan, { today = todayIso(), tracksDueDate = tracksEndDate(loan.assignee_type) } = {}) {
@@ -20,7 +20,7 @@ function serializeLoanRow(loan, forExport) {
     assignee: loan.assignee,
     department: text(loan.department),
     knoxId: text(loan.knox_id),
-    location: text(loan.location, DEFAULT_LOCATION),
+    location: forExport ? loan.location : getLoanLocation(loan),
     ip: text(loan.ip),
     startDate: text(loan.start_date),
     pickupDate: text(loan.pickup_date),

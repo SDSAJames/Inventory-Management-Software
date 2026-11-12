@@ -162,3 +162,22 @@ test('shared date fields reject longer years, retain valid values and clearing, 
     assert.deepEqual(values, ['2027-01-02' + suffix, '']);
   }
 });
+
+test('scheduled due date prefills only the year and emits no date until month and day are complete and valid', () => {
+  const app = harness(), values = [];
+  const props = { id: 'due', value: '', onChange: (event) => values.push(event.target.value) };
+  let tree = nodes(app.render('ScheduleDueDateInput', props));
+  const input = (label) => tree.find((node) => node.props['aria-label'] === label);
+  assert.equal(input('Due year').props.value, String(new Date().getFullYear()));
+  assert.equal(input('Due month').props.value, '');
+  assert.equal(input('Due day').props.value, '');
+  assert.deepEqual(values, []);
+  input('Due month').props.onChange({ target: { value: '02' } });
+  assert.equal(values.at(-1), '');
+  tree = nodes(app.render('ScheduleDueDateInput', props));
+  input('Due day').props.onChange({ target: { value: '31' } });
+  assert.equal(values.at(-1), '');
+  tree = nodes(app.render('ScheduleDueDateInput', props));
+  input('Due day').props.onChange({ target: { value: '12' } });
+  assert.match(values.at(-1), /^\d{4}-02-12$/);
+});

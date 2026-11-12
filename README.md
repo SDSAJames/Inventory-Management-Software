@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.11.2)
+# StarPlus Energy Asset Management System (v1.12.1)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -161,3 +161,7 @@ Business Travelers **Reminder** lists picked-up business-traveler equipment due 
 Accessory counts use one shared normalization rule across create, edit, pickup, return and transfer: `01` becomes `1`, and `00` becomes `0`. The same rule applies when saving through the API or importing records. PC and monitor asset numbers retain leading zeros; Others / Peripherals stays text. Existing stored records are not bulk-rewritten during upgrades.
 
 Date and date-time fields limit the year to four digits, up to 9999, across asset and custody forms. Existing date limits and optional-field clearing still apply. Purchase and warranty fields keep their DD-MM-YYYY format.
+
+Pending pickup schedules preserve a blank Rental location through saving, editing and calendar display; they do not inherit IT Office or the asset location. Scheduled due-date fields prefill the current year while leaving month/day blank. The due date remains empty in saved data until all three parts form a valid date; the calendar picker is also available.
+
+Scheduled due-date segments reserve enough width to display the full current year and MM/DD placeholders in compact loan forms. Year-only drafts still save no due date.

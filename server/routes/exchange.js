@@ -1,3 +1,4 @@
+import { getLoanLocation } from '../../shared/loanLocations.js';
 import { randomUUID } from 'node:crypto';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { Router } from 'express';
@@ -212,7 +213,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           l.assignee || 'Borrower',
           l.department || '',
           l.knoxId || '',
-          normalizeLocation(l.location),
+          getLoanLocation(l),
           l.ip || '',
           l.startDate || '',
           l.pickupDate || '',
@@ -367,7 +368,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           l.assignee,
           l.department,
           l.knox_id || l.knoxId,
-          normalizeLocation(l.location),
+          getLoanLocation(l),
           l.ip,
           l.start_date || l.startDate,
           l.pickup_date || l.pickupDate,

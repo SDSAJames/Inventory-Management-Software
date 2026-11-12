@@ -1,3 +1,4 @@
+import { isPendingPickup } from '../../shared/loanLocations.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
 import { isBusinessTraveler, getLoanEndDate } from './loanEquipment.js';
 import { isLoanOverdue, normalizeDateToIso, todayIso } from './utils.js';
@@ -20,7 +21,7 @@ export function enrichCustodyRecords(loans = [], assets = []) {
     return {
       ...loan, assignee: loan.assignee || loan.borrower || 'Unknown Staff',
       userType: isTraveler ? 'Business traveler' : 'Employee', userTypeLabel: isTraveler ? 'Business Traveler' : 'SPE Employee', isTraveler,
-      assetName: asset?.name || '', assetModel: asset?.model || '', location: loan.location || asset?.location || 'Unspecified',
+      assetName: asset?.name || '', assetModel: asset?.model || '', location: isPendingPickup(loan) ? loan.location || '' : loan.location || asset?.location || 'Unspecified',
       outIso: normalizeDateToIso(loan.startDate || loan.pickupDate || loan.loanDate),
       inIso: normalizeDateToIso(isReturned ? loan.returnDate || loan.returnedDate || dueDate : dueDate),
       isReturned, hasPickup, isOverdue, computedStatus, tripStatus: computedStatus, remainingText,

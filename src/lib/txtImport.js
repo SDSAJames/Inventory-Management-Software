@@ -1,3 +1,4 @@
+import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 /**
@@ -370,7 +371,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
       knoxId = associatedAsset.owner;
     }
 
-    const location = normalizeLocation((colLocation >= 0 ? String(row[colLocation] || '').trim() : '') || associatedAsset?.location);
+    const location = getLoanLocation({ location: (colLocation >= 0 ? String(row[colLocation] || '').trim() : '') || (pickupDate || returnDate ? associatedAsset?.location : ''), pickupDate, returnDate });
 
     const ip = colIp >= 0 ? String(row[colIp] || '').trim() : '';
 

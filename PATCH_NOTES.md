@@ -6,6 +6,45 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] — 2026-11-12
+
+### Show the Full Prefilled Due Year
+
+Prevent compact loan-form styles from clipping the scheduled due-date segments.
+
+#### Highlights
+- Display the complete current year, month/day placeholders and calendar picker in scheduled due dates.
+
+#### Due Date Layout
+
+- Use dedicated, nonshrinking date-segment widths and override general form input padding.
+- Keep year-only drafts separate from saved due dates until a valid month and day are entered.
+
+---
+
+## [1.12.0] — 2026-11-12
+
+### Blank Schedule Locations & Year-Prefilled Due Dates
+
+Preserve empty rental locations on pending pickups and prefill only the year for scheduled due-date entry.
+
+#### Highlights
+- Leave a scheduled location blank instead of defaulting to IT Office or the selected asset location.
+- Prefill the current year in scheduled due dates while saving no date until month and day are completed.
+
+#### Schedule Data
+
+- Share pending-pickup location rules across form payloads, create/edit APIs, import, summaries and calendar enrichment.
+- Preserve blank locations through save, reload and editing; retain existing post-pickup location defaults.
+
+#### Due Date Entry
+
+- Reuse ScheduleDueDateInput for new and edited pending schedules, with separate MM/DD/YYYY segments and a native calendar picker.
+- Keep the current-year draft separate from saved data. Emit an ISO date only when every part forms a valid calendar date.
+- Retain four-digit years, optional due dates and existing completed values.
+
+---
+
 ## [1.11.2] — 2026-11-12
 
 ### Four-Digit Year Input Limits

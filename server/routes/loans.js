@@ -1,4 +1,5 @@
-import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
+import { getLoanLocation } from '../../shared/loanLocations.js';
+import { DEFAULT_OWNER } from "../../shared/referenceData.js";
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
@@ -177,7 +178,7 @@ loansRouter.post('/', authenticate, (req, res) => {
     assignee,
     department = '',
     knoxId = '',
-    location = DEFAULT_LOCATION,
+    location = '',
     ip = '',
     startDate = todayIso(),
     pickupDate = '',
@@ -202,7 +203,7 @@ loansRouter.post('/', authenticate, (req, res) => {
   };
 
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
-  const effectiveLocation = normalizeLocation(location);
+  const effectiveLocation = getLoanLocation({ location, pickupDate });
   const id = req.body.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
   const initialStatus = pickupDate ? (effectiveEndDate && effectiveEndDate < todayIso() ? 'Overdue' : 'Active') : 'Scheduled';
@@ -381,7 +382,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
   } = req.body || {};
 
   const effectiveAssetCode = pcAssetCode(assetCode || equipment?.Laptop || existing.asset_code);
-  const effectiveLocation = normalizeLocation(location);
+  const effectiveLocation = getLoanLocation({ location, pickupDate });
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const mergedEquipment = {
     ...equipment,

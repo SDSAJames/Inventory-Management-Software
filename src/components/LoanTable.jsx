@@ -1,3 +1,4 @@
+import { isPendingPickup } from '../../shared/loanLocations.js';
 import DateInput from './DateInput';
 import LoanEquipmentDetails from './LoanEquipmentDetails';
 import { isLoanReturned, canRecordReturn } from '../../shared/loanRules.js';
@@ -528,7 +529,7 @@ export default function LoanTable({
                               <dt>Department:</dt>
                               <dd>{loan.department || '—'}</dd>
                               <dt>Rental location:</dt>
-                              <dd>{loan.location || asset?.location || DEFAULT_LOCATION}</dd>
+                              <dd>{isPendingPickup(loan) ? loan.location || '—' : loan.location || asset?.location || DEFAULT_LOCATION}</dd>
                               <dt>Assigned IP:</dt>
                               <dd><code>{loan.ip || '—'}</code></dd>
                             </dl>

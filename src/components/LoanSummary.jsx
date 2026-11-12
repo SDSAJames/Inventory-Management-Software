@@ -1,4 +1,4 @@
-import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
+import { getLoanLocation } from '../../shared/loanLocations.js';
 import { getLoanEndDate } from '../lib/loanEquipment';
 import { readableLoanDate } from '../lib/utils';
 
@@ -10,7 +10,7 @@ export default function LoanSummary({ loan, returning = false, location = loan.l
     ...(returning ? [
       { label: 'Picked up on', value: readableLoanDate(loan.pickupDate) || '—' },
       { label: 'Scheduled Due', value: readableLoanDate(getLoanEndDate(loan)) || '—' },
-    ] : [{ label: 'Location', value: location || DEFAULT_LOCATION }, ...(loan.ip ? [{ label: 'IP Address', value: loan.ip, code: true }] : [])]),
+    ] : [{ label: 'Location', value: getLoanLocation({ ...loan, location }) || '—' }, ...(loan.ip ? [{ label: 'IP Address', value: loan.ip, code: true }] : [])]),
   ];
   return <div className="loan-pickup-summary-card">{items.map((item) => <div key={item.label} className="loan-summary-item">
     <span className="summary-label">{item.label}</span>

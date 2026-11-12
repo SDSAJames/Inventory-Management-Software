@@ -4713,3 +4713,12 @@ textarea.input-error-red {
   .in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { flex-basis: 100%; }
   .in-out-day-modal .day-card-footer, .day-schedule-modal .card-action-row { flex-direction: row; flex-wrap: wrap; border-left: 0; padding: 0; margin-left: 0; }
 }
+
+.schedule-due-date { display: flex; align-items: center; gap: 4px; min-height: 42px; padding: 0 8px; border: 1px solid #c6d3e5; border-radius: 6px; background: white; }
+.schedule-due-date:focus-within { outline: 2px solid #93b4ff; }
+.field .schedule-due-date > input.schedule-date-part { flex: 0 0 3.5ch; width: 3.5ch; min-width: 3.5ch; padding: 8px 0; border: 0; border-radius: 0; box-shadow: none; text-align: center; background: transparent; font-size: 12px; font-variant-numeric: tabular-nums; }
+.field .schedule-due-date > input.schedule-date-year { flex-basis: 5.5ch; width: 5.5ch; min-width: 5.5ch; }
+.schedule-due-date > input:focus { outline: none; box-shadow: none; }
+.field .schedule-due-date > input.schedule-due-date-picker { flex: 0 0 30px; width: 30px; min-width: 30px; padding: 4px 0; border: 0; background: transparent; box-shadow: none; margin-left: auto; color: transparent; }
+.schedule-due-date-picker::-webkit-datetime-edit { display: none; }
+.schedule-due-date:has(input:disabled) { background: #f1f5f9; }

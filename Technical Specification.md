@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.11.2** |
+| **Specification Version** | **v1.12.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 12, 2026 |
@@ -483,3 +483,7 @@ The build script remains vite build and has no database or TXT-import hooks. DbP
 QUANTITY_FIELDS excludes asset fields. normalizeEquipmentQuantity strips leading zeros from digit-only strings without numeric conversion; normalizeEquipmentQuantities applies it only to count keys, preserving numeric types and legacy descriptions. The record normalizer handles issued and returned equipment at API/import/serialization boundaries. Shared form adapters and payload builders use the same functions. EquipmentQuantityInput notifies forms with canonical digits, permits empty editing, and is reused by transfer quantities. Tests cover input callbacks, payloads, identifiers, transfers and raw SQLite values for create, edit, pickup and return.
 
 DateInput wraps native date and datetime-local controls with a maximum of 9999-12-31 (end of day for timestamps), preserves stricter supplied maxima and existing minima, and ignores nonempty change values without a four-digit ISO year prefix. Clearing remains supported. Shared component tests cover both input types, rejection/restoration, clearing, valid edits and caller-provided minimum dates.
+
+shared/loanLocations.js exposes isPendingPickup and getLoanLocation for camelCase/API and SQLite rows. Empty pending locations remain empty; completed custody keeps the existing default. ScheduleDueDateInput initializes month/day as empty and year from local todayIso, accepts up to four year digits, validates the complete date against an ISO calendar round trip, and emits an empty string for incomplete or invalid dates. Its native DateInput picker fills all segments; existing complete values are preserved. Regression tests cover blank location through create/edit/list/import and calendar enrichment, plus year-only, incomplete and invalid due-date drafts.
+
+ScheduleDueDateInput assigns dedicated date-part and year classes. Scoped CSS gives month/day 3.5ch and year 5.5ch nonshrinking widths, removes inherited horizontal padding, and reserves 30px for the native picker. Date validation and persistence behavior are unchanged.

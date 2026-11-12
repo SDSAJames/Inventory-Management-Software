@@ -257,6 +257,18 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(JSON.parse(read().returned_equipment_json).Cable, '3');
       assert.equal(JSON.parse(read().returned_equipment_json).Others, '01 bags');
     });
+    await t.test('blank schedule locations survive creation, editing, API reads and import', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(loansRouter, 'post', '/', { id: 'blank-location', knoxId: 'blank.location' });
+      const read = () => db.prepare("SELECT location FROM loans WHERE id = 'blank-location'").get().location;
+      assert.equal(read(), '');
+      invoke(loansRouter, 'put', '/:id', { note: 'Still scheduled' }, { id: 'blank-location' });
+      assert.equal(read(), '');
+      const listed = invoke(loansRouter, 'get', '/').loans.find((loan) => loan.id === 'blank-location');
+      assert.equal(listed.location, '');
+      invoke(exchangeRouter, 'post', '/import', { loans: [{ id: 'import-blank-location', knoxId: 'import.blank', location: '', status: 'Scheduled' }] });
+      assert.equal(db.prepare("SELECT location FROM loans WHERE id = 'import-blank-location'").get().location, '');
+    });
     await t.test('requested monitor may remain unfulfilled at pickup without assigning a monitor', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(loansRouter, 'post', '/', { id: 'unfulfilled-monitor', knoxId: 'monitor.request', assigneeType: 'Business traveler', equipment: { RequestedMonitor: true } });
