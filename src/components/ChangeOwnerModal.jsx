@@ -1,3 +1,4 @@
+import DateInput from './DateInput';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { useState } from 'react';
 import { useDb } from '../hooks/useDb';
@@ -252,7 +253,7 @@ export default function ChangeOwnerModal({ asset, onClose, onDone }) {
             {errors.date && <span role="alert" className="field-error-msg">{errors.date}</span>}
             <label htmlFor="transferTimestamp">Transfer date &amp; time</label>
             <div className="timestamp-input-row">
-              <input
+              <DateInput
                 id="transferTimestamp"
                 type="datetime-local"
                 step="1"

@@ -1,3 +1,4 @@
+import DateInput from '../components/DateInput';
 import LoanReturnForm from '../components/LoanReturnForm';
 import LoanSummary from '../components/LoanSummary';
 import { createLoanReturnForm, buildLoanReturnDetails } from '../lib/loanForms';
@@ -760,7 +761,7 @@ export default function LoansPage() {
                 <div className="pickup-dates-row">
                   <div className="field">
                     <label htmlFor="modal-startDate">Planned start date</label>
-                    <input
+                    <DateInput
                       id="modal-startDate"
                       type="date"
                       value={pickupForm.startDate}
@@ -769,7 +770,7 @@ export default function LoansPage() {
                   </div>
                   <div className="field">
                     <label htmlFor="modal-endDate">Planned due / end date</label>
-                    <input
+                    <DateInput
                       id="modal-endDate"
                       type="date"
                       value={pickupForm.endDate}

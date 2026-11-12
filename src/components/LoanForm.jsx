@@ -1,3 +1,4 @@
+import DateInput from './DateInput';
 import { useState } from 'react';
 import { todayIso } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
@@ -115,7 +116,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
           </div>
           {form.pickedUp && <div className="field">
             <label htmlFor="pickupDate">Pickup date <span className="required-asterisk">*</span></label>
-            <input id="pickupDate" type="date" value={form.pickupDate} onChange={set('pickupDate')} required />
+            <DateInput id="pickupDate" type="date" value={form.pickupDate} onChange={set('pickupDate')} required />
             {errors.pickupDate && <span className="field-error-msg">{errors.pickupDate}</span>}
           </div>}
 

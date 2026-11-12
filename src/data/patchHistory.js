@@ -9,6 +9,19 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'Four-Digit Year Input Limits',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Use shared date inputs to limit years to four digits throughout asset and custody forms.',
+    highlights: ['Cap native date and date-time fields at year 9999 and reject longer typed or pasted years.'],
+    sections: [{ heading: 'Shared Date Input', badge: 'Fix', items: [
+      'Reuse DateInput for asset issue dates, loan creation/editing, inline edits, pickup dates and ownership/equipment transfers.',
+      'Preserve clearing, required fields, earlier date limits and date-time values. Purchase and warranty text fields retain DD-MM-YYYY entry.',
+    ] }],
+  },
+  {
+    version: '1.11.1',
+    date: '2026-11-12',
     title: 'Shared Quantity Normalization',
     tag: 'Patch',
     type: 'patch',

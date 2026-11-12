@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.11.1)
+# StarPlus Energy Asset Management System (v1.11.2)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -159,3 +159,5 @@ Both Business Travelers and In & Out calendars show **Picked up** events on the 
 Business Travelers **Reminder** lists picked-up business-traveler equipment due today through the next **7 calendar days**, nearest due date first. Copy unique recipients as `knoxidA;knoxidB;` with **Copy Knox IDs**, or select the displayed text manually. Follow-up and Reminder share the same contact-list UI and hide Location distribution. In **Overdue Only**, click a data-column header to alternate ascending/descending sorting; the initial order is earliest due date.
 
 Accessory counts use one shared normalization rule across create, edit, pickup, return and transfer: `01` becomes `1`, and `00` becomes `0`. The same rule applies when saving through the API or importing records. PC and monitor asset numbers retain leading zeros; Others / Peripherals stays text. Existing stored records are not bulk-rewritten during upgrades.
+
+Date and date-time fields limit the year to four digits, up to 9999, across asset and custody forms. Existing date limits and optional-field clearing still apply. Purchase and warranty fields keep their DD-MM-YYYY format.

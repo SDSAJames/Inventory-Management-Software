@@ -1,3 +1,4 @@
+import DateInput from './DateInput';
 import LoanEquipmentDetails from './LoanEquipmentDetails';
 import { isLoanReturned, canRecordReturn } from '../../shared/loanRules.js';
 import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
@@ -244,7 +245,7 @@ export default function LoanTable({
                   <td><input className="inline-input" value={draft.assignee || ''} onChange={(e) => update('assignee', e.target.value)} /></td>
                   {showLocation && <td><input aria-label="Location" className="inline-input" value={draft.location || ''} onChange={(event) => update('location', event.target.value)} /></td>}
                   <td>
-                    <input
+                    <DateInput
                       className="inline-input"
                       type="date"
                       value={(draft.startDate || draft.loanDate || '').slice(0, 10)}
@@ -253,7 +254,7 @@ export default function LoanTable({
                   </td>
                   {showPickupDate && (<td>
                     <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                      <input
+                      <DateInput
                         className="inline-input"
                         type="datetime-local"
                         value={dateTimeInputValue(draft.pickupDate)}
@@ -273,7 +274,7 @@ export default function LoanTable({
                     </div>
                   </td>)}
                   <td>
-                    <input
+                    <DateInput
                       className="inline-input"
                       type="date"
                       value={getLoanEndDate(draft).slice(0, 10)}
@@ -284,7 +285,7 @@ export default function LoanTable({
                   {showReturnDate && (
                   <td>
                     <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                      <input
+                      <DateInput
                         className="inline-input"
                         type="datetime-local"
                         value={dateTimeInputValue(draft.returnDate || draft.returnedDate)}

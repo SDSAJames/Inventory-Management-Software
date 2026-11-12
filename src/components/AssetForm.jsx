@@ -1,3 +1,4 @@
+import DateInput from './DateInput';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { sortDirectoryOptions } from '../lib/directoryOptions';
 import { useState, useEffect, useMemo } from 'react';
@@ -337,7 +338,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
             </div>
             <div className="field">
               <label htmlFor="issuedDate">Issued date</label>
-              <input id="issuedDate" type="date" value={form.issuedDate || ''} onChange={set('issuedDate')} />
+              <DateInput id="issuedDate" type="date" value={form.issuedDate || ''} onChange={set('issuedDate')} />
             </div>
             <div className="field"><label htmlFor="purchaseDate">Purchase date <span className="field-hint">({ASSET_DATE_FORMAT})</span></label><input id="purchaseDate" type="text" inputMode="numeric" maxLength={10} placeholder="07-10-2023" value={form.purchaseDate || ''} onChange={set('purchaseDate')} /></div>
             <div className="field"><label htmlFor="warrantyExpirationDate">Warranty expiration date <span className="field-hint">({ASSET_DATE_FORMAT})</span></label><input id="warrantyExpirationDate" type="text" inputMode="numeric" maxLength={10} placeholder="07-10-2026" value={form.warrantyExpirationDate || ''} onChange={set('warrantyExpirationDate')} /></div>

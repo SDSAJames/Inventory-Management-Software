@@ -6,6 +6,22 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] — 2026-11-12
+
+### Four-Digit Year Input Limits
+
+Use shared date inputs to limit years to four digits throughout asset and custody forms.
+
+#### Highlights
+- Cap native date and date-time fields at year 9999 and reject longer typed or pasted years.
+
+#### Shared Date Input
+
+- Reuse DateInput for asset issue dates, loan creation/editing, inline edits, pickup dates and ownership/equipment transfers.
+- Preserve clearing, required fields, earlier date limits and date-time values. Purchase and warranty text fields retain DD-MM-YYYY entry.
+
+---
+
 ## [1.11.1] — 2026-11-12
 
 ### Shared Quantity Normalization

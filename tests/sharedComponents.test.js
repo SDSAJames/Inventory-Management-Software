@@ -145,3 +145,20 @@ test('quantity input canonicalizes leading zeros before notifying each form', ()
   for (const value of ['01', '000', '002', '', '3.5', '-1']) input.props.onChange({ target: { value } });
   assert.deepEqual(values, ['1', '0', '2', '']);
 });
+
+test('shared date fields reject longer years, retain valid values and clearing, and preserve due-date limits', () => {
+  for (const type of ['date', 'datetime-local']) {
+    const app = harness(), values = [];
+    const suffix = type === 'date' ? '' : 'T12:30';
+    const original = '2026-11-12' + suffix;
+    const input = app.render('DateInput', { type, value: original, min: '2026-11-01', onChange: (event) => values.push(event.target.value) });
+    assert.ok(input.props.max.startsWith('9999-12-31'));
+    assert.equal(input.props.min, '2026-11-01');
+    const invalid = { target: { value: '12026-11-12' + suffix } };
+    input.props.onChange(invalid);
+    assert.equal(invalid.target.value, original);
+    input.props.onChange({ target: { value: '2027-01-02' + suffix } });
+    input.props.onChange({ target: { value: '' } });
+    assert.deepEqual(values, ['2027-01-02' + suffix, '']);
+  }
+});
