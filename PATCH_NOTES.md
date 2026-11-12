@@ -6,6 +6,24 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] — 2026-11-12
+
+### Preserve Typing During Background Refresh
+
+Keep unsaved asset edits when the periodic server refresh replaces saved records.
+
+#### Highlights
+- Retain typed form values across background syncs instead of resetting the form every 15 seconds.
+
+#### Shared Record Drafts
+
+- Use a shared draft hook and merge helper to refresh untouched fields while retaining edits against the previous saved baseline.
+- Apply saved ownership changes to custody fields without discarding unrelated notes, serial numbers or other typing.
+- Reset the draft when switching records; background refresh does not clear validation messages or the selected asset tab.
+- Add component coverage for same-record refresh, transfer synchronization and switching to another asset.
+
+---
+
 ## [1.14.0] — 2026-11-12
 
 ### MES Equipment Import & Excel Export

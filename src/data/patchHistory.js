@@ -9,6 +9,21 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'Preserve Typing During Background Refresh',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Keep unsaved asset edits when the periodic server refresh replaces saved records.',
+    highlights: ['Retain typed form values across background syncs instead of resetting the form every 15 seconds.'],
+    sections: [{ heading: 'Shared Record Drafts', badge: 'Fix', items: [
+      'Use a shared draft hook and merge helper to refresh untouched fields while retaining edits against the previous saved baseline.',
+      'Apply saved ownership changes to custody fields without discarding unrelated notes, serial numbers or other typing.',
+      'Reset the draft when switching records; background refresh does not clear validation messages or the selected asset tab.',
+      'Add component coverage for same-record refresh, transfer synchronization and switching to another asset.',
+    ] }],
+  },
+  {
+    version: '1.14.0',
+    date: '2026-11-12',
     title: 'MES Equipment Import & Excel Export',
     tag: 'Feature Release',
     type: 'minor',

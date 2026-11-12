@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.14.0** |
+| **Specification Version** | **v1.14.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 12, 2026 |
@@ -501,3 +501,5 @@ server/lib/savedChangeUndo.js centralizes working-table capture, SHA-256 state f
 ### MES equipment format
 
 MES_ASSET_HEADERS in equipmentSchema.js defines the eleven-column order from SPE_MES_Equipments_example.txt. Issued Name has its own header alias and model field; both parseAssetRows and parseEquipmentsText use that mapping. ensureAssetColumns adds issued_name and issued_date without replacing asset records, and saveAssetIssuedFields handles camelCase import or raw snapshot values. formatAssetRow emits issuedName/issuedDate. MES export calls assetsToRows with MES headers and appendOptionalColumns=false before the existing makeXlsx writer; standard exports append Issued Name only when needed to preserve populated values. isMesEquipment recognizes MES categories and MES/MESPC/MESM register prefixes. Tests read the supplied sample, verify exact headers and owner/name/date values, generate and read an actual XLSX, and exercise SQLite import/reload and holder-change invalidation.
+
+mergeRecordDraft compares draft fields against the previous saved baseline, updating only untouched or explicitly forced fields; structurally equal object values do not trigger replacements. useRecordDraft tracks record identity and baseline through a ref and merges on record refresh. AssetForm forces custody fields when saved ownership changes, and resets validation only on assetId changes. Component tests enable effect/dependency handling and verify typed notes/serial values survive refreshed object identities, ownership transfer updates custody, and switching assets resets the draft.
