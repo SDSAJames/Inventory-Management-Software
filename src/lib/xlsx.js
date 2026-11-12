@@ -4,7 +4,7 @@
  * Extracted from the legacy app.js monolith.
  */
 
-import { xmlEscape } from './utils';
+import { xmlEscape } from './utils.js';
 
 /* ── Helpers ─────────────────────────────────────────── */
 

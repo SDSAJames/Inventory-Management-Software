@@ -173,7 +173,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
   }
 
   const {
-    code: colCode, serial: colSerial, status: colStatus, owner: colOwner,
+    code: colCode, serial: colSerial, status: colStatus, owner: colOwner, issuedName: colIssuedName,
     purchaseDate: colPurchaseDate, issuedDate: colIssuedDate, category: colCategory,
     warrantyExpirationDate: colWarranty,
     model: colModel, location: colLocation, department: colDept, notes: colNotes,
@@ -206,6 +206,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
     const category = colCategory >= 0 ? String(row[colCategory] || '').trim() : 'Laptop';
     const model = colModel >= 0 ? String(row[colModel] || '').trim() : '';
     const existing = existingMap.get(code.toLowerCase());
+    const issuedName = colIssuedName >= 0 ? String(row[colIssuedName] || '').trim() : owner === existing?.owner ? existing?.issuedName || '' : '';
     const location = getAssetLocation(status, colLocation >= 0 ? String(row[colLocation] || '').trim() : DEFAULT_LOCATION, existing?.location);
     const department = colDept >= 0 ? String(row[colDept] || '').trim() : '';
     const notes = colNotes >= 0 ? String(row[colNotes] || '').trim() : '';
@@ -232,6 +233,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         status: status || existing.status,
         category: category || existing.category,
         owner: owner || existing.owner,
+        issuedName,
         purchaseDate: purchaseDate || existing.purchaseDate || '',
         warrantyExpirationDate: warrantyExpirationDate || existing.warrantyExpirationDate || '',
         issuedDate: issuedDate || existing.issuedDate || '',
@@ -266,6 +268,7 @@ export function parseEquipmentsText(rows, existingAssets = []) {
         status,
         location,
         owner,
+        issuedName,
         purchaseDate,
         warrantyExpirationDate,
         department,

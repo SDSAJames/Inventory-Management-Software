@@ -1,3 +1,4 @@
+import { saveAssetIssuedFields } from '../lib/assetIssuedFields.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { randomUUID } from 'node:crypto';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
@@ -129,6 +130,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
                 now
               );
             }
+            saveAssetIssuedFields(db, existing.id, a);
             updatedAssetsCount++;
           }
         } else {
@@ -165,6 +167,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
               now
             );
           }
+          saveAssetIssuedFields(db, newId, a);
           importedAssetsCount++;
         }
       }
@@ -337,6 +340,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           a.updated,
           a.created_at
         );
+        saveAssetIssuedFields(db, a.id, a);
         if (Array.isArray(a.ownershipHistory)) {
           for (const h of a.ownershipHistory) {
             insertHistory.run(

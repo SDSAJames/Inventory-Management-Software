@@ -298,6 +298,24 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         }
       }
     });
+    await t.test('MES issued name and date persist through import and reload, and clear on reassignment', () => {
+      const rows = readFileSync(new URL('../data/SPE_MES_Equipments_example.txt', import.meta.url), 'utf8').trimEnd().split(/\r?\n/).map((row) => row.split('\t'));
+      const parsed = parseEquipmentsText(rows, []).assets;
+      invoke(exchangeRouter, 'post', '/import', { assets: parsed });
+      const exported = invoke(exchangeRouter, 'get', '/export', {}).db;
+      const pc = exported.assets.find((asset) => asset.code === 'MESPC-0001');
+      assert.equal(pc.owner, 'sja.wikja');
+      assert.equal(pc.issuedName, 'sja wikaja');
+      assert.equal(pc.issuedDate, '2026-11-11');
+      assert.equal(pc.purchaseDate, '2026-01-02');
+      const monitor = exported.assets.find((asset) => asset.code === 'MESM-0219');
+      assert.equal(monitor.issuedName, 'okay');
+      assert.equal(monitor.category, 'MES Monitor');
+      invoke(assetsRouter, 'put', '/:id', { ...pc, owner: 'Other Holder' }, { id: pc.id });
+      const changed = invoke(exchangeRouter, 'get', '/export', {}).db.assets.find((asset) => asset.id === pc.id);
+      assert.equal(changed.issuedName, '');
+      assert.equal(changed.issuedDate, '');
+    });
     await t.test('requested monitor may remain unfulfilled at pickup without assigning a monitor', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(loansRouter, 'post', '/', { id: 'unfulfilled-monitor', knoxId: 'monitor.request', assigneeType: 'Business traveler', equipment: { RequestedMonitor: true } });

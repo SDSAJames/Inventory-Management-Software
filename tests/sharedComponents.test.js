@@ -7,10 +7,11 @@ import { transformSync } from 'esbuild';
 import { createLoanForm } from '../src/lib/loanForms.js';
 
 // Exercise controlled values and callbacks without starting a browser or touching the database.
-function harness(database = {}) {
+function harness(database = {}, { effects = false } = {}) {
   const require = createRequire(import.meta.url), cache = new Map(), states = [];
   const db = { assets: [], loans: [], locations: [], departments: [], ...database };
   let cursor = 0;
+  let pendingEffects = [];
   const calls = [];
   const e = (type, props, ...children) => typeof type === 'function' ? type({ ...props, children }) : { type, props: { ...props, children } };
   const hooks = {
@@ -18,7 +19,15 @@ function harness(database = {}) {
       const index = cursor++;
       if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], (value) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
-    }, useMemo: (fn) => fn(), useRef: () => ({ current: null }), useEffect() {},
+    }, useMemo: (fn) => fn(), useRef(initial) {
+      const index = cursor++;
+      if (!(index in states)) states[index] = { current: initial };
+      return states[index];
+    }, useEffect(callback, dependencies) {
+      const index = cursor++;
+      if (effects && (!states[index] || dependencies.some((value, i) => !Object.is(value, states[index][i])))) pendingEffects.push(callback);
+      states[index] = dependencies;
+    },
   };
   const context = { db, addLoan: (...args) => calls.push(['create', ...args]), updateLoan: (...args) => calls.push(['edit', ...args]), returnLoan: (...args) => calls.push(['return', ...args]) };
   function load(relative) {
@@ -28,6 +37,7 @@ function harness(database = {}) {
     const resolve = (specifier) => {
       if (specifier === 'react') return hooks;
       if (specifier.includes('/hooks/useDb')) return { useDb: () => context };
+      if (specifier.includes('/hooks/useAuth')) return { useAuth: () => ({ user: { role: 'ADMIN' } }) };
       if (specifier.includes('/hooks/useToast')) return { useToast: () => () => {} };
       if (specifier.endsWith('/AssetAutocomplete')) return { default: (props) => e('asset-search', props), __esModule: true };
       if (specifier.endsWith('/Modal')) return { default: ({ open, children }) => open ? children : null, __esModule: true };
@@ -41,7 +51,7 @@ function harness(database = {}) {
     cache.set(file, module.exports);
     return module.exports;
   }
-  return { calls, render(component, props) { cursor = 0; return load('src/components/' + component + '.jsx').default(props); } };
+  return { calls, db, render(component, props) { cursor = 0; pendingEffects = []; const tree = load('src/components/' + component + '.jsx').default(props); for (const effect of pendingEffects) effect(); return tree; } };
 }
 
 function nodes(root) {
@@ -200,4 +210,27 @@ test('transfer schedule search matches names and Knox IDs while retaining the se
   tree = nodes(app.render('LoanTransferForm', props));
   assert.equal(tree.find((node) => node.props.id === 'transfer-schedule').props.value, 'alex');
   assert.deepEqual(tree.filter((node) => node.type === 'option' && ['alex', 'jane', 'picked'].includes(node.props.value)).map((node) => node.props.value), ['alex', 'jane']);
+});
+
+test('asset typing survives periodic refresh while ownership transfers update custody and record switches reset the draft', () => {
+  const saved = { id: 'pc', code: 'PC-1', category: 'Laptop', owner: 'Original', status: 'Assigned', location: 'Stack', notes: 'Saved note', serial: 'Saved serial', ownershipHistory: [] };
+  const app = harness({ assets: [saved] }, { effects: true });
+  let tree = nodes(app.render('AssetForm', { assetId: 'pc' }));
+  tree.find((node) => node.props.id === 'notes').props.onChange({ target: { value: 'Unsaved note' } });
+  tree.find((node) => node.props.id === 'serial').props.onChange({ target: { value: 'Typing serial' } });
+  app.db.assets = [{ ...saved, ownershipHistory: [] }];
+  app.render('AssetForm', { assetId: 'pc' });
+  tree = nodes(app.render('AssetForm', { assetId: 'pc' }));
+  assert.equal(tree.find((node) => node.props.id === 'notes').props.value, 'Unsaved note');
+  assert.equal(tree.find((node) => node.props.id === 'serial').props.value, 'Typing serial');
+  app.db.assets = [{ ...saved, owner: 'IT Department', status: 'Available', location: 'IT Office' }];
+  app.render('AssetForm', { assetId: 'pc' });
+  tree = nodes(app.render('AssetForm', { assetId: 'pc' }));
+  assert.equal(tree.find((node) => node.props.id === 'owner').props.value, 'IT Department');
+  assert.equal(tree.find((node) => node.props.id === 'location').props.value, 'IT Office');
+  assert.equal(tree.find((node) => node.props.id === 'notes').props.value, 'Unsaved note');
+  app.db.assets.push({ ...saved, id: 'other', code: 'PC-2', notes: 'Other note' });
+  app.render('AssetForm', { assetId: 'other' });
+  tree = nodes(app.render('AssetForm', { assetId: 'other' }));
+  assert.equal(tree.find((node) => node.props.id === 'notes').props.value, 'Other note');
 });

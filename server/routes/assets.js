@@ -1,3 +1,4 @@
+import { saveAssetIssuedFields } from '../lib/assetIssuedFields.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { getAssetDateError, normalizeAssetDate } from '../../shared/assetDates.js';
 import { Router } from 'express';
@@ -211,6 +212,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
       now
     );
 
+    saveAssetIssuedFields(db, id, req.body);
     if (effectiveOwner) {
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
@@ -242,7 +244,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
     logAudit('CREATE_ASSET', 'assets', id, { code: trimmedCode, name }, req.user);
 
     const newAsset = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
-    return res.status(201).json({ success: true, message: 'Asset created successfully.', asset: { ...newAsset, purchaseDate: newAsset.purchase_date || '', warrantyExpirationDate: newAsset.warranty_expiration_date || '' } });
+    return res.status(201).json({ success: true, message: 'Asset created successfully.', asset: { ...newAsset, issuedName: newAsset.issued_name || '', issuedDate: newAsset.issued_date || '', purchaseDate: newAsset.purchase_date || '', warrantyExpirationDate: newAsset.warranty_expiration_date || '' } });
   } catch (err) {
     db.exec('ROLLBACK;');
     return res.status(500).json({ success: false, error: err.message });
@@ -313,6 +315,12 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
       asset.id
     );
 
+    const issueFields = { ...req.body };
+    if (effectiveOwnerChanged) {
+      if (issueFields.issuedName === (asset.issued_name || '')) { delete issueFields.issuedName; delete issueFields.issued_name; }
+      if (issueFields.issuedDate === (asset.issued_date || '')) { delete issueFields.issuedDate; delete issueFields.issued_date; }
+    }
+    saveAssetIssuedFields(db, asset.id, issueFields);
     if (code !== asset.code) renameStoredAssetReferences(db, asset.code, code);
     if (returnChanges) affectedLoans = recordHolderReturn(db, code, now);
 

@@ -9,6 +9,25 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'MES Equipment Import & Excel Export',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Support the MES equipment register with separate Issued Knox ID and Issued Name columns.',
+    highlights: [
+      'Import SPE_MES_Equipments_example.txt or matching XLSX through Data Exchange and the existing asset import workflow.',
+      'Export MES inventory to SPE_MES_Equipments_YYYY-MM-DD.xlsx using the same eleven-column layout.',
+    ],
+    sections: [{ heading: 'MES Register', badge: 'Feature', items: [
+      'Reuse equipment column mapping and parsers; preserve Asset Number, Asset Type, Serial Number, Purchase Date, Status, Issued Knox ID, Issued Name, Issued Date, Department, Location and Notes.',
+      'Persist issued name and issue date in optional asset columns and retain them through database export and restore.',
+      'Clear outdated issue metadata when the holder changes. Include MES Monitor in monitor searches.',
+      'Combine standard and MES equipment files in the batch preview instead of replacing the previous equipment file.',
+      'Verify the supplied sample through TXT parsing, database reload and a generated Excel workbook round trip.',
+    ] }],
+  },
+  {
+    version: '1.13.0',
+    date: '2026-11-12',
     title: 'Revert the Last Saved Inventory Change',
     tag: 'Feature Release',
     type: 'minor',

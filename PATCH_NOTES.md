@@ -6,6 +6,26 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] — 2026-11-12
+
+### MES Equipment Import & Excel Export
+
+Support the MES equipment register with separate Issued Knox ID and Issued Name columns.
+
+#### Highlights
+- Import SPE_MES_Equipments_example.txt or matching XLSX through Data Exchange and the existing asset import workflow.
+- Export MES inventory to SPE_MES_Equipments_YYYY-MM-DD.xlsx using the same eleven-column layout.
+
+#### MES Register
+
+- Reuse equipment column mapping and parsers; preserve Asset Number, Asset Type, Serial Number, Purchase Date, Status, Issued Knox ID, Issued Name, Issued Date, Department, Location and Notes.
+- Persist issued name and issue date in optional asset columns and retain them through database export and restore.
+- Clear outdated issue metadata when the holder changes. Include MES Monitor in monitor searches.
+- Combine standard and MES equipment files in the batch preview instead of replacing the previous equipment file.
+- Verify the supplied sample through TXT parsing, database reload and a generated Excel workbook round trip.
+
+---
+
 ## [1.13.0] — 2026-11-12
 
 ### Revert the Last Saved Inventory Change

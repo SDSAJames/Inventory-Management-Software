@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.13.0)
+# StarPlus Energy Asset Management System (v1.14.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -173,3 +173,5 @@ Editing a completed transfer sender preserves **Transferred** status and does no
 Opening or switching menu pages starts at the top. Changing a tab or search within the same page keeps its current scroll position.
 
 **Revert last change** in the top bar undoes the most recent successful inventory save made after this update. Review the action, author and time, then confirm. Linked assets, custody records and directory changes are restored together. One undo is available; failed/no-op saves leave it intact, and undo consumes it. Operators can undo their own latest change; admins can undo the latest shared change. A newer or externally changed database state requires reviewing the latest action again. Import restore history, security accounts and audit logs remain separate. Restart the backend after upgrading to enable the undo checkpoint table and endpoints.
+
+**MES equipment register:** Data Exchange accepts `data/SPE_MES_Equipments_example.txt` and matching `.xlsx` files. Its 11 columns are Asset Number, Asset Type, Serial Number, Purchase Date, Status, Issued Knox ID, Issued Name, Issued Date, Department, Location and Notes. Issued Name is preserved separately from the Knox ID. Use **Export XLSX MES Equipments** to download MES assets in this layout as `SPE_MES_Equipments_YYYY-MM-DD.xlsx`. MES assets are identified by their MES asset type or MES-prefixed register number; MES Monitor is available in monitor searches. Restart the backend once after upgrading to add the optional issue metadata columns. Existing records are preserved, and importing remains an explicit action.

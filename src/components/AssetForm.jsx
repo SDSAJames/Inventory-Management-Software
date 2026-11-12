@@ -1,3 +1,4 @@
+import { useRecordDraft } from '../hooks/useRecordDraft';
 import DateInput from './DateInput';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { sortDirectoryOptions } from '../lib/directoryOptions';
@@ -46,26 +47,25 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
     notes: '',
   });
 
-  const [form, setForm] = useState(() => {
-    if (existing) return { ...existing, purchaseDate: formatAssetDate(existing.purchaseDate, ASSET_DATE_FORMAT), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate, ASSET_DATE_FORMAT) };
-    return makeBlank();
+  const [form, setForm] = useRecordDraft({
+    recordId: assetId,
+    record: existing,
+    toDraft: (asset) => ({ ...asset, purchaseDate: formatAssetDate(asset.purchaseDate, ASSET_DATE_FORMAT), warrantyExpirationDate: formatAssetDate(asset.warrantyExpirationDate, ASSET_DATE_FORMAT) }),
+    makeBlank,
+    forceFields: (previous, next) => previous && previous.owner !== next.owner
+      ? ['owner', 'status', 'location', 'department', 'issuedName', 'issuedDate'] : [],
   });
 
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Re-sync form when assetId changes
+  // Changing records resets validation; polling does not discard in-progress input.
   useEffect(() => {
-    if (existing) {
-      setForm({ ...existing, purchaseDate: formatAssetDate(existing.purchaseDate, ASSET_DATE_FORMAT), warrantyExpirationDate: formatAssetDate(existing.warrantyExpirationDate, ASSET_DATE_FORMAT) });
-    } else {
-      setForm(makeBlank());
-      setActiveTab('details');
-    }
+    setActiveTab('details');
     setErrors({});
     setSubmitError('');
-  }, [assetId, existing]);
+  }, [assetId]);
 
   // Effective ownership history for this asset including all loans and assignments
   const ownershipHistory = useMemo(() => {

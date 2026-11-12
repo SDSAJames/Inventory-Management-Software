@@ -1,7 +1,7 @@
 import { ensureSavedChangeUndo } from '../lib/savedChangeUndo.js';
 import { DEFAULT_OWNER, DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from "../../shared/referenceData.js";
 import { getAssetLocationAfterReturn, getAssetLocation, normalizeLocation } from "../../shared/assetRules.js";
-import { ensureAssetDateColumns } from '../lib/assetDates.js';
+import { ensureAssetColumns } from '../lib/assetDates.js';
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
@@ -72,7 +72,7 @@ export function initDatabase() {
     );
   `);
 
-  ensureAssetDateColumns(db);
+  ensureAssetColumns(db);
 
   // 3. Loans table
   db.exec(`

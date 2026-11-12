@@ -78,6 +78,7 @@ export function parseAssetRows(rows, existingAssets) {
       status,
       location: getAssetLocation(status, get('location'), existing?.location),
       owner: get('owner'),
+      issuedName: index.issuedName >= 0 ? get('issuedName') : get('owner') === existing?.owner ? existing?.issuedName || '' : '',
       department: get('department'),
       notes: get('notes'),
       purchaseDate: normalizeDate(get('purchaseDate')),
@@ -115,9 +116,10 @@ export function parseAssetRows(rows, existingAssets) {
  * Defaults to the SPE equipment register columns.
  * If custom headers from an imported file are provided, uses those exact columns.
  */
-export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS) {
+export function assetsToRows(assets, headers = DEFAULT_ASSET_HEADERS, { appendOptionalColumns = true } = {}) {
   const activeHeaders = [...(Array.isArray(headers) && headers.length > 0 ? headers : DEFAULT_ASSET_HEADERS)];
-  if (assets.some((asset) => asset.warrantyExpirationDate) && !activeHeaders.some((header) => equipmentFieldForHeader(header) === 'warrantyExpirationDate')) activeHeaders.push('Warranty Expiration Date');
+  if (appendOptionalColumns && assets.some((asset) => asset.issuedName) && !activeHeaders.some((header) => equipmentFieldForHeader(header) === 'issuedName')) activeHeaders.push('Issued Name');
+  if (appendOptionalColumns && assets.some((asset) => asset.warrantyExpirationDate) && !activeHeaders.some((header) => equipmentFieldForHeader(header) === 'warrantyExpirationDate')) activeHeaders.push('Warranty Expiration Date');
   return [
     activeHeaders,
     ...assets.map((asset) => activeHeaders.map((header) => equipmentExportValue(asset, header))),

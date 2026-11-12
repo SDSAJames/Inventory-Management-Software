@@ -1,5 +1,5 @@
 export const PC_CATEGORIES = ['Laptop', 'MES PC', 'PC'];
-export const MONITOR_CATEGORIES = ['Monitor', 'Monitors'];
+export const MONITOR_CATEGORIES = ['Monitor', 'Monitors', 'MES Monitor'];
 
 export function matchesAssetCategory(assetCategory, categoryFilter) {
   if (!categoryFilter) return true;

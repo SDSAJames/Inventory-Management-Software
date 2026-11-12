@@ -7,6 +7,7 @@ export const EQUIPMENT_COLUMNS = [
   ['serial', ['Serial Number', 'Serial', 'S/N']],
   ['status', ['Status']],
   ['owner', ['Issued Knox ID', 'Knox ID', 'Holder', 'Current holder', 'Owner']],
+  ['issuedName', ['Issued Name']],
   ['issuedDate', ['Issued Date', 'Issue date', 'Date']],
   ['name', ['Asset Name', 'Name']],
   ['category', ['Category', 'Asset Type', 'Type']],
@@ -23,6 +24,14 @@ export const DEFAULT_ASSET_HEADERS = [
   'Asset Number', 'Asset Type', 'Serial Number', 'Purchase Date', 'Status',
   'Issued Knox ID', 'Issued Date', 'Department', 'Location', 'Notes',
 ];
+
+export const MES_ASSET_HEADERS = [
+  'Asset Number', 'Asset Type', 'Serial Number', 'Purchase Date', 'Status',
+  'Issued Knox ID', 'Issued Name', 'Issued Date', 'Department', 'Location', 'Notes',
+];
+export function isMesEquipment(asset) {
+  return /^mes(?:\s|$)/i.test(String(asset.category || '').trim()) || /^mes(?:pc|m)?[-_]/i.test(String(asset.code || '').trim());
+}
 
 const STATUS_ALIASES = new Map([
   ['issued', 'Assigned'], ['broken', 'Damaged'], ['loaned', 'On loan'],

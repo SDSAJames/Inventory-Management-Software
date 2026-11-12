@@ -3,7 +3,7 @@ import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { LOAN_HEADERS, XLSX_MIME } from '../lib/constants';
 import { DEFAULT_ASSET_HEADERS, assetsToRows } from '../lib/assetExcel';
-import { equipmentFieldForHeader } from '../lib/equipmentSchema.js';
+import { equipmentFieldForHeader, MES_ASSET_HEADERS, isMesEquipment } from '../lib/equipmentSchema.js';
 import { loansToRows } from '../lib/loanExcel';
 import { todayIso } from "../lib/utils";
 import { api } from '../lib/api';
@@ -16,6 +16,7 @@ export default function ExchangePage() {
 
   const fileRefEquipments = useRef(null);
   const fileRefLoans = useRef(null);
+  const fileRefMes = useRef(null);
   const fileRefMulti = useRef(null);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -51,15 +52,17 @@ export default function ExchangePage() {
     toast('Reference-format .xlsx loan list exported');
   };
 
-  const handleExportEquipments = async () => {
-    const rows = assetsToRows(db.assets, DEFAULT_ASSET_HEADERS);
+  const handleExportEquipments = async (format = 'standard') => {
+    const mes = format === 'mes';
+    const assets = mes ? db.assets.filter(isMesEquipment) : db.assets;
+    const rows = assetsToRows(assets, mes ? MES_ASSET_HEADERS : DEFAULT_ASSET_HEADERS, { appendOptionalColumns: !mes });
     const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
     const workbook = await makeXlsx(rows);
     downloadBlob(
       new Blob([workbook], { type: XLSX_MIME }),
-      `SPE_Equipments_${todayIso()}.xlsx`,
+      `${mes ? 'SPE_MES_Equipments' : 'SPE_Equipments'}_${todayIso()}.xlsx`,
     );
-    toast(`${db.assets.length} equipment assets exported to .xlsx`);
+    toast(`${assets.length} ${mes ? 'MES ' : ''}equipment assets exported to .xlsx`);
   };
 
   /* ── 2. TXT File Processing ────────────────────────────── */
@@ -74,6 +77,15 @@ export default function ExchangePage() {
       let parsedLoans = null;
       let loanSourceRows = null;
       const fileNames = [];
+      const collectEquipment = (rows) => {
+        equipmentSourceHeaders = [...new Set([...(equipmentSourceHeaders || []), ...rows[0]])];
+        const next = parseEquipmentsText(rows, [...db.assets, ...(parsedEquipments?.assets || [])]);
+        const records = new Map([...(parsedEquipments?.assets || []), ...next.assets].map((asset) => [asset.code.toLowerCase(), asset]));
+        const assets = [...records.values()];
+        const known = new Set(db.assets.map((asset) => asset.code.toLowerCase()));
+        const updatedCount = assets.filter((asset) => known.has(asset.code.toLowerCase())).length;
+        parsedEquipments = { assets, totalParsed: assets.length, updatedCount, addedCount: assets.length - updatedCount };
+      };
 
       for (const file of files) {
         fileNames.push(file.name);
@@ -90,8 +102,7 @@ export default function ExchangePage() {
         const type = detectFileType(rows);
 
         if (type === 'equipments') {
-          equipmentSourceHeaders = rows[0];
-          parsedEquipments = parseEquipmentsText(rows, db.assets);
+          collectEquipment(rows);
         } else if (type === 'loans') {
           loanSourceRows = rows;
           const refAssets = parsedEquipments ? [...parsedEquipments.assets, ...db.assets] : db.assets;
@@ -103,10 +114,9 @@ export default function ExchangePage() {
             const refAssets = parsedEquipments ? [...parsedEquipments.assets, ...db.assets] : db.assets;
             parsedLoans = parseLoansText(rows, refAssets, db.loans);
           } else if (rows[0]?.some((h) => String(h).toLowerCase().includes('host') || String(h).toLowerCase().includes('serial'))) {
-            equipmentSourceHeaders = rows[0];
-            parsedEquipments = parseEquipmentsText(rows, db.assets);
+            collectEquipment(rows);
           } else {
-            throw new Error(`Unrecognized file structure in "${file.name}". Expected SPE_Equipments_example.txt or SPE_IT_Equipment_Loan_List_Example.txt format.`);
+            throw new Error(`Unrecognized file structure in "${file.name}". Expected equipment, MES equipment, or IT equipment loan-list columns.`);
           }
         }
       }
@@ -263,6 +273,13 @@ export default function ExchangePage() {
           </div>
         </section>
 
+        <section className="exchange-card">
+          <h3>MES Equipment Register (.txt / .xlsx)</h3>
+          <p>Import <code>SPE_MES_Equipments_example.txt</code>, including Issued Knox ID and Issued Name as separate columns. MES PCs and MES monitors use the same preview and merge workflow as other equipment.</p>
+          <div className="exchange-card-actions"><button className="button" onClick={() => fileRefMes.current?.click()}>Choose MES Equipment File</button>
+          <input ref={fileRefMes} type="file" accept=".txt,.tsv,.csv,.xlsx" style={{ display: 'none' }} onChange={handleFileInput} /></div>
+        </section>
+
         {/* Card B: Loan List (.txt) */}
         <section className="exchange-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
@@ -362,6 +379,12 @@ export default function ExchangePage() {
           </div>
         </section>
       </div>
+
+      <section className="exchange-card" style={{ marginBottom: '20px' }}>
+        <h3>Export MES Equipment Inventory (Excel .xlsx)</h3>
+        <p>Export MES equipment with the 11 columns from the MES register, including Issued Knox ID, Issued Name and Issued Date.</p>
+        <div className="exchange-card-actions"><button className="button secondary" onClick={() => handleExportEquipments('mes')}>↓ Export XLSX MES Equipments</button></div>
+      </section>
 
       {/* ── 3. Offline Guarantee & Restore Point ────────────── */}
       <div className="notice" style={{ marginBottom: '20px' }}>

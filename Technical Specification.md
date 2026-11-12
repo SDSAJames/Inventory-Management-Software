@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.13.0** |
+| **Specification Version** | **v1.14.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 12, 2026 |
@@ -497,3 +497,7 @@ AppShell uses useLocation().pathname and useLayoutEffect to reset window and mai
 ### Saved-change undo contract
 
 server/lib/savedChangeUndo.js centralizes working-table capture, SHA-256 state fingerprints, checkpoint storage, eligibility and transactional restore. initDatabase creates saved_change_undo as a single-slot persistent table. trackSavedChanges wraps successful JSON responses for POST/PUT/PATCH/DELETE on operational routers; reads, failed responses and unchanged working data do not replace the slot. GET /api/changes/latest returns review metadata and availability; POST /api/changes/undo requires changeId and authentication. BEGIN IMMEDIATE guards the expected ID, author/admin rule and after-state fingerprint; deferred foreign keys support linked-table restoration, and errors roll back both data and slot consumption. The top-bar UndoSavedChange component confirms the action then refreshes export, categories and statuses into the shared cache. Import backup records, security users and audits are excluded. Regression tests cover linked restore, stale IDs, external writes, authorization, failed/no-op writes and failed-restore rollback.
+
+### MES equipment format
+
+MES_ASSET_HEADERS in equipmentSchema.js defines the eleven-column order from SPE_MES_Equipments_example.txt. Issued Name has its own header alias and model field; both parseAssetRows and parseEquipmentsText use that mapping. ensureAssetColumns adds issued_name and issued_date without replacing asset records, and saveAssetIssuedFields handles camelCase import or raw snapshot values. formatAssetRow emits issuedName/issuedDate. MES export calls assetsToRows with MES headers and appendOptionalColumns=false before the existing makeXlsx writer; standard exports append Issued Name only when needed to preserve populated values. isMesEquipment recognizes MES categories and MES/MESPC/MESM register prefixes. Tests read the supplied sample, verify exact headers and owner/name/date values, generate and read an actual XLSX, and exercise SQLite import/reload and holder-change invalidation.
