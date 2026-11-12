@@ -5,6 +5,7 @@ import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 
 export function computeLoanStatus(loan, { today = todayIso(), tracksDueDate = tracksEndDate(loan.assignee_type) } = {}) {
+  if (loan.status === 'Transferred') return 'Transferred';
   if (isLoanReturned(loan)) return 'Returned';
   if (!loan.pickup_date && loan.status !== 'Active') return 'Scheduled';
   if (tracksDueDate && loan.end_date && loan.end_date < today) return 'Overdue';

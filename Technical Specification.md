@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.12.2** |
+| **Specification Version** | **v1.12.3** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 12, 2026 |
@@ -489,3 +489,5 @@ shared/loanLocations.js exposes isPendingPickup and getLoanLocation for camelCas
 ScheduleDueDateInput assigns dedicated date-part and year classes. Scoped CSS gives month/day 3.5ch and year 5.5ch nonshrinking widths, removes inherited horizontal padding, and reserves 30px for the native picker. Date validation and persistence behavior are unchanged.
 
 LoanTransferForm matches its trimmed, lowercased schedule query against both knoxId and assignee using partial substring matching. Existing eligibility checks and selectedOutsideSearch handling are reused. Component coverage exercises name and ID searches, exclusion of picked-up records and selection retention.
+
+loanAssetCodeForUpdate gives an explicitly supplied assetCode or equipment.Laptop precedence even when empty; omitted references preserve existing values. Loan PUT retains Transferred/is_archived and skips active asset synchronization for completed transfers. Transfer provenance in the saved note plus no remaining equipment also completes a corrected partial-transfer sender. The serializer retains Transferred status, and shared returned checks treat transferred records as closed. updateLoan awaits the API, applies its loan/assets response, and full/inline editors keep drafts when saving fails. Integration tests cover full-transfer sender edits, receiver custody preservation, partial-transfer PC correction, exports and repeated edits.

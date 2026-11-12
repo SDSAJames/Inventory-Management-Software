@@ -21,3 +21,10 @@ export function normalizePcRecord(record) {
     equipment: { ...record.equipment, Laptop: pcAssetCode(record.equipment?.Laptop || record.assetCode || record.asset_code), RequestedPC: true },
   };
 }
+
+/** Empty is an explicit correction; omitted references keep their saved value. */
+export function loanAssetCodeForUpdate(changes, existing) {
+  if (Object.hasOwn(changes, 'assetCode')) return pcAssetCode(changes.assetCode);
+  if (changes.equipment && Object.hasOwn(changes.equipment, 'Laptop')) return pcAssetCode(changes.equipment.Laptop);
+  return pcAssetCode(existing.asset_code ?? existing.assetCode);
+}

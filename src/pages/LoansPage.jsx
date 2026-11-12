@@ -359,7 +359,7 @@ export default function LoansPage() {
 
   /* ── Inline save ────────────────────────────────── */
 
-  const handleInlineSave = (draft) => {
+  const handleInlineSave = async (draft) => {
     const changes = {
       assetCode: draft.assetCode,
       assignee: draft.assignee,
@@ -387,8 +387,8 @@ export default function LoansPage() {
       location: draft.location,
     };
 
-    updateLoan(draft.id, changes, assetUpdates);
-    toast('Loan updated');
+    try { await updateLoan(draft.id, changes, assetUpdates); toast('Loan updated'); }
+    catch (error) { toast(error.message || 'Could not save loan'); throw error; }
   };
 
   return (

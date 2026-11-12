@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.12.2)
+# StarPlus Energy Asset Management System (v1.12.3)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -167,3 +167,5 @@ Pending pickup schedules preserve a blank Rental location through saving, editin
 Scheduled due-date segments reserve enough width to display the full current year and MM/DD placeholders in compact loan forms. Year-only drafts still save no due date.
 
 When transferring equipment to a pickup schedule, search by all or part of either the **Knox ID or assignee name**. Search ignores case; the selected schedule remains selected when the search changes.
+
+Editing a completed transfer sender preserves **Transferred** status and does not move equipment back from the receiver. Explicitly clearing an incorrect PC reference remains saved. If a correction after partial transfer leaves no equipment outstanding, the sender closes as Transferred. Loan edits wait for database confirmation; failed saves remain open for retry.

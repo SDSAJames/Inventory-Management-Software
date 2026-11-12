@@ -269,6 +269,35 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       invoke(exchangeRouter, 'post', '/import', { loans: [{ id: 'import-blank-location', knoxId: 'import.blank', location: '', status: 'Scheduled' }] });
       assert.equal(db.prepare("SELECT location FROM loans WHERE id = 'import-blank-location'").get().location, '');
     });
+    await t.test('editing transferred sender preserves completion and recipient custody; explicit PC clearing sticks', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      for (const variant of ['full', 'correction']) {
+        const code = 'TRANSFER-EDIT-' + variant;
+        const id = 'transfer-edit-' + variant;
+        invoke(assetsRouter, 'post', '/', { id: code, code, category: 'Laptop' });
+        invoke(loansRouter, 'post', '/', { id, assetCode: code, knoxId: id, assignee: 'Sender ' + variant, pickupDate: '2020-01-01', endDate: '2020-01-02', equipment: { Laptop: code, Dongle: '1' } });
+        const selection = variant === 'full' ? { Laptop: code, Dongle: '1' } : { Dongle: '1' };
+        const target = invoke(loansRouter, 'post', '/:id/transfer', { knoxId: id + '.receiver', assignee: 'Receiver ' + variant, assigneeType: 'Employee', selection }, { id });
+        const changes = variant === 'full' ? { note: 'Corrected sender details' } : { assetCode: '', equipment: { Laptop: '', Dongle: '0' } };
+        const result = invoke(loansRouter, 'put', '/:id', changes, { id });
+        assert.equal(result.loan.status, 'Transferred');
+        assert.equal(result.loan.isArchived, true);
+        const persisted = invoke(exchangeRouter, 'get', '/export', {}).db;
+        const sender = persisted.loans.find((loan) => loan.id === id);
+        assert.equal(sender.status, 'Transferred');
+        assert.equal(sender.isArchived, true);
+        assert.equal(persisted.loans.find((loan) => loan.id === target.targetId).knoxId, id + '.receiver');
+        const asset = persisted.assets.find((asset) => asset.code === code);
+        assert.equal(asset.owner, variant === 'full' ? 'Receiver full' : 'IT Department');
+        if (variant === 'correction') {
+          assert.equal(sender.assetCode, '');
+          assert.equal(sender.equipment.Laptop, '');
+          const editedAgain = invoke(loansRouter, 'put', '/:id', { note: 'Another edit' }, { id });
+          assert.equal(editedAgain.loan.status, 'Transferred');
+          assert.equal(editedAgain.loan.assetCode, '');
+        }
+      }
+    });
     await t.test('requested monitor may remain unfulfilled at pickup without assigning a monitor', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(loansRouter, 'post', '/', { id: 'unfulfilled-monitor', knoxId: 'monitor.request', assigneeType: 'Business traveler', equipment: { RequestedMonitor: true } });

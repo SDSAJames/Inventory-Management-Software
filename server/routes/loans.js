@@ -2,7 +2,7 @@ import { getLoanLocation } from '../../shared/loanLocations.js';
 import { DEFAULT_OWNER } from "../../shared/referenceData.js";
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
-import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
+import { normalizePcRecord, pcAssetCode, loanAssetCodeForUpdate } from '../../shared/pcReferences.js';
 import { db, logAudit } from '../db/database.js';
 import { authenticate } from '../middleware/auth.js';
 import { tracksEndDate } from '../loanRules.js';
@@ -13,6 +13,7 @@ import { computeLoanStatus, formatLoanRow } from '../lib/loanRows.js';
 import { getAssetStatusForLoanEdit, normalizeLocation } from '../../shared/assetRules.js';
 import { returnAssetToIt } from '../lib/assetLoans.js';
 import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js';
+import { EQUIPMENT_KEYS } from '../../shared/equipment.js';
 import { transferLoan } from '../lib/loanTransfer.js';
 import { canRecordReturn } from '../../shared/loanRules.js';
 
@@ -381,7 +382,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     assigneeType = existing.assignee_type,
   } = req.body || {};
 
-  const effectiveAssetCode = pcAssetCode(assetCode || equipment?.Laptop || existing.asset_code);
+  const effectiveAssetCode = loanAssetCodeForUpdate(req.body, existing);
   const effectiveLocation = getLoanLocation({ location, pickupDate });
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const mergedEquipment = {
@@ -404,6 +405,11 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     computedStatus = effectiveEndDate && effectiveEndDate < today ? 'Overdue' : 'Active';
     isArchived = 0;
   }
+
+  const transferRecorded = existing.status === 'Transferred' || /(?:^|\n)Transferred .+ to .+ on /.test(existing.note || '');
+  const remainingItems = { ...mergedEquipment, Others: others };
+  const noItemsRemain = !EQUIPMENT_KEYS.some((key) => { const value = String(remainingItems[key] ?? '').trim(); return value && value !== '0'; });
+  if (!hasReturn && transferRecorded && (existing.status === 'Transferred' || noItemsRemain)) { computedStatus = 'Transferred'; isArchived = 1; }
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -438,8 +444,22 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     );
 
     // Sync Asset
-    const currentCode = effectiveAssetCode || existing.asset_code;
-    if (currentCode) {
+    const removedCode = existing.asset_code && existing.asset_code !== effectiveAssetCode ? existing.asset_code : '';
+    if (removedCode) {
+      const removedAsset = db.prepare('SELECT * FROM assets WHERE code = ?').get(removedCode);
+      const heldElsewhere = db.prepare('SELECT * FROM loans WHERE id <> ?').all(existing.id).some((row) => {
+        const record = formatLoanRow(row);
+        return record.pickupDate && !record.isArchived && !record.returnDate && !record.returnedDate && [record.assetCode, record.equipment?.Monitor].includes(removedCode)
+          && ![record.returnedEquipment?.Laptop, record.returnedEquipment?.Monitor].includes(removedCode);
+      });
+      if (removedAsset && !heldElsewhere && [existing.assignee, existing.knox_id].filter(Boolean).includes(removedAsset.owner)) {
+        returnAssetToIt(db, removedCode, today);
+        db.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+          'hist-' + randomUUID(), removedCode, removedAsset.owner, DEFAULT_OWNER, new Date().toISOString(), 'Loan record corrected', 'Removed an incorrect PC association; no physical return claimed.', new Date().toISOString());
+      }
+    }
+    const currentCode = effectiveAssetCode;
+    if (currentCode && computedStatus !== 'Transferred') {
       if (hasReturn) {
         returnAssetToIt(db, currentCode, today);
       } else if (hasPickup) {
@@ -465,6 +485,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       success: true,
       message: 'Loan record updated successfully.',
       loan: formatLoanRow(updatedLoan),
+      assets: [effectiveAssetCode, existing.asset_code].filter(Boolean).filter((code, index, codes) => codes.indexOf(code) === index).map((code) => db.prepare('SELECT * FROM assets WHERE code = ?').get(code)).filter(Boolean),
     });
   } catch (err) {
     db.exec('ROLLBACK;');

@@ -7,7 +7,7 @@ export function isBusinessTravelerType(assigneeType) {
 export function isLoanReturned(loan) {
   return Boolean(loan && (
     loan.returnDate || loan.returnedDate || loan.return_date || loan.returned_date ||
-    loan.status === 'Returned' || loan.isArchived || loan.is_archived
+    loan.status === 'Returned' || loan.status === 'Transferred' || loan.isArchived || loan.is_archived
   ));
 }
 

@@ -9,6 +9,24 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-12',
+    title: 'Preserve Transferred Sender Records When Editing',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Keep completed transfers closed when correcting sender records and persist explicitly cleared laptop references.',
+    highlights: [
+      'Editing a transferred sender keeps Transferred status instead of recalculating Overdue.',
+      'Save an explicitly empty PC field without restoring the previous laptop reference.',
+    ],
+    sections: [{ heading: 'Transfer Corrections', badge: 'Fix', items: [
+      'Preserve completed-transfer status and archive state in API reads and edits; do not reassign transferred equipment back to the sender.',
+      'If correcting an erroneous PC association removes the final outstanding item after transfer, close the sender as Transferred.',
+      'Release an incorrect old PC association only when no other active custody holds it and its owner matches the corrected sender; record the correction separately from physical returns.',
+      'Wait for database confirmation in full and inline loan edits, apply the returned record to the cache, and retain failed edits for retry.',
+    ] }],
+  },
+  {
+    version: '1.12.2',
+    date: '2026-11-12',
     title: 'Transfer Schedule Search by Name or Knox ID',
     tag: 'Patch',
     type: 'patch',

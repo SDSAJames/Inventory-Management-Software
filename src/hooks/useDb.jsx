@@ -405,74 +405,17 @@ export function DbProvider({ children }) {
     api.loans.create(effectiveLoan).catch((err) => console.warn('Could not sync loan creation to server:', err.message));
   }, []);
 
-  const updateLoan = useCallback((id, changes, assetUpdates) => {
-    setDb((prev) => {
-      const existing = prev.loans.find((l) => l.id === id);
-      if (!existing) return prev;
-
-      const merged = normalizeLoanEndDate({ ...existing, ...changes });
-
-      // Automatic lifecycle state detection:
-      // If return date is removed -> reverts to Loaned (if pickupDate exists) or Scheduled
-      // If pickup date is removed -> reverts to Scheduled
-      const hasReturn = Boolean(merged.returnDate || merged.returnedDate);
-      const hasPickup = Boolean(merged.pickupDate);
-
-      let computedStatus = merged.status;
-      let isArchived = merged.isArchived;
-
-      if (hasReturn) {
-        computedStatus = 'Returned';
-        isArchived = true;
-      } else if (isLoanOverdue(merged)) {
-        computedStatus = 'Overdue';
-        isArchived = false;
-        merged.returnDate = '';
-        merged.returnedDate = '';
-      } else if (hasPickup) {
-        computedStatus = 'Active';
-        isArchived = false;
-        merged.returnDate = '';
-        merged.returnedDate = '';
-      } else {
-        computedStatus = 'Scheduled';
-        isArchived = false;
-        merged.pickupDate = '';
-        merged.returnDate = '';
-        merged.returnedDate = '';
-      }
-
-      merged.status = computedStatus;
-      merged.isArchived = isArchived;
-
-      const nextLoans = prev.loans.map((l) => (l.id === id ? merged : l));
-
-      // Synchronize asset status
-      let nextAssets = prev.assets;
-      const assetCode = merged.assetCode || existing.assetCode;
-
-      if (assetCode && (hasPickup || hasReturn || existing.pickupDate || existing.returnDate || existing.returnedDate)) {
-        const targetOwner = hasPickup && !hasReturn ? (merged.assignee || '') : '';
-
-        nextAssets = prev.assets.map((a) => {
-          if (a.code === assetCode) {
-            return {
-              ...a,
-              ...(assetUpdates || {}),
-              status: getAssetStatusForLoanEdit(a.status, existing, merged),
-              owner: targetOwner,
-              location: hasReturn ? getAssetLocationAfterReturn(a.status) : merged.location || a.location,
-              updated: todayIso(),
-            };
-          }
-          return a;
-        });
-      }
-
-      return { ...prev, loans: nextLoans, assets: nextAssets, locations: merged.location ? [...new Set([...(prev.locations || []), merged.location])] : prev.locations };
-    });
-
-    api.loans.update(id, changes).catch((err) => console.warn('Could not sync loan update to server:', err.message));
+  const updateLoan = useCallback(async (id, changes) => {
+    const result = await api.loans.update(id, changes);
+    setDb((previous) => ({
+      ...previous,
+      loans: previous.loans.map((loan) => loan.id === id ? { ...loan, ...result.loan } : loan),
+      assets: previous.assets.map((asset) => {
+        const saved = (result.assets || []).find((item) => item.id === asset.id);
+        return saved ? { ...asset, ...saved } : asset;
+      }),
+    }));
+    return result.loan;
   }, []);
 
   const pickupLoan = useCallback(async (id, pickupDate, details = {}) => {

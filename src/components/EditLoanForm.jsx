@@ -28,8 +28,10 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
   };
 
 
-  const handleSubmit = (e) => {
+  const [saving, setSaving] = useState(false);
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
 
     const errors = loanFormErrors(form);
     if (Object.keys(errors).length) return toast(Object.values(errors)[0]);
@@ -42,9 +44,13 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
       location: form.location,
     };
 
-    updateLoan(loan.id, changes, assetUpdates);
-    toast('Loan updated');
-    onClose();
+    setSaving(true);
+    try {
+      await updateLoan(loan.id, changes, assetUpdates);
+      toast('Loan updated');
+      onClose();
+    } catch (error) { toast(error.message || 'Could not save loan'); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -73,7 +79,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
 
         <div className="form-actions">
           <button type="button" className="button ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="button">Save changes</button>
+          <button type="submit" className="button" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button>
         </div>
       </form>
     </>

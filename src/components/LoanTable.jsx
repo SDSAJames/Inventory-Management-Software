@@ -134,13 +134,13 @@ export default function LoanTable({
     setDraft(null);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (draft) {
       if (!draft.knoxId || !draft.knoxId.trim()) {
         alert('Knox ID is required');
         return;
       }
-      onSaveLoan(draft);
+      try { await onSaveLoan(draft); } catch { return; }
     }
     setEditingId(null);
     setDraft(null);
