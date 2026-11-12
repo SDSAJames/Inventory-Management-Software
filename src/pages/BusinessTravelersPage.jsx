@@ -1,4 +1,7 @@
-import { travelerFollowUp, knoxRecipientList } from '../lib/travelerFollowUp';
+import SortableHeader from '../components/SortableHeader';
+import { sortTableRows } from '../lib/tableSort';
+import TravelerContactList from '../components/TravelerContactList';
+import { travelerFollowUp, travelerReminders } from '../lib/travelerFollowUp';
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import LoanReturnModal from '../components/LoanReturnModal';
 
@@ -6,7 +9,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { readableLoanDate } from "../lib/utils";
+import { readableLoanDate, normalizeDateToIso } from "../lib/utils";
 import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
@@ -18,6 +21,7 @@ export default function BusinessTravelersPage() {
   const toast = useToast();
   const navigate = useNavigate();
 
+  const [overdueSort, setOverdueSort] = useState({ key: 'endDate', dir: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('active'); // 'all' | 'active' | 'scheduled' | 'overdue' | 'returned'
@@ -52,6 +56,15 @@ export default function BusinessTravelersPage() {
   const overdueTravelers = useMemo(() => {
     return allTravelers.filter((t) => t.isOverdue || t.tripStatus === 'Overdue');
   }, [allTravelers]);
+
+  const overdueRows = useMemo(() => sortTableRows(overdueTravelers.map((loan, index) => ({ ...loan, originalIndex: index })), overdueSort, (loan, key) => {
+    if (key === 'endDate') return normalizeDateToIso(getLoanEndDate(loan));
+    if (key === 'overdueDays') return -Date.parse(normalizeDateToIso(getLoanEndDate(loan)));
+    return loan[key];
+  }), [overdueTravelers, overdueSort]);
+  const sortOverdue = (key) => setOverdueSort((previous) => ({ key, dir: previous.key === key && previous.dir === 'asc' ? 'desc' : 'asc' }));
+
+  const reminderTravelers = useMemo(() => travelerReminders(allTravelers), [allTravelers]);
 
   const followUpTravelers = useMemo(() => travelerFollowUp(allTravelers), [allTravelers]);
 
@@ -159,6 +172,7 @@ export default function BusinessTravelersPage() {
         </div>
         <div className="view-header-actions">
           <div className="view-mode-toggle">
+            <button type="button" className={`view-mode-btn ${viewMode === 'reminder' ? 'active' : ''}`} onClick={() => setViewMode('reminder')}>Reminder ({reminderTravelers.length})</button>
             <button type="button" className={`view-mode-btn ${viewMode === 'followup' ? 'active' : ''}`} onClick={() => setViewMode('followup')}>Follow-up ({followUpTravelers.length})</button>
             <button
               type="button"
@@ -253,7 +267,7 @@ export default function BusinessTravelersPage() {
           </section>
 
           {/* ── Location Breakdown ("Where they are") ────────────── */}
-          {viewMode !== 'overdue' && (
+          {!['overdue', 'followup', 'reminder'].includes(viewMode) && (
             <section className="panel" style={{ marginBottom: '22px' }}>
               <div className="panel-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
@@ -378,20 +392,14 @@ export default function BusinessTravelersPage() {
               <table className="loan-table simple-loan-table overdue-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '40px' }}>No</th>
-                    <th style={{ minWidth: '150px' }}>Traveler</th>
-                    <th style={{ minWidth: '130px' }}>Location</th>
-                    <th style={{ minWidth: '150px' }}>Asset Number</th>
-                    <th style={{ minWidth: '130px' }}>Due Date</th>
-                    <th style={{ minWidth: '120px' }}>Overdue By</th>
-                    <th style={{ minWidth: '110px' }}>Knox IP</th>
+                    {[['originalIndex', 'No'], ['assignee', 'Traveler'], ['location', 'Location'], ['assetCode', 'Asset Number'], ['endDate', 'Due Date'], ['overdueDays', 'Overdue By'], ['ip', 'Knox IP']].map(([key, label]) => <SortableHeader key={key} column={{ key, label }} sort={overdueSort} onSort={sortOverdue} />)}
                     <th style={{ width: '170px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {overdueTravelers.map((t, idx) => (
+                  {overdueRows.map((t) => (
                     <tr key={`overdue-${t.id}`} className="overdue-row-highlight">
-                      <td className="col-no">{idx + 1}</td>
+                      <td className="col-no">{t.originalIndex + 1}</td>
                       <td>
                         <strong>{t.assignee}</strong>
                         {t.knoxId && (
@@ -456,18 +464,8 @@ export default function BusinessTravelersPage() {
         </section>
       )}
 
-      {viewMode === 'followup' && <section className="panel">
-        <div className="panel-heading"><h3>Overdue &amp; unreturned follow-up ({followUpTravelers.length})</h3>
-          <button type="button" className="button" disabled={!knoxRecipientList(followUpTravelers)} onClick={async () => {
-            try { await navigator.clipboard.writeText(knoxRecipientList(followUpTravelers)); toast('Knox ID list copied'); }
-            catch { toast('Clipboard unavailable. Select and copy the recipient list below.'); }
-          }}>Copy Knox IDs</button></div>
-        <p>Copy the unique Knox IDs below for email follow-up. This includes overdue equipment and partial returns with items outstanding.</p>
-        <textarea aria-label="Follow-up Knox IDs" readOnly value={knoxRecipientList(followUpTravelers)} rows={2} style={{ width: '100%' }} />
-        <div className="table-wrap"><table className="loan-table"><thead><tr><th>Knox ID</th><th>Assignee</th><th>PC asset #</th><th>Location</th><th>Due date</th><th>Follow-up reason</th><th>Action</th></tr></thead>
-        <tbody>{followUpTravelers.map((loan) => <tr key={loan.id}><td>{loan.knoxId || 'Missing Knox ID'}</td><td>{loan.assignee}</td><td>{loan.assetCode || '—'}</td><td>{loan.location}</td><td>{readableLoanDate(getLoanEndDate(loan)) || '—'}</td><td>{loan.followUpReason}</td><td><button type="button" className="text-button" onClick={() => setEditLoanId(loan.id)}>View / edit</button></td></tr>)}
-        {!followUpTravelers.length && <tr><td colSpan={7}>No overdue or unreturned travelers.</td></tr>}</tbody></table></div>
-      </section>}
+      {viewMode === 'followup' && <TravelerContactList records={followUpTravelers} title="Overdue & unreturned follow-up" description="Copy unique Knox IDs for overdue equipment and partial returns with items outstanding." emptyMessage="No overdue or unreturned travelers." onEdit={setEditLoanId} />}
+      {viewMode === 'reminder' && <TravelerContactList records={reminderTravelers} title="Due within 7 days" description="Business travelers holding equipment due today or within the next 7 days. Copy the unique Knox IDs for a return reminder." emptyMessage="No business traveler equipment is due within 7 days." reasonLabel="Time remaining" onEdit={setEditLoanId} />}
 
       {/* ── Monthly Travel Schedule Calendar ────────────────── */}
       {(viewMode === 'calendar' || viewMode === 'both') && (

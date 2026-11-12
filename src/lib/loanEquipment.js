@@ -1,6 +1,6 @@
 import { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
-import { EQUIPMENT_FIELDS } from '../../shared/equipment.js';
+import { EQUIPMENT_FIELDS, QUANTITY_FIELDS, normalizeEquipmentQuantity, normalizeEquipmentQuantities } from '../../shared/equipment.js';
 export { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
 
 export const LOAN_EQUIPMENT_FIELDS = EQUIPMENT_FIELDS.map(({ key, label, placeholder }) => [label, key, placeholder]);
@@ -13,6 +13,7 @@ export function newLoanEquipmentForm() {
 
 // Keep equipment requests and their defaults consistent in every custody form.
 export function updateLoanFormField(previous, field, value) {
+  if (QUANTITY_FIELDS.some((item) => item.key === field)) value = normalizeEquipmentQuantity(value);
   const requestingPc = (field === 'assetCode' && value) || (field === 'requestPc' && value);
   return {
     ...previous,
@@ -31,11 +32,14 @@ export function updateLoanFormField(previous, field, value) {
 }
 
 export function equipmentToForm(equipment = {}) {
+  equipment = normalizeEquipmentQuantities(equipment);
   return Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [key, String(equipment[storageKey] ?? (key === 'monitor' ? '' : '0'))]));
 }
 
 /** Pickup/return controls use string values and retain explicit zero quantities. */
 export function equipmentQuantitiesToForm(equipment = {}, fallback = {}) {
+  equipment = normalizeEquipmentQuantities(equipment);
+  fallback = normalizeEquipmentQuantities(fallback);
   return Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [
     key, String(equipment[storageKey] ?? fallback[storageKey] ?? '0'),
   ]));
@@ -54,10 +58,10 @@ export function normalizeLoanEndDate(loan) {
 }
 
 export function buildLoanEquipment(form, assetCode) {
-  return {
+  return normalizeEquipmentQuantities({
     Laptop: pcAssetCode(assetCode),
     ...Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [storageKey, form[key]])),
-  };
+  });
 }
 
 function itemCount(value) {
@@ -68,11 +72,11 @@ function itemCount(value) {
 }
 
 export function buildReturnedEquipment(form) {
-  return {
+  return normalizeEquipmentQuantities({
     Laptop: String(form.returnedLaptopCode || '').trim(),
     ...Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [storageKey, form[key]])),
     Others: form.others || '',
-  };
+  });
 }
 
 export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {

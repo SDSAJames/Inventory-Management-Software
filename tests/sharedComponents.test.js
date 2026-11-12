@@ -138,3 +138,10 @@ test('shared calendar navigation calls the same month, year and day actions', ()
   tree.find((node) => node.props['aria-label'] === 'Select year').props.onChange({ target: { value: '2027' } });
   assert.deepEqual(called, ['prev', 'next', 'today', 2, 2027]);
 });
+
+test('quantity input canonicalizes leading zeros before notifying each form', () => {
+  const app = harness(), values = [];
+  const input = app.render('EquipmentQuantityInput', { value: '0', onChange: (event) => values.push(event.target.value) });
+  for (const value of ['01', '000', '002', '', '3.5', '-1']) input.props.onChange({ target: { value } });
+  assert.deepEqual(values, ['1', '0', '2', '']);
+});

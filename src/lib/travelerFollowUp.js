@@ -1,3 +1,6 @@
+import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
+import { isLoanReturned } from '../../shared/loanRules.js';
+import { normalizeDateToIso, todayIso } from './utils.js';
 import { groupLoans } from './loanSelectors.js';
 export function travelerFollowUp(loans) {
   const { overdue, unreturned } = groupLoans(loans);
@@ -13,4 +16,14 @@ export function knoxRecipientList(loans) {
   }
   const sorted = [...ids.values()].sort((a, b) => a.localeCompare(b));
   return sorted.length ? sorted.join(';') + ';' : '';
+}
+
+/** Calendar-day arithmetic keeps the seven-day boundary stable across DST. */
+export function travelerReminders(loans, today = todayIso()) {
+  const day = (date) => Date.parse(normalizeDateToIso(date) + 'T00:00:00Z') / 86400000;
+  return loans.filter((loan) => isBusinessTraveler(loan.assigneeType) && !isLoanReturned(loan) && (loan.pickupDate || loan.status === 'Active'))
+    .map((loan) => ({ ...loan, daysLeft: day(getLoanEndDate(loan)) - day(today) }))
+    .filter((loan) => loan.daysLeft >= 0 && loan.daysLeft <= 7)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .map((loan) => ({ ...loan, followUpReason: loan.daysLeft === 0 ? 'Due today' : loan.daysLeft + (loan.daysLeft === 1 ? ' day left' : ' days left') }));
 }

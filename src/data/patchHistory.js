@@ -8,6 +8,45 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-12',
+    title: 'Shared Quantity Normalization',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Normalize accessory counts consistently across forms, imports, transfers and API save paths.',
+    highlights: [
+      'Convert 01 to 1 and 00 to 0 for accessory counts while keeping asset tags and free text unchanged.',
+      'Reuse the same quantity input and normalization rule in create, edit, pickup, return and transfer windows.',
+    ],
+    sections: [{ heading: 'Shared Equipment Counts', badge: 'Fix', items: [
+      'Centralize quantity-field metadata and canonical digit formatting in shared/equipment.js.',
+      'Normalize loaded drafts, form payloads, API records and imports; preserve PC/monitor leading zeros and Others / Peripherals text.',
+      'Replace the separate transfer number input with EquipmentQuantityInput and normalize transferred quantities.',
+      'Verify direct API create/edit/pickup/return writes store canonical counts and retain historical descriptive values.',
+      'Use UUIDs for loan-created employees to avoid rapid-create collisions, and make the ownership-history regression independent of the current date.',
+    ] }],
+  },
+  {
+    version: '1.11.0',
+    date: '2026-11-10',
+    title: 'Seven-Day Traveler Reminders & Overdue Sorting',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Prepare return reminders for equipment due within seven days and sort overdue traveler records.',
+    highlights: [
+      'Open Reminder for business travelers with picked-up equipment due today through seven calendar days ahead.',
+      'Copy unique Knox IDs as knoxidA;knoxidB; using the same shared contact list as Follow-up.',
+      'Hide Location distribution in Follow-up and Reminder, and sort Overdue Only columns ascending or descending.',
+    ],
+    sections: [{ heading: 'Traveler Contact Lists', badge: 'Feature', items: [
+      'Share clipboard, manual-copy fallback, record table and view/edit actions across reminder and follow-up views.',
+      'Exclude scheduled pickups, returned records, employees, overdue dates and missing due dates from Reminder. Sort reminders by nearest due date using calendar-day arithmetic.',
+    ] }, { heading: 'Overdue Sorting', badge: 'UI', items: [
+      'Sort No, Traveler, Location, Asset Number, Due Date, Overdue By and Knox IP through keyboard-accessible header buttons.',
+      'Default to earliest due date; use numeric duration and natural text comparisons, with missing values last.',
+    ] }],
+  },
+  {
+    version: '1.10.1',
     date: '2026-11-10',
     title: 'Keep Deployment Separate from Inventory Data',
     tag: 'Patch',

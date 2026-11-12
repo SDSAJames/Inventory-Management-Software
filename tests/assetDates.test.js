@@ -243,6 +243,20 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         assert.equal(db.prepare('SELECT department FROM assets WHERE code = ?').get(code).department, 'Custom team');
       }
     });
+    await t.test('create, edit, pickup and return store canonical counts even without the UI', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(loansRouter, 'post', '/', { id: 'canonical-counts', knoxId: 'counts.user', equipment: { Cable: '001', Dongle: '00' } });
+      const read = () => db.prepare("SELECT * FROM loans WHERE id = 'canonical-counts'").get();
+      assert.equal(JSON.parse(read().equipment_json).Cable, '1');
+      assert.equal(JSON.parse(read().equipment_json).Dongle, '0');
+      invoke(loansRouter, 'put', '/:id', { equipment: { Cable: '002' } }, { id: 'canonical-counts' });
+      assert.equal(JSON.parse(read().equipment_json).Cable, '2');
+      invoke(loansRouter, 'post', '/:id/pickup', { pickupDate: '2026-11-12', equipment: { Cable: '003' } }, { id: 'canonical-counts' });
+      assert.equal(JSON.parse(read().equipment_json).Cable, '3');
+      invoke(loansRouter, 'post', '/:id/return', { returnDate: '2026-11-12', returnedEquipment: { Cable: '003', Others: '01 bags' } }, { id: 'canonical-counts' });
+      assert.equal(JSON.parse(read().returned_equipment_json).Cable, '3');
+      assert.equal(JSON.parse(read().returned_equipment_json).Others, '01 bags');
+    });
     await t.test('requested monitor may remain unfulfilled at pickup without assigning a monitor', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(loansRouter, 'post', '/', { id: 'unfulfilled-monitor', knoxId: 'monitor.request', assigneeType: 'Business traveler', equipment: { RequestedMonitor: true } });
@@ -284,7 +298,7 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(saved.owner, 'New Holder');
       assert.equal(saved.location, 'Stack');
       assert.equal(reconcileAssetWithLoans(saved, exported.loans).owner, 'New Holder');
-      assert.equal(saved.ownershipHistory[0].newOwner, 'New Holder');
+      assert.equal(saved.ownershipHistory.find((entry) => entry.date === '2026-11-10 10:15:00').newOwner, 'New Holder');
     });
     await t.test('asset location edits persist for IT custody and assigned equipment', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');

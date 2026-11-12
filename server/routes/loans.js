@@ -334,7 +334,7 @@ loansRouter.post('/', authenticate, (req, res) => {
       db.prepare(`
         INSERT INTO employees (id, name, department, position, knox_id, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
-      `).run(`emp-${Date.now()}`, effectiveAssignee, department.trim(), assigneeType, effectiveKnoxId, now);
+      `).run(`emp-${randomUUID()}`, effectiveAssignee, department.trim(), assigneeType, effectiveKnoxId, now);
     }
 
     db.exec('COMMIT;');
@@ -625,6 +625,7 @@ loansRouter.post('/:id/revert-pickup', authenticate, (req, res) => {
 
 // POST /api/loans/:id/return (Protected: Return to IT Department workflow)
 loansRouter.post('/:id/return', authenticate, (req, res) => {
+  req.body = normalizePcRecord(req.body);
   const loan = db.prepare('SELECT * FROM loans WHERE id = ?').get(req.params.id);
   if (!loan) {
     return res.status(404).json({ success: false, error: 'Loan not found.' });

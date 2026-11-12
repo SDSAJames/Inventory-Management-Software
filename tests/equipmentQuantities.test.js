@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { normalizeEquipmentQuantities } from '../shared/equipment.js';
+import { buildLoanEquipment, buildReturnedEquipment, equipmentToForm } from '../src/lib/loanEquipment.js';
+import { normalizePcRecord } from '../shared/pcReferences.js';
+import { splitLoanEquipment } from '../shared/loanTransfer.js';
+test('one quantity rule covers drafts, payloads, stored records and transfers without changing asset identifiers or text', () => {
+  const equipment = { Laptop: '00123', Monitor: '00042', Adapter: '001', Cable: '00', Others: '01', Mouse: 'legacy description' };
+  const normalized = normalizeEquipmentQuantities(equipment);
+  assert.deepEqual(normalized, { ...equipment, Adapter: '1', Cable: '0' });
+  assert.equal(equipment.Adapter, '001');
+  assert.equal(normalizeEquipmentQuantities(normalized), normalized);
+  const form = { ...equipmentToForm(equipment), returnedLaptopCode: '00123', others: '01' };
+  assert.equal(form.adapter, '1');
+  assert.equal(buildLoanEquipment({ ...form, adapter: '002' }, '00123').Adapter, '2');
+  assert.equal(buildReturnedEquipment({ ...form, adapter: '003' }).Adapter, '3');
+  assert.equal(normalizePcRecord({ equipment, returnedEquipment: equipment }).returnedEquipment.Adapter, '1');
+  const result = splitLoanEquipment(equipment, { Adapter: '001' });
+  assert.equal(result.transferred.Adapter, '1');
+  assert.equal(result.remaining.Adapter, '0');
+});

@@ -11,3 +11,24 @@ export const EQUIPMENT_FIELDS = [
 
 export const DEVICE_KEYS = ['Laptop', 'Monitor'];
 export const EQUIPMENT_KEYS = ['Laptop', ...EQUIPMENT_FIELDS.map((field) => field.storageKey), 'Others'];
+
+export const QUANTITY_FIELDS = EQUIPMENT_FIELDS.filter((field) => field.kind !== 'asset');
+
+/** Canonicalize counts without changing asset tags, free text or legacy descriptions. */
+export function normalizeEquipmentQuantity(value) {
+  if (typeof value !== 'string' || !/^\d+$/.test(value.trim())) return value;
+  return value.trim().replace(/^0+(?=\d)/, '');
+}
+
+export function normalizeEquipmentQuantities(equipment) {
+  if (!equipment) return equipment;
+  let result = equipment;
+  for (const { storageKey } of QUANTITY_FIELDS) {
+    const value = normalizeEquipmentQuantity(equipment[storageKey]);
+    if (value !== equipment[storageKey]) {
+      if (result === equipment) result = { ...equipment };
+      result[storageKey] = value;
+    }
+  }
+  return result;
+}

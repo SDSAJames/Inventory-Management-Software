@@ -1,9 +1,9 @@
-import { EQUIPMENT_FIELDS } from '../../shared/equipment.js';
+import { QUANTITY_FIELDS } from '../../shared/equipment.js';
 import { PC_CATEGORIES, MONITOR_CATEGORIES } from '../lib/assetCategories';
 import AssetAutocomplete from './AssetAutocomplete';
 import EquipmentQuantityInput from './EquipmentQuantityInput';
 
-const quantities = EQUIPMENT_FIELDS.filter((field) => field.kind !== 'asset');
+const quantities = QUANTITY_FIELDS;
 
 export default function EquipmentAccessoryList({ form, onChange, idPrefix, monitorSearch = false, returning = false, pcField }) {
   return <div className="handover-equipment">

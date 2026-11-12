@@ -1,4 +1,4 @@
-import { DEVICE_KEYS, EQUIPMENT_KEYS } from './equipment.js';
+import { DEVICE_KEYS, EQUIPMENT_KEYS, normalizeEquipmentQuantities } from './equipment.js';
 export const TRANSFER_ITEMS = EQUIPMENT_KEYS;
 
 /** A schedule's equipment describes planned pickup, not additional held quantities. */
@@ -6,6 +6,8 @@ export function equipmentForTransferredPickup(planned, transferred) {
   return { RequestedPC: Boolean(planned.RequestedPC), RequestedMonitor: Boolean(planned.RequestedMonitor), ...transferred, PickupMethod: 'Transfer' };
 }
 export function splitLoanEquipment(equipment, selection) {
+  equipment = normalizeEquipmentQuantities(equipment);
+  selection = normalizeEquipmentQuantities(selection);
   const remaining = { ...equipment }, transferred = {};
   for (const key of TRANSFER_ITEMS) {
     const requested = String(selection[key] ?? '').trim();

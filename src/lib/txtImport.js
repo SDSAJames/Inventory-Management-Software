@@ -1,3 +1,4 @@
+import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 /**
  * txtImport.js
@@ -397,7 +398,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
 
     const loanId = crypto.randomUUID();
 
-    parsedLoans.push({
+    parsedLoans.push(normalizePcRecord({
       id: loanId,
       no: no || String(i),
       assetCode,
@@ -426,7 +427,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
       },
       others,
       note,
-    });
+    }));
 
     addedCount++;
 
