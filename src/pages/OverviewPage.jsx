@@ -4,6 +4,8 @@ import { useDb } from '../hooks/useDb';
 import { isLoanOverdue } from '../lib/utils';
 import StatCard from '../components/StatCard';
 import BarChart from '../components/BarChart';
+import useAssetSelection from '../hooks/useAssetSelection';
+import { RowCountSelect, SelectionCount } from '../components/Pagination';
 import AssetTable from '../components/AssetTable';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
@@ -13,6 +15,8 @@ import ChangeOwnerModal from '../components/ChangeOwnerModal';
 export default function OverviewPage() {
   const { db } = useDb();
   const navigate = useNavigate();
+  const [pageSize, setPageSize] = useState(15);
+  const { selectedIds, setSelectedIds, handleToggleSelect, handleToggleSelectAll, handleRangeSelect } = useAssetSelection();
   const [modal, setModal] = useState(null); // 'asset' | 'loan' | assetId | null
   const [ownerTargetAsset, setOwnerTargetAsset] = useState(null);
   const [activeFilter, setActiveFilter] = useState('recent'); // 'recent' | 'all' | 'available' | 'assigned' | 'attention'
@@ -52,14 +56,14 @@ export default function OverviewPage() {
         );
       case 'recent':
       default:
-        return sortByUpdated(db.assets).slice(0, 5);
+        return sortByUpdated(db.assets);
     }
   }, [db.assets, activeFilter, overdueAssetCodes]);
 
   const filterMeta = {
     recent: {
       title: 'Recently updated',
-      badge: '5 latest modified',
+      badge: `${db.assets.length} items`,
       subtitle: 'Most recently created, edited, or transferred assets with modification dates',
       linkTarget: '/assets',
       linkText: 'View full register →',
@@ -98,9 +102,11 @@ export default function OverviewPage() {
     <>
       <div className="view-header">
         <div>
+          <SelectionCount count={selectedIds.size} onClear={() => setSelectedIds(new Set())} />
           <p className="view-subtitle">Real-time equipment allocation, fleet availability, and custody records.</p>
         </div>
-        <button className="button" onClick={() => setModal('asset')}>+ Register asset</button>
+        <div className="view-header-actions"><button className="button" onClick={() => setModal('asset')}>+ Register asset</button>
+          <RowCountSelect value={pageSize} onChange={setPageSize} /></div>
       </div>
 
       <div className="stat-grid">
@@ -157,7 +163,7 @@ export default function OverviewPage() {
                   className="text-button"
                   style={{ textDecoration: 'underline' }}
                   onClick={() => setActiveFilter('recent')}
-                  title="Switch back to 5 most recently updated assets"
+                  title="Switch back to recently updated assets"
                 >
                   ⟲ Show recently updated
                 </button>
@@ -173,6 +179,9 @@ export default function OverviewPage() {
           </div>
           <AssetTable
             assets={displayedAssets}
+            pageSize={pageSize} resetKey={activeFilter} initialSort={{ key: 'updated', dir: 'desc' }}
+            selectedIds={selectedIds} onToggleSelect={handleToggleSelect}
+            onToggleSelectAll={handleToggleSelectAll} onRangeSelect={handleRangeSelect}
             showUpdatedDate={true}
             onViewAsset={(id) => setModal(id)}
             onChangeOwner={(asset) => setOwnerTargetAsset(asset)}

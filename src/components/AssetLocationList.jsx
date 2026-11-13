@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { getAssetLocation } from '../../shared/assetRules.js';
 import { sortDirectoryOptions } from '../lib/directoryOptions';
+import usePagination from '../hooks/usePagination';
+import Pagination from './Pagination';
 import AssetTable from './AssetTable';
 
-export default function AssetLocationList({ assets, onEditAsset, onChangeOwner }) {
+export default function AssetLocationList({ assets, onEditAsset, onChangeOwner, pageSize = null, resetKey = '' }) {
   const [expanded, setExpanded] = useState(null);
   const locations = new Map();
   for (const asset of assets) {
@@ -15,10 +17,11 @@ export default function AssetLocationList({ assets, onEditAsset, onChangeOwner }
     const category = asset.category || 'Uncategorized';
     group.categories.set(category, (group.categories.get(category) || 0) + 1);
   }
+  const pagination = usePagination(locations.size, pageSize, resetKey);
   if (!locations.size) return <div className="empty">No assets match the current filters.</div>;
   return <div className="asset-location-list">
     <p className="modal-intro">Select a location to view its assets. Counts reflect the current search and status filters.</p>
-    {sortDirectoryOptions([...locations.values()]).map((group) => <section key={group.key} className="asset-location-group">
+    {sortDirectoryOptions([...locations.values()]).slice(pagination.start, pagination.end).map((group) => <section key={group.key} className="asset-location-group">
       <button type="button" className="asset-location-heading" aria-expanded={expanded === group.key}
         onClick={() => setExpanded((current) => current === group.key ? null : group.key)}>
         <strong>{group.name}</strong>
@@ -26,7 +29,8 @@ export default function AssetLocationList({ assets, onEditAsset, onChangeOwner }
           <span key={category}>{category}: <strong>{group.categories.get(category)}</strong></span>)}</span>
         <span className="asset-location-total">{group.assets.length} asset{group.assets.length === 1 ? '' : 's'} <span aria-hidden="true">{expanded === group.key ? '▴' : '▾'}</span></span>
       </button>
-      {expanded === group.key && <AssetTable assets={group.assets} onEditAsset={onEditAsset} onChangeOwner={onChangeOwner} />}
+      {expanded === group.key && <AssetTable pageSize={pageSize} resetKey={resetKey} assets={group.assets} onEditAsset={onEditAsset} onChangeOwner={onChangeOwner} />}
     </section>)}
+    {pageSize && <Pagination {...pagination} />}
   </div>;
 }

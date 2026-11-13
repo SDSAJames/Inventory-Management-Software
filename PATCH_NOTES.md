@@ -6,6 +6,28 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] — 2026-11-13
+
+### Paged Registers & Shared Row Selection
+
+Page Overview, Assets and MES records with shared row-count and selection controls.
+
+#### Highlights
+- Default to 15 rows per page; choose 10, 15, 20 or 30 at the top right.
+- Show the selected-row count at the top left and retain selections across pages.
+
+#### Pagination and Selection
+
+- Add Previous/Next navigation with record ranges and page counts. Sort the complete filtered list before rendering a page.
+- Reset pagination after filter, sort or page-size changes and clamp to a valid page after records are removed.
+- Keep Overview recent records ordered by modification date and page the full list rather than limiting it to five records.
+- Paginate MES location groups and expanded asset lists while retaining complete per-location totals.
+- Share multi-row selection across all three pages. Select-all affects the current page and preserves selections on other pages.
+- Support drag and Shift-click ranges on the visible page without opening asset details, and provide Clear selection.
+- Keep exports scoped to all matching records, independent of the current page.
+
+---
+
 ## [1.16.1] — 2026-11-13
 
 ### Searchable Asset Department

@@ -1,5 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { statusClass } from '../lib/utils';
+import usePagination from '../hooks/usePagination';
+import Pagination from './Pagination';
 import SortableHeader from './SortableHeader';
 import { sortTableRows } from '../lib/tableSort';
 
@@ -13,9 +15,15 @@ export default function AssetTable({
   onToggleSelectAll,
   onRangeSelect,
   showUpdatedDate = true,
+  pageSize = null,
+  resetKey = '',
+  initialSort = { key: 'code', dir: 'asc' },
 }) {
-  const [sort, setSort] = useState({ key: 'code', dir: 'asc' });
-  assets = sortTableRows(assets, sort, (asset, key) => asset[key]);
+  const [sort, setSort] = useState(initialSort);
+  assets = useMemo(() => sortTableRows(assets, sort, (asset, key) => asset[key]), [assets, sort]);
+  const pagination = usePagination(assets.length, pageSize, JSON.stringify([resetKey, sort]));
+  assets = assets.slice(pagination.start, pagination.end);
+  const suppressClick = useRef(false);
   const onSort = (key) => setSort((previous) => ({ key, dir: previous.key === key && previous.dir === 'asc' ? 'desc' : 'asc' }));
   const tbodyRef = useRef(null);
   const dragState = useRef(null);          // { startIdx, adding }
@@ -44,9 +52,10 @@ export default function AssetTable({
     (e) => {
       // Only react to primary button; skip interactive elements
       if (e.button !== 0) return;
-      if (['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) return;
+      if (e.target.closest?.('input, select, a, button') || ['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) return;
       if (!onToggleSelect || !onRangeSelect) return;
 
+      suppressClick.current = false;
       const idx = rowIndexFromEvent(e);
       if (idx === null) return;
 
@@ -58,6 +67,7 @@ export default function AssetTable({
         e.preventDefault();
         const ids = rangeIds(lastClickIdx.current, idx);
         onRangeSelect(ids, true);
+        suppressClick.current = true;
         return;
       }
 
@@ -81,6 +91,7 @@ export default function AssetTable({
       // Only enter drag mode when mouse actually moves to a different row
       if (!dragging && idx !== dragState.current.startIdx) {
         setDragging(true);
+        suppressClick.current = true;
       }
 
       if (idx !== dragState.current.startIdx || dragging) {
@@ -127,6 +138,8 @@ export default function AssetTable({
     return () => window.removeEventListener('mouseup', onUp);
   }, [dragging]);
 
+  useEffect(() => { lastClickIdx.current = null; dragState.current = null; }, [pagination.page, pageSize, resetKey, sort]);
+
   if (!assets.length) {
     return <div className="empty">No assets match the current filters.</div>;
   }
@@ -135,6 +148,7 @@ export default function AssetTable({
   const allSelected = assets.length > 0 && selectedIds && assets.every((a) => selectedIds.has(a.id));
 
   return (
+    <>
     <div className={`table-wrap${dragging ? ' drag-selecting' : ''}`}>
       <table className="asset-table">
         <thead>
@@ -145,7 +159,7 @@ export default function AssetTable({
                   type="checkbox"
                   checked={allSelected}
                   onChange={() => onToggleSelectAll && onToggleSelectAll(assets)}
-                  title="Select all"
+                  title="Select all rows on this page" aria-label="Select all rows on this page"
                 />
               </th>
             )}
@@ -169,7 +183,9 @@ export default function AssetTable({
                 className={isSelected ? 'row-selected' : ''}
                 style={{ cursor: handleEdit ? 'pointer' : undefined }}
                 onClick={(e) => {
+                  if (e.target.closest?.('input, select, a, button')) return;
                   if (['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) return;
+                  if (suppressClick.current || e.shiftKey) { suppressClick.current = false; return; }
                   if (handleEdit) handleEdit(asset.id);
                 }}
                 title="Click to view · Drag to select multiple"
@@ -179,8 +195,14 @@ export default function AssetTable({
                     <input
                       type="checkbox"
                       checked={isSelected || false}
-                      onChange={() => onToggleSelect(asset.id)}
-                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => { if (!e.nativeEvent?.shiftKey) onToggleSelect(asset.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.shiftKey && lastClickIdx.current !== null && onRangeSelect) {
+                          e.preventDefault();
+                          onRangeSelect(rangeIds(lastClickIdx.current, idx), true);
+                        } else lastClickIdx.current = idx;
+                      }}
                     />
                   </td>
                 )}
@@ -225,6 +247,8 @@ export default function AssetTable({
         </tbody>
       </table>
     </div>
+    {pageSize && <Pagination {...pagination} />}
+    </>
   );
 }
 

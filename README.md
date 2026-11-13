@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.16.1)
+# StarPlus Energy Asset Management System (v1.17.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -183,3 +183,7 @@ Unsaved asset typing stays in place during background refresh. Untouched fields 
 On the MES page, switch between **Assets** and **Location**. Each occupied location shows its total assets and counts by equipment type. Click its row to browse and edit the equipment there. Search and status filters apply to the counts and lists.
 
 Asset add/edit dialogs, including MES, use a searchable Department dropdown. Type to filter Directory entries, choose with the mouse or arrow keys and Enter, or enter a custom department. Reopen the dropdown to see all choices; + Add still creates a Directory entry.
+
+**Paged asset lists:** Overview, Assets and MES show 15 rows per page by default. Choose 10, 15, 20 or 30 with **Rows per page** at the top right, then use Previous/Next below the records. Search, filters and sorting apply to the full matching list. MES Location rows and expanded asset lists also use the selected page size; location totals include every matching asset. Exports include all matching assets.
+
+The top left shows the selected-row count. Use checkboxes, drag across rows, or Shift-click a range on the current page. Select-all affects only that page; selections on other pages remain. Use Clear selection to deselect everything.

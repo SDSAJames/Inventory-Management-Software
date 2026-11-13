@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
@@ -7,6 +7,8 @@ import { todayIso, statusClass } from '../lib/utils';
 import { DEFAULT_ASSET_HEADERS, parseAssetRows, assetsToRows } from '../lib/assetExcel';
 import { parseDelimitedText } from '../lib/txtImport';
 import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
+import useAssetSelection from '../hooks/useAssetSelection';
+import { RowCountSelect, SelectionCount } from '../components/Pagination';
 import AssetTable from '../components/AssetTable';
 import AssetLocationList from '../components/AssetLocationList';
 import SearchBar from '../components/SearchBar';
@@ -23,6 +25,7 @@ export default function AssetsPage({ mes = false }) {
   const toast = useToast();
   const fileRef = useRef(null);
   const [searchParams] = useSearchParams();
+  const [pageSize, setPageSize] = useState(15);
   const [view, setView] = useState('assets');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState('All fields');
@@ -41,7 +44,7 @@ export default function AssetsPage({ mes = false }) {
   }, [verifyAndSyncAssets]);
   const [editAssetId, setEditAssetId] = useState(null);
   const [showNew, setShowNew] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  const { selectedIds, setSelectedIds, handleToggleSelect, handleToggleSelectAll, handleRangeSelect } = useAssetSelection();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
@@ -65,43 +68,6 @@ export default function AssetsPage({ mes = false }) {
       );
     });
   }, [registerAssets, searchTerm, searchField, filterStatus]);
-
-  /* ── Selection handlers ──────────────────────── */
-
-  const handleToggleSelect = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const handleToggleSelectAll = (assets) => {
-    const allSelected = assets.every((a) => selectedIds.has(a.id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(assets.map((a) => a.id)));
-    }
-  };
-
-  const handleRangeSelect = useCallback((ids, adding) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      for (const id of ids) {
-        if (adding) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
-      }
-      return next;
-    });
-  }, []);
 
   /* ── Bulk delete handlers ────────────────────── */
 
@@ -204,6 +170,7 @@ export default function AssetsPage({ mes = false }) {
     <>
       <div className="view-header">
         <div>
+          <SelectionCount count={selectedIds.size} onClear={() => setSelectedIds(new Set())} />
           <p>{filtered.length} of {registerAssets.length} {mes ? "MES equipment records" : "assets"} shown</p>
         </div>
         <div className="view-header-actions">
@@ -237,6 +204,7 @@ export default function AssetsPage({ mes = false }) {
             onChange={handleImportFile}
           />
           <button className="button" onClick={() => setShowNew(true)}>+ Add asset</button>
+          <RowCountSelect value={pageSize} onChange={setPageSize} />
         </div>
       </div>
 
@@ -257,9 +225,10 @@ export default function AssetsPage({ mes = false }) {
           statuses={[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])]}
           searchFieldOptions={SEARCH_FIELDS}
         />
-        {mes && view === 'locations' ? <AssetLocationList assets={filtered} onEditAsset={setEditAssetId}
+        {mes && view === 'locations' ? <AssetLocationList pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus])} assets={filtered} onEditAsset={setEditAssetId}
           onChangeOwner={setOwnerTargetAsset} /> : <AssetTable
           assets={filtered}
+          pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus, view])}
           onEditAsset={setEditAssetId}
           onChangeOwner={(asset) => setOwnerTargetAsset(asset)}
           selectedIds={selectedIds}

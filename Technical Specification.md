@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.16.1** |
+| **Specification Version** | **v1.17.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 13, 2026 |
@@ -513,3 +513,9 @@ mergeRecordDraft compares draft fields against the previous saved baseline, upda
 `AssetLocationList` groups the filtered MES records by the shared effective asset location, trimming outer whitespace and matching names case-insensitively. Repair assets use service center. Each group includes total and per-category counts and expands to the existing `AssetTable`. Group counts derive on render from current inventory without stored aggregates. The MES view switch clears bulk selection; standard asset register behavior is unchanged.
 
 AssetForm renders Department through DirectorySelect with allowCustom and Directory options plus the saved department if absent from the Directory. Its optional labelAction slot retains the permission-controlled + Add button in the label row. The selector updates the existing draft and save payload; matching and keyboard behavior stay shared with loan forms.
+
+### Shared pagination and asset selection
+
+`usePagination` derives a bounded page, record range and navigation from total count, page size and a reset key; filters, sort or size changes begin at page one and deletions clamp the visible page. `AssetTable` memoizes whole-result sorting before slicing and rendering page rows; Overview initializes sorting to modification date descending. `Pagination`, `RowCountSelect` and `SelectionCount` supply shared controls. Page owners default to 15 and allow 10/15/20/30; Directory tables remain unpaged unless opted in. `AssetLocationList` uses the same paginator for location groups and passes size to the expanded table, without slicing assets before counting.
+
+`useAssetSelection` shares toggle, page-select and range handlers. Page-select merges/removes only visible IDs. AssetTable resolves drag/Shift-click ranges against visible order and suppresses the edit click after selection gestures. Anchor indices reset on page, size, filter or sort changes. Pagination does not change cached data loading or server export behavior. Regression coverage includes ordering before slicing, page reset/clamping, cross-page selection counts, and range gestures.

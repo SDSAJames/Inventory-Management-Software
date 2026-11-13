@@ -36,7 +36,7 @@ function harness(database = {}, { effects = false } = {}) {
     const module = { exports: {} };
     const resolve = (specifier) => {
       if (specifier === 'react') return hooks;
-      if (specifier === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams()] };
+      if (specifier === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams()], useNavigate: () => () => {} };
       if (specifier === '../lib/db') return { loadAssetExportHeaders: () => null, saveAssetExportHeaders() {} };
       if (specifier.includes('/hooks/useDb')) return { useDb: () => context };
       if (specifier.includes('/hooks/useAuth')) return { useAuth: () => ({ user: { role: 'ADMIN' } }) };
@@ -247,7 +247,7 @@ test('asset tables sort naturally in both directions and select the displayed or
   tree.find((node) => node.type === 'button' && node.props.title === 'Sort by Asset number descending').props.onClick();
   tree = nodes(app.render('AssetTable', props));
   assert.deepEqual(codes(), ['PC-10', 'PC-2']);
-  tree.find((node) => node.type === 'input' && node.props.title === 'Select all').props.onChange();
+  tree.find((node) => node.type === 'input' && node.props.title === 'Select all rows on this page').props.onChange();
   assert.deepEqual(selected, [['10', '2']]);
   tree.find((node) => node.type === 'button' && node.props.title === 'Sort by Location ascending').props.onClick();
   tree = nodes(app.render('AssetTable', props));
@@ -346,4 +346,64 @@ test('asset department supports typing, keyboard selection, clearing and saving 
   tree.find((node) => node.props.id === 'department').props.onChange({ target: { value: '' } });
   tree = nodes(app.render('AssetForm', props));
   assert.equal(tree.find((node) => node.props.id === 'department').props.value, '');
+});
+
+
+test('pagination sorts the entire result before slicing, resets on size/filter changes and clamps on deletion', () => {
+  const app = harness();
+  const assets = Array.from({ length: 36 }, (_, index) => ({ id: String(index + 1), code: 'PC-' + (index + 1) })).reverse();
+  let props = { assets, pageSize: 15, resetKey: 'all' };
+  let tree = nodes(app.render('AssetTable', props));
+  const codes = () => tree.filter((node) => node.props.className === 'asset-code').map((node) => node.props.children[0]);
+  const next = () => tree.find((node) => node.type === 'button' && node.props.children[0] === 'Next');
+  assert.equal(codes().length, 15); assert.equal(codes()[0], 'PC-1');
+  next().props.onClick(); tree = nodes(app.render('AssetTable', props));
+  assert.equal(codes()[0], 'PC-16');
+  next().props.onClick(); tree = nodes(app.render('AssetTable', props));
+  assert.equal(codes().length, 6); assert.equal(next().props.disabled, true);
+  props = { ...props, assets: assets.slice(-5) }; tree = nodes(app.render('AssetTable', props));
+  assert.equal(codes().length, 5); assert.equal(codes()[0], 'PC-1');
+  props = { assets, pageSize: 20, resetKey: 'all' }; tree = nodes(app.render('AssetTable', props));
+  assert.equal(codes().length, 20); assert.equal(codes()[0], 'PC-1');
+  next().props.onClick(); tree = nodes(app.render('AssetTable', props));
+  props = { ...props, resetKey: 'filtered' }; tree = nodes(app.render('AssetTable', props));
+  assert.equal(codes()[0], 'PC-1');
+  tree.find((node) => node.type === 'button' && node.props.title === 'Sort by Asset number descending').props.onClick();
+  tree = nodes(app.render('AssetTable', props)); assert.equal(codes()[0], 'PC-36');
+});
+
+test('range selection by drag or Shift-click suppresses editing and uses the visible page', () => {
+  const app = harness(), ranges = [], edits = [];
+  const props = { assets: Array.from({ length: 20 }, (_, i) => ({ id: String(i), code: 'PC-' + i })), pageSize: 15,
+    selectedIds: new Set(), onToggleSelect() {}, onRangeSelect: (...args) => ranges.push(args), onEditAsset: (id) => edits.push(id) };
+  let tree = nodes(app.render('AssetTable', props));
+  const body = () => tree.find((node) => node.type === 'tbody');
+  const event = (index, shiftKey = false) => ({ button: 0, shiftKey, preventDefault() {}, target: { tagName: 'TD', closest: (selector) => selector === 'tr[data-ridx]' ? ({ dataset: { ridx: index } }) : null } });
+  body().props.onMouseDown(event(1)); body().props.onMouseMove(event(4));
+  tree = nodes(app.render('AssetTable', props)); body().props.onMouseUp(event(4));
+  tree.find((node) => node.type === 'tr' && node.props['data-ridx'] === 4).props.onClick({ target: { tagName: 'TD' } });
+  assert.deepEqual(ranges[0], [['1', '2', '3', '4'], true]); assert.equal(edits.length, 0);
+  body().props.onMouseDown(event(6, true));
+  assert.deepEqual(ranges[1], [['1', '2', '3', '4', '5', '6'], true]);
+});
+
+test('all three page headers default to 15 rows and report selections across pages', () => {
+  for (const [component, mes] of [['pages/AssetsPage', false], ['pages/AssetsPage', true], ['pages/OverviewPage', false]]) {
+    const assets = Array.from({ length: 34 }, (_, i) => ({ id: String(i), code: (mes ? 'MESPC-' : 'AST-') + i, category: mes ? 'MES PC' : 'Laptop', status: 'Available', updated: '2026-11-13' }));
+    const app = harness({ assets }); const props = { mes };
+    let tree = nodes(app.render(component, props));
+    assert.equal(tree.find((node) => node.props['aria-label'] === 'Rows per page').props.value, 15);
+    assert.equal(tree.filter((node) => node.props.className === 'asset-code').length, 15);
+    tree.find((node) => node.props.title === 'Select all rows on this page').props.onChange();
+    tree = nodes(app.render(component, props));
+    assert.ok(nodes(tree.find((node) => node.props.className === 'selection-count')).some((node) => node.type === 'strong' && node.props.children[0] === 15));
+    tree.find((node) => node.type === 'button' && node.props.children[0] === 'Next').props.onClick();
+    tree = nodes(app.render(component, props));
+    tree.find((node) => node.props.title === 'Select all rows on this page').props.onChange();
+    tree = nodes(app.render(component, props));
+    assert.ok(nodes(tree.find((node) => node.props.className === 'selection-count')).some((node) => node.type === 'strong' && node.props.children[0] === 30));
+    tree.find((node) => node.props['aria-label'] === 'Rows per page').props.onChange({ target: { value: '30' } });
+    tree = nodes(app.render(component, props));
+    assert.equal(tree.filter((node) => node.props.className === 'asset-code').length, 30);
+  }
 });
