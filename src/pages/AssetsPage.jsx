@@ -8,19 +8,22 @@ import { DEFAULT_ASSET_HEADERS, parseAssetRows, assetsToRows } from '../lib/asse
 import { parseDelimitedText } from '../lib/txtImport';
 import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
 import AssetTable from '../components/AssetTable';
+import AssetLocationList from '../components/AssetLocationList';
 import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
 import AssetForm from '../components/AssetForm';
 import BatchEditForm from '../components/BatchEditForm';
 import ChangeOwnerModal from '../components/ChangeOwnerModal';
+import { isMesEquipment, MES_ASSET_HEADERS } from '../lib/equipmentSchema';
 
 const SEARCH_FIELDS = ['All fields', 'Asset number', 'Category', 'Holder', 'Location', 'Serial number'];
 
-export default function AssetsPage() {
+export default function AssetsPage({ mes = false }) {
   const { db, deleteAsset, importAssets, verifyAndSyncAssets } = useDb();
   const toast = useToast();
   const fileRef = useRef(null);
   const [searchParams] = useSearchParams();
+  const [view, setView] = useState('assets');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState('All fields');
   const [filterStatus, setFilterStatus] = useState(() => searchParams.get('status') || 'All statuses');
@@ -44,8 +47,10 @@ export default function AssetsPage() {
   const [importPreview, setImportPreview] = useState(null);
   const [ownerTargetAsset, setOwnerTargetAsset] = useState(null);
 
+  const registerAssets = useMemo(() => db.assets.filter((asset) => isMesEquipment(asset) === mes), [db.assets, mes]);
+
   const filtered = useMemo(() => {
-    return db.assets.filter((asset) => {
+    return registerAssets.filter((asset) => {
       const searchable = {
         'All fields': `${asset.code} ${asset.category} ${asset.location} ${asset.owner} ${asset.serial}`,
         'Asset number': asset.code,
@@ -59,7 +64,7 @@ export default function AssetsPage() {
         (filterStatus === 'All statuses' || asset.status === filterStatus)
       );
     });
-  }, [db.assets, searchTerm, searchField, filterStatus]);
+  }, [registerAssets, searchTerm, searchField, filterStatus]);
 
   /* ── Selection handlers ──────────────────────── */
 
@@ -131,6 +136,10 @@ export default function AssetsPage() {
       if (!result.added.length && !result.duplicates.length) {
         throw new Error('The file contains no valid asset rows');
       }
+      const imported = [...result.added, ...result.duplicates];
+      if (imported.some((asset) => isMesEquipment(asset) !== mes)) {
+        throw new Error(`This register accepts ${mes ? 'MES equipment only. Use Assets for other equipment.' : 'non-MES equipment only. Use MES for MES records.'}`);
+      }
       setImportPreview({ fileName: file.name, ...result });
       setOverwriteDuplicates(false);
     } catch (err) {
@@ -147,7 +156,7 @@ export default function AssetsPage() {
       ? [...importPreview.added, ...importPreview.duplicates]
       : importPreview.added;
 
-    if (importPreview.importedHeaders && importPreview.importedHeaders.length > 0) {
+    if (!mes && importPreview.importedHeaders && importPreview.importedHeaders.length > 0) {
       saveAssetExportHeaders(importPreview.importedHeaders);
     }
 
@@ -184,10 +193,10 @@ export default function AssetsPage() {
     const isLegacyFormat = Array.isArray(savedHeaders)
       && savedHeaders.length === legacyHeaders.length
       && savedHeaders.every((header, index) => String(header).trim().toLowerCase() === legacyHeaders[index].toLowerCase());
-    const headers = isLegacyFormat ? DEFAULT_ASSET_HEADERS : (savedHeaders || DEFAULT_ASSET_HEADERS);
+    const headers = mes ? MES_ASSET_HEADERS : isLegacyFormat ? DEFAULT_ASSET_HEADERS : (savedHeaders || DEFAULT_ASSET_HEADERS);
     const { makeXlsx, downloadBlob } = await import('../lib/xlsx');
-    const workbook = await makeXlsx(assetsToRows(filtered, headers));
-    downloadBlob(new Blob([workbook], { type: XLSX_MIME }), `SPE_Equipments_${todayIso()}.xlsx`);
+    const workbook = await makeXlsx(assetsToRows(filtered, headers, { appendOptionalColumns: !mes }));
+    downloadBlob(new Blob([workbook], { type: XLSX_MIME }), `SPE_${mes ? "MES_" : ""}Equipments_${todayIso()}.xlsx`);
     toast(`${filtered.length} asset${filtered.length === 1 ? '' : 's'} exported.`);
   };
 
@@ -195,7 +204,7 @@ export default function AssetsPage() {
     <>
       <div className="view-header">
         <div>
-          <p>{filtered.length} of {db.assets.length} assets shown</p>
+          <p>{filtered.length} of {registerAssets.length} {mes ? "MES equipment records" : "assets"} shown</p>
         </div>
         <div className="view-header-actions">
           {selectedIds.size > 0 && (
@@ -214,7 +223,7 @@ export default function AssetsPage() {
               </button>
             </>
           )}
-          <button id="asset-import-btn" className="button ghost" onClick={() => fileRef.current?.click()} title="Import SPE_Equipments_example.txt or XLSX">
+          <button id="asset-import-btn" className="button ghost" onClick={() => fileRef.current?.click()} title={mes ? "Import MES equipment TXT or XLSX" : "Import equipment TXT or XLSX"}>
             ↑ Import TXT / Excel
           </button>
           <button id="asset-export-btn" className="button ghost" onClick={handleExport}>
@@ -231,6 +240,12 @@ export default function AssetsPage() {
         </div>
       </div>
 
+      {mes && <div className="loan-tabs" aria-label="MES views">
+        {[["assets", "Assets"], ["locations", "Location"]].map(([key, label]) => <button type="button" key={key}
+          className={`loan-tab${view === key ? " active" : ""}`} aria-pressed={view === key}
+          onClick={() => { setView(key); setSelectedIds(new Set()); }}>{label}</button>)}
+      </div>}
+
       <section className="panel">
         <SearchBar
           searchTerm={searchTerm}
@@ -242,7 +257,8 @@ export default function AssetsPage() {
           statuses={[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])]}
           searchFieldOptions={SEARCH_FIELDS}
         />
-        <AssetTable
+        {mes && view === 'locations' ? <AssetLocationList assets={filtered} onEditAsset={setEditAssetId}
+          onChangeOwner={setOwnerTargetAsset} /> : <AssetTable
           assets={filtered}
           onEditAsset={setEditAssetId}
           onChangeOwner={(asset) => setOwnerTargetAsset(asset)}
@@ -250,13 +266,14 @@ export default function AssetsPage() {
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
           onRangeSelect={handleRangeSelect}
-        />
+        />}
       </section>
 
       <Modal open={showNew || editAssetId !== null} size="wide" onClose={() => { setShowNew(false); setEditAssetId(null); }}>
         {(showNew || editAssetId !== null) && (
           <AssetForm
             assetId={editAssetId}
+            defaultCategory={mes ? "MES PC" : "Laptop"}
             onClose={() => { setShowNew(false); setEditAssetId(null); }}
             onOpenChangeOwner={(asset) => setOwnerTargetAsset(asset)}
           />

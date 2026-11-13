@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.14.1** |
+| **Document Version** | **v1.16.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 12, 2026 |
+| **Release Date** | November 13, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -379,6 +379,12 @@ The frontend application provides eight core operational views accessed via the 
 
 ---
 
+### Separate equipment registers
+
+The Assets and MES Equipment navigation entries partition one inventory by MES category or register prefix. They share the register workflow, asset dialogs and table rather than duplicating records or management logic. All asset-table columns support ascending and descending natural sorting; asset number ascending is the initial order. Editable Directory choices reopen with the complete list while retaining the current field value.
+
+The MES page adds Assets and Location views over the same filtered inventory. Location rows show total and per-category counts; expanding a row uses the shared sortable asset table and existing edit/transfer dialogs. Only locations containing matching MES equipment are listed. Counts refresh from inventory state after edits.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.14.1**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.16.0**.

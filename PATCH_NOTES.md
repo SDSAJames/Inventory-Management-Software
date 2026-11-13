@@ -6,6 +6,43 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] — 2026-11-13
+
+### MES Location View
+
+Rename MES navigation and add equipment counts and asset browsing by location.
+
+#### Highlights
+- Use the MES page Assets and Location tabs to manage equipment and review its distribution.
+
+#### MES Locations
+
+- Rename the sidebar entry and page heading to MES.
+- Show each occupied MES location with total asset count and a count for every equipment category.
+- Expand a location to browse its sortable asset list and open existing edit or ownership-transfer dialogs.
+- Apply the same search and status filters to location counts and equipment lists; keep counts current when assets change.
+
+---
+
+## [1.15.0] — 2026-11-13
+
+### Dedicated MES Management & Shared Asset Sorting
+
+Separate MES equipment management while reusing the asset register and improving directory dropdowns.
+
+#### Highlights
+- Manage MES equipment from its own navigation page.
+- Sort asset columns in either direction; reopen the department dropdown to see all choices.
+
+#### Equipment Registers
+
+- Add MES Equipment at /mes; the standard Assets page shows non-MES inventory. Both use the same saved assets, editing, ownership transfer and bulk actions.
+- Scope register imports and exports to the selected equipment group; MES Excel exports use the eleven-column MES layout.
+- Reuse sortable headers and natural ordering for asset number, category, status, location, current holder and modification date. Asset number defaults to ascending.
+- Reopening a shared editable directory dropdown clears its search filter so all departments are available without discarding the typed value.
+
+---
+
 ## [1.14.1] — 2026-11-12
 
 ### Preserve Typing During Background Refresh

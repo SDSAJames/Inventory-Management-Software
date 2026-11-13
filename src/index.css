@@ -4722,3 +4722,12 @@ textarea.input-error-red {
 .field .schedule-due-date > input.schedule-due-date-picker { flex: 0 0 30px; width: 30px; min-width: 30px; padding: 4px 0; border: 0; background: transparent; box-shadow: none; margin-left: auto; color: transparent; }
 .schedule-due-date-picker::-webkit-datetime-edit { display: none; }
 .schedule-due-date:has(input:disabled) { background: #f1f5f9; }
+
+/* Shared asset distribution by location */
+.asset-location-group { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; }
+.asset-location-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%; padding: 14px; border: 0; border-radius: 8px; background: #f8fafc; color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
+.asset-location-heading:hover { background: var(--blue-light); }
+.asset-location-heading:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.asset-location-types { display: flex; flex: 1; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+.asset-location-types > span { background: white; border: 1px solid var(--line); border-radius: 5px; padding: 3px 7px; }
+.asset-location-total { margin-left: auto; white-space: nowrap; font-size: 12px; font-weight: 600; }

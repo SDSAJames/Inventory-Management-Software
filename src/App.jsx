@@ -55,7 +55,8 @@ function AppContent() {
           <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}>
           <Routes>
           <Route path="/" element={<OverviewPage />} />
-          <Route path="/assets" element={<AssetsPage />} />
+          <Route path="/assets" element={<AssetsPage key="assets" />} />
+          <Route path="/mes" element={<AssetsPage key="mes" mes />} />
           <Route path="/loans" element={<LoansPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/in-out-calendar" element={<Navigate to="/calendar" replace />} />

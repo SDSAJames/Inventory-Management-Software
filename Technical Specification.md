@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.14.1** |
+| **Specification Version** | **v1.16.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 12, 2026 |
+| **Release Date** | November 13, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -503,3 +503,11 @@ server/lib/savedChangeUndo.js centralizes working-table capture, SHA-256 state f
 MES_ASSET_HEADERS in equipmentSchema.js defines the eleven-column order from SPE_MES_Equipments_example.txt. Issued Name has its own header alias and model field; both parseAssetRows and parseEquipmentsText use that mapping. ensureAssetColumns adds issued_name and issued_date without replacing asset records, and saveAssetIssuedFields handles camelCase import or raw snapshot values. formatAssetRow emits issuedName/issuedDate. MES export calls assetsToRows with MES headers and appendOptionalColumns=false before the existing makeXlsx writer; standard exports append Issued Name only when needed to preserve populated values. isMesEquipment recognizes MES categories and MES/MESPC/MESM register prefixes. Tests read the supplied sample, verify exact headers and owner/name/date values, generate and read an actual XLSX, and exercise SQLite import/reload and holder-change invalidation.
 
 mergeRecordDraft compares draft fields against the previous saved baseline, updating only untouched or explicitly forced fields; structurally equal object values do not trigger replacements. useRecordDraft tracks record identity and baseline through a ref and merges on record refresh. AssetForm forces custody fields when saved ownership changes, and resets validation only on assetId changes. Component tests enable effect/dependency handling and verify typed notes/serial values survive refreshed object identities, ownership transfer updates custody, and switching assets resets the draft.
+
+### MES register routing and shared sorting
+
+`/assets` and `/mes` render keyed instances of `AssetsPage`, with a `mes` prop controlling the shared `isMesEquipment` predicate, scoped counts, import validation and Excel headers. MES creation defaults to MES PC. Register navigation resets selection and open dialogs; both operate on the same asset IDs and database APIs. `AssetTable` uses `SortableHeader` and `sortTableRows`, including sorted display order for range selection. `DirectoryCombobox` clears its transient filter on focus/reopening; choosing an option closes the list and preserves editable custom values. Regression tests cover register partitioning, natural sorting/selection and the complete Edit Loan department list after filtering.
+
+### MES location distribution
+
+`AssetLocationList` groups the filtered MES records by the shared effective asset location, trimming outer whitespace and matching names case-insensitively. Repair assets use service center. Each group includes total and per-category counts and expands to the existing `AssetTable`. Group counts derive on render from current inventory without stored aggregates. The MES view switch clears bulk selection; standard asset register behavior is unchanged.

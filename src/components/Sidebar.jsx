@@ -1,3 +1,4 @@
+import { isMesEquipment } from '../lib/equipmentSchema';
 import { isLoanReturned } from '../../shared/loanRules.js';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -26,6 +27,12 @@ const NAV_ITEMS = [
         <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm1.5 1v2.5h13V3a.5.5 0 0 0-.5-.5H2a.5.5 0 0 0-.5.5zm13 3.5h-13V14a.5.5 0 0 0 .5.5h12a.5.5 0 0 0 .5-.5V6.5zM3 8.5h4v1H3v-1zm0 2.5h6v1H3v-1z"/>
       </svg>
     ),
+  },
+  {
+    path: '/mes',
+    label: 'MES',
+    showCount: true,
+    icon: <span aria-hidden="true">▤</span>,
   },
   {
     path: '/loans',
@@ -137,7 +144,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
             <span className="nav-icon">{item.icon}</span>
             {item.label}
             {item.showCount && (
-              <span className="nav-count">{db.assets.length}</span>
+              <span className="nav-count">{db.assets.filter((asset) => isMesEquipment(asset) === (item.path === '/mes')).length}</span>
             )}
             {item.countKey === 'travelers' && activeTravelersCount > 0 && (
               <span className="nav-count">{activeTravelersCount}</span>

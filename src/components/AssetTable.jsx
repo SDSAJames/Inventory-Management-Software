@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { statusClass } from '../lib/utils';
+import SortableHeader from './SortableHeader';
+import { sortTableRows } from '../lib/tableSort';
 
 export default function AssetTable({
   assets,
@@ -12,6 +14,9 @@ export default function AssetTable({
   onRangeSelect,
   showUpdatedDate = true,
 }) {
+  const [sort, setSort] = useState({ key: 'code', dir: 'asc' });
+  assets = sortTableRows(assets, sort, (asset, key) => asset[key]);
+  const onSort = (key) => setSort((previous) => ({ key, dir: previous.key === key && previous.dir === 'asc' ? 'desc' : 'asc' }));
   const tbodyRef = useRef(null);
   const dragState = useRef(null);          // { startIdx, adding }
   const lastClickIdx = useRef(null);       // for Shift+click range
@@ -144,12 +149,9 @@ export default function AssetTable({
                 />
               </th>
             )}
-            <th>Asset number</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Location</th>
-            <th>Current holder</th>
-            {showUpdatedDate && <th>Modification date</th>}
+            {([['code', 'Asset number'], ['category', 'Category'], ['status', 'Status'], ['location', 'Location'], ['owner', 'Current holder'], ...(showUpdatedDate ? [['updated', 'Modification date']] : [])]).map(([key, label]) => (
+              <SortableHeader key={key} column={{ key, label }} sort={sort} onSort={onSort} />
+            ))}
           </tr>
         </thead>
         <tbody

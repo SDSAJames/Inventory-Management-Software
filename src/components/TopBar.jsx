@@ -12,6 +12,10 @@ const PAGE_META = {
     eyebrow: 'HARDWARE & EQUIPMENT REGISTER',
     title: 'Asset Register',
   },
+  '/mes': {
+    eyebrow: 'MANUFACTURING EQUIPMENT REGISTER',
+    title: 'MES',
+  },
   '/loans': {
     eyebrow: 'EMPLOYEE ASSIGNMENTS & TRAVELER PICKUP SCHEDULE',
     title: CUSTODY_PAGE_TITLE,

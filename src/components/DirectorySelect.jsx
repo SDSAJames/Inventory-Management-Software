@@ -10,9 +10,10 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
   const listId = `${id}-options`;
   const choose = (option) => {
     onChange({ target: { value: option } });
-    setOpen(false);
-    setActiveIndex(-1);
     inputRef.current?.focus();
+    setOpen(false);
+    setFilter('');
+    setActiveIndex(-1);
   };
   return <div className="directory-combobox" onBlur={(event) => {
     if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
@@ -20,6 +21,8 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
     <input ref={inputRef} id={id} type="text" role="combobox" autoComplete="off"
       aria-autocomplete="list" aria-expanded={open} aria-controls={listId}
       aria-activedescendant={open && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
+      onFocus={() => { setFilter(''); setOpen(true); setActiveIndex(-1); }}
+      onClick={() => { if (!open) { setFilter(''); setOpen(true); setActiveIndex(-1); } }}
       value={value ?? ''} placeholder={placeholder || `Select or type ${label.toLowerCase()}`}
       onChange={(event) => { onChange(event); setFilter(event.target.value); setOpen(true); setActiveIndex(-1); }}
       onKeyDown={(event) => {
@@ -32,6 +35,7 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
         if (event.key === 'Enter' && open && matches[activeIndex]) { event.preventDefault(); choose(matches[activeIndex]); }
       }} />
     <button type="button" className="directory-combobox-toggle" aria-label={`Show ${label.toLowerCase()} options`} aria-expanded={open} aria-controls={listId}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={() => { setFilter(''); setActiveIndex(-1); setOpen(!open); inputRef.current?.focus(); }}>▾</button>
     {open && <div id={listId} role="listbox" aria-label={`${label} options`} className="directory-combobox-options">
       {matches.map((option, index) => <button type="button" role="option" tabIndex={-1} key={option} id={`${listId}-${index}`}

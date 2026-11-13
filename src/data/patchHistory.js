@@ -8,6 +8,36 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-13',
+    title: 'MES Location View',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Rename MES navigation and add equipment counts and asset browsing by location.',
+    highlights: ['Use the MES page Assets and Location tabs to manage equipment and review its distribution.'],
+    sections: [{ heading: 'MES Locations', badge: 'Feature', items: [
+      'Rename the sidebar entry and page heading to MES.',
+      'Show each occupied MES location with total asset count and a count for every equipment category.',
+      'Expand a location to browse its sortable asset list and open existing edit or ownership-transfer dialogs.',
+      'Apply the same search and status filters to location counts and equipment lists; keep counts current when assets change.',
+    ] }],
+  },
+  {
+    version: '1.15.0',
+    date: '2026-11-13',
+    title: 'Dedicated MES Management & Shared Asset Sorting',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Separate MES equipment management while reusing the asset register and improving directory dropdowns.',
+    highlights: ['Manage MES equipment from its own navigation page.', 'Sort asset columns in either direction; reopen the department dropdown to see all choices.'],
+    sections: [{ heading: 'Equipment Registers', badge: 'Feature', items: [
+      'Add MES Equipment at /mes; the standard Assets page shows non-MES inventory. Both use the same saved assets, editing, ownership transfer and bulk actions.',
+      'Scope register imports and exports to the selected equipment group; MES Excel exports use the eleven-column MES layout.',
+      'Reuse sortable headers and natural ordering for asset number, category, status, location, current holder and modification date. Asset number defaults to ascending.',
+      'Reopening a shared editable directory dropdown clears its search filter so all departments are available without discarding the typed value.',
+    ] }],
+  },
+  {
+    version: '1.14.1',
     date: '2026-11-12',
     title: 'Preserve Typing During Background Refresh',
     tag: 'Patch',

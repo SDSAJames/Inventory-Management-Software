@@ -19,7 +19,7 @@ function harness(database = {}, { effects = false } = {}) {
       const index = cursor++;
       if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], (value) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }];
-    }, useMemo: (fn) => fn(), useRef(initial) {
+    }, useMemo: (fn) => fn(), useCallback: (fn) => fn, useRef(initial) {
       const index = cursor++;
       if (!(index in states)) states[index] = { current: initial };
       return states[index];
@@ -29,13 +29,15 @@ function harness(database = {}, { effects = false } = {}) {
       states[index] = dependencies;
     },
   };
-  const context = { db, addLoan: (...args) => calls.push(['create', ...args]), updateLoan: (...args) => calls.push(['edit', ...args]), returnLoan: (...args) => calls.push(['return', ...args]) };
+  const context = { db, verifyAndSyncAssets() {}, addLoan: (...args) => calls.push(['create', ...args]), updateLoan: (...args) => calls.push(['edit', ...args]), returnLoan: (...args) => calls.push(['return', ...args]) };
   function load(relative) {
     const file = path.resolve(relative);
     if (cache.has(file)) return cache.get(file);
     const module = { exports: {} };
     const resolve = (specifier) => {
       if (specifier === 'react') return hooks;
+      if (specifier === 'react-router-dom') return { useSearchParams: () => [new URLSearchParams()] };
+      if (specifier === '../lib/db') return { loadAssetExportHeaders: () => null, saveAssetExportHeaders() {} };
       if (specifier.includes('/hooks/useDb')) return { useDb: () => context };
       if (specifier.includes('/hooks/useAuth')) return { useAuth: () => ({ user: { role: 'ADMIN' } }) };
       if (specifier.includes('/hooks/useToast')) return { useToast: () => () => {} };
@@ -51,7 +53,7 @@ function harness(database = {}, { effects = false } = {}) {
     cache.set(file, module.exports);
     return module.exports;
   }
-  return { calls, db, render(component, props) { cursor = 0; pendingEffects = []; const tree = load('src/components/' + component + '.jsx').default(props); for (const effect of pendingEffects) effect(); return tree; } };
+  return { calls, db, render(component, props) { cursor = 0; pendingEffects = []; const tree = load('src/' + (component.startsWith('pages/') ? component : 'components/' + component) + '.jsx').default(props); for (const effect of pendingEffects) effect(); return tree; } };
 }
 
 function nodes(root) {
@@ -233,4 +235,87 @@ test('asset typing survives periodic refresh while ownership transfers update cu
   app.render('AssetForm', { assetId: 'other' });
   tree = nodes(app.render('AssetForm', { assetId: 'other' }));
   assert.equal(tree.find((node) => node.props.id === 'notes').props.value, 'Other note');
+});
+
+
+test('asset tables sort naturally in both directions and select the displayed order', () => {
+  const app = harness(), selected = [];
+  const props = { assets: [{ id: '10', code: 'PC-10', location: 'B' }, { id: '2', code: 'PC-2', location: 'A' }], selectedIds: new Set(), onToggleSelect() {}, onToggleSelectAll: (assets) => selected.push(assets.map((asset) => asset.id)) };
+  let tree = nodes(app.render('AssetTable', props));
+  const codes = () => tree.filter((node) => node.props.className === 'asset-code').map((node) => node.props.children[0]);
+  assert.deepEqual(codes(), ['PC-2', 'PC-10']);
+  tree.find((node) => node.type === 'button' && node.props.title === 'Sort by Asset number descending').props.onClick();
+  tree = nodes(app.render('AssetTable', props));
+  assert.deepEqual(codes(), ['PC-10', 'PC-2']);
+  tree.find((node) => node.type === 'input' && node.props.title === 'Select all').props.onChange();
+  assert.deepEqual(selected, [['10', '2']]);
+  tree.find((node) => node.type === 'button' && node.props.title === 'Sort by Location ascending').props.onClick();
+  tree = nodes(app.render('AssetTable', props));
+  assert.deepEqual(codes(), ['PC-2', 'PC-10']);
+});
+
+test('edit loan department dropdown reopens all directory choices after filtering', () => {
+  const departments = ['Operations', 'Finance', 'IT', 'Formation', 'People & Culture', 'Engineering', 'Quality', 'Production', 'Safety'];
+  const app = harness({ departments, loans: [{ id: 'one', knoxId: 'person', department: 'Operations', equipment: {} }] });
+  const props = { loanId: 'one', onClose() {} };
+  let tree = nodes(app.render('EditLoanForm', props));
+  tree.find((node) => node.props.id === 'edit-department').props.onChange({ target: { value: 'Eng' } });
+  tree = nodes(app.render('EditLoanForm', props));
+  const departmentOptions = () => nodes(tree.find((node) => node.props.id === 'edit-department-options')).filter((node) => node.props.role === 'option');
+  assert.equal(departmentOptions().length, 1);
+  tree.find((node) => node.props.id === 'edit-department').props.onFocus();
+  tree = nodes(app.render('EditLoanForm', props));
+  assert.equal(departmentOptions().length, departments.length);
+  assert.equal(tree.find((node) => node.props.id === 'edit-department').props.value, 'Eng');
+});
+
+
+test('MES and standard registers partition shared inventory without copying records', () => {
+  const assets = [{ id: 'standard', code: 'AST-1', category: 'Laptop' }, { id: 'mes-pc', code: 'MESPC-1', category: 'MES PC' }, { id: 'mes-monitor', code: 'MESM-1', category: 'Monitor' }];
+  for (const mes of [false, true]) {
+    const app = harness({ assets });
+    const tree = nodes(app.render('pages/AssetsPage', { mes }));
+    const codes = tree.filter((node) => node.props.className === 'asset-code').map((node) => node.props.children[0]);
+    assert.deepEqual(new Set(codes), new Set(mes ? ['MESPC-1', 'MESM-1'] : ['AST-1']));
+    assert.equal(app.db.assets.length, 3);
+  }
+});
+
+
+test('location view counts every asset by type and opens editable assets for only that location', () => {
+  const app = harness(), opened = [];
+  const props = { assets: [
+    { id: 'pc1', code: 'MESPC-1', category: 'MES PC', location: 'Stack' },
+    { id: 'pc2', code: 'MESPC-2', category: 'MES PC', location: ' Stack ' },
+    { id: 'mon', code: 'MESM-1', category: 'MES Monitor', location: 'Stack' },
+    { id: 'repair', code: 'MESPC-3', category: 'MES PC', status: 'Under repair', location: 'Stack' },
+  ], onEditAsset: (id) => opened.push(id) };
+  let tree = nodes(app.render('AssetLocationList', props));
+  const headings = tree.filter((node) => node.props.className === 'asset-location-heading');
+  assert.equal(headings.length, 2);
+  const stack = headings.find((node) => nodes(node).some((child) => child.type === 'strong' && child.props.children[0] === 'Stack'));
+  const text = (root) => nodes(root).flatMap((node) => node.props.children).filter((value) => typeof value === 'string' || typeof value === 'number');
+  assert.ok(text(stack).includes(3));
+  assert.ok(text(stack).includes(2));
+  assert.ok(text(stack).includes('MES Monitor'));
+  stack.props.onClick();
+  tree = nodes(app.render('AssetLocationList', props));
+  const codes = tree.filter((node) => node.props.className === 'asset-code').map((node) => node.props.children[0]);
+  assert.deepEqual(codes, ['MESM-1', 'MESPC-1', 'MESPC-2']);
+  tree.find((node) => node.type === 'tr' && node.props['data-ridx'] === 0).props.onClick({ target: { tagName: 'TD' } });
+  assert.deepEqual(opened, ['mon']);
+});
+
+test('MES location tab retains the register scope and its shared search', () => {
+  const app = harness({ assets: [
+    { id: 'one', code: 'MESPC-1', category: 'MES PC', location: 'Stack' },
+    { id: 'two', code: 'MESM-1', category: 'MES Monitor', location: 'Stack' },
+    { id: 'other', code: 'AST-1', category: 'Laptop', location: 'Other' },
+  ] });
+  const props = { mes: true };
+  let tree = nodes(app.render('pages/AssetsPage', props));
+  tree.find((node) => node.type === 'button' && node.props.children[0] === 'Location').props.onClick();
+  tree = nodes(app.render('pages/AssetsPage', props));
+  assert.equal(tree.filter((node) => node.props.className === 'asset-location-heading').length, 1);
+  assert.ok(!tree.some((node) => node.type === 'strong' && node.props.children[0] === 'Other'));
 });

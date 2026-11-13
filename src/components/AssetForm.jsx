@@ -15,7 +15,7 @@ import { getAssetDateError, formatAssetDate, normalizeAssetDates } from '../../s
 
 const ASSET_DATE_FORMAT = 'DD-MM-YYYY';
 
-export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
+export default function AssetForm({ assetId, onClose, onOpenChangeOwner, defaultCategory = 'Laptop' }) {
   const { db, addAsset, updateAsset, addCategory, addStatus, addLocation, addDepartment } = useDb();
   const toast = useToast();
   const { user } = useAuth();
@@ -34,7 +34,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner }) {
   const makeBlank = () => ({
     code: nextAssetCode(db.assets.length),
     name: '',
-    category: 'Laptop',
+    category: defaultCategory,
     model: '',
     serial: '',
     status: 'Available',

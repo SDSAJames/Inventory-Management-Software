@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.14.1)
+# StarPlus Energy Asset Management System (v1.16.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -45,7 +45,7 @@ The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central 
 ## Application Views
 
 1. **Operations Dashboard (`/`)**: Fleet KPIs (Available, Assigned, On loan, Issues, Overdue), category mix breakdown, and quick filtered lists.
-2. **Asset Register (`/assets`)**: Hardware inventory with multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
+2. **Asset Register (`/assets`)**: Non-MES hardware inventory with sortable column headers (asset number ascending by default), multi-column filtering, drag-to-select rows, bulk status updates, batch deletion, and direct click-to-transfer ownership badges. Supports TXT and XLSX imports.
 3. **Assignments & Pickups (`/loans`)**: Manage employee laptop assignments and business-traveler equipment checkouts together. Knox ID is the only required field when adding a schedule; assignee name and PC asset number are optional. Check Picked up to reveal the pickup date and record a handover directly. Search laptops, MES PCs, and PCs in the PC field, and registered monitors in the monitor field. The table displays PC asset numbers and supports search, status filters, a shared pickup-readiness toggle, a sortable Location column in every tab, return details, and an Unreturned section for partial returns. Pickup and return windows group PC/monitor asset searches with plain accessory quantity inputs; Others / Peripherals remains text.
 4. **In & Out Calendar (`/calendar`)**: Unified schedule tracking hardware checkouts (Out) and returns (In) across all user types (SPE employees and business travelers). Features real-time filtering by requester type (`Business traveler` vs `SPE employee`), individual requester selection, flow direction (`Out / Checkout` vs `In / Return`), location, keyword search, and a shared **Hide returned** checkbox that updates events, counts and day details.
 5. **Business Travelers (`/business-travelers`)**: Dedicated mobile workforce custody; features focused **Calendar View**, **Roster List** with 1-click full-screen mode, **Overdue Only** urgent triage, location distribution breakdown, and direct return workflows.
@@ -177,3 +177,7 @@ Opening or switching menu pages starts at the top. Changing a tab or search with
 **MES equipment register:** Data Exchange accepts `data/SPE_MES_Equipments_example.txt` and matching `.xlsx` files. Its 11 columns are Asset Number, Asset Type, Serial Number, Purchase Date, Status, Issued Knox ID, Issued Name, Issued Date, Department, Location and Notes. Issued Name is preserved separately from the Knox ID. Use **Export XLSX MES Equipments** to download MES assets in this layout as `SPE_MES_Equipments_YYYY-MM-DD.xlsx`. MES assets are identified by their MES asset type or MES-prefixed register number; MES Monitor is available in monitor searches. Restart the backend once after upgrading to add the optional issue metadata columns. Existing records are preserved, and importing remains an explicit action.
 
 Unsaved asset typing stays in place during background refresh. Untouched fields can refresh from the database, while saved ownership transfers update custody fields without clearing unrelated notes or serial edits. Opening a different asset starts its own draft.
+
+**MES (`/mes`):** Manage MES PCs, monitors and other MES equipment separately from the standard Assets page. Both registers share the same records, editing, ownership and bulk actions. Imports must match the selected register; MES exports use the eleven-column MES Excel format. Editable department and location dropdowns show the full Directory list on focus or reopening, support typing to filter, and scroll through longer lists.
+
+On the MES page, switch between **Assets** and **Location**. Each occupied location shows its total assets and counts by equipment type. Click its row to browse and edit the equipment there. Search and status filters apply to the counts and lists.
