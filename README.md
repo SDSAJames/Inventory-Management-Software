@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.17.0)
+# StarPlus Energy Asset Management System (v1.17.1)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -187,3 +187,5 @@ Asset add/edit dialogs, including MES, use a searchable Department dropdown. Typ
 **Paged asset lists:** Overview, Assets and MES show 15 rows per page by default. Choose 10, 15, 20 or 30 with **Rows per page** at the top right, then use Previous/Next below the records. Search, filters and sorting apply to the full matching list. MES Location rows and expanded asset lists also use the selected page size; location totals include every matching asset. Exports include all matching assets.
 
 The top left shows the selected-row count. Use checkboxes, drag across rows, or Shift-click a range on the current page. Select-all affects only that page; selections on other pages remain. Use Clear selection to deselect everything.
+
+Start a drag directly on a row checkbox and release over another checkbox to select the range. Starting on an already selected checkbox clears the dragged range. A normal click still toggles only that row.

@@ -50,9 +50,10 @@ export default function AssetTable({
 
   const handleMouseDown = useCallback(
     (e) => {
-      // Only react to primary button; skip interactive elements
+      // Row selection checkboxes can start a range; other controls keep their own actions.
       if (e.button !== 0) return;
-      if (e.target.closest?.('input, select, a, button') || ['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) return;
+      const rowCheckbox = e.target.closest?.('input[data-row-selection]');
+      if (!rowCheckbox && (e.target.closest?.('input, select, a, button') || ['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName))) return;
       if (!onToggleSelect || !onRangeSelect) return;
 
       suppressClick.current = false;
@@ -73,7 +74,7 @@ export default function AssetTable({
 
       // Start potential drag
       const adding = !(selectedIds && selectedIds.has(assetId));
-      dragState.current = { startIdx: idx, adding };
+      dragState.current = { startIdx: idx, adding, moved: false };
       lastClickIdx.current = idx;
 
       // Don't set dragging yet – wait for mousemove to confirm drag intent
@@ -88,55 +89,34 @@ export default function AssetTable({
       const idx = rowIndexFromEvent(e);
       if (idx === null) return;
 
-      // Only enter drag mode when mouse actually moves to a different row
-      if (!dragging && idx !== dragState.current.startIdx) {
-        setDragging(true);
+      const gesture = dragState.current;
+      if (idx !== gesture.startIdx || gesture.moved) {
+        if (!gesture.moved) setDragging(true);
+        gesture.moved = true;
         suppressClick.current = true;
-      }
-
-      if (idx !== dragState.current.startIdx || dragging) {
-        const ids = rangeIds(dragState.current.startIdx, idx);
-        onRangeSelect(ids, dragState.current.adding);
+        e.preventDefault?.();
+        onRangeSelect(rangeIds(gesture.startIdx, idx), gesture.adding);
       }
     },
-    [dragging, onRangeSelect, rangeIds, rowIndexFromEvent],
+    [onRangeSelect, rangeIds, rowIndexFromEvent],
   );
 
-  const handleMouseUp = useCallback(
-    (e) => {
-      if (!dragState.current) return;
-
-      const wasDragging = dragging;
-      const ds = dragState.current;
-      dragState.current = null;
-      setDragging(false);
-
-      // If it was a simple click (no drag), toggle the single row
-      if (!wasDragging) {
-        const idx = rowIndexFromEvent(e);
-        if (idx !== null && idx === ds.startIdx) {
-          // If not on an interactive element, let the row click handler decide
-          // whether to edit or toggle – we just toggle selection here
-          if (!['INPUT', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) {
-            // Don't toggle here – let onClick handle it (edit or toggle)
-          }
-        }
-      }
-    },
-    [dragging, rowIndexFromEvent],
-  );
+  const handleMouseUp = useCallback(() => {
+    dragState.current = null;
+    setDragging(false);
+  }, []);
 
   /* ── Global listeners for mouseup (in case mouse leaves table) ── */
 
   useEffect(() => {
-    if (!dragging) return;
+    if (!onRangeSelect) return;
     const onUp = () => {
       dragState.current = null;
       setDragging(false);
     };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
-  }, [dragging]);
+  }, [onRangeSelect]);
 
   useEffect(() => { lastClickIdx.current = null; dragState.current = null; }, [pagination.page, pageSize, resetKey, sort]);
 
@@ -194,10 +174,14 @@ export default function AssetTable({
                   <td className="col-checkbox">
                     <input
                       type="checkbox"
+                      data-row-selection="true"
+                      aria-label={`Select ${asset.code}`}
                       checked={isSelected || false}
-                      onChange={(e) => { if (!e.nativeEvent?.shiftKey) onToggleSelect(asset.id); }}
+                      onChange={(e) => { if (!suppressClick.current && !e.nativeEvent?.shiftKey) onToggleSelect(asset.id); }}
+                      onKeyDown={(e) => { if (e.key === ' ') suppressClick.current = false; }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (suppressClick.current) { e.preventDefault(); return; }
                         if (e.shiftKey && lastClickIdx.current !== null && onRangeSelect) {
                           e.preventDefault();
                           onRangeSelect(rangeIds(lastClickIdx.current, idx), true);

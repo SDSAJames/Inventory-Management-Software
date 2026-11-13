@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.17.0** |
+| **Specification Version** | **v1.17.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 13, 2026 |
@@ -519,3 +519,5 @@ AssetForm renders Department through DirectorySelect with allowCustom and Direct
 `usePagination` derives a bounded page, record range and navigation from total count, page size and a reset key; filters, sort or size changes begin at page one and deletions clamp the visible page. `AssetTable` memoizes whole-result sorting before slicing and rendering page rows; Overview initializes sorting to modification date descending. `Pagination`, `RowCountSelect` and `SelectionCount` supply shared controls. Page owners default to 15 and allow 10/15/20/30; Directory tables remain unpaged unless opted in. `AssetLocationList` uses the same paginator for location groups and passes size to the expanded table, without slicing assets before counting.
 
 `useAssetSelection` shares toggle, page-select and range handlers. Page-select merges/removes only visible IDs. AssetTable resolves drag/Shift-click ranges against visible order and suppresses the edit click after selection gestures. Anchor indices reset on page, size, filter or sort changes. Pagination does not change cached data loading or server export behavior. Regression coverage includes ordering before slicing, page reset/clamping, cross-page selection counts, and range gestures.
+
+Checkbox-origin gestures: AssetTable identifies data-row-selection inputs as valid range starts. A gesture ref tracks movement independently of render timing; range writes use the starting selection intent. Checkbox change/click handlers suppress the trailing activation after dragging. A window mouseup listener clears pending gestures even outside the table. Regression tests cover checkbox-to-checkbox select/clear on page two and subsequent click/Space activation.

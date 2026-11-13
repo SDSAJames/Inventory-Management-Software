@@ -6,6 +6,23 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1] — 2026-11-13
+
+### Checkbox Range Drag Fix
+
+Allow multi-row selection by dragging from one row checkbox to another.
+
+#### Highlights
+- Fix checkbox-origin range gestures in the shared Overview, Assets and MES table.
+
+#### Row Selection
+
+- Allow row checkboxes to start range drags while keeping other interactive controls independent.
+- Select or clear the visible range according to the starting checkbox, without an extra toggle on release.
+- Keep normal clicks, Shift-click, Space activation and paginated selection working.
+
+---
+
 ## [1.17.0] — 2026-11-13
 
 ### Paged Registers & Shared Row Selection

@@ -407,3 +407,33 @@ test('all three page headers default to 15 rows and report selections across pag
     assert.equal(tree.filter((node) => node.props.className === 'asset-code').length, 30);
   }
 });
+
+
+test('checkbox-to-checkbox drag selects or clears the visible range without a trailing toggle', () => {
+  for (const clearing of [false, true]) {
+    const app = harness(), ranges = [], toggles = [], edits = [];
+    const props = { assets: Array.from({ length: 25 }, (_, i) => ({ id: String(i), code: 'PC-' + i })), pageSize: 15,
+      selectedIds: new Set(clearing ? ['16', '17', '18', '19'] : []), onToggleSelect: (id) => toggles.push(id),
+      onRangeSelect: (...args) => ranges.push(args), onEditAsset: (id) => edits.push(id) };
+    let tree = nodes(app.render('AssetTable', props));
+    tree.find((node) => node.type === 'button' && node.props.children[0] === 'Next').props.onClick();
+    tree = nodes(app.render('AssetTable', props));
+    const body = () => tree.find((node) => node.type === 'tbody');
+    const checkbox = (index) => tree.filter((node) => node.props['data-row-selection'])[index];
+    const event = (index) => ({ button: 0, preventDefault() {}, stopPropagation() {}, target: { tagName: 'INPUT',
+      closest: (selector) => selector === 'tr[data-ridx]' ? { dataset: { ridx: index } } : selector.includes('input') ? {} : null } });
+    body().props.onMouseDown(event(1));
+    body().props.onMouseMove(event(4));
+    tree = nodes(app.render('AssetTable', props)); body().props.onMouseUp(event(4));
+    checkbox(4).props.onClick(event(4)); checkbox(4).props.onChange({ nativeEvent: {} });
+    assert.deepEqual(ranges, [[['16', '17', '18', '19'], !clearing]]);
+    assert.deepEqual(toggles, []); assert.deepEqual(edits, []);
+    // A subsequent ordinary click starts a fresh gesture and still toggles exactly once.
+    body().props.onMouseDown(event(0)); body().props.onMouseUp(event(0));
+    checkbox(0).props.onClick(event(0)); checkbox(0).props.onChange({ nativeEvent: {} });
+    assert.deepEqual(toggles, ['15']);
+    // Space activation also remains usable after a drag.
+    checkbox(0).props.onKeyDown({ key: ' ' }); checkbox(0).props.onChange({ nativeEvent: {} });
+    assert.deepEqual(toggles, ['15', '15']);
+  }
+});

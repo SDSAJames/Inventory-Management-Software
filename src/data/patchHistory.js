@@ -9,6 +9,20 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-13',
+    title: 'Checkbox Range Drag Fix',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Allow multi-row selection by dragging from one row checkbox to another.',
+    highlights: ['Fix checkbox-origin range gestures in the shared Overview, Assets and MES table.'],
+    sections: [{ heading: 'Row Selection', badge: 'Fix', items: [
+      'Allow row checkboxes to start range drags while keeping other interactive controls independent.',
+      'Select or clear the visible range according to the starting checkbox, without an extra toggle on release.',
+      'Keep normal clicks, Shift-click, Space activation and paginated selection working.',
+    ] }],
+  },
+  {
+    version: '1.17.0',
+    date: '2026-11-13',
     title: 'Paged Registers & Shared Row Selection',
     tag: 'Feature Release',
     type: 'minor',
