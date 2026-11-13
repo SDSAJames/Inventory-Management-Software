@@ -46,11 +46,11 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
   </div>;
 }
 
-export default function DirectorySelect({ id, label, options = [], value, onChange, placeholder, preserveCurrentValue = false, allowCustom = false }) {
+export default function DirectorySelect({ id, label, options = [], value, onChange, placeholder, preserveCurrentValue = false, allowCustom = false, labelAction }) {
   options = sortDirectoryOptions(preserveCurrentValue && value && !options.includes(value) ? [...options, value] : options);
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      {labelAction ? <div className="asset-category-label"><label htmlFor={id}>{label}</label>{labelAction}</div> : <label htmlFor={id}>{label}</label>}
       {allowCustom ? <DirectoryCombobox id={id} label={label} options={options} value={value} onChange={onChange} placeholder={placeholder} /> : <select id={id} value={value} onChange={onChange}>
         <option value="">{placeholder || `Select ${label.toLowerCase()}`}</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}

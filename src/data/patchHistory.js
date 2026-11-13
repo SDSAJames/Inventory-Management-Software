@@ -9,6 +9,19 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-13',
+    title: 'Searchable Asset Department',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Type to search Directory departments when creating or editing an asset.',
+    highlights: ['Reuse the editable Directory dropdown in standard and MES asset dialogs.'],
+    sections: [{ heading: 'Asset Forms', badge: 'Fix', items: [
+      'Filter department options while typing, select with the mouse or keyboard, and reopen the complete list.',
+      'Preserve the current department, custom typing, clearing and the existing + Add action.',
+    ] }],
+  },
+  {
+    version: '1.16.0',
+    date: '2026-11-13',
     title: 'MES Location View',
     tag: 'Feature Release',
     type: 'minor',

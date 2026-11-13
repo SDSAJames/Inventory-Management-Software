@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.16.0** |
+| **Document Version** | **v1.16.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 13, 2026 |
@@ -385,6 +385,8 @@ The Assets and MES Equipment navigation entries partition one inventory by MES c
 
 The MES page adds Assets and Location views over the same filtered inventory. Location rows show total and per-category counts; expanding a row uses the shared sortable asset table and existing edit/transfer dialogs. Only locations containing matching MES equipment are listed. Counts refresh from inventory state after edits.
 
+Asset creation and editing reuse the editable Directory department selector, including typing to filter, keyboard selection, retained custom values and the existing add-to-Directory action. The same asset dialog serves both registers.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.16.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.16.1**.

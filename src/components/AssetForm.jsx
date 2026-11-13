@@ -1,5 +1,6 @@
 import { useRecordDraft } from '../hooks/useRecordDraft';
 import DateInput from './DateInput';
+import DirectorySelect from './DirectorySelect';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { sortDirectoryOptions } from '../lib/directoryOptions';
 import { useState, useEffect, useMemo } from 'react';
@@ -326,16 +327,9 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner, default
             </div>
 
             {/* ROW 3: Department, Issued Date & Notes */}
-            <div className="field">
-              <div className="asset-category-label">
-                <label htmlFor="department">Department</label>
-                {canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('department')}>+ Add</button>}
-              </div>
-              <select id="department" value={form.department || ''} onChange={set('department')}>
-                <option value="">Select department</option>
-                {sortDirectoryOptions([...new Set([...(db.departments || []), form.department].filter(Boolean))]).map((department) => <option key={department} value={department}>{department}</option>)}
-              </select>
-            </div>
+            <DirectorySelect id="department" label="Department" allowCustom
+              options={[...new Set([...(db.departments || []), existing?.department].filter(Boolean))]} value={form.department || ''} onChange={set('department')}
+              labelAction={canAddCategory && <button type="button" className="text-button" onClick={() => handleAddDirectoryOption('department')}>+ Add</button>} />
             <div className="field">
               <label htmlFor="issuedDate">Issued date</label>
               <DateInput id="issuedDate" type="date" value={form.issuedDate || ''} onChange={set('issuedDate')} />

@@ -6,6 +6,22 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] — 2026-11-13
+
+### Searchable Asset Department
+
+Type to search Directory departments when creating or editing an asset.
+
+#### Highlights
+- Reuse the editable Directory dropdown in standard and MES asset dialogs.
+
+#### Asset Forms
+
+- Filter department options while typing, select with the mouse or keyboard, and reopen the complete list.
+- Preserve the current department, custom typing, clearing and the existing + Add action.
+
+---
+
 ## [1.16.0] — 2026-11-13
 
 ### MES Location View

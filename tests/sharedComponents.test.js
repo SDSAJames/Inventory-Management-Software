@@ -29,7 +29,7 @@ function harness(database = {}, { effects = false } = {}) {
       states[index] = dependencies;
     },
   };
-  const context = { db, verifyAndSyncAssets() {}, addLoan: (...args) => calls.push(['create', ...args]), updateLoan: (...args) => calls.push(['edit', ...args]), returnLoan: (...args) => calls.push(['return', ...args]) };
+  const context = { db, updateAsset: (...args) => calls.push(['asset-edit', ...args]), verifyAndSyncAssets() {}, addLoan: (...args) => calls.push(['create', ...args]), updateLoan: (...args) => calls.push(['edit', ...args]), returnLoan: (...args) => calls.push(['return', ...args]) };
   function load(relative) {
     const file = path.resolve(relative);
     if (cache.has(file)) return cache.get(file);
@@ -318,4 +318,32 @@ test('MES location tab retains the register scope and its shared search', () => 
   tree = nodes(app.render('pages/AssetsPage', props));
   assert.equal(tree.filter((node) => node.props.className === 'asset-location-heading').length, 1);
   assert.ok(!tree.some((node) => node.type === 'strong' && node.props.children[0] === 'Other'));
+});
+
+
+test('asset department supports typing, keyboard selection, clearing and saving directory choices', async () => {
+  const app = harness({ departments: ['Operations', 'Engineering', 'Finance'], assets: [{ id: 'one', code: 'AST-1', category: 'Laptop', owner: 'person', status: 'Assigned', department: 'Legacy team' }] });
+  const props = { assetId: 'one', onClose() {} };
+  let tree = nodes(app.render('AssetForm', props));
+  let input = tree.find((node) => node.props.id === 'department');
+  assert.equal(input.props.role, 'combobox');
+  assert.equal(input.props.value, 'Legacy team');
+  input.props.onFocus();
+  tree = nodes(app.render('AssetForm', props));
+  const options = () => nodes(tree.find((node) => node.props.id === 'department-options')).filter((node) => node.props.role === 'option');
+  assert.equal(options().length, 4);
+  tree.find((node) => node.props.id === 'department').props.onChange({ target: { value: 'eng' } });
+  tree = nodes(app.render('AssetForm', props));
+  assert.equal(options().length, 1);
+  assert.equal(options()[0].props.children[0], 'Engineering');
+  tree.find((node) => node.props.id === 'department').props.onKeyDown({ key: 'ArrowDown', preventDefault() {} });
+  tree = nodes(app.render('AssetForm', props));
+  tree.find((node) => node.props.id === 'department').props.onKeyDown({ key: 'Enter', preventDefault() {} });
+  tree = nodes(app.render('AssetForm', props));
+  assert.equal(tree.find((node) => node.props.id === 'department').props.value, 'Engineering');
+  await tree.find((node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  assert.equal(app.calls.find((call) => call[0] === 'asset-edit')[2].department, 'Engineering');
+  tree.find((node) => node.props.id === 'department').props.onChange({ target: { value: '' } });
+  tree = nodes(app.render('AssetForm', props));
+  assert.equal(tree.find((node) => node.props.id === 'department').props.value, '');
 });

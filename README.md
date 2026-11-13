@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.16.0)
+# StarPlus Energy Asset Management System (v1.16.1)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -181,3 +181,5 @@ Unsaved asset typing stays in place during background refresh. Untouched fields 
 **MES (`/mes`):** Manage MES PCs, monitors and other MES equipment separately from the standard Assets page. Both registers share the same records, editing, ownership and bulk actions. Imports must match the selected register; MES exports use the eleven-column MES Excel format. Editable department and location dropdowns show the full Directory list on focus or reopening, support typing to filter, and scroll through longer lists.
 
 On the MES page, switch between **Assets** and **Location**. Each occupied location shows its total assets and counts by equipment type. Click its row to browse and edit the equipment there. Search and status filters apply to the counts and lists.
+
+Asset add/edit dialogs, including MES, use a searchable Department dropdown. Type to filter Directory entries, choose with the mouse or arrow keys and Enter, or enter a custom department. Reopen the dropdown to see all choices; + Add still creates a Directory entry.

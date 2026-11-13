@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.16.0** |
+| **Specification Version** | **v1.16.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 13, 2026 |
@@ -511,3 +511,5 @@ mergeRecordDraft compares draft fields against the previous saved baseline, upda
 ### MES location distribution
 
 `AssetLocationList` groups the filtered MES records by the shared effective asset location, trimming outer whitespace and matching names case-insensitively. Repair assets use service center. Each group includes total and per-category counts and expands to the existing `AssetTable`. Group counts derive on render from current inventory without stored aggregates. The MES view switch clears bulk selection; standard asset register behavior is unchanged.
+
+AssetForm renders Department through DirectorySelect with allowCustom and Directory options plus the saved department if absent from the Directory. Its optional labelAction slot retains the permission-controlled + Add button in the label row. The selector updates the existing draft and save payload; matching and keyboard behavior stay shared with loan forms.
