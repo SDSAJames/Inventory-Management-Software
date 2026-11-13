@@ -6,6 +6,73 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.5] — 2026-11-13
+
+### Consistent MES Register Columns
+
+Apply the Assets column layout to MES and its location asset lists.
+
+#### Highlights
+- Use Asset number, Category, Status, Current holder, Department and Location in both registers.
+
+#### Shared Register Layout
+
+- Use one shared register table wrapper for Assets, MES and expanded MES location lists.
+- Show sortable Department and omit Modification date in those views.
+
+---
+
+## [1.17.4] — 2026-11-13
+
+### Asset Register Column Order
+
+Arrange Assets columns as Asset number, Category, Status, Current holder, Department and Location.
+
+#### Highlights
+- Place Current holder before Department and Location in the asset register.
+
+#### Asset Register
+
+- Keep sortable headers and their row values aligned in the requested order.
+
+---
+
+## [1.17.3] — 2026-11-13
+
+### Asset Register Department Column
+
+Display Department beside Location in Assets instead of Modification date.
+
+#### Highlights
+- Sort and search asset departments directly in the register.
+
+#### Asset Register
+
+- Show Department after Location and before Current holder in the Assets page.
+- Hide Modification date in that table; use the shared table column options.
+- Include Department in the register search fields and all-fields search.
+
+---
+
+## [1.17.2] — 2026-11-13
+
+### Link Saved Departments to Directory
+
+Keep Directory departments linked to asset assignments and pickup history.
+
+#### Highlights
+- Automatically register departments saved on assets, assignment/pickup records and employees.
+
+#### Department References
+
+- Backfill missing Directory departments from existing records on server startup without rewriting historical records.
+- Use transactional database triggers across create, edit, pickup, transfer and import writes; trim outer spaces and avoid duplicate department names.
+- Refresh shared client department choices immediately from saved record state.
+- Show assignment/pickup history counts and protect referenced departments from rename or deletion, even without a current asset.
+- Restore Directory departments before operational snapshot records so restore preserves reference IDs.
+
+---
+
 ## [1.17.1] — 2026-11-13
 
 ### Checkbox Range Drag Fix

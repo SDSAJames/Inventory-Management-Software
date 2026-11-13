@@ -3,7 +3,7 @@ import { getAssetLocation } from '../../shared/assetRules.js';
 import { sortDirectoryOptions } from '../lib/directoryOptions';
 import usePagination from '../hooks/usePagination';
 import Pagination from './Pagination';
-import AssetTable from './AssetTable';
+import AssetRegisterTable from './AssetRegisterTable';
 
 export default function AssetLocationList({ assets, onEditAsset, onChangeOwner, pageSize = null, resetKey = '' }) {
   const [expanded, setExpanded] = useState(null);
@@ -29,7 +29,7 @@ export default function AssetLocationList({ assets, onEditAsset, onChangeOwner, 
           <span key={category}>{category}: <strong>{group.categories.get(category)}</strong></span>)}</span>
         <span className="asset-location-total">{group.assets.length} asset{group.assets.length === 1 ? '' : 's'} <span aria-hidden="true">{expanded === group.key ? '▴' : '▾'}</span></span>
       </button>
-      {expanded === group.key && <AssetTable pageSize={pageSize} resetKey={resetKey} assets={group.assets} onEditAsset={onEditAsset} onChangeOwner={onChangeOwner} />}
+      {expanded === group.key && <AssetRegisterTable pageSize={pageSize} resetKey={resetKey} assets={group.assets} onEditAsset={onEditAsset} onChangeOwner={onChangeOwner} />}
     </section>)}
     {pageSize && <Pagination {...pagination} />}
   </div>;

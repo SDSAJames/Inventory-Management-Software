@@ -1,3 +1,4 @@
+import { ensureDepartmentDirectory } from '../server/lib/departmentDirectory.js';
 import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -82,8 +83,9 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       const sql = schema.match(new RegExp(`CREATE TABLE IF NOT EXISTS ${table} \\([\\s\\S]*?\\);`))[0];
       db.exec(sql);
     }
-    db.exec('CREATE TABLE locations (id TEXT, name TEXT); CREATE TABLE departments (id TEXT, name TEXT); CREATE TABLE transfer_reasons (reason TEXT, created_at TEXT)');
+    db.exec('CREATE TABLE locations (id TEXT, name TEXT); CREATE TABLE departments (id TEXT PRIMARY KEY, name TEXT UNIQUE); CREATE TABLE transfer_reasons (reason TEXT, created_at TEXT)');
     ensureAssetDateColumns(db);
+    ensureDepartmentDirectory(db);
     const { assetsRouter } = await import('../server/routes/assets.js');
     const { exchangeRouter } = await import('../server/routes/exchange.js');
     const invoke = (router, method, path, body, params = {}, expectedStatus) => {
@@ -234,6 +236,8 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
         equipment: { Laptop: 'FIELDS-PC', Monitor: 'FIELDS-MON', Adapter: '0', Cable: '2', Keyboard: '3' }, others: 'Headset',
       }, { id: 'fields-schedule' });
       assert.equal(result.loan.department, 'Custom team');
+      assert.equal(db.prepare("SELECT COUNT(*) AS count FROM departments WHERE name = 'Custom team'").get().count, 1);
+      assert.ok(invoke(exchangeRouter, 'get', '/export', {}).db.departments.includes('Custom team'));
       assert.equal(result.loan.location, 'Stack');
       assert.equal(result.loan.equipment.Monitor, 'FIELDS-MON');
       assert.equal(result.loan.equipment.Adapter, '0');

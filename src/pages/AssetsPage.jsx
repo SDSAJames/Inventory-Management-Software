@@ -9,7 +9,7 @@ import { parseDelimitedText } from '../lib/txtImport';
 import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
 import useAssetSelection from '../hooks/useAssetSelection';
 import { RowCountSelect, SelectionCount } from '../components/Pagination';
-import AssetTable from '../components/AssetTable';
+import AssetRegisterTable from '../components/AssetRegisterTable';
 import AssetLocationList from '../components/AssetLocationList';
 import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
@@ -18,7 +18,7 @@ import BatchEditForm from '../components/BatchEditForm';
 import ChangeOwnerModal from '../components/ChangeOwnerModal';
 import { isMesEquipment, MES_ASSET_HEADERS } from '../lib/equipmentSchema';
 
-const SEARCH_FIELDS = ['All fields', 'Asset number', 'Category', 'Holder', 'Location', 'Serial number'];
+const SEARCH_FIELDS = ['All fields', 'Asset number', 'Category', 'Holder', 'Location', 'Department', 'Serial number'];
 
 export default function AssetsPage({ mes = false }) {
   const { db, deleteAsset, importAssets, verifyAndSyncAssets } = useDb();
@@ -55,11 +55,12 @@ export default function AssetsPage({ mes = false }) {
   const filtered = useMemo(() => {
     return registerAssets.filter((asset) => {
       const searchable = {
-        'All fields': `${asset.code} ${asset.category} ${asset.location} ${asset.owner} ${asset.serial}`,
+        'All fields': `${asset.code} ${asset.category} ${asset.location} ${asset.department || ''} ${asset.owner} ${asset.serial}`,
         'Asset number': asset.code,
         Category: asset.category,
         Holder: asset.owner,
         Location: asset.location,
+        Department: asset.department,
         'Serial number': asset.serial,
       }[searchField] || '';
       return (
@@ -226,7 +227,7 @@ export default function AssetsPage({ mes = false }) {
           searchFieldOptions={SEARCH_FIELDS}
         />
         {mes && view === 'locations' ? <AssetLocationList pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus])} assets={filtered} onEditAsset={setEditAssetId}
-          onChangeOwner={setOwnerTargetAsset} /> : <AssetTable
+          onChangeOwner={setOwnerTargetAsset} /> : <AssetRegisterTable
           assets={filtered}
           pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus, view])}
           onEditAsset={setEditAssetId}

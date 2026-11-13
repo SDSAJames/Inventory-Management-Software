@@ -393,6 +393,10 @@ test('all three page headers default to 15 rows and report selections across pag
     const app = harness({ assets }); const props = { mes };
     let tree = nodes(app.render(component, props));
     assert.equal(tree.find((node) => node.props['aria-label'] === 'Rows per page').props.value, 15);
+    if (component === 'pages/AssetsPage') {
+      const headers = tree.filter((node) => node.type === 'th').flatMap((node) => nodes(node).filter((child) => child.type === 'button').map((child) => child.props.children[0]));
+      assert.deepEqual(headers, ['Asset number', 'Category', 'Status', 'Current holder', 'Department', 'Location']);
+    }
     assert.equal(tree.filter((node) => node.props.className === 'asset-code').length, 15);
     tree.find((node) => node.props.title === 'Select all rows on this page').props.onChange();
     tree = nodes(app.render(component, props));
@@ -436,4 +440,14 @@ test('checkbox-to-checkbox drag selects or clears the visible range without a tr
     checkbox(0).props.onKeyDown({ key: ' ' }); checkbox(0).props.onChange({ nativeEvent: {} });
     assert.deepEqual(toggles, ['15', '15']);
   }
+});
+
+
+test('Directory departments include assignment-only history and mark it in use', () => {
+  const app = harness({ departments: ['Finance'], loans: [{ id: 'old', department: ' Historical Team ', returnDate: '2026-11-01' }] });
+  const tree = nodes(app.render('pages/DirectoryPage', {}));
+  const row = tree.find((node) => node.type === 'li' && nodes(node).some((child) => child.type === 'span' && child.props.children[0] === 'Historical Team'));
+  assert.ok(row);
+  assert.ok(nodes(row).some((node) => node.props.className === 'directory-edit-state locked'));
+  assert.ok(nodes(row).some((node) => node.type === 'small' && node.props.children[0] === 1));
 });

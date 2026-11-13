@@ -15,6 +15,7 @@ export default function AssetTable({
   onToggleSelectAll,
   onRangeSelect,
   showUpdatedDate = true,
+  showDepartment = false,
   pageSize = null,
   resetKey = '',
   initialSort = { key: 'code', dir: 'asc' },
@@ -143,7 +144,7 @@ export default function AssetTable({
                 />
               </th>
             )}
-            {([['code', 'Asset number'], ['category', 'Category'], ['status', 'Status'], ['location', 'Location'], ['owner', 'Current holder'], ...(showUpdatedDate ? [['updated', 'Modification date']] : [])]).map(([key, label]) => (
+            {([['code', 'Asset number'], ['category', 'Category'], ['status', 'Status'], ...(showDepartment ? [['owner', 'Current holder'], ['department', 'Department'], ['location', 'Location']] : [['location', 'Location'], ['owner', 'Current holder']]), ...(showUpdatedDate ? [['updated', 'Modification date']] : [])]).map(([key, label]) => (
               <SortableHeader key={key} column={{ key, label }} sort={sort} onSort={onSort} />
             ))}
           </tr>
@@ -199,7 +200,7 @@ export default function AssetTable({
                     {asset.status}
                   </span>
                 </td>
-                <td>{asset.location || '—'}</td>
+                {!showDepartment && <td>{asset.location || '—'}</td>}
                 <td>
                   {onChangeOwner ? (
                     <button
@@ -218,6 +219,7 @@ export default function AssetTable({
                     <strong>{asset.owner || 'Unassigned'}</strong>
                   )}
                 </td>
+                {showDepartment && <><td>{asset.department || '—'}</td><td>{asset.location || '—'}</td></>}
                 {showUpdatedDate && (
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <code style={{ fontSize: '11px', color: 'var(--ink)' }}>

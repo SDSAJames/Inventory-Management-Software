@@ -1,3 +1,4 @@
+import { ensureDepartmentDirectory } from '../lib/departmentDirectory.js';
 import { ensureSavedChangeUndo } from '../lib/savedChangeUndo.js';
 import { DEFAULT_OWNER, DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from "../../shared/referenceData.js";
 import { getAssetLocationAfterReturn, getAssetLocation, normalizeLocation } from "../../shared/assetRules.js";
@@ -230,6 +231,7 @@ export function initDatabase() {
   normalizeStoredLocations(db);
   removeExactDuplicateLoans();
   ensureAvailableAssetCustody(db);
+  ensureDepartmentDirectory(db);
 }
 
 function removeExactDuplicateLoans() {

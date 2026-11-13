@@ -1,3 +1,4 @@
+import { departmentDirectoryNames, matchesDepartment } from '../../shared/departmentDirectory.js';
 import { useDb } from '../hooks/useDb';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -21,7 +22,7 @@ export default function DirectoryPage() {
   const [sortDirection, setSortDirection] = useState('asc');
   const panelDefinitions = [
     { type: 'Category', title: 'Asset categories', description: 'Equipment type, such as Laptop or Printer.', items: db.categories || [], assetField: 'category', add: addCategory, rename: (entry, name) => renameCategory(entry.id, name), remove: (entry) => deleteCategory(entry.id) },
-    { type: 'Department', title: 'Departments', description: 'Teams assigned to company assets.', items: db.departments || [], assetField: 'department', add: addDepartment, rename: (entry, name) => renameDepartment(entry.name, name), remove: (entry) => deleteDepartment(entry.name) },
+    { type: 'Department', title: 'Departments', description: 'Teams linked to assets and assignment or pickup history.', items: departmentDirectoryNames(db), assetField: 'department', add: addDepartment, rename: (entry, name) => renameDepartment(entry.name, name), remove: (entry) => deleteDepartment(entry.name) },
     { type: 'Location', title: 'Locations', description: 'Sites where company assets are held.', items: directoryLocationOptions(db.locations, assets), assetField: 'location', showCount: true, add: addLocation, rename: (entry, name) => renameLocation(entry.name, name), remove: (entry) => deleteLocation(entry.name) },
   ];
   const panels = panelDefinitions.map((definition) => ({
@@ -29,7 +30,9 @@ export default function DirectoryPage() {
     entries: filterDirectoryEntries(definition.items.map((item) => {
       const entry = typeof item === 'string' ? { name: item, key: item } : { ...item, key: item.id };
       const count = assets.filter((asset) => matchesDirectoryAsset(asset, definition.assetField, entry.name)).length;
-      return { ...entry, type: definition.type, used: count > 0, canRenameUsed: definition.type === 'Location', ...(definition.showCount ? { count } : {}) };
+      const historyCount = definition.type === 'Department' ? (db.loans || []).filter((loan) => matchesDepartment(loan, entry.name)).length : 0;
+      const personUsed = definition.type === 'Department' && (db.employees || []).some((person) => matchesDepartment(person, entry.name));
+      return { ...entry, historyCount, type: definition.type, used: count > 0 || historyCount > 0 || personUsed, canRenameUsed: definition.type === 'Location', ...(definition.showCount ? { count } : {}) };
     }), directorySearch, sortDirection),
   }));
   const statusPanel = {

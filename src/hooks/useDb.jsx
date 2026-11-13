@@ -1,3 +1,4 @@
+import { departmentDirectoryNames } from '../../shared/departmentDirectory.js';
 import { DEFAULT_OWNER } from '../../shared/referenceData.js';
 import { getAssetLocationAfterReturn, normalizeLocation, getAssetStatusAfterReturn, getAssetStatusForLoanEdit } from "../../shared/assetRules.js";
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -25,6 +26,7 @@ const DbContext = createContext(null);
 export function DbProvider({ children }) {
   const [db, setDbState] = useState(() => {
     const raw = normalizeDatabaseLocations(loadDb());
+    if (raw) raw.departments = departmentDirectoryNames(raw);
     if (raw && raw.assets && raw.loans) {
       // Auto-ensure assets with an existing holder have at least an initial baseline ownership entry
       const assetsWithHistory = raw.assets.map((a) => {
@@ -66,9 +68,10 @@ export function DbProvider({ children }) {
   const dbRevision = useRef(0);
   const setDb = useCallback((update) => {
     dbRevision.current += 1;
-    setDbState((previous) => normalizeDatabaseLocations(
-      typeof update === 'function' ? update(previous) : update,
-    ));
+    setDbState((previous) => {
+      const next = normalizeDatabaseLocations(typeof update === 'function' ? update(previous) : update);
+      return next ? { ...next, departments: departmentDirectoryNames(next) } : next;
+    });
   }, []);
 
   const [transferReasons, setTransferReasons] = useState(() => {

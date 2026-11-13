@@ -27,9 +27,10 @@ export function DirectoryEntry({ entry, selecting = false, selected = false, edi
       } : undefined}
     >
       {selecting && editable && <input aria-label={`Select ${entry.name}`} type="checkbox" checked={checked} disabled={!canSelect} onClick={(event) => event.stopPropagation()} onChange={() => { if (interactive) onToggleSelection(entry.key); }} />}
-      <span className={showCount ? 'directory-location-name' : undefined}>
+      <span className={showCount || entry.historyCount > 0 ? 'directory-location-name' : undefined}>
         {entry.name}
         {showCount && <small>{entry.count} {entry.count === 1 ? 'asset' : 'assets'}</small>}
+        {entry.historyCount > 0 && <small>{entry.historyCount} assignment / pickup record{entry.historyCount === 1 ? '' : 's'}</small>}
       </span>
       <span className={`directory-edit-state ${entry.used ? 'locked' : 'ready'}`}>{entry.used ? 'In use' : editable ? 'Editable' : 'Default'}</span>
     </li>

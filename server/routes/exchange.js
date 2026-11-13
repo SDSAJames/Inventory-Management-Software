@@ -310,6 +310,14 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     db.exec('DELETE FROM departments;');
     db.exec('DELETE FROM locations;');
 
+    // Restore department references before records so directory triggers reuse snapshot IDs.
+    if (Array.isArray(snapshot.departments)) {
+      const insertDept = db.prepare('INSERT INTO departments (id, name) VALUES (?, ?)');
+      snapshot.departments.forEach((d, idx) => {
+        insertDept.run(d.id || `dept-${idx}`, d.name || d);
+      });
+    }
+
     // 2. Restore Assets & History
     const insertAsset = db.prepare(`
       INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, warranty_expiration_date, condition, notes, updated, created_at)
@@ -406,12 +414,6 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     }
 
     // 5. Restore Departments & Locations
-    if (Array.isArray(snapshot.departments)) {
-      const insertDept = db.prepare('INSERT INTO departments (id, name) VALUES (?, ?)');
-      snapshot.departments.forEach((d, idx) => {
-        insertDept.run(d.id || `dept-${idx}`, d.name || d);
-      });
-    }
     if (Array.isArray(snapshot.locations)) {
       const insertLoc = db.prepare('INSERT INTO locations (id, name) VALUES (?, ?)');
       snapshot.locations.forEach((l, idx) => {

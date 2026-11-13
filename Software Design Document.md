@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.17.1** |
+| **Document Version** | **v1.17.5** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 13, 2026 |
@@ -393,6 +393,12 @@ Overview, Assets and MES share pagination and multi-row selection. The default i
 
 Range selection can start from a row checkbox as well as a non-interactive row cell. The starting selection determines whether the dragged range is selected or cleared; the release click is suppressed so the endpoint is not toggled twice.
 
+### Department reference integrity
+
+Departments are shared reference values across assets, assignment/pickup history and employees. New saved values register automatically in the Directory as part of the same database transaction. Startup registers missing references from existing records without changing history. Directory usage checks include historical custody and employee references, preventing rename or deletion of referenced values. Client dropdowns and Directory entries derive their choices from the same shared name collector.
+
+The shared Assets and MES register table, including MES location drilldowns, orders columns as Asset number, Category, Status, Current holder, Department and Location, and omits Modification date. Department participates in the existing shared sorting and register search.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.17.1**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.17.5**.

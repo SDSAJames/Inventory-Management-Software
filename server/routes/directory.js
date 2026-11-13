@@ -1,3 +1,4 @@
+import { departmentReferences } from '../lib/departmentDirectory.js';
 import { Router } from 'express';
 import { db, logAudit } from '../db/database.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -232,8 +233,8 @@ directoryRouter.put('/departments/:name', authenticate, requireRole('ADMIN', 'OP
   if (db.prepare('SELECT id FROM departments WHERE LOWER(name) = LOWER(?) AND id <> ?').get(name, department.id)) {
     return res.status(409).json({ success: false, error: 'That department already exists.' });
   }
-  const used = db.prepare('SELECT COUNT(*) AS count FROM assets WHERE LOWER(department) = LOWER(?)').get(department.name).count;
-  if (used) return res.status(409).json({ success: false, error: `Cannot rename ${department.name}; it is assigned to ${used} asset${used === 1 ? '' : 's'}.` });
+  const used = departmentReferences(db, department.name);
+  if (used) return res.status(409).json({ success: false, error: `Cannot rename ${department.name}; it is referenced by ${used} asset, assignment or employee record${used === 1 ? '' : 's'}.` });
   db.prepare('UPDATE departments SET name = ? WHERE id = ?').run(name, department.id);
   logAudit('RENAME_DEPARTMENT', 'departments', department.id, { from: department.name, to: name }, req.user);
   return res.json({ success: true, department: { id: department.id, name } });
@@ -246,8 +247,8 @@ directoryRouter.delete('/departments/:name', authenticate, requireRole('ADMIN', 
     return res.status(404).json({ success: false, error: 'Department not found.' });
   }
 
-  const used = db.prepare('SELECT COUNT(*) AS count FROM assets WHERE LOWER(department) = LOWER(?)').get(dept.name).count;
-  if (used) return res.status(409).json({ success: false, error: `Cannot remove ${dept.name}; it is assigned to ${used} asset${used === 1 ? '' : 's'}.` });
+  const used = departmentReferences(db, dept.name);
+  if (used) return res.status(409).json({ success: false, error: `Cannot remove ${dept.name}; it is referenced by ${used} asset, assignment or employee record${used === 1 ? '' : 's'}.` });
 
   db.prepare('DELETE FROM departments WHERE id = ?').run(dept.id);
   logAudit('DELETE_DEPARTMENT', 'departments', dept.id, { name: dept.name }, req.user);

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.17.1** |
+| **Specification Version** | **v1.17.5** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 13, 2026 |
@@ -521,3 +521,11 @@ AssetForm renders Department through DirectorySelect with allowCustom and Direct
 `useAssetSelection` shares toggle, page-select and range handlers. Page-select merges/removes only visible IDs. AssetTable resolves drag/Shift-click ranges against visible order and suppresses the edit click after selection gestures. Anchor indices reset on page, size, filter or sort changes. Pagination does not change cached data loading or server export behavior. Regression coverage includes ordering before slicing, page reset/clamping, cross-page selection counts, and range gestures.
 
 Checkbox-origin gestures: AssetTable identifies data-row-selection inputs as valid range starts. A gesture ref tracks movement independently of render timing; range writes use the starting selection intent. Checkbox change/click handlers suppress the trailing activation after dragging. A window mouseup listener clears pending gestures even outside the table. Regression tests cover checkbox-to-checkbox select/clear on page two and subsequent click/Space activation.
+
+### Automatic department registration
+
+`ensureDepartmentDirectory` installs AFTER INSERT and AFTER UPDATE OF department triggers on assets, loans and employees, and backfills distinct saved department names during initDatabase. Trigger inserts ignore blank values, trim outer spaces and check case-insensitive existing names, participating in the caller transaction. `departmentReferences` guards Directory rename/delete using all three tables. Snapshot restore loads department references before inserting records so triggers reuse saved IDs.
+
+The shared `departmentDirectoryNames` collector merges explicit Directory names with saved record departments and sorts/deduplicates them. DbProvider applies it on initial cache load and every shared state update, making choices visible immediately across modules. Directory department rows also show assignment/pickup history counts and mark historical or employee references In use. Tests cover legacy backfill, transactional rollback, duplicate prevention, history-only protection, pickup-to-export linking and restore under unique department constraints.
+
+AssetRegisterTable wraps AssetTable with showDepartment=true and showUpdatedDate=false. AssetsPage and AssetLocationList reuse this wrapper for both registers and MES location drilldowns. When showDepartment is enabled, headers and cells use Asset number, Category, Status, Current holder, Department and Location order, using the existing sortTableRows path. Department is also included in register search mappings. Other table callers retain their existing column defaults.

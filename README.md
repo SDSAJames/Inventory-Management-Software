@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.17.1)
+# StarPlus Energy Asset Management System (v1.17.5)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -189,3 +189,7 @@ Asset add/edit dialogs, including MES, use a searchable Department dropdown. Typ
 The top left shows the selected-row count. Use checkboxes, drag across rows, or Shift-click a range on the current page. Select-all affects only that page; selections on other pages remain. Use Clear selection to deselect everything.
 
 Start a drag directly on a row checkbox and release over another checkbox to select the range. Starting on an already selected checkbox clears the dragged range. A normal click still toggles only that row.
+
+**Department links:** Saving a department on an asset, assignment/pickup record or employee automatically registers it in Directory. Dropdown choices refresh from the same saved data. Departments referenced by historical assignment/pickup records remain In use and show their record count, even after equipment returns. Restart the backend after upgrading to register missing departments from existing history and enable automatic database linking; history itself is preserved.
+
+The Assets and MES registers, including expanded MES location asset lists, display Asset number, Category, Status, Current holder, Department and Location, in that order. Department supports sorting and search; Modification date is hidden in these views.
