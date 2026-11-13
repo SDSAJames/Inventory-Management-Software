@@ -320,6 +320,22 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(changed.issuedName, '');
       assert.equal(changed.issuedDate, '');
     });
+    await t.test('contractor schedules retain due dates through editing, pickup, transfer and export', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'contractor-pc', code: 'PC-CONTRACT', category: 'Laptop' });
+      const schedule = invoke(loansRouter, 'post', '/', { id: 'contractor-schedule', knoxId: 'contract.person', assigneeType: 'Contractor', assetCode: 'PC-CONTRACT', startDate: '2000-01-01', endDate: '2000-02-01' });
+      assert.equal(schedule.loan.assigneeType, 'Contractor'); assert.equal(schedule.loan.endDate, '2000-02-01');
+      invoke(loansRouter, 'put', '/:id', { endDate: '2000-03-01' }, { id: 'contractor-schedule' });
+      const pickup = invoke(loansRouter, 'post', '/:id/pickup', { pickupDate: '2000-01-02' }, { id: 'contractor-schedule' });
+      assert.equal(pickup.loan.status, 'Overdue');
+      assert.equal(db.prepare("SELECT status FROM assets WHERE code = 'PC-CONTRACT'").get().status, 'On loan');
+      invoke(loansRouter, 'post', '/:id/transfer', { knoxId: 'contract.next', assigneeType: 'Contractor', selection: { Laptop: 'PC-CONTRACT' }, startDate: '2000-03-02', transferDate: '2000-03-02T12:00:00Z' }, { id: 'contractor-schedule' }, 400);
+      const result = invoke(loansRouter, 'post', '/:id/transfer', { knoxId: 'contract.next', assigneeType: 'Contractor', selection: { Laptop: 'PC-CONTRACT' }, startDate: '2000-03-02', endDate: '2000-04-01', transferDate: '2000-03-02T12:00:00Z' }, { id: 'contractor-schedule' });
+      const exported = invoke(exchangeRouter, 'get', '/export', {}).db;
+      const recipient = exported.loans.find((loan) => loan.id === result.targetId);
+      assert.equal(recipient.assigneeType, 'Contractor'); assert.equal(recipient.endDate, '2000-04-01');
+      assert.match(exported.assets.find((asset) => asset.code === 'PC-CONTRACT').latestChange, /owner/);
+    });
     await t.test('requested monitor may remain unfulfilled at pickup without assigning a monitor', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(loansRouter, 'post', '/', { id: 'unfulfilled-monitor', knoxId: 'monitor.request', assigneeType: 'Business traveler', equipment: { RequestedMonitor: true } });

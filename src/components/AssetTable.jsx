@@ -1,3 +1,4 @@
+import { latestAssetChange } from '../lib/overviewAssets';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { statusClass } from '../lib/utils';
 import usePagination from '../hooks/usePagination';
@@ -15,13 +16,14 @@ export default function AssetTable({
   onToggleSelectAll,
   onRangeSelect,
   showUpdatedDate = true,
+  showLatestChange = false,
   showDepartment = false,
   pageSize = null,
   resetKey = '',
   initialSort = { key: 'code', dir: 'asc' },
 }) {
   const [sort, setSort] = useState(initialSort);
-  assets = useMemo(() => sortTableRows(assets, sort, (asset, key) => asset[key]), [assets, sort]);
+  assets = useMemo(() => sortTableRows(assets, sort, (asset, key) => key === 'activityTime' ? asset.changedAt || asset.changed_at || asset.updated : key === 'activity' ? latestAssetChange(asset).summary : asset[key]), [assets, sort]);
   const pagination = usePagination(assets.length, pageSize, JSON.stringify([resetKey, sort]));
   assets = assets.slice(pagination.start, pagination.end);
   const suppressClick = useRef(false);
@@ -144,7 +146,7 @@ export default function AssetTable({
                 />
               </th>
             )}
-            {([['code', 'Asset number'], ['category', 'Category'], ['status', 'Status'], ...(showDepartment ? [['owner', 'Current holder'], ['department', 'Department'], ['location', 'Location']] : [['location', 'Location'], ['owner', 'Current holder']]), ...(showUpdatedDate ? [['updated', 'Modification date']] : [])]).map(([key, label]) => (
+            {([['code', 'Asset number'], ['category', 'Category'], ['status', 'Status'], ...(showDepartment ? [['owner', 'Current holder'], ['department', 'Department'], ['location', 'Location']] : [['location', 'Location'], ['owner', 'Current holder']]), ...(showLatestChange ? [['activity', 'Latest change'], ['activityTime', 'Changed at']] : showUpdatedDate ? [['updated', 'Modification date']] : [])]).map(([key, label]) => (
               <SortableHeader key={key} column={{ key, label }} sort={sort} onSort={onSort} />
             ))}
           </tr>
@@ -220,7 +222,8 @@ export default function AssetTable({
                   )}
                 </td>
                 {showDepartment && <><td>{asset.department || '—'}</td><td>{asset.location || '—'}</td></>}
-                {showUpdatedDate && (
+                {showLatestChange && <><td className="asset-latest-change">{latestAssetChange(asset).summary}</td><td className="asset-change-time">{latestAssetChange(asset).time || 'Time not recorded'}</td></>}
+                {showUpdatedDate && !showLatestChange && (
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <code style={{ fontSize: '11px', color: 'var(--ink)' }}>
                       {asset.updated || '—'}

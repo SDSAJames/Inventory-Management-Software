@@ -1,3 +1,4 @@
+import { assetActivityFields } from '../lib/assetActivity.js';
 import { saveAssetIssuedFields } from '../lib/assetIssuedFields.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { getAssetDateError, normalizeAssetDate } from '../../shared/assetDates.js';
@@ -508,6 +509,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
       success: true,
       message: `Successfully updated ${updatedCount} assets.`,
       count: updatedCount,
+      assetActivity: ids.map((id) => db.prepare('SELECT * FROM assets WHERE id = ?').get(id)).filter(Boolean).map(assetActivityFields),
     });
   } catch (err) {
     db.exec('ROLLBACK;');

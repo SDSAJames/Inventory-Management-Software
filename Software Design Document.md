@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.17.5** |
+| **Document Version** | **v1.18.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 13, 2026 |
@@ -399,6 +399,12 @@ Departments are shared reference values across assets, assignment/pickup history
 
 The shared Assets and MES register table, including MES location drilldowns, orders columns as Asset number, Category, Status, Current holder, Department and Location, and omits Modification date. Department participates in the existing shared sorting and register search.
 
+### Overview activity and borrower types
+
+Overview groups parenthesized Laptop category variants for chart presentation only. Its asset list shows each asset's latest field changes and a fixed saved timestamp. Existing records with no recorded detail are identified explicitly. Activity metadata participates in the same write transaction and survives database restore and undo.
+
+Contractor is a third borrower identity. Employees retain indefinite assignment rules; contractors and business travelers share due-date loan behavior, including overdue checks and transfer date validation. Borrower identity stays separate from due-date eligibility so contractor labels, filters and spreadsheet round trips remain distinct.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.17.5**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.18.0**.

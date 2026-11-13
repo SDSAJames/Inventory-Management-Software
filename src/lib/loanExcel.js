@@ -1,4 +1,5 @@
-import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
+import { borrowerType } from '../../shared/loanRules.js';
+import { getLoanEndDate, tracksEndDate } from './loanEquipment.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 
 /** Format loan records using the standard loan spreadsheet column order. */
@@ -11,13 +12,13 @@ export function loansToRows(loans, assets) {
     loan = normalizePcRecord(loan);
     const asset = assetMap.get(String(loan.assetCode || '').trim().toLowerCase()) || {};
     const equipment = loan.equipment || {};
-    const hasEndDate = isBusinessTraveler(loan.assigneeType);
+    const hasEndDate = tracksEndDate(loan.assigneeType);
 
     return [
       index + 1,
       loan.assignee || loan.borrower || '',
       loan.knoxId || '',
-      hasEndDate ? 1 : 0,
+      borrowerType(loan.assigneeType) === 'Contractor' ? 'Contractor' : hasEndDate ? 1 : 0,
       asset.location || loan.location || '',
       loan.ip || '',
       loan.startDate || loan.loanDate || '',

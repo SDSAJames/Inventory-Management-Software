@@ -1,7 +1,7 @@
-import { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
+import { tracksEndDate } from '../../shared/loanRules.js';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
 import { EQUIPMENT_FIELDS, QUANTITY_FIELDS, normalizeEquipmentQuantity, normalizeEquipmentQuantities } from '../../shared/equipment.js';
-export { isBusinessTravelerType as isBusinessTraveler } from '../../shared/loanRules.js';
+export { isBusinessTravelerType as isBusinessTraveler, tracksEndDate } from '../../shared/loanRules.js';
 
 export const LOAN_EQUIPMENT_FIELDS = EQUIPMENT_FIELDS.map(({ key, label, placeholder }) => [label, key, placeholder]);
 
@@ -26,7 +26,7 @@ export function updateLoanFormField(previous, field, value) {
     ...(field === 'requestPc' && !value ? { assetCode: '', adapter: '0', cable: '0' } : {}),
     ...(field === 'monitor' && value ? { requestMonitor: true } : {}),
     ...(field === 'requestMonitor' && !value ? { monitor: '' } : {}),
-    ...(field === 'assigneeType' && !isBusinessTraveler(value) ? { endDate: '' } : {}),
+    ...(field === 'assigneeType' && !tracksEndDate(value) ? { endDate: '' } : {}),
     ...(field === 'pickupDate' && !value ? { returnDate: '' } : {}),
   };
 }
@@ -46,13 +46,13 @@ export function equipmentQuantitiesToForm(equipment = {}, fallback = {}) {
 }
 
 export function getLoanEndDate(loan) {
-  if (!loan || !isBusinessTraveler(loan.assigneeType)) return '';
+  if (!loan || !tracksEndDate(loan.assigneeType)) return '';
   return loan.endDate || loan.dueDate || '';
 }
 
 export function normalizeLoanEndDate(loan) {
   loan = normalizePcRecord(loan);
-  return isBusinessTraveler(loan?.assigneeType)
+  return tracksEndDate(loan?.assigneeType)
     ? loan
     : { ...loan, endDate: '', dueDate: '' };
 }

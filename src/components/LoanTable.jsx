@@ -1,3 +1,4 @@
+import { borrowerType, tracksEndDate } from '../../shared/loanRules.js';
 import { isPendingPickup } from '../../shared/loanLocations.js';
 import DateInput from './DateInput';
 import LoanEquipmentDetails from './LoanEquipmentDetails';
@@ -6,7 +7,7 @@ import { DEFAULT_LOCATION } from '../../shared/referenceData.js';
 import { Fragment, useMemo, useState } from 'react';
 import { readableLoanDate, dateTimeInputValue, statusClass, getLoanStatus, normalizeDateToIso } from "../lib/utils";
 import { readableTransferNote } from '../lib/transferNotes';
-import { getLoanEndDate, isBusinessTraveler, getMissingReturnItems } from "../lib/loanEquipment";
+import { getLoanEndDate, getMissingReturnItems } from "../lib/loanEquipment";
 
 import PickupReadiness from './PickupReadiness';
 
@@ -39,13 +40,13 @@ const COLUMNS = [
 
 const CONTEXT_COLUMNS = [
   { key: 'readyForPickup', label: 'Pickup readiness', getValue: (loan) => loan.readyForPickup ? 1 : 0 },
-  { key: 'assigneeType', label: 'Borrower type', getValue: (loan) => isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee' },
+  { key: 'assigneeType', label: 'Borrower type', getValue: (loan) => borrowerType(loan.assigneeType) },
 ];
 
 function LoanContextCells({ loan, onToggleReady, showPickupReadiness, showBorrowerType }) {
   return <>
     {showPickupReadiness && <td><div className="pickup-readiness-control"><PickupReadiness loan={loan} onToggleReady={onToggleReady} /></div></td>}
-    {showBorrowerType && <td><span className="assignee-badge">{isBusinessTraveler(loan.assigneeType) ? 'Business traveler' : 'Employee'}</span></td>}
+    {showBorrowerType && <td><span className="assignee-badge">{borrowerType(loan.assigneeType)}</span></td>}
   </>;
 }
 
@@ -221,7 +222,7 @@ export default function LoanTable({
             // Compute current lifecycle status label (accurately reflecting Overdue if end date is over today)
             const currentRecord = isEditing && draft ? draft : loan;
             const lifecycleStatus = currentRecord.status === 'Transferred' ? 'Transferred' : getLoanStatus(currentRecord);
-            const statusLabel = lifecycleStatus === 'Loaned' && !isBusinessTraveler(currentRecord.assigneeType) ? 'Assigned' : lifecycleStatus;
+            const statusLabel = lifecycleStatus === 'Loaned' && !tracksEndDate(currentRecord.assigneeType) ? 'Assigned' : lifecycleStatus;
 
             if (isEditing && draft) {
               return (
@@ -280,7 +281,7 @@ export default function LoanTable({
                       type="date"
                       value={getLoanEndDate(draft).slice(0, 10)}
                       onChange={(e) => update('endDate', e.target.value)}
-                      disabled={!isBusinessTraveler(draft.assigneeType)}
+                      disabled={!tracksEndDate(draft.assigneeType)}
                     />
                   </td>
                   {showReturnDate && (

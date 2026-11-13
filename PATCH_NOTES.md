@@ -6,6 +6,33 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] — 2026-11-13
+
+### Contractor Loans & Detailed Overview Updates
+
+Add Contractor borrowers with due dates and make Overview asset updates specific.
+
+#### Highlights
+- Combine Laptop variants in Asset mix.
+- Show changed fields, before/after values and a saved local timestamp in Overview.
+- Add Contractor to borrower forms, transfers and In & Out Calendar.
+
+#### Overview
+
+- Group Laptop, Laptop(others), Laptop(vendor A) and other parenthesized Laptop variants into one chart total without renaming inventory categories.
+- Record the latest actual asset change transactionally in database metadata, including ownership, status, location and other editable fields.
+- Show the latest change details and local date/time through seconds. Old records without recorded detail/time are labeled explicitly.
+- Keep metadata stable on no-op saves and reads, refresh it after saved writes, and preserve it through undo and snapshot restore.
+
+#### Contractor Borrowers
+
+- Add a distinct Contractor option to shared create, edit and transfer forms, and display its own borrower label.
+- Share due-date retention, validation, overdue checks and On loan custody rules with business travelers, while employee assignments remain indefinite.
+- Require reviewed start/end dates for contractor transfers; add contractor filtering and counts in In & Out Calendar.
+- Preserve Contractor in JSON backup/restore and existing spreadsheet imports/exports using Contractor in the Business Traveler/type column; legacy 1/0 values remain supported.
+
+---
+
 ## [1.17.5] — 2026-11-13
 
 ### Consistent MES Register Columns

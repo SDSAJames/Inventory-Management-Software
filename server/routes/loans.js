@@ -1,3 +1,4 @@
+import { loanAssetActivity } from '../lib/assetActivity.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { DEFAULT_OWNER } from "../../shared/referenceData.js";
 import { randomUUID } from 'node:crypto';
@@ -348,6 +349,7 @@ loansRouter.post('/', authenticate, (req, res) => {
       success: true,
       message: 'Loan checkout created successfully.',
       loan: formatLoanRow(newLoan),
+      assetActivity: loanAssetActivity(db, newLoan),
     });
   } catch (err) {
     db.exec('ROLLBACK;');
@@ -596,6 +598,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
       success: true,
       message: `Device ${loan.asset_code} picked up by ${loan.assignee}.`,
       loan: formatLoanRow(updated),
+      assetActivity: loanAssetActivity(db, updated),
     });
   } catch (err) {
     db.exec('ROLLBACK;');
@@ -638,6 +641,7 @@ loansRouter.post('/:id/revert-pickup', authenticate, (req, res) => {
       success: true,
       message: `Pickup for ${loan.asset_code} reverted to Scheduled.`,
       loan: formatLoanRow(updated),
+      assetActivity: loanAssetActivity(db, updated),
     });
   } catch (err) {
     db.exec('ROLLBACK;');
@@ -734,6 +738,7 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
       success: true,
       message: `Asset ${loan.asset_code} successfully returned to IT Department.`,
       loan: formatLoanRow(updated),
+      assetActivity: loanAssetActivity(db, updated),
     });
   } catch (err) {
     db.exec('ROLLBACK;');
@@ -777,6 +782,7 @@ loansRouter.post('/:id/unarchive', authenticate, (req, res) => {
       success: true,
       message: `Loan for ${loan.asset_code} unarchived.`,
       loan: formatLoanRow(updated),
+      assetActivity: loanAssetActivity(db, updated),
     });
   } catch (err) {
     db.exec('ROLLBACK;');

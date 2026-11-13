@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.17.5)
+# StarPlus Energy Asset Management System (v1.18.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -193,3 +193,7 @@ Start a drag directly on a row checkbox and release over another checkbox to sel
 **Department links:** Saving a department on an asset, assignment/pickup record or employee automatically registers it in Directory. Dropdown choices refresh from the same saved data. Departments referenced by historical assignment/pickup records remain In use and show their record count, even after equipment returns. Restart the backend after upgrading to register missing departments from existing history and enable automatic database linking; history itself is preserved.
 
 The Assets and MES registers, including expanded MES location asset lists, display Asset number, Category, Status, Current holder, Department and Location, in that order. Department supports sorting and search; Modification date is hidden in these views.
+
+**Overview updates:** Asset mix combines parenthesized Laptop variants (including Laptop(others) and Laptop(vendor A)) under Laptop without changing their saved categories. The asset list shows the latest actual change, before/after values, and its saved local date/time through seconds. Older records without this metadata are marked as details or time not recorded. Restart the backend after upgrading to enable automatic change recording; existing history is preserved.
+
+**Contractor borrowers:** Choose Contractor in assignment/loan creation, editing or transfer. Contractors have due dates, overdue handling and On loan equipment custody like business travelers. A schedule still changes inventory only after pickup. Contractor transfers require valid start and end dates. In & Out Calendar includes a separate Contractor filter and counts. Contractor remains distinct from Employee and Business traveler; the Business Travelers page retains its traveler scope. Existing loan spreadsheet exports use Contractor in the Business Traveler column for contractor records, while 1/0 still represent traveler/employee.

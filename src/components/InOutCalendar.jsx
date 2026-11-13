@@ -31,7 +31,7 @@ export default function InOutCalendar({
   } = useCalendarMonth();
 
   // Filter state
-  const [requesterTypeFilter, setRequesterTypeFilter] = useState(initialRequesterType); // 'ALL' | 'Business traveler' | 'Employee'
+  const [requesterTypeFilter, setRequesterTypeFilter] = useState(initialRequesterType); // 'ALL' | 'Business traveler' | 'Employee' | 'Contractor'
   const [selectedRequester, setSelectedRequester] = useState(initialRequester); // 'ALL' | specific name
   const [eventTypeFilter, setEventTypeFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
   const [selectedLocation, setSelectedLocation] = useState('ALL');
@@ -71,14 +71,17 @@ export default function InOutCalendar({
   const requesterCounts = useMemo(() => {
     let travelerCount = 0;
     let employeeCount = 0;
+    let contractorCount = 0;
     enrichedLoans.forEach((l) => {
       if (l.isTraveler) travelerCount += 1;
+      else if (l.userType === 'Contractor') contractorCount += 1;
       else employeeCount += 1;
     });
     return {
       all: enrichedLoans.length,
       travelers: travelerCount,
       employees: employeeCount,
+      contractors: contractorCount,
     };
   }, [enrichedLoans]);
 
@@ -130,6 +133,7 @@ export default function InOutCalendar({
     let completedReturns = 0;
     let travelerEvents = 0;
     let employeeEvents = 0;
+    let contractorEvents = 0;
 
     outgoingByDate.forEach((list, dateStr) => {
       if (dateStr.startsWith(prefix)) {
@@ -137,7 +141,7 @@ export default function InOutCalendar({
         outgoingCount += filtered.length;
         filtered.forEach((l) => {
           if (l.isTraveler) travelerEvents += 1;
-          else employeeEvents += 1;
+          else if (l.userType === 'Contractor') contractorEvents += 1; else employeeEvents += 1;
         });
       }
     });
@@ -147,7 +151,7 @@ export default function InOutCalendar({
       if (dateStr.startsWith(prefix)) {
         const filtered = list.filter(matchesFilters);
         pickedUpCount += filtered.length;
-        filtered.forEach((loan) => { if (loan.isTraveler) travelerEvents += 1; else employeeEvents += 1; });
+        filtered.forEach((loan) => { if (loan.isTraveler) travelerEvents += 1; else if (loan.userType === 'Contractor') contractorEvents += 1; else employeeEvents += 1; });
       }
     });
 
@@ -159,7 +163,7 @@ export default function InOutCalendar({
           if (l.isOverdue) overdueCount += 1;
           if (l.isReturned) completedReturns += 1;
           if (l.isTraveler) travelerEvents += 1;
-          else employeeEvents += 1;
+          else if (l.userType === 'Contractor') contractorEvents += 1; else employeeEvents += 1;
         });
       }
     });
@@ -171,6 +175,7 @@ export default function InOutCalendar({
       completedReturns,
       travelerEvents,
       employeeEvents,
+      contractorEvents,
       total: outgoingCount + incomingCount + pickedUpCount,
       pickedUpCount,
     };
@@ -220,7 +225,7 @@ export default function InOutCalendar({
                 setRequesterTypeFilter('ALL');
                 setSelectedRequester('ALL');
               }}
-              title="Display requests from all personnel (SPE employees and business travelers)"
+              title="Display requests from all personnel (employees, business travelers and contractors)"
             >
               All User Types ({requesterCounts.all})
             </button>
@@ -248,6 +253,8 @@ export default function InOutCalendar({
               <span className="pill-dot employee-dot" />
               🏢 SPE Employees ({requesterCounts.employees})
             </button>
+            <button type="button" className={`cal-filter-pill ${requesterTypeFilter === 'Contractor' ? 'active' : ''}`}
+              onClick={() => { setRequesterTypeFilter('Contractor'); setSelectedRequester('ALL'); }}>Contractors ({requesterCounts.contractors})</button>
           </div>
         </div>
 
@@ -268,7 +275,7 @@ export default function InOutCalendar({
               .filter((r) => requesterTypeFilter === 'ALL' || r.userType === requesterTypeFilter)
               .map((r) => (
                 <option key={r.name} value={r.name}>
-                  {r.name} ({r.userType === 'Business traveler' ? 'Traveler' : 'SPE Staff'} • {r.count} request{r.count === 1 ? '' : 's'})
+                  {r.name} ({r.userTypeLabel} • {r.count} request{r.count === 1 ? '' : 's'})
                 </option>
               ))}
           </select>
@@ -353,7 +360,7 @@ export default function InOutCalendar({
           <span className="active-filters-title">Active Filter:</span>
           {requesterTypeFilter !== 'ALL' && (
             <span className="filter-tag">
-              Type: {requesterTypeFilter === 'Business traveler' ? '💼 Business Traveler' : '🏢 SPE Employee'}
+              Type: {requesterTypeFilter}
               <button type="button" onClick={() => setRequesterTypeFilter('ALL')}>×</button>
             </span>
           )}
@@ -423,7 +430,7 @@ export default function InOutCalendar({
             💼 {monthStats.travelerEvents} Business Traveler
           </span>
           <span className="requester-mix-pill employee-mix">
-            🏢 {monthStats.employeeEvents} SPE Employee
+            🏢 {monthStats.employeeEvents} SPE Employee / {monthStats.contractorEvents} Contractor
           </span>
         </div>
       </div>
@@ -507,7 +514,7 @@ export default function InOutCalendar({
                       >
                         <span className="chip-icon">📥</span>
                         <span className={`chip-user-badge ${l.isTraveler ? 'traveler' : 'employee'}`}>
-                          {l.isTraveler ? 'TRV' : 'SPE'}
+                          {l.userType === 'Contractor' ? 'CTR' : l.isTraveler ? 'TRV' : 'SPE'}
                         </span>
                         <span className="chip-name">{l.assignee}</span>
                         {l.assetCode && <span className="chip-loc">• {l.assetCode}</span>}
@@ -537,7 +544,7 @@ export default function InOutCalendar({
                         >
                           <span className="chip-icon">{chipIcon}</span>
                           <span className={`chip-user-badge ${l.isTraveler ? 'traveler' : 'employee'}`}>
-                            {l.isTraveler ? 'TRV' : 'SPE'}
+                            {l.userType === 'Contractor' ? 'CTR' : l.isTraveler ? 'TRV' : 'SPE'}
                           </span>
                           <span className="chip-name">{l.assignee}</span>
                           {l.isOverdue && <span className="chip-loc">• Overdue</span>}
@@ -631,7 +638,7 @@ export default function InOutCalendar({
                             <div className="day-card-user-row">
                               <strong className="day-card-name">{loan.assignee}</strong>
                               <span className={`requester-type-pill-badge ${loan.isTraveler ? 'traveler' : 'employee'}`}>
-                                {loan.isTraveler ? '💼 Business Traveler' : '🏢 SPE Employee'}
+                                {loan.userTypeLabel}
                               </span>
                             </div>
                             <span className="day-card-sub">
@@ -756,7 +763,7 @@ export default function InOutCalendar({
                             <div className="day-card-user-row">
                               <strong className="day-card-name">{loan.assignee}</strong>
                               <span className={`requester-type-pill-badge ${loan.isTraveler ? 'traveler' : 'employee'}`}>
-                                {loan.isTraveler ? '💼 Business Traveler' : '🏢 SPE Employee'}
+                                {loan.userTypeLabel}
                               </span>
                             </div>
                             <span className="day-card-sub">

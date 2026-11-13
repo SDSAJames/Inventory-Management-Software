@@ -1,7 +1,7 @@
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
 import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from './ipAddress.js';
-import { buildLoanEquipment, buildReturnedEquipment, equipmentToForm, equipmentQuantitiesToForm, newLoanEquipmentForm, isBusinessTraveler, getMissingReturnItems } from './loanEquipment.js';
+import { buildLoanEquipment, buildReturnedEquipment, equipmentToForm, equipmentQuantitiesToForm, newLoanEquipmentForm, tracksEndDate, getMissingReturnItems } from './loanEquipment.js';
 import { findAssetByCode, matchesAssetCategory, PC_CATEGORIES, MONITOR_CATEGORIES } from './assetCategories.js';
 import { readableTransferNote } from './transferNotes.js';
 import { todayIso } from './utils.js';
@@ -18,7 +18,7 @@ export function createLoanForm(record, assigneeType = 'Business traveler') {
     ...ipAddressToForm(loan?.ip),
     startDate: loan ? (loan.startDate || loan.loanDate || '').slice(0, 10) : todayIso(),
     pickupDate: loan?.pickupDate || '', pickedUp: Boolean(loan?.pickupDate),
-    endDate: loan && isBusinessTraveler(loan.assigneeType) ? (loan.endDate || loan.dueDate || '').slice(0, 10) : '',
+    endDate: loan && tracksEndDate(loan.assigneeType) ? (loan.endDate || loan.dueDate || '').slice(0, 10) : '',
     returnDate: loan?.returnDate || loan?.returnedDate || '',
     location: loan?.location || '', department: loan?.department || '',
     ...(loan ? equipmentToForm(equipment) : newLoanEquipmentForm()),
@@ -36,14 +36,14 @@ export function loanFormErrors(form, { assets = [], validateDevices = false, con
     const monitor = String(form.monitor || '').trim();
     if (monitor && !matchesAssetCategory(findAssetByCode(assets, monitor)?.category, MONITOR_CATEGORIES)) errors.monitor = 'Select a monitor from the matching asset list';
   }
-  if (isBusinessTraveler(form.assigneeType) && form.startDate && form.endDate && form.endDate < form.startDate) errors.endDate = 'Due date cannot be earlier than start date';
+  if (tracksEndDate(form.assigneeType) && form.startDate && form.endDate && form.endDate < form.startDate) errors.endDate = 'Due date cannot be earlier than start date';
   if (isIpAddressInvalid(form)) errors.ip = 'IP subnet and number must each be between 0 and 255';
   return errors;
 }
 
 export function buildLoanFormData(form, { equipment = {}, includeReturn = false } = {}) {
   const assetCode = pcAssetCode(form.assetCode);
-  const endDate = isBusinessTraveler(form.assigneeType) ? form.endDate : '';
+  const endDate = tracksEndDate(form.assigneeType) ? form.endDate : '';
   return {
     assetCode, assignee: form.assignee.trim(), assigneeType: form.assigneeType, knoxId: form.knoxId.trim(),
     ip: buildIpAddress(form), startDate: form.startDate, loanDate: form.startDate, endDate, dueDate: endDate,

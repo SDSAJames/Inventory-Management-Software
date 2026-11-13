@@ -1,3 +1,4 @@
+import { assetMix } from '../lib/overviewAssets';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
@@ -27,11 +28,7 @@ export default function OverviewPage() {
   const overdueLoans = db.loans.filter(isLoanOverdue);
   const overdueCount = overdueLoans.length;
 
-  const categories = useMemo(() => {
-    return [...new Set(db.assets.map((a) => a.category))]
-      .map((cat) => ({ label: cat, count: db.assets.filter((a) => a.category === cat).length }))
-      .sort((a, b) => b.count - a.count);
-  }, [db.assets]);
+  const categories = useMemo(() => assetMix(db.assets), [db.assets]);
 
   const overdueAssetCodes = useMemo(
     () => new Set(overdueLoans.map((l) => String(l.assetCode || '').toLowerCase())),
@@ -64,28 +61,28 @@ export default function OverviewPage() {
     recent: {
       title: 'Recently updated',
       badge: `${db.assets.length} items`,
-      subtitle: 'Most recently created, edited, or transferred assets with modification dates',
+      subtitle: 'Latest saved change for each asset, including field details and recorded time',
       linkTarget: '/assets',
       linkText: 'View full register →',
     },
     all: {
       title: 'Total assets',
       badge: `${db.assets.length} items`,
-      subtitle: 'All assets in inventory sorted by modification date',
+      subtitle: 'All assets in inventory sorted by latest recorded change',
       linkTarget: '/assets',
       linkText: 'Open in asset register →',
     },
     available: {
       title: 'Available now',
       badge: `${available} items`,
-      subtitle: 'Assets ready for deployment or assignment sorted by modification date',
+      subtitle: 'Assets ready for deployment or assignment sorted by latest recorded change',
       linkTarget: '/assets?status=Available',
       linkText: 'View available in register →',
     },
     assigned: {
       title: 'On loan / assigned',
       badge: `${assigned} items`,
-      subtitle: 'Assets currently assigned to staff or on loan sorted by modification date',
+      subtitle: 'Assets currently assigned to staff or on loan sorted by latest recorded change',
       linkTarget: '/assets?status=Assigned',
       linkText: 'View assigned in register →',
     },
@@ -179,7 +176,7 @@ export default function OverviewPage() {
           </div>
           <AssetTable
             assets={displayedAssets}
-            pageSize={pageSize} resetKey={activeFilter} initialSort={{ key: 'updated', dir: 'desc' }}
+            pageSize={pageSize} resetKey={activeFilter} initialSort={{ key: 'activityTime', dir: 'desc' }} showLatestChange
             selectedIds={selectedIds} onToggleSelect={handleToggleSelect}
             onToggleSelectAll={handleToggleSelectAll} onRangeSelect={handleRangeSelect}
             showUpdatedDate={true}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
+import { updateLoanFormField, tracksEndDate } from '../lib/loanEquipment';
 import { createLoanForm, loanFormErrors, buildLoanFormData } from '../lib/loanForms';
 import LoanDirectoryFields from './LoanDirectoryFields';
 import LoanEquipmentSection from './LoanEquipmentSection';
@@ -55,7 +55,7 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
 
   return (
     <>
-      <h2>{isBusinessTraveler(form.assigneeType) ? 'Edit loan' : 'Edit assignment'}</h2>
+      <h2>{tracksEndDate(form.assigneeType) ? 'Edit loan' : 'Edit assignment'}</h2>
       <p className="modal-intro">
         Update the assignment or loan details. Pickup and return can be added here after creation.
       </p>

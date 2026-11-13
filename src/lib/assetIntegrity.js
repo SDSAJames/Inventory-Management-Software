@@ -6,7 +6,7 @@ import { getAssetLocationAfterReturn, getAssetLocation, getAssetStatusAfterRetur
  */
 import { todayIso, readableLoanDate, isLoanReturned } from './utils.js';
 
-import { isBusinessTravelerType } from '../../shared/loanRules.js';
+import { tracksEndDate } from '../../shared/loanRules.js';
 
 /**
  * Reconciles an asset against all loans in the database to derive its true latest
@@ -110,7 +110,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   });
 
   if (activeLoan) {
-    const activeStatus = isBusinessTravelerType(activeLoan.assigneeType) ? 'On loan' : 'Assigned';
+    const activeStatus = tracksEndDate(activeLoan.assigneeType) ? 'On loan' : 'Assigned';
     const needsUpdate =
       asset.status !== activeStatus ||
       asset.owner !== (activeLoan.assignee || '') ||

@@ -289,7 +289,7 @@ export default function ExchangePage() {
           <p>
             Import <code>SPE_IT_Equipment_Loan_List_Example.txt</code> extracted from Excel with columns:
             <br />
-            <code>Knox ID</code> • <code>Business Traveler</code> (1/0) • <code>Start Date</code> • <code>Pickup Date</code> • <code>End Date</code> • <code>Return Date</code> • <code>Laptop</code> • Accessories • <code>Note</code>
+            <code>Knox ID</code> • <code>Business Traveler</code> (1/0 or Contractor) • <code>Start Date</code> • <code>Pickup Date</code> • <code>End Date</code> • <code>Return Date</code> • <code>Laptop</code> • Accessories • <code>Note</code>
             <br />End Date is used only for business travelers.
           </p>
           <div className="exchange-card-actions">

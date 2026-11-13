@@ -1,3 +1,4 @@
+import { applyAssetActivity } from '../lib/overviewAssets';
 import { departmentDirectoryNames } from '../../shared/departmentDirectory.js';
 import { DEFAULT_OWNER } from '../../shared/referenceData.js';
 import { getAssetLocationAfterReturn, normalizeLocation, getAssetStatusAfterReturn, getAssetStatusForLoanEdit } from "../../shared/assetRules.js";
@@ -15,7 +16,7 @@ import {
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
-import { isBusinessTraveler, normalizeLoanEndDate } from '../lib/loanEquipment';
+import { tracksEndDate, normalizeLoanEndDate } from '../lib/loanEquipment';
 import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { api } from '../lib/api';
 import { normalizeDatabaseLocations, remapDatabaseLocation } from '../lib/databaseLocations';
@@ -169,7 +170,7 @@ export function DbProvider({ children }) {
       updated: todayIso(),
     };
     setDb((prev) => ({ ...prev, assets: [newAsset, ...prev.assets] }));
-    api.assets.create(newAsset).catch((err) => console.warn('Could not sync asset to server:', err.message));
+    api.assets.create(newAsset).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, [result.asset]) }))).catch((err) => console.warn('Could not sync asset to server:', err.message));
   }, []);
 
   const updateAsset = useCallback(async (id, changes) => {
@@ -244,7 +245,7 @@ export function DbProvider({ children }) {
         idSet.has(a.id) ? validateAssetStatus({ ...a, ...changes, updated: todayIso() }) : a,
       ),
     }));
-    api.assets.batchUpdate([...idSet], changes).catch((err) => console.warn('Could not sync batch asset update to server:', err.message));
+    api.assets.batchUpdate([...idSet], changes).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity) }))).catch((err) => console.warn('Could not sync batch asset update to server:', err.message));
   }, []);
 
   /** Append assets or update existing ones if overwriteAssets is true. Saves a restore point. */
@@ -355,7 +356,7 @@ export function DbProvider({ children }) {
         return {
           ...a,
           ...(a.code === assetUpdates?.code ? assetUpdates : {}),
-          status: isBusinessTraveler(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned',
+          status: tracksEndDate(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned',
           owner,
           location: effectiveLoan.location || a.location,
           ownershipHistory: [history, ...(a.ownershipHistory || [])],
@@ -372,7 +373,7 @@ export function DbProvider({ children }) {
           model: '',
           serial: '',
           status: effectiveLoan.pickupDate
-            ? (isBusinessTraveler(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned')
+            ? (tracksEndDate(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned')
             : 'Available',
           location: assetUpdates.location || '',
           owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : DEFAULT_OWNER),
@@ -405,7 +406,7 @@ export function DbProvider({ children }) {
       };
     });
 
-    api.loans.create(effectiveLoan).catch((err) => console.warn('Could not sync loan creation to server:', err.message));
+    api.loans.create(effectiveLoan).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity) }))).catch((err) => console.warn('Could not sync loan creation to server:', err.message));
   }, []);
 
   const updateLoan = useCallback(async (id, changes) => {
@@ -415,7 +416,7 @@ export function DbProvider({ children }) {
       loans: previous.loans.map((loan) => loan.id === id ? { ...loan, ...result.loan } : loan),
       assets: previous.assets.map((asset) => {
         const saved = (result.assets || []).find((item) => item.id === asset.id);
-        return saved ? { ...asset, ...saved } : asset;
+        return saved ? { ...asset, ...saved, latestChange: saved.latest_change ?? saved.latestChange ?? '', changedAt: saved.changed_at ?? saved.changedAt ?? '' } : asset;
       }),
     }));
     return result.loan;
@@ -423,7 +424,7 @@ export function DbProvider({ children }) {
 
   const pickupLoan = useCallback(async (id, pickupDate, details = {}) => {
     const timestamp = pickupDate || todayIso();
-    await api.loans.pickup(id, { pickupDate: timestamp, ...details });
+    const result = await api.loans.pickup(id, { pickupDate: timestamp, ...details });
     setDb((prev) => {
       const loan = prev.loans.find((l) => l.id === id);
       if (!loan) return prev;
@@ -466,7 +467,7 @@ export function DbProvider({ children }) {
         });
         return {
           ...a,
-          status: isBusinessTraveler(merged.assigneeType) ? 'On loan' : 'Assigned',
+          status: tracksEndDate(merged.assigneeType) ? 'On loan' : 'Assigned',
           owner,
           location: details.location || loan.location || a.location,
           department: merged.department ?? a.department,
@@ -474,7 +475,7 @@ export function DbProvider({ children }) {
           updated: todayIso(),
         };
       });
-      return { ...prev, loans: nextLoans, assets: nextAssets };
+      return { ...prev, loans: nextLoans, assets: applyAssetActivity(nextAssets, result.assetActivity) };
     });
 
 
@@ -576,7 +577,7 @@ export function DbProvider({ children }) {
         if (a.code === expectedAssetCode && expectedAssetCode && !returnedAssetCodes.has(expectedAssetCode)) {
           return {
             ...a,
-            status: isBusinessTraveler(loan.assigneeType) ? 'On loan' : 'Assigned',
+            status: tracksEndDate(loan.assigneeType) ? 'On loan' : 'Assigned',
             owner: loan.assignee || a.owner,
             updated: todayIso(),
           };
@@ -586,7 +587,7 @@ export function DbProvider({ children }) {
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
-    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).catch((err) => console.warn('Could not sync loan return to server:', err.message));
+    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity) }))).catch((err) => console.warn('Could not sync loan return to server:', err.message));
   }, []);
 
   const unarchiveLoan = useCallback((id) => {

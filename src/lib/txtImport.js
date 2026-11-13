@@ -1,3 +1,4 @@
+import { borrowerType, tracksEndDate } from '../../shared/loanRules.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
@@ -307,7 +308,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
   const colNo = findIdx(['index', 'no', 'number', 'seq', 'id', 'colno']);
   const colName = findIdx(['name', 'assignee', 'borrower']);
   const colKnoxId = findIdx(['knoxid', 'issuedknoxid']);
-  const colBusinessTraveler = findIdx(['businesstraveler', 'businesstraveller']);
+  const colBusinessTraveler = findIdx(['businesstraveler', 'businesstraveller', 'borrowertype', 'assigneetype']);
   const colLocation = findIdx(['rentallocation', 'location', 'facility']);
   const colIp = findIdx(['ip', 'ipaddress']);
   const colStartDate = findIdx(['startdate', 'loandate']);
@@ -347,9 +348,9 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
     const no = colNo >= 0 ? String(row[colNo] || '').trim() : String(i);
     const startDate = colStartDate >= 0 ? normalizeTextDate(row[colStartDate]) : '';
     const pickupDate = colPickupDate >= 0 ? normalizeTextDate(row[colPickupDate]) : '';
-    const isBusinessTraveler = colBusinessTraveler < 0 ||
-      String(row[colBusinessTraveler] || '').trim() === '1';
-    const endDate = isBusinessTraveler && colEndDate >= 0
+    const rawType = colBusinessTraveler < 0 ? '1' : String(row[colBusinessTraveler] ?? '').trim();
+    const assigneeType = rawType === '1' ? 'Business traveler' : rawType === '0' || !rawType ? 'Employee' : borrowerType(rawType);
+    const endDate = tracksEndDate(assigneeType) && colEndDate >= 0
       ? normalizeTextDate(row[colEndDate])
       : '';
     const returnDate = colReturnDate >= 0 ? normalizeTextDate(row[colReturnDate]) : '';
@@ -407,7 +408,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
       no: no || String(i),
       assetCode,
       assignee,
-      assigneeType: isBusinessTraveler ? 'Business traveler' : 'Employee',
+      assigneeType,
       knoxId,
       location,
       ip,

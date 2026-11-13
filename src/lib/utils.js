@@ -1,4 +1,4 @@
-import { getLoanEndDate, isBusinessTraveler } from './loanEquipment.js';
+import { getLoanEndDate, tracksEndDate } from './loanEquipment.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
 import { excelSerialDate } from './spreadsheetValues.js';
 import { formatCalendarDateTime } from '../../shared/dateTime.js';
@@ -100,7 +100,7 @@ export function normalizeDateToIso(raw) {
 export function isLoanOverdue(loan) {
   if (!loan) return false;
   if (isLoanReturned(loan)) return false;
-  if (!isBusinessTraveler(loan.assigneeType)) return false;
+  if (!tracksEndDate(loan.assigneeType)) return false;
   if (loan.status === 'Overdue') return true;
 
   const rawEnd = getLoanEndDate(loan);

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { todayIso } from '../lib/utils';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { updateLoanFormField, isBusinessTraveler } from '../lib/loanEquipment';
+import { updateLoanFormField, tracksEndDate } from '../lib/loanEquipment';
 import { createLoanForm, loanFormErrors, buildLoanFormData } from '../lib/loanForms';
 import LoanDirectoryFields from './LoanDirectoryFields';
 import LoanEquipmentSection from './LoanEquipmentSection';
@@ -74,7 +74,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     } : null;
 
     addLoan(loanData, assetUpdates, newEmployee);
-    const recordType = isBusinessTraveler(form.assigneeType) ? 'Loan' : 'Assignment';
+    const recordType = tracksEndDate(form.assigneeType) ? 'Loan' : 'Assignment';
     toast(form.pickupDate ? `${recordType} recorded with pickup date` : `${recordType} scheduled successfully`);
 
     if (onSuccess) {
@@ -88,7 +88,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       <div className="modal-header-section">
         <h2>Record assignment or loan</h2>
         <p className="modal-intro">
-          Assign equipment to an employee or loan it to a business traveler. Only Knox ID is required. Leave Picked up unchecked to schedule equipment without changing inventory.
+          Assign equipment to an employee or loan it to a business traveler or contractor. Only Knox ID is required. Leave Picked up unchecked to schedule equipment without changing inventory.
         </p>
       </div>
 

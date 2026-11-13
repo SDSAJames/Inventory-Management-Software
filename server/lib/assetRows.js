@@ -24,6 +24,8 @@ export function formatOwnershipAuditRow(row) {
 export function formatAssetRow(asset, history, formatHistory = formatOwnershipRow) {
   return {
     ...asset,
+    changedAt: asset.changed_at || '',
+    latestChange: asset.latest_change || '',
     issuedName: asset.issued_name || '',
     issuedDate: asset.issued_date || '',
     purchaseDate: asset.purchase_date || '',

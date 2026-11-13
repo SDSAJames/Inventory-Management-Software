@@ -1,5 +1,5 @@
 import { getLoanStatus } from './utils.js';
-import { getMissingReturnItems, isBusinessTraveler } from './loanEquipment.js';
+import { getMissingReturnItems, tracksEndDate } from './loanEquipment.js';
 
 export const LOAN_SEARCH_FIELDS = [
   'All fields',
@@ -65,7 +65,7 @@ export function groupLoans(loans = []) {
   const statusKeys = { Scheduled: 'scheduled', Loaned: 'loaned', Overdue: 'overdue', Returned: 'returned' };
   for (const loan of loans) {
     const status = getLoanStatus(loan);
-    if (status === 'Loaned' && !isBusinessTraveler(loan.assigneeType)) {
+    if (status === 'Loaned' && !tracksEndDate(loan.assigneeType)) {
       groups.assigned.push(loan);
     } else {
       groups[statusKeys[status]].push(loan);

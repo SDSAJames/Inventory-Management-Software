@@ -349,6 +349,8 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           a.created_at
         );
         saveAssetIssuedFields(db, a.id, a);
+        if (a.latest_change || a.latestChange) db.prepare('UPDATE assets SET latest_change = ?, changed_at = ? WHERE id = ?').run(
+          typeof (a.latest_change || a.latestChange) === 'string' ? a.latest_change || a.latestChange : JSON.stringify(a.latestChange), a.changed_at || a.changedAt || null, a.id);
         if (Array.isArray(a.ownershipHistory)) {
           for (const h of a.ownershipHistory) {
             insertHistory.run(

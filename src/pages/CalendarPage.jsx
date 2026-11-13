@@ -27,6 +27,7 @@ export default function CalendarPage() {
     let returned = 0;
     let travelers = 0;
     let employees = 0;
+    let contractors = 0;
 
     loans.forEach((l) => {
       const isReturned = isLoanReturned(l);
@@ -35,7 +36,7 @@ export default function CalendarPage() {
 
       const isTraveler = isBusinessTraveler(l.assigneeType);
       if (isTraveler) travelers += 1;
-      else employees += 1;
+      else if (l.assigneeType === 'Contractor') contractors += 1; else employees += 1;
 
       if (isReturned) {
         returned += 1;
@@ -57,6 +58,7 @@ export default function CalendarPage() {
       returned,
       travelers,
       employees,
+      contractors,
     };
   }, [db.loans]);
 
@@ -107,7 +109,7 @@ export default function CalendarPage() {
           <div className="stat-label">Total Custody Records</div>
           <div className="stat-value">{metrics.total}</div>
           <div className="stat-hint">
-            <strong>{metrics.travelers}</strong> Business Travelers • <strong>{metrics.employees}</strong> SPE Employees
+            <strong>{metrics.travelers}</strong> Business Travelers • <strong>{metrics.employees}</strong> SPE Employees • <strong>{metrics.contractors}</strong> Contractors
           </div>
         </div>
       </section>

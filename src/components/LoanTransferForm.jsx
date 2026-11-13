@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { api } from '../lib/api';
 import { useDb } from '../hooks/useDb';
 import { TRANSFER_ITEMS } from '../../shared/loanTransfer.js';
-import { isLoanReturned } from '../../shared/loanRules.js';
+import { isLoanReturned, tracksEndDate } from '../../shared/loanRules.js';
 import { todayIso, nowLocalIso } from '../lib/utils';
 export default function LoanTransferForm({ loan, onClose }) {
   const { db, setDb } = useDb();
@@ -45,7 +45,7 @@ export default function LoanTransferForm({ loan, onClose }) {
       setDb((previous) => ({ ...previous, ...result.db })); onClose();
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
-  return <form onSubmit={submit}><h2>Transfer equipment</h2><p>Select items moving to the new holder and record whether they are an employee assignment or business-traveler loan. The previous holder's completed record is preserved.</p>
+  return <form onSubmit={submit}><h2>Transfer equipment</h2><p>Select items moving to the new holder and record whether they are an employee assignment or a business-traveler or contractor loan. The previous holder's completed record is preserved.</p>
     <div className="field"><label htmlFor="equipment-transfer-date">Transfer date &amp; time *</label><DateInput id="equipment-transfer-date" type="datetime-local" required value={transferDate} onChange={(event) => setTransferDate(event.target.value)} /></div>
     <div className="field">
       <label htmlFor="transfer-schedule-search">Search pickup schedules by Knox ID or name</label>
@@ -58,7 +58,7 @@ export default function LoanTransferForm({ loan, onClose }) {
     <div className="form-grid"><AssigneeFields form={{ assigneeType, assignee, knoxId }} includeIp={false} idPrefix="transfer-"
       onChange={(field, value) => ({ assigneeType: setAssigneeType, assignee: setAssignee, knoxId: setKnoxId })[field](value)} /></div>
     </fieldset>
-    <div className="form-grid"><div className="field"><label htmlFor="transfer-start">Start date{assigneeType === 'Business traveler' ? ' *' : ''}</label><DateInput id="transfer-start" type="date" required={assigneeType === 'Business traveler'} value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>{assigneeType === 'Business traveler' && <div className="field"><label htmlFor="transfer-end">End date *</label><DateInput id="transfer-end" type="date" required min={startDate || undefined} value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>}</div>
+    <div className="form-grid"><div className="field"><label htmlFor="transfer-start">Start date{tracksEndDate(assigneeType) ? ' *' : ''}</label><DateInput id="transfer-start" type="date" required={tracksEndDate(assigneeType)} value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>{tracksEndDate(assigneeType) && <div className="field"><label htmlFor="transfer-end">End date *</label><DateInput id="transfer-end" type="date" required min={startDate || undefined} value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>}</div>
     <button type="button" className="button ghost" onClick={() => setSelection(Object.fromEntries(items.map((key) => [key, String(equipment[key])])))}>Select all</button>
     <button type="button" className="button ghost" onClick={() => setSelection({})}>Clear all</button>
     <div className="equipment-grid">{items.map((key) => <div className="field" key={key}><label><input type="checkbox" checked={Boolean(selection[key])} onChange={(e) => setSelection((previous) => ({ ...previous, [key]: e.target.checked ? String(equipment[key]) : '' }))} /> {key === 'Dongle' ? 'USB Dongle' : key} ({equipment[key]})</label>{selection[key] && !['Laptop', 'Monitor'].includes(key) && Number.isFinite(Number(equipment[key])) && <EquipmentQuantityInput aria-label={`${key} quantity to transfer`} min="1" max={Number(equipment[key])} value={selection[key]} onChange={(e) => setSelection((previous) => ({ ...previous, [key]: e.target.value }))} />}</div>)}</div>

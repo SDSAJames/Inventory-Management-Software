@@ -451,3 +451,15 @@ test('Directory departments include assignment-only history and mark it in use',
   assert.ok(nodes(row).some((node) => node.props.className === 'directory-edit-state locked'));
   assert.ok(nodes(row).some((node) => node.type === 'small' && node.props.children[0] === 1));
 });
+
+
+test('contractor forms enable due dates and table badges retain the distinct borrower type', () => {
+  const loan = { id: 'contract', knoxId: 'contractor', assigneeType: 'Contractor', startDate: '2026-11-01', endDate: '2026-12-01', equipment: {} };
+  const app = harness({ loans: [loan] });
+  let tree = nodes(app.render('EditLoanForm', { loanId: 'contract', onClose() {} }));
+  assert.ok(tree.some((node) => node.type === 'option' && node.props.value === 'Contractor'));
+  assert.equal(tree.find((node) => node.props.id === 'endDate').props.disabled, false);
+  const table = harness();
+  tree = nodes(table.render('LoanTable', { loans: [loan], assets: [], scheduled: true }));
+  assert.ok(tree.some((node) => node.props.className === 'assignee-badge' && node.props.children[0] === 'Contractor'));
+});

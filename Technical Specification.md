@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.17.5** |
+| **Specification Version** | **v1.18.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 13, 2026 |
@@ -343,7 +343,7 @@ The Assets table allows instantaneous ownership reassignment by clicking directl
 
 ### 5.1 Loan Equipment Transfers
 
-`POST /api/loans/:id/transfer` accepts `knoxId`, optional `assignee`, `assigneeType`, `startDate`, `endDate`, optional `scheduleId`, and a `selection` object keyed by equipment storage names. The source must have a pickup date and remain outstanding. The new Knox ID must differ from the source owner. Business travelers require valid start and end dates with end on or after start. A selected schedule supplies recipient identity and default dates and must still await pickup. `shared/loanTransfer.js` validates device identities and quantities and splits transferred equipment from remaining custody.
+`POST /api/loans/:id/transfer` accepts `knoxId`, optional `assignee`, `assigneeType`, `startDate`, `endDate`, optional `scheduleId`, and a `selection` object keyed by equipment storage names. The source must have a pickup date and remain outstanding. The new Knox ID must differ from the source owner. Business travelers and contractors require valid start and end dates with end on or after start. A selected schedule supplies recipient identity and default dates and must still await pickup. `shared/loanTransfer.js` validates device identities and quantities and splits transferred equipment from remaining custody.
 
 `server/lib/loanTransfer.js` uses a SQLite savepoint to create the destination record or fulfill the selected schedule in place, update the source, and record ownership changes for registered PCs and monitors. Any failure rolls back all those writes. Source and destination notes link the records and retain transferred item values. A fully transferred source uses stored status `Transferred` and `isArchived = 1`; its table label remains Transferred in the archived lifecycle group. The transfer leaves actual return dates blank. The destination records pickup at transfer time with reviewed dates and recipient rental context. Fulfilling a schedule preserves its ID and notes, replaces planned quantities with actual transferred equipment, clears readiness, and sets `equipment.PickupMethod` to `Transfer`. The table displays Pickup by transfer beside its pickup time. Employee destinations have no due date.
 
@@ -529,3 +529,11 @@ Checkbox-origin gestures: AssetTable identifies data-row-selection inputs as val
 The shared `departmentDirectoryNames` collector merges explicit Directory names with saved record departments and sorts/deduplicates them. DbProvider applies it on initial cache load and every shared state update, making choices visible immediately across modules. Directory department rows also show assignment/pickup history counts and mark historical or employee references In use. Tests cover legacy backfill, transactional rollback, duplicate prevention, history-only protection, pickup-to-export linking and restore under unique department constraints.
 
 AssetRegisterTable wraps AssetTable with showDepartment=true and showUpdatedDate=false. AssetsPage and AssetLocationList reuse this wrapper for both registers and MES location drilldowns. When showDepartment is enabled, headers and cells use Asset number, Category, Status, Current holder, Department and Location order, using the existing sortTableRows path. Department is also included in register search mappings. Other table callers retain their existing column defaults.
+
+### Asset activity and Overview presentation
+
+ensureAssetActivity adds latest_change JSON and changed_at TEXT to assets and installs insert/update triggers. Watched business fields produce one old/new delta array and a UTC timestamp from SQLite; reads, unchanged writes and metadata-only updates do not replace it. Asset API/export mapping exposes latestChange and changedAt. Write responses refresh metadata in the client, while snapshots and raw undo retain saved metadata. Overview's shared table sorts by the recorded change timestamp and presents a local timestamp through seconds; legacy date-only values explicitly indicate missing time. assetMix groups Laptop and parenthesized Laptop variants without mutating model categories.
+
+### Contractor identity and due-date policy
+
+shared/loanRules.js exports BORROWER_TYPES, borrowerType and tracksEndDate. isBusinessTravelerType remains a strict traveler predicate for traveler-specific views. Due-date handling across client forms, grouping, overdue checks, custody status, server serialization and transfers uses tracksEndDate, true for Contractor and Business traveler. Shared AssigneeFields renders all three options. Calendar presentation uses distinct borrower labels and Contractor filtering/counts. The existing loan spreadsheet type column accepts Contractor alongside legacy 1/0 and named type values; exports preserve contractor identity and due dates. Regression tests exercise API create/edit/pickup/transfer, spreadsheet round trips, Overview grouping and transactional activity timestamps.

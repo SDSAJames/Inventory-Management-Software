@@ -4737,3 +4737,6 @@ textarea.input-error-red {
 .selection-count { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--blue); }
 .pagination { display: flex; justify-content: flex-end; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 0; font-size: 12px; color: var(--muted); }
 .asset-location-group .pagination { padding: 12px; }
+
+.asset-latest-change { min-width: 220px; max-width: 440px; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+.asset-change-time { white-space: nowrap; font-size: 12px; }

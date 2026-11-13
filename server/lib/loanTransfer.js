@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { splitLoanEquipment, equipmentForTransferredPickup } from '../../shared/loanTransfer.js';
-import { isBusinessTravelerType, isLoanReturned } from '../../shared/loanRules.js';
+import { borrowerType, tracksEndDate, isLoanReturned } from '../../shared/loanRules.js';
 import { formatCalendarDateTime } from '../../shared/dateTime.js';
 
 export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate, transferDate, timeZone = 'UTC' }) {
@@ -19,12 +19,12 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const zoneLabel = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' }).formatToParts(new Date(now)).find((part) => part.type === 'timeZoneName').value;
   const transferTime = `${localTimestamp} ${zoneLabel}`;
   const targetAssignee = String(schedule ? schedule.assignee || '' : assignee).trim();
-  const targetType = isBusinessTravelerType(schedule ? schedule.assignee_type : assigneeType) ? 'Business traveler' : 'Employee';
+  const targetType = borrowerType(schedule ? schedule.assignee_type : assigneeType);
   const targetStart = startDate ?? schedule?.start_date ?? localTimestamp.slice(0, 10);
-  const targetEnd = targetType === 'Business traveler' ? endDate ?? schedule?.end_date ?? '' : '';
+  const targetEnd = tracksEndDate(targetType) ? endDate ?? schedule?.end_date ?? '' : '';
   const validDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
-  if (targetType === 'Business traveler' && (!validDate(targetStart) || !validDate(targetEnd))) throw new Error('Business traveler transfers require valid start and end dates');
-  if (targetType === 'Business traveler' && targetEnd < targetStart) throw new Error('End date cannot be earlier than start date');
+  if (tracksEndDate(targetType) && (!validDate(targetStart) || !validDate(targetEnd))) throw new Error(targetType + ' transfers require valid start and end dates');
+  if (tracksEndDate(targetType) && targetEnd < targetStart) throw new Error('End date cannot be earlier than start date');
   const targetEquipment = equipmentForTransferredPickup(JSON.parse(schedule?.equipment_json || '{}'), transferred);
   const transferredSummary = Object.entries(transferred)
     .map(([key, value]) => `${key === 'Dongle' ? 'USB Dongle' : key}: ${value}`)
@@ -80,7 +80,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
       if (!asset) continue;
       database.prepare('UPDATE assets SET owner = ?, status = ?, location = ?, department = ?, updated = ? WHERE id = ?').run(
         target.assignee || targetKnox,
-        targetType === 'Business traveler' ? 'On loan' : 'Assigned',
+        tracksEndDate(targetType) ? 'On loan' : 'Assigned',
         target.location || asset.location || '',
         target.department || '',
         now.slice(0, 10),
