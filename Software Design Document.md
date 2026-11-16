@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.19.0** |
+| **Document Version** | **v1.20.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 16, 2026 |
@@ -411,6 +411,16 @@ Recent updates combine the latest real asset change with activity on linked assi
 
 A shared custody policy keeps employee equipment Assigned and business-traveler/contractor equipment On loan through editing and reconciliation. Overview adds a location distribution diagram with counts and percentages next to its category mix. Assignments & Pickups initializes its shared table to ascending start dates while keeping manual sort controls.
 
+### Responsive Overview containment
+
+Wide record tables remain inside shrinking panel/grid tracks with local horizontal scrolling. Overview places its category/location dashboard above a full-width records panel. Charts share a row on wide screens and stack below 1200px; quick actions sit below the charts. Main-content limits follow desktop/tablet sidebar sizes; phone navigation becomes a compact header. Action groups and chart labels wrap within available space.
+
+### Interactive distributions and independent storage
+
+Overview category and location distributions share one diagram component. Segment and legend hover/focus highlight the same item and expose its count and percentage; keyboard and reduced-motion behavior are supported.
+
+Custody holder and physical storage are independent. Saving unchanged IT Department custody preserves the selected location, including maintenance states other than the required repair destination. Historical return records do not relocate equipment during reconciliation; actual returns still choose the default destination.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.19.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.20.1**.

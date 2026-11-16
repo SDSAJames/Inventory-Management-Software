@@ -9,6 +9,57 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-16',
+    title: 'Full-width Overview Records',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Move the asset dashboard above Recently updated so records use the full page width.',
+    highlights: ['Place category and location diagrams above the records.', 'Give Recently updated the entire content width.'],
+    sections: [
+      { heading: 'Overview Layout', badge: 'UI', items: [
+        'Show Asset mix and Asset locations side by side on wide screens and stack them on smaller screens.',
+        'Keep shared diagram interactions, quick actions, record sorting, pagination and selection available.',
+      ] },
+    ],
+  },
+  {
+    version: '1.20.0',
+    date: '2026-11-16',
+    title: 'Interactive Asset Diagrams & Independent Storage Locations',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Make both Overview distributions interactive and preserve manually selected locations for IT custody.',
+    highlights: ['Show Asset mix as a diagram with hover and keyboard feedback.', 'Keep IT Department custody independent of the selected storage room.'],
+    sections: [
+      { heading: 'Interactive Diagrams', badge: 'Feature', items: [
+        'Reuse one distribution diagram for Asset mix and Asset locations, with counts and percentages.',
+        'Highlight hovered or focused segments and matching legend entries; dim other segments and show detail text.',
+        'Support keyboard focus, Enter/Space, legend clicks and reduced-motion preferences.',
+      ] },
+      { heading: 'Storage Locations', badge: 'Fix', items: [
+        'Preserve manual location changes when the holder remains IT Department, including Damaged or Retired assets.',
+        'Keep selected storage rooms through full and partial saves, batch updates, historical-return reconciliation and server restart.',
+        'Keep actual returns defaulting to IT Office and repairs directed to service center.',
+      ] },
+    ],
+  },
+  {
+    version: '1.19.1',
+    date: '2026-11-16',
+    title: 'Responsive Overview Layout',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Keep the recent-update table and asset charts within the viewport.',
+    highlights: ['Contain wide tables inside their panels and keep Asset mix and location diagrams visible.'],
+    sections: [{ heading: 'Responsive Layout', badge: 'Fix', items: [
+      'Allow grid tracks and panels to shrink so wide activity columns scroll inside the table instead of pushing charts offscreen.',
+      'Give Overview charts a bounded desktop column and stack panels below 1200px.',
+      'Correct main-content width limits as the sidebar changes size; use a compact, non-sticky navigation header on phones.',
+      'Wrap panel and account actions and long chart labels on narrow layouts.',
+    ] }],
+  },
+  {
+    version: '1.19.0',
+    date: '2026-11-16',
     title: 'Assignment Activity, Editor Attribution & Location Diagram',
     tag: 'Feature Release',
     type: 'minor',

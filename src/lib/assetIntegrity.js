@@ -149,7 +149,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
         owner: DEFAULT_OWNER,
         department: '',
         status: getAssetStatusAfterReturn(asset.status),
-        location: asset.status === 'Available' ? asset.location : getAssetLocationAfterReturn(asset.status),
+        location: asset.location || getAssetLocationAfterReturn(asset.status),
         updated: asset.updated || '',
       };
     }

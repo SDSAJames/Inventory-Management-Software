@@ -487,7 +487,8 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
           todayIso(),
           asset.id
         );
-        if (status === 'Available' || status === 'Under repair') {
+        const returnChanges = getHolderReturnChanges(asset, { ...changes, owner: asset.owner });
+        if ((status === 'Available' || status === 'Under repair') && returnChanges) {
           const returnedAt = new Date().toISOString();
           recordHolderReturn(db, asset.code, returnedAt);
           returnAssetToIt(db, asset.code, todayIso());
@@ -498,6 +499,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
             );
           }
         }
+        if (status === 'Available' && !returnChanges) db.prepare("UPDATE assets SET owner = ?, department = '' WHERE id = ?").run(DEFAULT_OWNER, asset.id);
         updatedCount++;
       }
     }

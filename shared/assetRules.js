@@ -47,10 +47,12 @@ export function getHolderReturnChanges(previous, changes) {
   }
   if (!previous || (!String(previous.owner || '').trim() && changes.status !== 'Available')) return null;
   if (!Object.hasOwn(changes, 'owner') && changes.status !== 'Available') return null;
-  const nextOwner = String(changes.owner || '').trim().toLowerCase();
+  const nextOwner = String(Object.hasOwn(changes, 'owner') ? changes.owner || '' : previous.owner || '').trim().toLowerCase();
   const previousOwner = String(previous.owner || '').trim().toLowerCase();
-  // Saving unchanged IT custody must allow an independent location edit.
-  if (nextOwner === previousOwner && previous.status === 'Available' && changes.status === 'Available') return null;
+  // IT custody is independent of the room where equipment is stored.
+  // Only a real return or a repair transition should choose a return destination.
+  if (nextOwner === previousOwner && (previousOwner === 'it department' ||
+      (!previousOwner && previous.status === 'Available' && changes.status === 'Available'))) return null;
   if (changes.status !== 'Available' && nextOwner && nextOwner !== 'it department') return null;
   const status = getAssetStatusAfterReturn(changes.status ?? previous.status);
   return { owner: DEFAULT_OWNER, department: '', status, location: getAssetLocationAfterReturn(status) };

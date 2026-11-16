@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { isLoanOverdue } from '../lib/utils';
 import StatCard from '../components/StatCard';
-import BarChart from '../components/BarChart';
+import DistributionChart from '../components/DistributionChart';
 import LocationDistribution from '../components/LocationDistribution';
 import useAssetSelection from '../hooks/useAssetSelection';
 import { RowCountSelect, SelectionCount } from '../components/Pagination';
@@ -129,7 +129,30 @@ export default function OverviewPage() {
         />
       </div>
 
-      <div className="content-grid">
+      <div className="content-grid overview-grid">
+        <section className="panel overview-dashboard-panel" aria-label="Asset dashboard">
+          <div className="overview-dashboard">
+            <div>
+              <div className="panel-heading"><h3>Asset mix</h3></div>
+              <DistributionChart items={categories} label="Asset mix" />
+            </div>
+            <div>
+              <div className="panel-heading"><h3>Asset locations</h3></div>
+              <LocationDistribution items={locations} />
+            </div>
+          </div>
+          <div className="overview-quick-actions">
+            <h3>Quick actions</h3>
+            <div className="quick-actions">
+              <button onClick={() => setModal('loan')}>
+                <span className="quick-icon">↗</span>Record assignment or loan
+              </button>
+              <button onClick={() => navigate('/exchange')}>
+                <span className="quick-icon">⇄</span>Import Excel
+              </button>
+            </div>
+          </div>
+        </section>
         <section className="panel">
           <div className="panel-heading" style={{ flexWrap: 'wrap', gap: '8px', alignItems: 'flex-start' }}>
             <div>
@@ -143,7 +166,7 @@ export default function OverviewPage() {
                 {filterMeta[activeFilter].subtitle}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className="overview-panel-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               {activeFilter !== 'recent' && (
                 <button
                   type="button"
@@ -175,26 +198,7 @@ export default function OverviewPage() {
           />
         </section>
 
-        <section className="panel">
-          <div className="panel-heading">
-            <h3>Asset mix</h3>
-          </div>
-          <BarChart items={categories} total={db.assets.length} />
-          <div className="panel-heading" style={{ marginTop: 24 }}><h3>Asset locations</h3></div>
-          <LocationDistribution items={locations} />
 
-          <div className="panel-heading" style={{ marginTop: 30 }}>
-            <h3>Quick actions</h3>
-          </div>
-          <div className="quick-actions">
-            <button onClick={() => setModal('loan')}>
-              <span className="quick-icon">↗</span>Record assignment or loan
-            </button>
-            <button onClick={() => navigate('/exchange')}>
-              <span className="quick-icon">⇄</span>Import Excel
-            </button>
-          </div>
-        </section>
       </div>
 
       {/* Asset modal */}

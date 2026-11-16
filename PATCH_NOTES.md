@@ -6,6 +6,65 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.1] — 2026-11-16
+
+### Full-width Overview Records
+
+Move the asset dashboard above Recently updated so records use the full page width.
+
+#### Highlights
+- Place category and location diagrams above the records.
+- Give Recently updated the entire content width.
+
+#### Overview Layout
+
+- Show Asset mix and Asset locations side by side on wide screens and stack them on smaller screens.
+- Keep shared diagram interactions, quick actions, record sorting, pagination and selection available.
+
+---
+
+## [1.20.0] — 2026-11-16
+
+### Interactive Asset Diagrams & Independent Storage Locations
+
+Make both Overview distributions interactive and preserve manually selected locations for IT custody.
+
+#### Highlights
+- Show Asset mix as a diagram with hover and keyboard feedback.
+- Keep IT Department custody independent of the selected storage room.
+
+#### Interactive Diagrams
+
+- Reuse one distribution diagram for Asset mix and Asset locations, with counts and percentages.
+- Highlight hovered or focused segments and matching legend entries; dim other segments and show detail text.
+- Support keyboard focus, Enter/Space, legend clicks and reduced-motion preferences.
+
+#### Storage Locations
+
+- Preserve manual location changes when the holder remains IT Department, including Damaged or Retired assets.
+- Keep selected storage rooms through full and partial saves, batch updates, historical-return reconciliation and server restart.
+- Keep actual returns defaulting to IT Office and repairs directed to service center.
+
+---
+
+## [1.19.1] — 2026-11-16
+
+### Responsive Overview Layout
+
+Keep the recent-update table and asset charts within the viewport.
+
+#### Highlights
+- Contain wide tables inside their panels and keep Asset mix and location diagrams visible.
+
+#### Responsive Layout
+
+- Allow grid tracks and panels to shrink so wide activity columns scroll inside the table instead of pushing charts offscreen.
+- Give Overview charts a bounded desktop column and stack panels below 1200px.
+- Correct main-content width limits as the sidebar changes size; use a compact, non-sticky navigation header on phones.
+- Wrap panel and account actions and long chart labels on narrow layouts.
+
+---
+
 ## [1.19.0] — 2026-11-16
 
 ### Assignment Activity, Editor Attribution & Location Diagram

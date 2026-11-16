@@ -421,6 +421,23 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(result.asset.location, 'New location');
       assert.equal(db.prepare('SELECT location FROM assets WHERE id = ?').get('location-edit').location, 'New location');
     });
+    await t.test('IT-owned damaged equipment retains manual location through full save and reconciliation', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'storage-pc', code: 'PC-STORAGE', category: 'Laptop' });
+      invoke(loansRouter, 'post', '/', { id: 'storage-return', knoxId: 'storage.person', assetCode: 'PC-STORAGE', pickupDate: '2026-11-01' });
+      invoke(loansRouter, 'post', '/:id/return', { returnDate: '2026-11-02' }, { id: 'storage-return' });
+      const historyCount = db.prepare("SELECT COUNT(*) AS n FROM ownership_history WHERE asset_code = 'PC-STORAGE'").get().n;
+      invoke(assetsRouter, 'put', '/:id', { owner: 'IT Department', status: 'Damaged', location: 'IT Storage room' }, { id: 'storage-pc' });
+      const saved = invoke(exchangeRouter, 'get', '/export', {}).db.assets.find((asset) => asset.code === 'PC-STORAGE');
+      assert.equal(saved.location, 'IT Storage room'); assert.equal(saved.owner, 'IT Department');
+      assert.equal(db.prepare("SELECT COUNT(*) AS n FROM ownership_history WHERE asset_code = 'PC-STORAGE'").get().n, historyCount);
+      assert.equal(reconcileAssetWithLoans(saved, [{ assetCode: 'PC-STORAGE', returnDate: '2026-11-02' }]).location, 'IT Storage room');
+      invoke(assetsRouter, 'put', '/:id', { ...saved, notes: 'Still in storage' }, { id: 'storage-pc' });
+      assert.equal(db.prepare("SELECT location FROM assets WHERE id = 'storage-pc'").get().location, 'IT Storage room');
+      invoke(assetsRouter, 'put', '/:id', { status: 'Available', location: 'IT Storage room' }, { id: 'storage-pc' });
+      invoke(assetsRouter, 'post', '/batch-update', { ids: ['storage-pc'], changes: { status: 'Available', location: 'IT Storage room' } });
+      assert.equal(db.prepare("SELECT location FROM assets WHERE id = 'storage-pc'").get().location, 'IT Storage room');
+    });
     await t.test('quantity-only PC imports and API records never register asset number 1', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       const result = invoke(loansRouter, 'post', '/', { id: 'quantity-only', assetCode: '1', equipment: { Laptop: '1', Mouse: '2' }, knoxId: 'quantity.user', pickupDate: '2026-11-01' });

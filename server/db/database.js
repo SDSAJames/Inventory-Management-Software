@@ -473,7 +473,7 @@ export function reconcileAllAssetsInDb() {
         // Check if most recent loan was returned
         const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
         if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === DEFAULT_OWNER)) {
-          newLoc = asset.status === 'Available' ? asset.location || getAssetLocationAfterReturn(asset.status) : getAssetLocationAfterReturn(asset.status);
+          newLoc = asset.location || getAssetLocationAfterReturn(asset.status);
           newOwner = DEFAULT_OWNER;
           newDept = '';
           if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {

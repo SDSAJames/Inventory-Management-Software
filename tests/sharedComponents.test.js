@@ -486,7 +486,7 @@ test('Overview places date-only records last without displaying an invented date
   assert.deepEqual(tree.filter((node) => node.props.className === 'asset-code').map((node) => node.props.children[0]), ['PC-DATED', 'PC-OLD']);
   const times = tree.filter((node) => node.props.className === 'asset-change-time').map((node) => node.props.children[0]);
   assert.equal(times[1], 'Time not recorded'); assert.ok(!times.some((time) => time.includes('2026-11-16')));
-  const diagram = tree.find((node) => node.type === 'svg' && node.props.className === 'location-distribution-chart');
+  const diagram = tree.find((node) => node.type === 'svg' && node.props.className === 'location-distribution-chart' && node.props['aria-label'].startsWith('Asset locations:'));
   assert.ok(diagram); assert.match(diagram.props['aria-label'], /Stack, 1/); assert.match(diagram.props['aria-label'], /IT Office, 1/);
 });
 
@@ -499,4 +499,38 @@ test('assignment table defaults to ascending start dates with undated records la
   assert.ok(tree.some((node) => node.type === 'th' && node.props['aria-sort'] === 'ascending' && nodes(node).some((child) => child.props.children?.includes('Start date'))));
   tree.find((node) => node.type === 'th' && node.props.title === 'Sort by Start date (descending)').props.onClick();
   tree = nodes(app.render('LoanTable', props)); assert.deepEqual(names(), ['late', 'early', 'unknown']);
+});
+
+
+test('shared distribution diagrams react to segment hover and legend focus with counts and percentages', () => {
+  for (const component of ['DistributionChart', 'LocationDistribution']) {
+    const app = harness(); const props = { items: [{ label: 'Laptop', count: 3 }, { label: 'Monitor', count: 1 }] };
+    let tree = nodes(app.render(component, props));
+    let segment = tree.find((node) => node.type === 'path' && node.props['aria-label'].startsWith('Laptop:'));
+    segment.props.onMouseEnter(); tree = nodes(app.render(component, props));
+    const active = tree.find((node) => node.type === 'path' && node.props['aria-label'].startsWith('Laptop:'));
+    const other = tree.find((node) => node.type === 'path' && node.props['aria-label'].startsWith('Monitor:'));
+    assert.equal(active.props.strokeWidth, 17); assert.equal(other.props.opacity, 0.35);
+    assert.ok(nodes(tree.find((node) => node.props.role === 'status')).some((node) => node.type === 'span' && node.props.children.includes('75.0')));
+    active.props.onMouseLeave(); tree = nodes(app.render(component, props));
+    const legend = tree.find((node) => node.type === 'button' && node.props['aria-label'].startsWith('Monitor:'));
+    legend.props.onFocus(); tree = nodes(app.render(component, props));
+    assert.equal(tree.find((node) => node.type === 'path' && node.props['aria-label'].startsWith('Monitor:')).props.strokeWidth, 17);
+    tree.find((node) => node.type === 'button' && node.props['aria-label'].startsWith('Monitor:')).props.onBlur();
+    tree = nodes(app.render(component, props));
+    assert.ok(tree.filter((node) => node.type === 'path').every((node) => node.props.opacity === 1));
+  }
+});
+
+test('IT custody asset form preserves a changed storage location in the saved payload', async () => {
+  for (const status of ['Available', 'Damaged', 'Retired']) {
+    const app = harness({ assets: [{ id: 'pc', code: 'PC-1', owner: 'IT Department', status, location: 'IT Office', category: 'Laptop' }], locations: ['IT Office', 'IT Storage room'] });
+    const props = { assetId: 'pc', onClose() {} };
+    let tree = nodes(app.render('AssetForm', props));
+    tree.find((node) => node.props.id === 'location').props.onChange({ target: { value: 'IT Storage room' } });
+    tree = nodes(app.render('AssetForm', props));
+    await tree.find((node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
+    const saved = app.calls.find((call) => call[0] === 'asset-edit')[2];
+    assert.equal(saved.location, 'IT Storage room'); assert.equal(saved.owner, 'IT Department'); assert.equal(saved.status, status);
+  }
 });

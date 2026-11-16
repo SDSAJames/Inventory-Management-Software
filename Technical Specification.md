@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.19.0** |
+| **Specification Version** | **v1.20.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 16, 2026 |
@@ -546,4 +546,14 @@ withoutActivityTracking isolates maintenance, snapshot restore and undo from rea
 
 ### Overview location diagram and assignment ordering
 
-assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. LocationDistribution renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups passes startDate/asc as LoanTable initialSort; empty start dates sort last, and the header cycle can reset to the initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
+assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups passes startDate/asc as LoanTable initialSort; empty start dates sort last, and the header cycle can reset to the initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
+
+### Responsive grid and table sizing
+
+Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers set min-width:0 with bounded widths so table intrinsic sizing cannot enlarge the page grid. Overview uses a single-column overview-grid: the dashboard precedes the full-width records panel. The nested overview-dashboard uses two equal minmax(0,1fr) tracks and stacks below 1200px. Scoped chart areas place each diagram beside its legend, stacking within the chart below 480px. Table wrappers own horizontal scrolling. Main-content maximum widths adapt at sidebar breakpoints; phone sidebar height/stickiness are reset. Overview heading actions, account controls and long chart labels wrap.
+
+### Diagram interactions and storage edit persistence
+
+DistributionChart renders individual SVG arc paths so pointer hit regions match segments. Shared active-label state controls stroke width, dimming, center count, legend highlight and detail text. The paths and legend buttons support hover/focus and Enter/Space; CSS respects prefers-reduced-motion. LocationDistribution is a thin wrapper over this shared chart.
+
+getHolderReturnChanges distinguishes unchanged IT custody from a real return and resolves omitted owner values against the saved owner. Bulk Available updates use the same return decision instead of always moving already IT-held equipment to the default room. Client/server historical-return reconciliation preserves saved nonempty locations; repair routing and explicit return endpoints retain their established destinations. Regression tests exercise diagram feedback, form payloads, full/partial/bulk API saves, export and repeated process restart.
