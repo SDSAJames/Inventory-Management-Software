@@ -9,6 +9,21 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-16',
+    title: 'Compact Overview Summary',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Place the summary cards beside the Overview charts for a tighter dashboard.',
+    highlights: ['Move the four summary cards to the right of the diagrams.', 'Keep Recently updated full width below the dashboard.'],
+    sections: [
+      { heading: 'Overview Layout', badge: 'UI', items: [
+        'Arrange summary cards in a compact two-by-two grid beside Asset mix and Asset locations on wide screens.',
+        'Adapt the cards and charts to smaller screens while retaining clickable filters and chart interactions.',
+      ] },
+    ],
+  },
+  {
+    version: '1.20.1',
+    date: '2026-11-16',
     title: 'Full-width Overview Records',
     tag: 'Patch',
     type: 'patch',

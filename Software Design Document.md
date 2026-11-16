@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.20.1** |
+| **Document Version** | **v1.20.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 16, 2026 |
@@ -413,7 +413,7 @@ A shared custody policy keeps employee equipment Assigned and business-traveler/
 
 ### Responsive Overview containment
 
-Wide record tables remain inside shrinking panel/grid tracks with local horizontal scrolling. Overview places its category/location dashboard above a full-width records panel. Charts share a row on wide screens and stack below 1200px; quick actions sit below the charts. Main-content limits follow desktop/tablet sidebar sizes; phone navigation becomes a compact header. Action groups and chart labels wrap within available space.
+Wide record tables remain inside shrinking panel/grid tracks with local horizontal scrolling. Overview places its category/location dashboard above a full-width records panel. Charts share a row with a compact two-by-two summary grid on the right on wide screens. Below 1200px, summary cards move below the charts; below 620px, charts stack and cards retain two columns. Quick actions sit below this dashboard. Main-content limits follow desktop/tablet sidebar sizes; phone navigation becomes a compact header. Action groups and chart labels wrap within available space.
 
 ### Interactive distributions and independent storage
 
@@ -423,4 +423,4 @@ Custody holder and physical storage are independent. Saving unchanged IT Departm
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.20.1**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.20.2**.

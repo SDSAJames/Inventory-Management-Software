@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.20.1** |
+| **Specification Version** | **v1.20.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 16, 2026 |
@@ -550,7 +550,7 @@ assetLocationMix aggregates current inventory locations using shared location no
 
 ### Responsive grid and table sizing
 
-Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers set min-width:0 with bounded widths so table intrinsic sizing cannot enlarge the page grid. Overview uses a single-column overview-grid: the dashboard precedes the full-width records panel. The nested overview-dashboard uses two equal minmax(0,1fr) tracks and stacks below 1200px. Scoped chart areas place each diagram beside its legend, stacking within the chart below 480px. Table wrappers own horizontal scrolling. Main-content maximum widths adapt at sidebar breakpoints; phone sidebar height/stickiness are reset. Overview heading actions, account controls and long chart labels wrap.
+Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers set min-width:0 with bounded widths so table intrinsic sizing cannot enlarge the page grid. Overview uses a single-column overview-grid: the dashboard precedes the full-width records panel. The nested overview-dashboard uses two flexible chart tracks plus a summary track of at least 260px. Its scoped overview-stats reuses StatCard in two columns with compact padding. Below 1200px, summary cards span beneath the two charts in four columns; below 620px, charts stack and cards use two columns. Scoped chart areas place 130px diagrams beside their legends on wide screens and stack chart content below 1200px. Table wrappers own horizontal scrolling. Main-content maximum widths adapt at sidebar breakpoints; phone sidebar height/stickiness are reset. Overview heading actions, account controls and long chart labels wrap.
 
 ### Diagram interactions and storage edit persistence
 

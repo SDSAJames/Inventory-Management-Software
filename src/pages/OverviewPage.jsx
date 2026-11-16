@@ -96,38 +96,6 @@ export default function OverviewPage() {
           <RowCountSelect value={pageSize} onChange={setPageSize} /></div>
       </div>
 
-      <div className="stat-grid">
-        <StatCard
-          label="Total assets"
-          value={db.assets.length}
-          note={`Across ${db.locations.length} locations (click to view)`}
-          onClick={() => setActiveFilter((prev) => (prev === 'all' ? 'recent' : 'all'))}
-          active={activeFilter === 'all'}
-        />
-        <StatCard
-          label="Available now"
-          value={available}
-          note="Ready to assign (click to view)"
-          onClick={() => setActiveFilter((prev) => (prev === 'available' ? 'recent' : 'available'))}
-          active={activeFilter === 'available'}
-        />
-        <StatCard
-          label="On loan / assigned"
-          value={assigned}
-          note="Currently with a holder (click to view)"
-          variant="warn"
-          onClick={() => setActiveFilter((prev) => (prev === 'assigned' ? 'recent' : 'assigned'))}
-          active={activeFilter === 'assigned'}
-        />
-        <StatCard
-          label="Needs attention"
-          value={issues + overdueCount}
-          note={`${issues} issues, ${overdueCount} overdue (click to view)`}
-          variant="alert"
-          onClick={() => setActiveFilter((prev) => (prev === 'attention' ? 'recent' : 'attention'))}
-          active={activeFilter === 'attention'}
-        />
-      </div>
 
       <div className="content-grid overview-grid">
         <section className="panel overview-dashboard-panel" aria-label="Asset dashboard">
@@ -139,6 +107,38 @@ export default function OverviewPage() {
             <div>
               <div className="panel-heading"><h3>Asset locations</h3></div>
               <LocationDistribution items={locations} />
+            </div>
+            <div className="stat-grid overview-stats" aria-label="Asset summary">
+              <StatCard
+                label="Total assets"
+                value={db.assets.length}
+                note={`Across ${db.locations.length} locations (click to view)`}
+                onClick={() => setActiveFilter((prev) => (prev === 'all' ? 'recent' : 'all'))}
+                active={activeFilter === 'all'}
+              />
+              <StatCard
+                label="Available now"
+                value={available}
+                note="Ready to assign (click to view)"
+                onClick={() => setActiveFilter((prev) => (prev === 'available' ? 'recent' : 'available'))}
+                active={activeFilter === 'available'}
+              />
+              <StatCard
+                label="On loan / assigned"
+                value={assigned}
+                note="Currently with a holder (click to view)"
+                variant="warn"
+                onClick={() => setActiveFilter((prev) => (prev === 'assigned' ? 'recent' : 'assigned'))}
+                active={activeFilter === 'assigned'}
+              />
+              <StatCard
+                label="Needs attention"
+                value={issues + overdueCount}
+                note={`${issues} issues, ${overdueCount} overdue (click to view)`}
+                variant="alert"
+                onClick={() => setActiveFilter((prev) => (prev === 'attention' ? 'recent' : 'attention'))}
+                active={activeFilter === 'attention'}
+              />
             </div>
           </div>
           <div className="overview-quick-actions">

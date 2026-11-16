@@ -6,6 +6,23 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.2] — 2026-11-16
+
+### Compact Overview Summary
+
+Place the summary cards beside the Overview charts for a tighter dashboard.
+
+#### Highlights
+- Move the four summary cards to the right of the diagrams.
+- Keep Recently updated full width below the dashboard.
+
+#### Overview Layout
+
+- Arrange summary cards in a compact two-by-two grid beside Asset mix and Asset locations on wide screens.
+- Adapt the cards and charts to smaller screens while retaining clickable filters and chart interactions.
+
+---
+
 ## [1.20.1] — 2026-11-16
 
 ### Full-width Overview Records
