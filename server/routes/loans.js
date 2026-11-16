@@ -1,3 +1,4 @@
+import { custodyStatusForBorrower } from '../../shared/loanRules.js';
 import { loanAssetActivity } from '../lib/assetActivity.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { DEFAULT_OWNER } from "../../shared/referenceData.js";
@@ -209,7 +210,7 @@ loansRouter.post('/', authenticate, (req, res) => {
   const id = req.body.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
   const initialStatus = pickupDate ? (effectiveEndDate && effectiveEndDate < todayIso() ? 'Overdue' : 'Active') : 'Scheduled';
-  const assetStatus = tracksEndDate(assigneeType) ? 'On loan' : 'Assigned';
+  const assetStatus = custodyStatusForBorrower(assigneeType);
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -467,7 +468,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       } else if (hasPickup) {
         const asset = db.prepare('SELECT status FROM assets WHERE code = ?').get(currentCode);
         const targetStatus = getAssetStatusForLoanEdit(asset?.status, existing, {
-          assetCode: currentCode, pickupDate, returnDate, status: computedStatus, isArchived: Boolean(isArchived),
+          assetCode: currentCode, assigneeType, pickupDate, returnDate, status: computedStatus, isArchived: Boolean(isArchived),
         });
         db.prepare(`
           UPDATE assets
@@ -565,7 +566,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
         .map((code) => String(code || '').trim())
         .filter((code) => code && code !== '0'),
     );
-    const assetStatus = tracksEndDate(loan.assignee_type) ? 'On loan' : 'Assigned';
+    const assetStatus = custodyStatusForBorrower(loan.assignee_type);
     for (const assetCode of handoverAssetCodes) {
       const asset = db.prepare('SELECT id, owner FROM assets WHERE code = ?').get(assetCode);
       if (!asset) continue;
@@ -769,9 +770,9 @@ loansRouter.post('/:id/unarchive', authenticate, (req, res) => {
     if (loan.pickup_date) {
       db.prepare(`
         UPDATE assets
-        SET status = 'On loan', owner = ?, updated = ?
+        SET status = ?, owner = ?, updated = ?
         WHERE code = ?
-      `).run(loan.assignee, todayIso(), loan.asset_code);
+      `).run(custodyStatusForBorrower(loan.assignee_type), loan.assignee, todayIso(), loan.asset_code);
     }
 
     db.exec('COMMIT;');

@@ -1,3 +1,4 @@
+import { custodyStatusForBorrower } from '../../shared/loanRules.js';
 import DateInput from './DateInput';
 import { useState } from 'react';
 import { todayIso } from '../lib/utils';
@@ -62,7 +63,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
       ? {
           code: assetCode,
           location: form.location || DEFAULT_LOCATION,
-          ...(form.pickupDate ? { owner: assignee, status: 'On loan' } : {}),
+          ...(form.pickupDate ? { owner: assignee, status: custodyStatusForBorrower(form.assigneeType) } : {}),
         }
       : null;
 

@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.18.0** |
+| **Document Version** | **v1.19.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 13, 2026 |
+| **Release Date** | November 16, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -405,6 +405,12 @@ Overview groups parenthesized Laptop category variants for chart presentation on
 
 Contractor is a third borrower identity. Employees retain indefinite assignment rules; contractors and business travelers share due-date loan behavior, including overdue checks and transfer date validation. Borrower identity stays separate from due-date eligibility so contractor labels, filters and spreadsheet round trips remain distinct.
 
+### Assignment activity, unknown dates and location distribution
+
+Recent updates combine the latest real asset change with activity on linked assignment/pickup records, including borrower type changes that leave asset status unchanged. Each saved activity includes the authenticated editor and fixed timestamp. No-op writes, maintenance and restore preserve earlier activity. Unknown times remain undated and sort after recorded times in the default recent list; editor details are not invented for legacy records.
+
+A shared custody policy keeps employee equipment Assigned and business-traveler/contractor equipment On loan through editing and reconciliation. Overview adds a location distribution diagram with counts and percentages next to its category mix. Assignments & Pickups initializes its shared table to ascending start dates while keeping manual sort controls.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.18.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.19.0**.

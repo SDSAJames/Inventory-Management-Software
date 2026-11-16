@@ -25,6 +25,7 @@ export function formatAssetRow(asset, history, formatHistory = formatOwnershipRo
   return {
     ...asset,
     changedAt: asset.changed_at || '',
+    changedBy: asset.changed_by || '',
     latestChange: asset.latest_change || '',
     issuedName: asset.issued_name || '',
     issuedDate: asset.issued_date || '',

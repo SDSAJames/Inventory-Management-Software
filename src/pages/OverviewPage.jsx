@@ -1,10 +1,11 @@
-import { assetMix } from '../lib/overviewAssets';
+import { assetMix, assetLocationMix, assetsWithCustodyActivity } from '../lib/overviewAssets';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { isLoanOverdue } from '../lib/utils';
 import StatCard from '../components/StatCard';
 import BarChart from '../components/BarChart';
+import LocationDistribution from '../components/LocationDistribution';
 import useAssetSelection from '../hooks/useAssetSelection';
 import { RowCountSelect, SelectionCount } from '../components/Pagination';
 import AssetTable from '../components/AssetTable';
@@ -29,39 +30,28 @@ export default function OverviewPage() {
   const overdueCount = overdueLoans.length;
 
   const categories = useMemo(() => assetMix(db.assets), [db.assets]);
+  const locations = useMemo(() => assetLocationMix(db.assets), [db.assets]);
 
   const overdueAssetCodes = useMemo(
     () => new Set(overdueLoans.map((l) => String(l.assetCode || '').toLowerCase())),
     [overdueLoans]
   );
 
+  const overviewAssets = useMemo(() => assetsWithCustodyActivity(db.assets, db.loans), [db.assets, db.loans]);
   const displayedAssets = useMemo(() => {
-    const sortByUpdated = (arr) => [...arr].sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
-
     switch (activeFilter) {
-      case 'all':
-        return sortByUpdated(db.assets);
-      case 'available':
-        return sortByUpdated(db.assets.filter((a) => a.status === 'Available'));
-      case 'assigned':
-        return sortByUpdated(db.assets.filter((a) => ['Assigned', 'On loan'].includes(a.status)));
-      case 'attention':
-        return sortByUpdated(
-          db.assets.filter((a) =>
-            ['Damaged', 'Under repair'].includes(a.status) || overdueAssetCodes.has(String(a.code || '').toLowerCase())
-          )
-        );
-      case 'recent':
-      default:
-        return sortByUpdated(db.assets);
+      case 'available': return overviewAssets.filter((asset) => asset.status === 'Available');
+      case 'assigned': return overviewAssets.filter((asset) => ['Assigned', 'On loan'].includes(asset.status));
+      case 'attention': return overviewAssets.filter((asset) => ['Damaged', 'Under repair'].includes(asset.status) || overdueAssetCodes.has(String(asset.code || '').toLowerCase()));
+      default: return overviewAssets;
     }
-  }, [db.assets, activeFilter, overdueAssetCodes]);
+  }, [overviewAssets, activeFilter, overdueAssetCodes]);
 
   const filterMeta = {
     recent: {
       title: 'Recently updated',
       badge: `${db.assets.length} items`,
-      subtitle: 'Latest saved change for each asset, including field details and recorded time',
+      subtitle: 'Latest asset or assignment change, including details, editor and recorded time',
       linkTarget: '/assets',
       linkText: 'View full register →',
     },
@@ -190,6 +180,8 @@ export default function OverviewPage() {
             <h3>Asset mix</h3>
           </div>
           <BarChart items={categories} total={db.assets.length} />
+          <div className="panel-heading" style={{ marginTop: 24 }}><h3>Asset locations</h3></div>
+          <LocationDistribution items={locations} />
 
           <div className="panel-heading" style={{ marginTop: 30 }}>
             <h3>Quick actions</h3>

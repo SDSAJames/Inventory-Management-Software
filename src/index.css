@@ -4740,3 +4740,13 @@ textarea.input-error-red {
 
 .asset-latest-change { min-width: 220px; max-width: 440px; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
 .asset-change-time { white-space: nowrap; font-size: 12px; }
+
+.location-distribution { display: grid; justify-items: center; gap: 14px; }
+.location-distribution-chart { width: 180px; max-width: 100%; }
+.location-distribution-total { fill: var(--ink); font-size: 16px; font-weight: 700; }
+.location-distribution-caption { fill: var(--muted); font-size: 8px; }
+.location-distribution-legend { list-style: none; margin: 0; padding: 0; width: 100%; }
+.location-distribution-legend li { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; }
+.location-distribution-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.location-distribution-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.location-distribution-legend small { color: var(--muted); width: 42px; text-align: right; }

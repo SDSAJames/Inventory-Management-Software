@@ -73,11 +73,12 @@ export default function LoanTable({
   hideReturnDate = false,
   showLocation = false,
   onTransferLoan,
+  initialSort = { key: null, dir: 'asc' },
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
-  const [sort, setSort] = useState({ key: null, dir: 'asc' });
+  const [sort, setSort] = useState(initialSort);
   const showPickupDate = !scheduled;
   const showReturnDate = !scheduled && !hideReturnDate;
   const showStatus = !scheduled;
@@ -115,7 +116,7 @@ export default function LoanTable({
     setSort((prev) => {
       if (prev.key !== key) return { key, dir: 'asc' };
       if (prev.dir === 'asc') return { key, dir: 'desc' };
-      return { key: null, dir: 'asc' };
+      return initialSort;
     });
   };
 
@@ -192,7 +193,7 @@ export default function LoanTable({
                       ? `Sort by ${col.label} (ascending)`
                       : sort.dir === 'asc'
                       ? `Sort by ${col.label} (descending)`
-                      : 'Clear sorting'
+                      : initialSort.key ? 'Reset sorting' : 'Clear sorting'
                   }
                 >
                   <span className="sortable-th-inner">

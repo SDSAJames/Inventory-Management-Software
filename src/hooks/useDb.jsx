@@ -1,3 +1,4 @@
+import { custodyStatusForBorrower } from '../../shared/loanRules.js';
 import { applyAssetActivity } from '../lib/overviewAssets';
 import { departmentDirectoryNames } from '../../shared/departmentDirectory.js';
 import { DEFAULT_OWNER } from '../../shared/referenceData.js';
@@ -16,7 +17,7 @@ import {
 import { todayIso, isLoanOverdue } from '../lib/utils';
 import { reconcileAllAssets, createOwnershipEntry, validateAssetStatus, normalizeHolder } from '../lib/assetIntegrity';
 import { DEFAULT_TRANSFER_REASONS } from '../lib/constants';
-import { tracksEndDate, normalizeLoanEndDate } from '../lib/loanEquipment';
+import { normalizeLoanEndDate } from '../lib/loanEquipment';
 import { deduplicateLoanRecords, findLoanMatchIndex } from '../../shared/loanIdentity.js';
 import { api } from '../lib/api';
 import { normalizeDatabaseLocations, remapDatabaseLocation } from '../lib/databaseLocations';
@@ -41,7 +42,8 @@ export function DbProvider({ children }) {
               createOwnershipEntry({
                 previousOwner: 'None',
                 newOwner: assetWithNorm.owner,
-                date: assetWithNorm.issuedDate || assetWithNorm.updated || todayIso(),
+                date: assetWithNorm.issuedDate || assetWithNorm.updated || '',
+                preserveUnknownDate: true,
                 reason: assetWithNorm.owner === DEFAULT_OWNER ? 'IT custody recorded' : 'Initial assignment',
                 notes: assetWithNorm.department ? `Department: ${assetWithNorm.department}` : (assetWithNorm.notes || ''),
               }),
@@ -356,7 +358,7 @@ export function DbProvider({ children }) {
         return {
           ...a,
           ...(a.code === assetUpdates?.code ? assetUpdates : {}),
-          status: tracksEndDate(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned',
+          status: custodyStatusForBorrower(effectiveLoan.assigneeType),
           owner,
           location: effectiveLoan.location || a.location,
           ownershipHistory: [history, ...(a.ownershipHistory || [])],
@@ -373,7 +375,7 @@ export function DbProvider({ children }) {
           model: '',
           serial: '',
           status: effectiveLoan.pickupDate
-            ? (tracksEndDate(effectiveLoan.assigneeType) ? 'On loan' : 'Assigned')
+            ? (custodyStatusForBorrower(effectiveLoan.assigneeType))
             : 'Available',
           location: assetUpdates.location || '',
           owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : DEFAULT_OWNER),
@@ -406,7 +408,7 @@ export function DbProvider({ children }) {
       };
     });
 
-    api.loans.create(effectiveLoan).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity) }))).catch((err) => console.warn('Could not sync loan creation to server:', err.message));
+    api.loans.create(effectiveLoan).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity), loans: previous.loans.map((loan) => loan.id === effectiveLoan.id ? { ...loan, ...result.loan } : loan) }))).catch((err) => console.warn('Could not sync loan creation to server:', err.message));
   }, []);
 
   const updateLoan = useCallback(async (id, changes) => {
@@ -416,7 +418,7 @@ export function DbProvider({ children }) {
       loans: previous.loans.map((loan) => loan.id === id ? { ...loan, ...result.loan } : loan),
       assets: previous.assets.map((asset) => {
         const saved = (result.assets || []).find((item) => item.id === asset.id);
-        return saved ? { ...asset, ...saved, latestChange: saved.latest_change ?? saved.latestChange ?? '', changedAt: saved.changed_at ?? saved.changedAt ?? '' } : asset;
+        return saved ? { ...asset, ...saved, latestChange: saved.latest_change ?? saved.latestChange ?? '', changedAt: saved.changed_at ?? saved.changedAt ?? '', changedBy: saved.changed_by ?? saved.changedBy ?? '' } : asset;
       }),
     }));
     return result.loan;
@@ -443,6 +445,7 @@ export function DbProvider({ children }) {
         l.id === id
           ? {
               ...merged,
+              ...result.loan,
               readyForPickup: false,
               status: isLoanOverdue({ ...merged, pickupDate: timestamp, returnDate: '', returnedDate: '' }) ? 'Overdue' : 'Active',
             }
@@ -467,7 +470,7 @@ export function DbProvider({ children }) {
         });
         return {
           ...a,
-          status: tracksEndDate(merged.assigneeType) ? 'On loan' : 'Assigned',
+          status: custodyStatusForBorrower(merged.assigneeType),
           owner,
           location: details.location || loan.location || a.location,
           department: merged.department ?? a.department,
@@ -577,7 +580,7 @@ export function DbProvider({ children }) {
         if (a.code === expectedAssetCode && expectedAssetCode && !returnedAssetCodes.has(expectedAssetCode)) {
           return {
             ...a,
-            status: tracksEndDate(loan.assigneeType) ? 'On loan' : 'Assigned',
+            status: custodyStatusForBorrower(loan.assigneeType),
             owner: loan.assignee || a.owner,
             updated: todayIso(),
           };
@@ -587,7 +590,7 @@ export function DbProvider({ children }) {
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
-    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity) }))).catch((err) => console.warn('Could not sync loan return to server:', err.message));
+    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity), loans: previous.loans.map((loan) => loan.id === id ? { ...loan, ...result.loan } : loan) }))).catch((err) => console.warn('Could not sync loan return to server:', err.message));
   }, []);
 
   const unarchiveLoan = useCallback((id) => {
@@ -614,7 +617,7 @@ export function DbProvider({ children }) {
         a.code === loan.assetCode
           ? {
               ...a,
-              status: loan.pickupDate ? 'On loan' : 'Available',
+              status: loan.pickupDate ? custodyStatusForBorrower(loan.assigneeType) : 'Available',
               owner: loan.pickupDate ? loan.assignee : '',
               updated: todayIso(),
             }

@@ -688,6 +688,7 @@ export default function LoansPage() {
           </div>
         )}
         <LoanTable
+          initialSort={{ key: 'startDate', dir: 'asc' }}
           scheduled={category === 'scheduled'}
           showPickupReadiness={category === 'scheduled' || category === 'all'}
           hideReturnDate={category === 'overdue'}

@@ -1,6 +1,6 @@
 import { DEFAULT_OWNER, DEFAULT_LOCATION, REPAIR_LOCATION } from "./referenceData.js";
 
-import { isLoanReturned } from './loanRules.js';
+import { isLoanReturned, custodyStatusForBorrower } from './loanRules.js';
 
 /** Keep the renamed default consistent when reading older imports and backups. */
 export function normalizeLocation(location, fallback = DEFAULT_LOCATION) {
@@ -68,5 +68,5 @@ export function getAssetStatusForLoanEdit(status, previousLoan = {}, nextLoan = 
       && previousCode && previousCode === assetCode(nextLoan)) {
     return status;
   }
-  return 'On loan';
+  return custodyStatusForBorrower(nextLoan.assigneeType ?? nextLoan.assignee_type ?? previousLoan.assigneeType ?? previousLoan.assignee_type);
 }

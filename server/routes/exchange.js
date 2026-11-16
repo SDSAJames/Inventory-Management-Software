@@ -1,3 +1,4 @@
+import { restoreRecordActivity, withoutActivityTracking } from '../lib/assetActivity.js';
 import { saveAssetIssuedFields } from '../lib/assetIssuedFields.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { randomUUID } from 'node:crypto';
@@ -283,7 +284,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 });
 
 // POST /api/exchange/revert (Protected: Rollback to previous snapshot)
-exchangeRouter.post('/revert', authenticate, (req, res) => {
+exchangeRouter.post('/revert', authenticate, (req, res) => withoutActivityTracking(() => {
   const requestedId = String(req.body?.snapshotId || '').trim();
   const latestSnapshot = requestedId
     ? db.prepare('SELECT * FROM import_backups WHERE id = ?').get(requestedId)
@@ -349,8 +350,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           a.created_at
         );
         saveAssetIssuedFields(db, a.id, a);
-        if (a.latest_change || a.latestChange) db.prepare('UPDATE assets SET latest_change = ?, changed_at = ? WHERE id = ?').run(
-          typeof (a.latest_change || a.latestChange) === 'string' ? a.latest_change || a.latestChange : JSON.stringify(a.latestChange), a.changed_at || a.changedAt || null, a.id);
+        restoreRecordActivity(db, 'assets', a.id, a);
         if (Array.isArray(a.ownershipHistory)) {
           for (const h of a.ownershipHistory) {
             insertHistory.run(
@@ -401,6 +401,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
           l.is_archived !== undefined ? l.is_archived : (l.isArchived ? 1 : 0),
           l.created_at || new Date().toISOString()
         );
+        restoreRecordActivity(db, 'loans', l.id, l);
       }
     }
 
@@ -411,7 +412,7 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?)
       `);
       for (const emp of snapshot.employees) {
-        insertEmp.run(emp.id, emp.name, emp.department, emp.position, emp.knox_id, emp.created_at);
+        insertEmp.run(emp.id, emp.name, emp.department, emp.position || '', emp.knox_id || emp.knoxId || '', emp.created_at || emp.createdAt || new Date().toISOString());
       }
     }
 
@@ -443,5 +444,5 @@ exchangeRouter.post('/revert', authenticate, (req, res) => {
     console.error('Revert failed:', err);
     return res.status(500).json({ success: false, error: err.message });
   }
-});
+}));
 import { ensureAvailableAssetCustody } from '../lib/assetCustody.js';

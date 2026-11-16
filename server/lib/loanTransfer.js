@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { splitLoanEquipment, equipmentForTransferredPickup } from '../../shared/loanTransfer.js';
-import { borrowerType, tracksEndDate, isLoanReturned } from '../../shared/loanRules.js';
+import { borrowerType, tracksEndDate, custodyStatusForBorrower, isLoanReturned } from '../../shared/loanRules.js';
 import { formatCalendarDateTime } from '../../shared/dateTime.js';
 
 export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate, transferDate, timeZone = 'UTC' }) {
@@ -36,6 +36,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const target = {
     ...source,
     ...(schedule || {}),
+    ...(Object.hasOwn(source, 'latest_change') ? { latest_change: null, changed_at: null, changed_by: null } : {}),
     id: schedule?.id || `loan-${randomUUID()}`,
     asset_code: transferred.Laptop || '',
     knox_id: targetKnox,
@@ -80,7 +81,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
       if (!asset) continue;
       database.prepare('UPDATE assets SET owner = ?, status = ?, location = ?, department = ?, updated = ? WHERE id = ?').run(
         target.assignee || targetKnox,
-        tracksEndDate(targetType) ? 'On loan' : 'Assigned',
+        custodyStatusForBorrower(targetType),
         target.location || asset.location || '',
         target.department || '',
         now.slice(0, 10),

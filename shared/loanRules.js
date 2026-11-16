@@ -24,3 +24,8 @@ export function borrowerType(value) {
 export function tracksEndDate(value) {
   return ['Business traveler', 'Contractor'].includes(borrowerType(value));
 }
+
+/** One custody status policy for employee assignments and dated loans. */
+export function custodyStatusForBorrower(type) {
+  return tracksEndDate(type) ? 'On loan' : 'Assigned';
+}

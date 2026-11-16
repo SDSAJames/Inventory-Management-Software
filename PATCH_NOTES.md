@@ -6,6 +6,33 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] — 2026-11-16
+
+### Assignment Activity, Editor Attribution & Location Diagram
+
+Link assignment edits to Overview, show the editor, and correct employee status and unknown dates.
+
+#### Highlights
+- Show borrower-type edits and who saved them in Overview.
+- Keep employees Assigned and preserve unknown activity times.
+- Add an asset-location diagram and start-date ascending sorting for Assignments & Pickups.
+
+#### Recent Updates
+
+- Record assignment and pickup field changes independently from asset status, including Business traveler to Contractor edits.
+- Capture the authenticated editor with request-isolated context and show a sortable Changed by column alongside the saved time.
+- Link the newest recorded assignment change to its PC and monitor. Preserve editor and timestamp metadata through export, restore and undo.
+- Keep missing or date-only update times undated and after dated records in the default recent list. Maintenance, reconciliation and restore do not invent recent activity.
+
+#### Custody and Overview
+
+- Share one borrower custody rule across creation, full editing, return reverts, transfer, import and reconciliation: Employee means Assigned; dated borrower types mean On loan.
+- Preserve existing unknown update dates during reconciliation and hide earlier unattributed employee-to-loan reconciliation artifacts from recent activity.
+- Show a location distribution diagram with asset counts and percentages alongside the category mix, including repair and unspecified locations.
+- Default Assignments & Pickups tables to start date ascending, with undated rows last and manual sorting available.
+
+---
+
 ## [1.18.0] — 2026-11-13
 
 ### Contractor Loans & Detailed Overview Updates

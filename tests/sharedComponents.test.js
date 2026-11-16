@@ -463,3 +463,40 @@ test('contractor forms enable due dates and table badges retain the distinct bor
   tree = nodes(table.render('LoanTable', { loans: [loan], assets: [], scheduled: true }));
   assert.ok(tree.some((node) => node.props.className === 'assignee-badge' && node.props.children[0] === 'Contractor'));
 });
+
+
+test('Overview immediately displays linked borrower type change, editor and saved time', () => {
+  const actor = JSON.stringify({ name: 'Ian Stolz', username: 'ian.stolz', knoxId: 'ian.stolz' });
+  const app = harness({ assets: [{ id: 'pc', code: 'PC-1', status: 'On loan', owner: 'recipient', category: 'Laptop', changedAt: '2026-11-01T10:00:00Z' }],
+    loans: [{ id: 'loan', assetCode: 'PC-1', knoxId: 'recipient', assigneeType: 'Contractor', changedAt: '2026-11-13T15:24:36Z', changedBy: actor,
+      latestChange: JSON.stringify({ kind: 'updated', changes: [{ field: 'assignee_type', previous: 'Business traveler', next: 'Contractor' }] }) }] });
+  const tree = nodes(app.render('pages/OverviewPage', {}));
+  assert.ok(tree.some((node) => node.type === 'td' && node.props.children.some((text) => typeof text === 'string' && text.includes('Borrower type: Business traveler → Contractor'))));
+  assert.ok(tree.some((node) => node.type === 'td' && node.props.children[0] === 'Ian Stolz (ian.stolz)'));
+  assert.ok(tree.some((node) => node.props.className === 'asset-change-time' && node.props.children[0].endsWith(':36')));
+});
+
+
+test('Overview places date-only records last without displaying an invented date and renders location counts', () => {
+  const app = harness({ assets: [
+    { id: 'old', code: 'PC-OLD', category: 'Laptop', status: 'Assigned', owner: 'employee', updated: '2026-11-16', location: 'Stack' },
+    { id: 'dated', code: 'PC-DATED', category: 'Laptop', changedAt: '2026-01-01T10:00:00Z', location: 'IT Office', status: 'Available' },
+  ] });
+  const tree = nodes(app.render('pages/OverviewPage', {}));
+  assert.deepEqual(tree.filter((node) => node.props.className === 'asset-code').map((node) => node.props.children[0]), ['PC-DATED', 'PC-OLD']);
+  const times = tree.filter((node) => node.props.className === 'asset-change-time').map((node) => node.props.children[0]);
+  assert.equal(times[1], 'Time not recorded'); assert.ok(!times.some((time) => time.includes('2026-11-16')));
+  const diagram = tree.find((node) => node.type === 'svg' && node.props.className === 'location-distribution-chart');
+  assert.ok(diagram); assert.match(diagram.props['aria-label'], /Stack, 1/); assert.match(diagram.props['aria-label'], /IT Office, 1/);
+});
+
+test('assignment table defaults to ascending start dates with undated records last', () => {
+  const loans = [{ id: 'late', knoxId: 'late', startDate: '2026-12-01' }, { id: 'unknown', knoxId: 'unknown' }, { id: 'early', knoxId: 'early', startDate: '2026-01-01' }];
+  const app = harness(); const props = { loans, assets: [], scheduled: true, initialSort: { key: 'startDate', dir: 'asc' } };
+  let tree = nodes(app.render('LoanTable', props));
+  const names = () => tree.filter((node) => node.props.className === 'knox-id-text' && ['early', 'late', 'unknown'].includes(node.props.children[0])).map((node) => node.props.children[0]);
+  assert.deepEqual(names(), ['early', 'late', 'unknown']);
+  assert.ok(tree.some((node) => node.type === 'th' && node.props['aria-sort'] === 'ascending' && nodes(node).some((child) => child.props.children?.includes('Start date'))));
+  tree.find((node) => node.type === 'th' && node.props.title === 'Sort by Start date (descending)').props.onClick();
+  tree = nodes(app.render('LoanTable', props)); assert.deepEqual(names(), ['late', 'early', 'unknown']);
+});

@@ -4,9 +4,9 @@ import { getAssetLocationAfterReturn, getAssetLocation, getAssetStatusAfterRetur
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
-import { todayIso, readableLoanDate, isLoanReturned } from './utils.js';
+import { readableLoanDate, isLoanReturned } from './utils.js';
 
-import { tracksEndDate } from '../../shared/loanRules.js';
+import { custodyStatusForBorrower } from '../../shared/loanRules.js';
 
 /**
  * Reconciles an asset against all loans in the database to derive its true latest
@@ -110,7 +110,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   });
 
   if (activeLoan) {
-    const activeStatus = tracksEndDate(activeLoan.assigneeType) ? 'On loan' : 'Assigned';
+    const activeStatus = custodyStatusForBorrower(activeLoan.assigneeType);
     const needsUpdate =
       asset.status !== activeStatus ||
       asset.owner !== (activeLoan.assignee || '') ||
@@ -123,7 +123,6 @@ export function reconcileAssetWithLoans(asset, loans = []) {
         owner: activeLoan.assignee || asset.owner || '',
         location: asset.location || activeLoan.location,
         department: activeLoan.department || asset.department,
-        updated: todayIso(),
       };
     }
     return asset;
@@ -137,7 +136,6 @@ export function reconcileAssetWithLoans(asset, loans = []) {
       status: hasOtherHolder ? 'Assigned' : 'Available',
       owner: hasOtherHolder ? asset.owner : DEFAULT_OWNER,
       department: hasOtherHolder ? asset.department : '',
-      updated: todayIso(),
     };
   }
 
@@ -152,7 +150,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
         department: '',
         status: getAssetStatusAfterReturn(asset.status),
         location: asset.status === 'Available' ? asset.location : getAssetLocationAfterReturn(asset.status),
-        updated: asset.updated || todayIso(),
+        updated: asset.updated || '',
       };
     }
   }
@@ -163,7 +161,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     return {
       ...asset,
       status: 'Assigned',
-      updated: asset.updated || todayIso(),
+      updated: asset.updated || '',
     };
   }
 
@@ -174,7 +172,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
       status: 'Available',
       owner: isItDepartment(asset.owner) ? DEFAULT_OWNER : '',
       department: isItDepartment(asset.owner) ? '' : asset.department,
-      updated: asset.updated || todayIso(),
+      updated: asset.updated || '',
     };
   }
 
@@ -252,10 +250,11 @@ export function createOwnershipEntry({
   notes = '',
   location = '',
   department = '',
+  preserveUnknownDate = false,
 }) {
   return {
     id: crypto.randomUUID(),
-    date: date || new Date().toISOString(),
+    date: date || (preserveUnknownDate ? '' : new Date().toISOString()),
     previousOwner: normalizeHolder(previousOwner) || 'None',
     newOwner: normalizeHolder(newOwner) || 'None',
     location: location || '',

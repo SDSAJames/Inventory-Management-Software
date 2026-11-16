@@ -1,3 +1,4 @@
+import { ensureLoanActivity, withActivityActor } from '../server/lib/assetActivity.js';
 import { ensureDepartmentDirectory } from '../server/lib/departmentDirectory.js';
 import { reconcileAssetWithLoans } from '../src/lib/assetIntegrity.js';
 import test from 'node:test';
@@ -86,12 +87,14 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
     db.exec('CREATE TABLE locations (id TEXT, name TEXT); CREATE TABLE departments (id TEXT PRIMARY KEY, name TEXT UNIQUE); CREATE TABLE transfer_reasons (reason TEXT, created_at TEXT)');
     ensureAssetDateColumns(db);
     ensureDepartmentDirectory(db);
+    ensureLoanActivity(db);
     const { assetsRouter } = await import('../server/routes/assets.js');
     const { exchangeRouter } = await import('../server/routes/exchange.js');
     const invoke = (router, method, path, body, params = {}, expectedStatus) => {
       const layer = router.stack.find((entry) => entry.route?.path === path && entry.route.methods[method]);
       const response = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(value) { this.body = value; return this; } };
-      layer.route.stack.at(-1).handle({ body, params, query: {}, user: { username: 'date-test' } }, response);
+      const request = { body, params, query: {}, user: { username: 'date-test', full_name: 'Date Tester', knox_id: 'tester.knox' } };
+      withActivityActor(request, response, () => layer.route.stack.at(-1).handle(request, response));
       if (expectedStatus) assert.equal(response.statusCode, expectedStatus, JSON.stringify(response.body));
       else assert.ok(response.statusCode < 400, JSON.stringify(response.body));
       return response.body;
@@ -319,6 +322,35 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       const changed = invoke(exchangeRouter, 'get', '/export', {}).db.assets.find((asset) => asset.id === pc.id);
       assert.equal(changed.issuedName, '');
       assert.equal(changed.issuedDate, '');
+    });
+    await t.test('borrower type edits record the editor even when asset custody is unchanged and survive restore', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'type-pc', code: 'PC-TYPE', category: 'Laptop' });
+      invoke(loansRouter, 'post', '/', { id: 'type-loan', knoxId: 'type.user', assignee: 'Type User', assetCode: 'PC-TYPE', assigneeType: 'Business traveler', pickupDate: '2026-11-01', startDate: '2026-11-01', endDate: '2050-12-01' });
+      const assetBefore = db.prepare("SELECT * FROM assets WHERE code = 'PC-TYPE'").get();
+      const saved = invoke(loansRouter, 'put', '/:id', { assigneeType: 'Contractor', changedBy: 'spoofed-user' }, { id: 'type-loan' }).loan;
+      assert.equal(saved.assigneeType, 'Contractor');
+      assert.ok(JSON.parse(saved.latestChange).changes.some((change) => change.field === 'assignee_type' && change.previous === 'Business traveler' && change.next === 'Contractor'));
+      assert.equal(JSON.parse(saved.changedBy).username, 'date-test');
+      assert.equal(db.prepare("SELECT status FROM assets WHERE code = 'PC-TYPE'").get().status, assetBefore.status);
+      const snapshot = invoke(exchangeRouter, 'get', '/export', {}).db;
+      db.prepare('INSERT INTO import_backups VALUES (?, ?, ?, ?)').run('activity-restore', JSON.stringify(snapshot), 'Activity restore', '2026-11-13');
+      invoke(loansRouter, 'put', '/:id', { assigneeType: 'Employee' }, { id: 'type-loan' });
+      invoke(exchangeRouter, 'post', '/revert', { snapshotId: 'activity-restore' });
+      const restored = invoke(loansRouter, 'get', '/:id', {}, { id: 'type-loan' }).loan;
+      assert.equal(restored.changedBy, saved.changedBy); assert.equal(restored.changedAt, saved.changedAt); assert.equal(restored.latestChange, saved.latestChange);
+    });
+    await t.test('employee full-detail edits and return reverts preserve Assigned custody', async () => {
+      const { loansRouter } = await import('../server/routes/loans.js');
+      invoke(assetsRouter, 'post', '/', { id: 'employee-pc', code: 'PC-EMP', category: 'Laptop' });
+      invoke(loansRouter, 'post', '/', { id: 'employee-record', assetCode: 'PC-EMP', knoxId: 'employee.user', assignee: 'Employee User', assigneeType: 'Employee', pickupDate: '2026-11-01', startDate: '2026-11-01' });
+      invoke(loansRouter, 'put', '/:id', { note: 'Changed details' }, { id: 'employee-record' });
+      let asset = invoke(exchangeRouter, 'get', '/export', {}).db.assets.find((asset) => asset.code === 'PC-EMP');
+      assert.equal(asset.status, 'Assigned'); assert.doesNotMatch(asset.latestChange, /\"next\":\"On loan\"/);
+      invoke(loansRouter, 'post', '/:id/return', { returnDate: '2026-11-02' }, { id: 'employee-record' });
+      invoke(loansRouter, 'post', '/:id/unarchive', {}, { id: 'employee-record' });
+      asset = invoke(exchangeRouter, 'get', '/export', {}).db.assets.find((asset) => asset.code === 'PC-EMP');
+      assert.equal(asset.status, 'Assigned');
     });
     await t.test('contractor schedules retain due dates through editing, pickup, transfer and export', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');

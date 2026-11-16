@@ -1,4 +1,4 @@
-import { borrowerType, tracksEndDate } from '../../shared/loanRules.js';
+import { borrowerType, tracksEndDate, custodyStatusForBorrower } from '../../shared/loanRules.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
@@ -445,7 +445,7 @@ export function parseLoansText(rows, existingAssets = [], existingLoans = []) {
         category: 'Laptop',
         model: '',
         serial: '',
-        status: isReturned ? 'Available' : 'On loan',
+        status: isReturned ? 'Available' : custodyStatusForBorrower(assigneeType),
         location,
         owner: isReturned ? DEFAULT_OWNER : assignee,
         department: '',

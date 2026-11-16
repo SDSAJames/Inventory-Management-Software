@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.18.0)
+# StarPlus Energy Asset Management System (v1.19.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -197,3 +197,7 @@ The Assets and MES registers, including expanded MES location asset lists, displ
 **Overview updates:** Asset mix combines parenthesized Laptop variants (including Laptop(others) and Laptop(vendor A)) under Laptop without changing their saved categories. The asset list shows the latest actual change, before/after values, and its saved local date/time through seconds. Older records without this metadata are marked as details or time not recorded. Restart the backend after upgrading to enable automatic change recording; existing history is preserved.
 
 **Contractor borrowers:** Choose Contractor in assignment/loan creation, editing or transfer. Contractors have due dates, overdue handling and On loan equipment custody like business travelers. A schedule still changes inventory only after pickup. Contractor transfers require valid start and end dates. In & Out Calendar includes a separate Contractor filter and counts. Contractor remains distinct from Employee and Business traveler; the Business Travelers page retains its traveler scope. Existing loan spreadsheet exports use Contractor in the Business Traveler column for contractor records, while 1/0 still represent traveler/employee.
+
+**Recent assignment updates and editors:** Overview shows the newest asset or linked assignment/pickup change, including borrower-type edits such as Business traveler → Contractor, its saved time, and **Changed by** (signed-in name and Knox ID/username). Earlier records without an editor show Not recorded. Changes without a recorded time, including legacy date-only values, display no date and follow dated records in the default recent list. Automatic reconciliation and restore do not stamp today onto old records.
+
+Employee custody stays **Assigned** through editing, return reverts and reconciliation; business travelers and contractors use **On loan**. Overview also shows an **Asset locations** diagram with counts and percentages alongside Asset mix. Assignments & Pickups defaults to **Start date ascending**, with undated rows last; headers still allow manual sorting. Restart the backend once after upgrading to enable assignment change tracking and editor capture for subsequent saves.

@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.18.0** |
+| **Specification Version** | **v1.19.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 13, 2026 |
+| **Release Date** | November 16, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -537,3 +537,13 @@ ensureAssetActivity adds latest_change JSON and changed_at TEXT to assets and in
 ### Contractor identity and due-date policy
 
 shared/loanRules.js exports BORROWER_TYPES, borrowerType and tracksEndDate. isBusinessTravelerType remains a strict traveler predicate for traveler-specific views. Due-date handling across client forms, grouping, overdue checks, custody status, server serialization and transfers uses tracksEndDate, true for Contractor and Business traveler. Shared AssigneeFields renders all three options. Calendar presentation uses distinct borrower labels and Contractor filtering/counts. The existing loan spreadsheet type column accepts Contractor alongside legacy 1/0 and named type values; exports preserve contractor identity and due dates. Regression tests exercise API create/edit/pickup/transfer, spreadsheet round trips, Overview grouping and transactional activity timestamps.
+
+### Assignment activity attribution and date integrity
+
+ensureLoanActivity reuses the asset activity trigger builder for assignment fields, including assignee_type. Both tables carry latest_change, changed_at and changed_by. withActivityActor uses AsyncLocalStorage and connection-registered SQLite functions to record the authenticated editor within the mutation transaction, isolated across concurrent requests. APIs/export serialize the metadata, and restoration preserves it. assetsWithCustodyActivity links the most recent dated assignment event to its PC/monitor without modifying custody. AssetTable shows sortable Changed by, Latest change and Changed at columns in Overview.
+
+withoutActivityTracking isolates maintenance, snapshot restore and undo from real edits. Server and client reconciliation preserve unknown update dates; recordedActivityTime accepts complete recorded timestamps and treats absent/date-only values as unknown. Default recent sorting uses epoch values with missing times last. Earlier unattributed employee-to-loan status artifacts are filtered from the presentation when inconsistent with current employee custody. custodyStatusForBorrower supplies the shared Assigned/On loan policy, including full edit and return-revert paths.
+
+### Overview location diagram and assignment ordering
+
+assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. LocationDistribution renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups passes startDate/asc as LoanTable initialSort; empty start dates sort last, and the header cycle can reset to the initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.

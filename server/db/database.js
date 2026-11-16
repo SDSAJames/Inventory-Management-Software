@@ -1,3 +1,4 @@
+import { ensureLoanActivity, withoutActivityTracking } from '../lib/assetActivity.js';
 import { ensureDepartmentDirectory } from '../lib/departmentDirectory.js';
 import { ensureSavedChangeUndo } from '../lib/savedChangeUndo.js';
 import { DEFAULT_OWNER, DEFAULT_ASSET_STATUSES, DEFAULT_TRANSFER_REASONS } from "../../shared/referenceData.js";
@@ -13,7 +14,7 @@ import { getDuplicateLoanIds, removeDuplicateLoans } from '../lib/loanDuplicates
 
 
 import { assetLocationForWrite, normalizeStoredLocations } from '../lib/assetLocations.js';
-import { isLoanReturned } from '../../shared/loanRules.js';
+import { isLoanReturned, custodyStatusForBorrower } from '../../shared/loanRules.js';
 
 // Ensure data directory exists
 const dbDir = path.dirname(config.dbPath);
@@ -121,6 +122,8 @@ export function initDatabase() {
     try { db.exec(`ALTER TABLE loans ADD COLUMN ${column} ${definition};`); } catch { /* Column already exists. */ }
   }
 
+  ensureLoanActivity(db);
+
   // 4. Ownership history table
   db.exec(`
     CREATE TABLE IF NOT EXISTS ownership_history (
@@ -227,11 +230,13 @@ export function initDatabase() {
   `);
 
   ensureSavedChangeUndo(db);
-  seedDefaultData();
-  normalizeStoredLocations(db);
-  removeExactDuplicateLoans();
-  ensureAvailableAssetCustody(db);
-  ensureDepartmentDirectory(db);
+  withoutActivityTracking(() => {
+    seedDefaultData();
+    normalizeStoredLocations(db);
+    removeExactDuplicateLoans();
+    ensureAvailableAssetCustody(db);
+    ensureDepartmentDirectory(db);
+  });
 }
 
 function removeExactDuplicateLoans() {
@@ -418,95 +423,95 @@ export function logAudit(action, entityType, entityId, details = {}, user = null
  * Reconciles every asset against all loans according to operational rules.
  */
 export function reconcileAllAssetsInDb() {
-  const assets = db.prepare('SELECT * FROM assets').all();
-  const loans = db.prepare('SELECT * FROM loans').all();
-  const now = new Date().toISOString();
-  const today = now.slice(0, 10);
+  return withoutActivityTracking(() => {
+    const assets = db.prepare('SELECT * FROM assets').all();
+    const loans = db.prepare('SELECT * FROM loans').all();
 
-  let reconciledCount = 0;
-  const updates = [];
+    let reconciledCount = 0;
+    const updates = [];
 
-  const updateAssetStmt = db.prepare(`
-    UPDATE assets
-    SET status = ?, owner = ?, department = ?, location = ?, updated = ?
-    WHERE id = ?
-  `);
+    const updateAssetStmt = db.prepare(`
+      UPDATE assets
+      SET status = ?, owner = ?, department = ?, location = ?, updated = ?
+      WHERE id = ?
+    `);
 
-  for (const asset of assets) {
-    if (String(asset.code).trim() === '1') continue;
-    const assetLoans = loans.filter(
-      (l) => String(l.asset_code || '').trim().toLowerCase() === String(asset.code || '').trim().toLowerCase()
-    );
+    for (const asset of assets) {
+      if (String(asset.code).trim() === '1') continue;
+      const assetLoans = loans.filter(
+        (l) => [l.asset_code, JSON.parse(l.equipment_json || '{}')?.Monitor].some((code) => String(code || '').trim().toLowerCase() === String(asset.code || '').trim().toLowerCase())
+      );
 
-    // Active loan is one with pickup_date, no return_date or returned_date, and not archived
-    const activeLoan = assetLoans.find((l) => {
-      const isReturned = isLoanReturned(l);
-      const hasPickedUp = Boolean(l.pickup_date || l.status === 'Active');
-      const returnedEquipment = l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null;
-      return hasPickedUp && !isReturned && !isAssetReturnedOnRecord({ returnedEquipment }, asset.code);
-    });
+      // Active loan is one with pickup_date, no return_date or returned_date, and not archived
+      const activeLoan = assetLoans.find((l) => {
+        const isReturned = isLoanReturned(l);
+        const hasPickedUp = Boolean(l.pickup_date || l.status === 'Active');
+        const returnedEquipment = l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null;
+        return hasPickedUp && !isReturned && !isAssetReturnedOnRecord({ returnedEquipment }, asset.code);
+      });
 
-    let newStatus = asset.status;
-    let newOwner = asset.owner || '';
-    let newDept = asset.department || '';
-    let newLoc = asset.location || '';
+      let newStatus = asset.status;
+      let newOwner = asset.owner || '';
+      let newDept = asset.department || '';
+      let newLoc = asset.location || '';
 
-    if (asset.status === 'Under repair') {
-      // A manually recorded repair takes precedence over an outstanding loan.
-      newLoc = assetLocationForWrite(db, asset.status, asset.location);
-    } else if (activeLoan) {
-      newStatus = 'On loan';
-      newOwner = activeLoan.assignee || asset.owner || '';
-      newDept = activeLoan.department || asset.department || '';
-      newLoc = asset.location || activeLoan.location || '';
-    } else if (asset.status === 'On loan') {
-      // Asset marked 'On loan' but has no active picked-up loan
-      const hasOtherHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');
-      newStatus = hasOtherHolder ? 'Assigned' : 'Available';
-      newOwner = hasOtherHolder ? asset.owner : DEFAULT_OWNER;
-      newDept = hasOtherHolder ? asset.department : '';
-    } else {
-      // Check if most recent loan was returned
-      const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
-      if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === DEFAULT_OWNER)) {
-        newLoc = asset.status === 'Available' ? asset.location || getAssetLocationAfterReturn(asset.status) : getAssetLocationAfterReturn(asset.status);
-        newOwner = DEFAULT_OWNER;
-        newDept = '';
-        if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {
-          newStatus = 'Available';
-        }
+      if (asset.status === 'Under repair') {
+        // A manually recorded repair takes precedence over an outstanding loan.
+        newLoc = assetLocationForWrite(db, asset.status, asset.location);
+      } else if (activeLoan) {
+        newStatus = custodyStatusForBorrower(activeLoan.assignee_type);
+        newOwner = activeLoan.assignee || asset.owner || '';
+        newDept = activeLoan.department || asset.department || '';
+        newLoc = asset.location || activeLoan.location || '';
+      } else if (asset.status === 'On loan') {
+        // Asset marked 'On loan' but has no active picked-up loan
+        const hasOtherHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');
+        newStatus = hasOtherHolder ? 'Assigned' : 'Available';
+        newOwner = hasOtherHolder ? asset.owner : DEFAULT_OWNER;
+        newDept = hasOtherHolder ? asset.department : '';
       } else {
-        // Enforce invariants:
-        const hasHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');
-        if (hasHolder && asset.status === 'Available') {
-          newStatus = 'Assigned';
-        } else if (!hasHolder && asset.status === 'Assigned') {
-          newStatus = 'Available';
+        // Check if most recent loan was returned
+        const returnedLoan = assetLoans.find((l) => Boolean(l.return_date || l.returned_date || l.status === 'Returned'));
+        if (returnedLoan && (!asset.owner || asset.owner === 'None' || asset.owner === DEFAULT_OWNER)) {
+          newLoc = asset.status === 'Available' ? asset.location || getAssetLocationAfterReturn(asset.status) : getAssetLocationAfterReturn(asset.status);
           newOwner = DEFAULT_OWNER;
           newDept = '';
+          if (asset.status !== 'Damaged' && asset.status !== 'Under repair' && asset.status !== 'Retired') {
+            newStatus = 'Available';
+          }
+        } else {
+          // Enforce invariants:
+          const hasHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');
+          if (hasHolder && asset.status === 'Available') {
+            newStatus = 'Assigned';
+          } else if (!hasHolder && asset.status === 'Assigned') {
+            newStatus = 'Available';
+            newOwner = DEFAULT_OWNER;
+            newDept = '';
+          }
         }
+      }
+
+      newLoc = assetLocationForWrite(db, newStatus, newLoc, '');
+
+      if (
+        newStatus !== asset.status ||
+        newOwner !== asset.owner ||
+        newDept !== asset.department ||
+        newLoc !== asset.location
+      ) {
+        updateAssetStmt.run(newStatus, newOwner, newDept, newLoc, asset.updated || '', asset.id);
+        reconciledCount++;
+        updates.push({
+          code: asset.code,
+          before: { status: asset.status, owner: asset.owner },
+          after: { status: newStatus, owner: newOwner },
+        });
       }
     }
 
-    newLoc = assetLocationForWrite(db, newStatus, newLoc, '');
-
-    if (
-      newStatus !== asset.status ||
-      newOwner !== asset.owner ||
-      newDept !== asset.department ||
-      newLoc !== asset.location
-    ) {
-      updateAssetStmt.run(newStatus, newOwner, newDept, newLoc, today, asset.id);
-      reconciledCount++;
-      updates.push({
-        code: asset.code,
-        before: { status: asset.status, owner: asset.owner },
-        after: { status: newStatus, owner: newOwner },
-      });
-    }
-  }
-
-  return { reconciledCount, updates };
+    return { reconciledCount, updates };
+  });
 }
 
 /**

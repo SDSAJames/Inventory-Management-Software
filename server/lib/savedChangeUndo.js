@@ -1,3 +1,4 @@
+import { withoutActivityTracking } from './assetActivity.js';
 import { createHash, randomUUID } from 'node:crypto';
 
 const TABLES = ['departments', 'locations', 'asset_categories', 'asset_statuses', 'employees', 'assets', 'loans', 'ownership_history', 'transfer_reasons'];
@@ -24,24 +25,26 @@ export function latestSavedChange(database, user) {
     available: allowed && unchanged, reason: !allowed ? 'The latest change was saved by another user.' : !unchanged ? 'Database state has changed since this checkpoint.' : '' };
 }
 export function undoSavedChange(database, expectedId, user) {
-  database.exec('BEGIN IMMEDIATE');
-  try {
-    const latest = latestSavedChange(database, user);
-    if (!latest.available || !expectedId || expectedId !== latest.id) throw new Error(latest.reason || 'The latest saved change has changed. Review it again.');
-    const checkpoint = database.prepare('SELECT before_json FROM saved_change_undo WHERE slot = 1').get();
-    const snapshot = JSON.parse(checkpoint.before_json);
-    database.exec('PRAGMA defer_foreign_keys = ON');
-    for (const table of [...TABLES].reverse()) if (Object.hasOwn(snapshot, table)) database.exec('DELETE FROM "' + table + '"');
-    for (const table of TABLES) {
-      for (const row of snapshot[table] || []) {
-        const columns = Object.keys(row);
-        database.prepare('INSERT INTO "' + table + '" (' + columns.map((column) => '"' + column + '"').join(',') + ') VALUES (' + columns.map(() => '?').join(',') + ')').run(...columns.map((column) => row[column]));
+  return withoutActivityTracking(() => {
+    database.exec('BEGIN IMMEDIATE');
+    try {
+      const latest = latestSavedChange(database, user);
+      if (!latest.available || !expectedId || expectedId !== latest.id) throw new Error(latest.reason || 'The latest saved change has changed. Review it again.');
+      const checkpoint = database.prepare('SELECT before_json FROM saved_change_undo WHERE slot = 1').get();
+      const snapshot = JSON.parse(checkpoint.before_json);
+      database.exec('PRAGMA defer_foreign_keys = ON');
+      for (const table of [...TABLES].reverse()) if (Object.hasOwn(snapshot, table)) database.exec('DELETE FROM "' + table + '"');
+      for (const table of TABLES) {
+        for (const row of snapshot[table] || []) {
+          const columns = Object.keys(row);
+          database.prepare('INSERT INTO "' + table + '" (' + columns.map((column) => '"' + column + '"').join(',') + ') VALUES (' + columns.map(() => '?').join(',') + ')').run(...columns.map((column) => row[column]));
+        }
       }
-    }
-    database.prepare('DELETE FROM saved_change_undo WHERE slot = 1').run();
-    database.exec('COMMIT');
-    return latest;
-  } catch (error) { database.exec('ROLLBACK'); throw error; }
+      database.prepare('DELETE FROM saved_change_undo WHERE slot = 1').run();
+      database.exec('COMMIT');
+      return latest;
+    } catch (error) { database.exec('ROLLBACK'); throw error; }
+  });
 }
 
 /** All working-data write routes share this successful-response checkpoint boundary. */

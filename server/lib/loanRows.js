@@ -17,6 +17,9 @@ function serializeLoanRow(loan, forExport) {
   const text = (value, fallback = '') => forExport ? value : (value || fallback);
   return normalizePcRecord({
     id: loan.id,
+    latestChange: loan.latest_change || '',
+    changedAt: loan.changed_at || '',
+    changedBy: loan.changed_by || '',
     assetCode: loan.asset_code,
     assignee: loan.assignee,
     department: text(loan.department),
