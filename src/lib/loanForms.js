@@ -1,3 +1,4 @@
+import { trimDirectoryFields, trimDirectoryValue } from '../../shared/directoryFields.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
 import { normalizePcRecord, pcAssetCode } from '../../shared/pcReferences.js';
 import { buildIpAddress, ipAddressToForm, isIpAddressInvalid } from './ipAddress.js';
@@ -7,7 +8,7 @@ import { readableTransferNote } from './transferNotes.js';
 import { todayIso } from './utils.js';
 
 export function createLoanForm(record, assigneeType = 'Business traveler') {
-  const loan = normalizePcRecord(record);
+  const loan = trimDirectoryFields(normalizePcRecord(record));
   const equipment = loan?.equipment || {};
   return {
     assetCode: loan?.assetCode || '',
@@ -49,7 +50,7 @@ export function buildLoanFormData(form, { equipment = {}, includeReturn = false 
     ip: buildIpAddress(form), startDate: form.startDate, loanDate: form.startDate, endDate, dueDate: endDate,
     pickupDate: form.pickupDate, returnDate: includeReturn ? form.returnDate : '',
     ...(includeReturn ? { returnedDate: form.returnDate } : {}),
-    location: getLoanLocation(form), department: form.department, others: form.others, note: form.note,
+    location: getLoanLocation(form), department: trimDirectoryValue(form.department), others: form.others, note: form.note,
     equipment: { ...equipment, ...buildLoanEquipment(form, assetCode), RequestedPC: form.requestPc || Boolean(assetCode), RequestedMonitor: form.requestMonitor || Boolean(form.monitor) },
   };
 }

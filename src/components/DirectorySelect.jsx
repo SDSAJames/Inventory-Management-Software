@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { trimDirectoryValue } from '../../shared/directoryFields.js';
 import { sortDirectoryOptions } from '../lib/directoryOptions';
 
 function DirectoryCombobox({ id, label, options, value, onChange, placeholder }) {
@@ -6,7 +7,7 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
   const [filter, setFilter] = useState('');
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef(null);
-  const matches = options.filter((option) => option.toLowerCase().includes(filter.toLowerCase()));
+  const matches = options.filter((option) => option.toLowerCase().includes(trimDirectoryValue(filter).toLowerCase()));
   const listId = `${id}-options`;
   const choose = (option) => {
     onChange({ target: { value: option } });
@@ -23,6 +24,10 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
       aria-activedescendant={open && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
       onFocus={() => { setFilter(''); setOpen(true); setActiveIndex(-1); }}
       onClick={() => { if (!open) { setFilter(''); setOpen(true); setActiveIndex(-1); } }}
+      onBlur={(event) => {
+        const trimmed = trimDirectoryValue(event.target.value);
+        if (trimmed !== event.target.value) onChange({ target: { value: trimmed } });
+      }}
       value={value ?? ''} placeholder={placeholder || `Select or type ${label.toLowerCase()}`}
       onChange={(event) => { onChange(event); setFilter(event.target.value); setOpen(true); setActiveIndex(-1); }}
       onKeyDown={(event) => {
@@ -47,7 +52,7 @@ function DirectoryCombobox({ id, label, options, value, onChange, placeholder })
 }
 
 export default function DirectorySelect({ id, label, options = [], value, onChange, placeholder, preserveCurrentValue = false, allowCustom = false, labelAction }) {
-  options = sortDirectoryOptions(preserveCurrentValue && value && !options.includes(value) ? [...options, value] : options);
+  options = sortDirectoryOptions([...new Set((preserveCurrentValue && value && !options.includes(value) ? [...options, value] : options).map(trimDirectoryValue).filter(Boolean))]);
   return (
     <div className="field">
       {labelAction ? <div className="asset-category-label"><label htmlFor={id}>{label}</label>{labelAction}</div> : <label htmlFor={id}>{label}</label>}

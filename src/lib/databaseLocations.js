@@ -1,3 +1,4 @@
+import { trimDirectoryFields } from '../../shared/directoryFields.js';
 import { getAssetLocation, normalizeLocation, normalizeAvailableAsset } from '../../shared/assetRules.js';
 import { REPAIR_LOCATION } from '../../shared/referenceData.js';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
@@ -20,7 +21,7 @@ export function normalizeDatabaseLocations(database) {
   const normalizeRows = (rows, locationFor, normalize = (row) => row) => {
     let changed = false;
     const normalized = (rows || []).map((row) => {
-      const normalizedRow = normalize(row);
+      const normalizedRow = trimDirectoryFields(normalize(row));
       const location = locationFor(normalizedRow);
       if (location === row.location && normalizedRow === row) return row;
       changed = true;
@@ -31,6 +32,8 @@ export function normalizeDatabaseLocations(database) {
   const trackedAssets = database.assets?.some((asset) => String(asset.code).trim() === '1') ? database.assets.filter((asset) => String(asset.code).trim() !== '1') : database.assets;
   const assets = normalizeRows(trackedAssets, (asset) => getAssetLocation(asset.status, asset.location), normalizeAvailableAsset);
   const loans = normalizeRows(database.loans, (loan) => normalizeLocation(loan.location, ''), normalizePcRecord);
+  const employees = database.employees?.map(trimDirectoryFields);
+  const employeesChanged = employees?.some((employee, index) => employee !== database.employees[index]);
   const locations = [...new Set([
     ...(database.locations || []),
     ...(assets || []).map((asset) => asset.location),
@@ -40,6 +43,6 @@ export function normalizeDatabaseLocations(database) {
   }
   const locationsChanged = locations.length !== (database.locations || []).length ||
     locations.some((location, index) => location !== database.locations[index]);
-  if (assets === database.assets && loans === database.loans && !locationsChanged) return database;
-  return { ...database, assets, loans, locations: locationsChanged ? locations : database.locations };
+  if (assets === database.assets && loans === database.loans && !locationsChanged && !employeesChanged) return database;
+  return { ...database, assets, loans, ...(employeesChanged ? { employees } : {}), locations: locationsChanged ? locations : database.locations };
 }

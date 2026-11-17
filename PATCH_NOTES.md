@@ -6,6 +6,24 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.3] — 2026-11-17
+
+### Consistent Directory Field Trimming
+
+Remove leading and trailing whitespace from Rental location and Department across shared workflows.
+
+#### Highlights
+- Trim directory fields on leaving the input and when saving.
+- Preserve spaces between words and keep blank schedules blank.
+
+#### Directory Values
+
+- Reuse shared whitespace handling for asset and assignment forms, pickup, ownership transfer, bulk changes and imports.
+- Trim dropdown choices and search text, including pasted tabs and outer whitespace, without interrupting spaces typed between words.
+- Normalize cached record fields and inherited transfer values so padded data does not propagate to new records.
+
+---
+
 ## [1.20.2] — 2026-11-16
 
 ### Compact Overview Summary

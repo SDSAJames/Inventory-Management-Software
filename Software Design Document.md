@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.20.2** |
+| **Document Version** | **v1.20.3** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 16, 2026 |
+| **Release Date** | November 17, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -421,6 +421,10 @@ Overview category and location distributions share one diagram component. Segmen
 
 Custody holder and physical storage are independent. Saving unchanged IT Department custody preserves the selected location, including maintenance states other than the required repair destination. Historical return records do not relocate equipment during reconciliation; actual returns still choose the default destination.
 
+### Directory field whitespace
+
+Rental location and Department use a shared outer-whitespace policy across entry, editing, pickup, transfer and import. Inputs retain spaces during typing, then trim when focus leaves; save paths apply the same rule independently. Internal spaces remain meaningful, whitespace-only values become empty, and omitted fields in partial updates remain omitted. Client record normalization and transfer inheritance prevent padded values propagating. Existing blank schedule-location rules remain in force.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.20.2**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.20.3**.

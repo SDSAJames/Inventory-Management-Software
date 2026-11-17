@@ -1,3 +1,4 @@
+import { trimDirectoryFields } from './directoryFields.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION, REPAIR_LOCATION } from "./referenceData.js";
 
 import { isLoanReturned, custodyStatusForBorrower } from './loanRules.js';
@@ -20,6 +21,7 @@ export function getAssetLocation(status, location, fallback = DEFAULT_LOCATION) 
 /** Available and repair equipment are held in IT custody. */
 export function normalizeAvailableAsset(asset) {
   if (!asset) return asset;
+  asset = trimDirectoryFields(asset);
   if (asset.status === 'Under repair') {
     if (asset.owner === DEFAULT_OWNER && asset.department === '' && asset.location === REPAIR_LOCATION) return asset;
     return { ...asset, owner: DEFAULT_OWNER, department: '', location: REPAIR_LOCATION };

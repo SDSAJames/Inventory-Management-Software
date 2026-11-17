@@ -1,3 +1,4 @@
+import { trimDirectoryFields, trimDirectoryValue } from '../../shared/directoryFields.js';
 import { restoreRecordActivity, withoutActivityTracking } from '../lib/assetActivity.js';
 import { saveAssetIssuedFields } from '../lib/assetIssuedFields.js';
 import { getLoanLocation } from '../../shared/loanLocations.js';
@@ -95,7 +96,8 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
-      for (const a of assets.filter((asset) => String(asset.code).trim() !== '1')) {
+      for (const rawAsset of assets.filter((asset) => String(asset.code).trim() !== '1')) {
+        const a = trimDirectoryFields(rawAsset);
         if (!a.code) continue;
         const codeTrimmed = String(a.code).trim();
         const existing = getAssetStmt.get(codeTrimmed);
@@ -110,7 +112,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
               a.status || existing.status,
               assetLocationForWrite(db, a.status || existing.status, a.location || existing.location),
               a.owner !== undefined ? a.owner : existing.owner,
-              a.department !== undefined ? a.department : existing.department,
+              trimDirectoryValue(a.department !== undefined ? a.department : existing.department),
               a.purchaseDate || existing.purchase_date || '',
               a.warrantyExpirationDate ?? a.warranty_expiration_date ?? existing.warranty_expiration_date ?? '',
               a.condition || existing.condition,
@@ -205,7 +207,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
       const existingLoans = db.prepare('SELECT * FROM loans').all();
 
       for (const rawLoan of loans) {
-        const l = normalizePcRecord(rawLoan);
+        const l = trimDirectoryFields(normalizePcRecord(rawLoan));
         const matchingIndex = findLoanMatchIndex(existingLoans, l);
         const matchingLoan = matchingIndex >= 0 ? existingLoans[matchingIndex] : null;
         const newLoanId = matchingLoan?.id || l.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

@@ -1,3 +1,4 @@
+import { trimDirectoryFields } from '../../shared/directoryFields.js';
 import { randomUUID } from 'node:crypto';
 import { splitLoanEquipment, equipmentForTransferredPickup } from '../../shared/loanTransfer.js';
 import { borrowerType, tracksEndDate, custodyStatusForBorrower, isLoanReturned } from '../../shared/loanRules.js';
@@ -34,8 +35,8 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const sourceTransferNote = `Transferred ${transferredSummary} to ${recipientLabel} on ${transferTime}`;
   const targetTransferNote = `Pickup by transfer: received ${transferredSummary} from ${sourceLabel} on ${transferTime}`;
   const target = {
-    ...source,
-    ...(schedule || {}),
+    ...trimDirectoryFields(source),
+    ...(trimDirectoryFields(schedule) || {}),
     ...(Object.hasOwn(source, 'latest_change') ? { latest_change: null, changed_at: null, changed_by: null } : {}),
     id: schedule?.id || `loan-${randomUUID()}`,
     asset_code: transferred.Laptop || '',

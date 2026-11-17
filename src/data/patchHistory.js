@@ -8,6 +8,22 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-17',
+    title: 'Consistent Directory Field Trimming',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Remove leading and trailing whitespace from Rental location and Department across shared workflows.',
+    highlights: ['Trim directory fields on leaving the input and when saving.', 'Preserve spaces between words and keep blank schedules blank.'],
+    sections: [
+      { heading: 'Directory Values', badge: 'Fix', items: [
+        'Reuse shared whitespace handling for asset and assignment forms, pickup, ownership transfer, bulk changes and imports.',
+        'Trim dropdown choices and search text, including pasted tabs and outer whitespace, without interrupting spaces typed between words.',
+        'Normalize cached record fields and inherited transfer values so padded data does not propagate to new records.',
+      ] },
+    ],
+  },
+  {
+    version: '1.20.2',
     date: '2026-11-16',
     title: 'Compact Overview Summary',
     tag: 'Patch',

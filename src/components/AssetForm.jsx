@@ -1,3 +1,4 @@
+import { trimDirectoryValue } from '../../shared/directoryFields.js';
 import { useRecordDraft } from '../hooks/useRecordDraft';
 import DateInput from './DateInput';
 import DirectorySelect from './DirectorySelect';
@@ -178,6 +179,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner, default
       code,
       name: form.name || code,
       owner: form.owner ? form.owner.trim() : '',
+      department: trimDirectoryValue(form.department),
       status: validatedStatus,
       location: getAssetLocation(validatedStatus, form.location),
     };

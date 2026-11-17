@@ -1,3 +1,4 @@
+import { trimDirectoryFields } from '../../shared/directoryFields.js';
 import { assetActivityFields } from '../lib/assetActivity.js';
 import { saveAssetIssuedFields } from '../lib/assetIssuedFields.js';
 import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
@@ -459,7 +460,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
     return res.status(400).json({ success: false, error: 'Array of asset IDs is required.' });
   }
 
-  const { status, location, category, department, condition, notes } = changes;
+  const { status, location, category, department, condition, notes } = trimDirectoryFields(changes);
 
   db.exec('BEGIN TRANSACTION;');
   try {
@@ -481,7 +482,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
           status || null,
           assetLocationForWrite(db, status || asset.status, location || asset.location),
           category || null,
-          department || null,
+          department ?? null,
           condition || null,
           notes || null,
           todayIso(),

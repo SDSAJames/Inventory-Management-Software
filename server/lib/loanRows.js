@@ -1,3 +1,4 @@
+import { trimDirectoryFields } from '../../shared/directoryFields.js';
 import { tracksEndDate } from '../loanRules.js';
 import { todayIso } from './dates.js';
 import { isLoanReturned } from '../../shared/loanRules.js';
@@ -14,6 +15,7 @@ export function computeLoanStatus(loan, { today = todayIso(), tracksDueDate = tr
 }
 
 function serializeLoanRow(loan, forExport) {
+  loan = trimDirectoryFields(loan);
   const text = (value, fallback = '') => forExport ? value : (value || fallback);
   return normalizePcRecord({
     id: loan.id,

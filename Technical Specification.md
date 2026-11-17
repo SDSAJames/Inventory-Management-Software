@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.20.2** |
+| **Specification Version** | **v1.20.3** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 16, 2026 |
+| **Release Date** | November 17, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -557,3 +557,7 @@ Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers se
 DistributionChart renders individual SVG arc paths so pointer hit regions match segments. Shared active-label state controls stroke width, dimming, center count, legend highlight and detail text. The paths and legend buttons support hover/focus and Enter/Space; CSS respects prefers-reduced-motion. LocationDistribution is a thin wrapper over this shared chart.
 
 getHolderReturnChanges distinguishes unchanged IT custody from a real return and resolves omitted owner values against the saved owner. Bulk Available updates use the same return decision instead of always moving already IT-held equipment to the default room. Client/server historical-return reconciliation preserves saved nonempty locations; repair routing and explicit return endpoints retain their established destinations. Regression tests exercise diagram feedback, form payloads, full/partial/bulk API saves, export and repeated process restart.
+
+### Directory whitespace normalization
+
+shared/directoryFields.js supplies trimDirectoryValue and non-mutating trimDirectoryFields for location/department properties. DirectorySelect trims and deduplicates options before sorting, trims the query for matching and commits trimmed input on blur. Shared loan builders and asset payloads also trim on submission, so keyboard submission does not depend on blur. Cache normalization, asset custody normalization, bulk updates, transfer inheritance, exchange imports and loan serialization reuse the rule. Partial updates preserve omitted keys; backup restore and undo continue to preserve stored history. Tests cover controlled input behavior, internal spaces, blank schedules, partial updates, API save paths and imports using isolated databases.
