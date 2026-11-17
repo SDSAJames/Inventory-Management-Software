@@ -6,6 +6,22 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.1] — 2026-11-17
+
+### Newest Pickups First
+
+Default Assigned and Loans to pickup date descending.
+
+#### Highlights
+- Show the latest equipment pickups first in Assigned and Loans.
+
+#### Custody Sorting
+
+- Initialize Assigned and Loans with pickup date descending when entering either tab; keep manual column sorting available.
+- Keep start date ascending for the other custody tabs and place missing dates last.
+
+---
+
 ## [1.23.0] — 2026-11-17
 
 ### Category Browsing & Returned-item Editing

@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.23.0)
+# StarPlus Energy Asset Management System (v1.23.1)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -207,7 +207,7 @@ The Assets and MES registers, including expanded MES location asset lists, displ
 
 **Recent assignment updates and editors:** Overview shows the newest asset or linked assignment/pickup change, including borrower-type edits such as Business traveler → Contractor, its saved time, and **Changed by** (signed-in name and Knox ID/username). Earlier records without an editor show Not recorded. Changes without a recorded time, including legacy date-only values, display no date and follow dated records in the default recent list. Automatic reconciliation and restore do not stamp today onto old records.
 
-Employee custody stays **Assigned** through editing, return reverts and reconciliation; business travelers and contractors use **On loan**. Overview also shows an **Asset locations** diagram with counts and percentages alongside Asset mix. Assignments & Pickups defaults to **Start date ascending**, with undated rows last; headers still allow manual sorting. Restart the backend once after upgrading to enable assignment change tracking and editor capture for subsequent saves.
+Employee custody stays **Assigned** through editing, return reverts and reconciliation; business travelers and contractors use **On loan**. Overview also shows an **Asset locations** diagram with counts and percentages alongside Asset mix. Assignments & Pickups defaults to **Pickup date descending** in Assigned and Loans, and **Start date ascending** in the other tabs. Undated rows remain last; headers still allow manual sorting. Restart the backend once after upgrading to enable assignment change tracking and editor capture for subsequent saves.
 
 **Responsive Overview:** Recent-update tables scroll horizontally inside their own panel. Asset mix and the location diagram stay within the page; below 1200px the panels stack. Phone layouts use a compact navigation header, and page/account actions wrap to fit.
 

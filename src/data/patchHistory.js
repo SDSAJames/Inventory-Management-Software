@@ -9,6 +9,21 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-17',
+    title: 'Newest Pickups First',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Default Assigned and Loans to pickup date descending.',
+    highlights: ['Show the latest equipment pickups first in Assigned and Loans.'],
+    sections: [
+      { heading: 'Custody Sorting', badge: 'UI', items: [
+        'Initialize Assigned and Loans with pickup date descending when entering either tab; keep manual column sorting available.',
+        'Keep start date ascending for the other custody tabs and place missing dates last.',
+      ] },
+    ],
+  },
+  {
+    version: '1.23.0',
+    date: '2026-11-17',
     title: 'Category Browsing & Returned-item Editing',
     tag: 'Feature Release',
     type: 'minor',

@@ -688,7 +688,8 @@ export default function LoansPage() {
           </div>
         )}
         <LoanTable
-          initialSort={{ key: 'startDate', dir: 'asc' }}
+          key={category}
+          initialSort={['assigned', 'loaned'].includes(category) ? { key: 'pickupDate', dir: 'desc' } : { key: 'startDate', dir: 'asc' }}
           scheduled={category === 'scheduled'}
           showPickupReadiness={category === 'scheduled' || category === 'all'}
           hideReturnDate={category === 'overdue'}

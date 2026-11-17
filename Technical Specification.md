@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.23.0** |
+| **Specification Version** | **v1.23.1** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 17, 2026 |
@@ -556,7 +556,7 @@ withoutActivityTracking isolates maintenance, snapshot restore and undo from rea
 
 ### Overview location diagram and assignment ordering
 
-assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups passes startDate/asc as LoanTable initialSort; empty start dates sort last, and the header cycle can reset to the initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
+assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups keys LoanTable by category, passing pickupDate/desc as initialSort for assigned and loaned, and startDate/asc for other tabs. Missing dates sort last, and the header cycle can reset to the tab-specific initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
 
 ### Responsive grid and table sizing
 
