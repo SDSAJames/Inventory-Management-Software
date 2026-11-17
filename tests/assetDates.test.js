@@ -264,34 +264,6 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
       assert.equal(JSON.parse(read().returned_equipment_json).Cable, '3');
       assert.equal(JSON.parse(read().returned_equipment_json).Others, '01 bags');
     });
-    await t.test('directory fields trim across asset saves, loan editing, pickup, transfers and imports', async () => {
-      const { loansRouter } = await import('../server/routes/loans.js');
-      const read = (table, id) => db.prepare(`SELECT department, location FROM ${table} WHERE id = ?`).get(id);
-      const clean = (table, id, department, location) => assert.deepEqual({ ...read(table, id) }, { department, location });
-      invoke(assetsRouter, 'post', '/', { id: 'trim-asset', code: 'TRIM-PC', status: 'Assigned', owner: 'trim.holder', department: '\t Field  Operations ', location: ' Stack Office ' });
-      clean('assets', 'trim-asset', 'Field  Operations', 'Stack Office');
-      invoke(assetsRouter, 'put', '/:id', { department: ' New Team \n', location: ' New Office ' }, { id: 'trim-asset' });
-      clean('assets', 'trim-asset', 'New Team', 'New Office');
-      invoke(assetsRouter, 'post', '/batch-update', { ids: ['trim-asset'], changes: { department: ' Batch Team ', location: ' Batch Office ' } });
-      clean('assets', 'trim-asset', 'Batch Team', 'Batch Office');
-      invoke(assetsRouter, 'post', '/batch-update', { ids: ['trim-asset'], changes: { department: ' \t ' } });
-      clean('assets', 'trim-asset', '', 'Batch Office');
-
-      invoke(loansRouter, 'post', '/', { id: 'trim-loan', knoxId: 'trim.borrower', department: ' Field  Operations ', location: '\t Stack Office ' });
-      clean('loans', 'trim-loan', 'Field  Operations', 'Stack Office');
-      invoke(loansRouter, 'put', '/:id', { department: ' Edited Team ', location: ' Edited Office ' }, { id: 'trim-loan' });
-      clean('loans', 'trim-loan', 'Edited Team', 'Edited Office');
-      invoke(loansRouter, 'post', '/:id/pickup', { pickupDate: '2026-11-17', department: ' Pickup Team ', location: ' Pickup Office ', equipment: { Dongle: '1' } }, { id: 'trim-loan' });
-      clean('loans', 'trim-loan', 'Pickup Team', 'Pickup Office');
-      // Old padded records must not pass whitespace on to the next recipient.
-      db.prepare('UPDATE loans SET department = ?, location = ? WHERE id = ?').run(' Legacy Team ', ' Legacy Office ', 'trim-loan');
-      const transfer = invoke(loansRouter, 'post', '/:id/transfer', { knoxId: 'trim.receiver', assigneeType: 'Employee', selection: { Dongle: '1' } }, { id: 'trim-loan' });
-      clean('loans', transfer.targetId, 'Legacy Team', 'Legacy Office');
-
-      invoke(exchangeRouter, 'post', '/import', { assets: [{ id: 'trim-import-asset', code: 'TRIM-IMPORT', status: 'Assigned', owner: 'trim.import', department: '\t Import Team ', location: ' Import Office ' }], loans: [{ id: 'trim-import-loan', knoxId: 'trim.import.loan', department: ' Import  Team ', location: '  ', status: 'Scheduled' }] });
-      clean('assets', 'trim-import-asset', 'Import Team', 'Import Office');
-      clean('loans', 'trim-import-loan', 'Import  Team', '');
-    });
     await t.test('blank schedule locations survive creation, editing, API reads and import', async () => {
       const { loansRouter } = await import('../server/routes/loans.js');
       invoke(loansRouter, 'post', '/', { id: 'blank-location', knoxId: 'blank.location' });

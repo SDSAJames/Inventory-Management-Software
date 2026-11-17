@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.20.3** |
+| **Specification Version** | **v1.21.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 17, 2026 |
@@ -554,10 +554,14 @@ Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers se
 
 ### Diagram interactions and storage edit persistence
 
-DistributionChart renders individual SVG arc paths so pointer hit regions match segments. Shared active-label state controls stroke width, dimming, center count, legend highlight and detail text. The paths and legend buttons support hover/focus and Enter/Space; CSS respects prefers-reduced-motion. LocationDistribution is a thin wrapper over this shared chart.
+DistributionChart renders individual SVG arc paths so pointer hit regions match segments. Shared active-label state controls stroke width, dimming, center count, legend highlight and detail text. The paths and legend buttons support hover/focus and Enter/Space; CSS respects prefers-reduced-motion. LocationDistribution is a thin wrapper over this shared chart and supplies collapsedLegendLimit=5. DistributionChart optionally slices only its visible legend entries while collapsed; the SVG segments, total and percentage calculations retain the complete item set. If the item count exceeds the limit, a Show more / Show less button controls expansion with aria-expanded and aria-controls linking it to the legend. Asset mix keeps its complete legend by default.
 
 getHolderReturnChanges distinguishes unchanged IT custody from a real return and resolves omitted owner values against the saved owner. Bulk Available updates use the same return decision instead of always moving already IT-held equipment to the default room. Client/server historical-return reconciliation preserves saved nonempty locations; repair routing and explicit return endpoints retain their established destinations. Regression tests exercise diagram feedback, form payloads, full/partial/bulk API saves, export and repeated process restart.
 
 ### Directory whitespace normalization
 
-shared/directoryFields.js supplies trimDirectoryValue and non-mutating trimDirectoryFields for location/department properties. DirectorySelect trims and deduplicates options before sorting, trims the query for matching and commits trimmed input on blur. Shared loan builders and asset payloads also trim on submission, so keyboard submission does not depend on blur. Cache normalization, asset custody normalization, bulk updates, transfer inheritance, exchange imports and loan serialization reuse the rule. Partial updates preserve omitted keys; backup restore and undo continue to preserve stored history. Tests cover controlled input behavior, internal spaces, blank schedules, partial updates, API save paths and imports using isolated databases.
+shared/directoryFields.js supplies trimDirectoryValue and non-mutating trimDirectoryFields for location/department properties. DirectorySelect trims and deduplicates options before sorting, trims the query for matching and commits trimmed input on blur. Shared loan builders and asset payloads also trim on submission, so keyboard submission does not depend on blur. Cache normalization, asset custody normalization, bulk updates, transfer inheritance, exchange imports and loan serialization reuse the rule. Partial updates preserve omitted keys; backup restore and undo continue to preserve stored history. Controlled input behavior, internal spaces, blank schedules, partial updates, API save paths and imports were verified using isolated databases before removing the whitespace-specific test code.
+
+### Shared calendar visibility
+
+useCalendarVisibility supplies hidePickedUp=true and hideReturned=false to each calendar, owns month/day event-type filters, and resets picked-up-only filters when pickup events are hidden. CalendarVisibilityFilters reuses the existing switch control in toolbars and day dialogs. indexInOutSchedule accepts a hidePickedUp option that suppresses only the pickup-date index; outgoing and incoming return indexing remain intact. Both calendars derive grid events, monthly counts and selected-day data from these indexes, with hideReturned filtering applied independently before indexing.

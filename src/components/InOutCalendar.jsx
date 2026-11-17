@@ -4,7 +4,8 @@ import { enrichCustodyRecords } from '../lib/custodyRecords';
 import CalendarNavigation from './CalendarNavigation';
 import CalendarWeekdays from './CalendarWeekdays';
 import { indexInOutSchedule, scheduleForDay, filterCalendarRecords } from '../lib/inOutSchedule.js';
-import CalendarReturnFilter from './CalendarReturnFilter';
+import CalendarVisibilityFilters from './CalendarVisibilityFilters';
+import { useCalendarVisibility } from '../hooks/useCalendarVisibility.js';
 import { canRecordReturn } from "../../shared/loanRules.js";
 import { useState, useMemo } from 'react';
 import { todayIso, readableLoanDate } from "../lib/utils";
@@ -33,14 +34,15 @@ export default function InOutCalendar({
   // Filter state
   const [requesterTypeFilter, setRequesterTypeFilter] = useState(initialRequesterType); // 'ALL' | 'Business traveler' | 'Employee' | 'Contractor'
   const [selectedRequester, setSelectedRequester] = useState(initialRequester); // 'ALL' | specific name
-  const [eventTypeFilter, setEventTypeFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [searchFilter, setSearchFilter] = useState('');
-  const [hideReturned, setHideReturned] = useState(false);
+  const {
+    hideReturned, setHideReturned, hidePickedUp, setHidePickedUp,
+    eventTypeFilter, setEventTypeFilter, dayModalFilter, setDayModalFilter,
+  } = useCalendarVisibility();
 
   // Day detail modal state
   const [selectedDay, setSelectedDayData] = useState(null);
-  const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'outgoing' | 'incoming'
 
   /* ── 2. Enrich loans with asset details & normalization ──────── */
   const enrichedLoans = useMemo(() => enrichCustodyRecords(loans, assets), [loans, assets]);
@@ -119,7 +121,7 @@ export default function InOutCalendar({
   };
 
   /* ── 5. Index Outgoing & Incoming events by Date ────────────── */
-  const scheduleIndex = useMemo(() => indexInOutSchedule(filterCalendarRecords(enrichedLoans, hideReturned)), [enrichedLoans, hideReturned]);
+  const scheduleIndex = useMemo(() => indexInOutSchedule(filterCalendarRecords(enrichedLoans, hideReturned), { hidePickedUp }), [enrichedLoans, hideReturned, hidePickedUp]);
   const { outgoingByDate, incomingByDate, pickedUpByDate } = scheduleIndex;
   const selectedDayData = selectedDay ? scheduleForDay(scheduleIndex, selectedDay.dateStr, matchesFilters) : null;
 
@@ -212,8 +214,8 @@ export default function InOutCalendar({
 
       {/* ── Filters Bar (Requester Type, Individual User, Event Flow, Location, Search) ── */}
       <div className="calendar-filters-bar">
-        <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
-          <button type="button" className={`cal-filter-pill ${eventTypeFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setEventTypeFilter(eventTypeFilter === 'pickedup' ? 'all' : 'pickedup')}>Picked up ({monthStats.pickedUpCount})</button>
+        <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
+          {!hidePickedUp && <button type="button" className={`cal-filter-pill ${eventTypeFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setEventTypeFilter(eventTypeFilter === 'pickedup' ? 'all' : 'pickedup')}>Picked up ({monthStats.pickedUpCount})</button>}
         {/* Primary Filter: Requester Type Buttons */}
         <div className="filter-block">
           <label className="filter-block-label">Requester Type:</label>
@@ -372,7 +374,7 @@ export default function InOutCalendar({
           )}
           {eventTypeFilter !== 'all' && (
             <span className="filter-tag">
-              Flow: {eventTypeFilter === 'outgoing' ? '📥 Out / Checkout' : '📤 In / Return'}
+              Flow: {eventTypeFilter === 'pickedup' ? 'Picked up' : eventTypeFilter === 'outgoing' ? '📥 Out / Checkout' : '📤 In / Return'}
               <button type="button" onClick={() => setEventTypeFilter('all')}>×</button>
             </span>
           )}
@@ -591,7 +593,7 @@ export default function InOutCalendar({
 
             {/* Quick Filter tabs inside modal */}
             <div className="calendar-type-pills day-modal-pills">
-              <button type="button" className={`loan-tab ${dayModalFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setDayModalFilter('pickedup')}>Picked up ({selectedDayData.pickedUp.length})</button>
+              {!hidePickedUp && <button type="button" className={`loan-tab ${dayModalFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setDayModalFilter('pickedup')}>Picked up ({selectedDayData.pickedUp.length})</button>}
               <button
                 type="button"
                 className={`cal-filter-pill ${dayModalFilter === 'all' ? 'active' : ''}`}
@@ -616,10 +618,10 @@ export default function InOutCalendar({
             </div>
           </div>
 
-          <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
+          <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
 
           <div className="day-modal-content-stream">
-            {(dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditLoan ? (id) => { setSelectedDayData(null); onEditLoan(id); } : undefined} />}
+            {!hidePickedUp && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditLoan ? (id) => { setSelectedDayData(null); onEditLoan(id); } : undefined} />}
             {/* 1. Outgoing Section (Checkouts & Departures) */}
             {(dayModalFilter === 'all' || dayModalFilter === 'outgoing') && (
               <div className="day-modal-section">

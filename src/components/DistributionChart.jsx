@@ -12,13 +12,17 @@ function arcPath(start, share) {
 }
 
 /** Shared category/location diagram with matching segment and legend feedback. */
-export default function DistributionChart({ items = [], label = 'Asset mix', emptyMessage = 'No assets to display.' }) {
+export default function DistributionChart({ items = [], label = 'Asset mix', emptyMessage = 'No assets to display.', collapsedLegendLimit }) {
   const [activeLabel, setActiveLabel] = useState(null);
+  const [expanded, setExpanded] = useState(false);
   const values = items.filter((item) => item.count > 0);
+  const canFold = Number.isInteger(collapsedLegendLimit) && collapsedLegendLimit > 0 && values.length > collapsedLegendLimit;
+  const visibleValues = canFold && !expanded ? values.slice(0, collapsedLegendLimit) : values;
   const total = values.reduce((sum, item) => sum + item.count, 0);
   const active = values.find((item) => item.label === activeLabel);
   if (!total) return <p className="empty">{emptyMessage}</p>;
   const detailId = `${label.toLowerCase().replace(/\W+/g, '-')}-details`;
+  const legendId = `${detailId}-legend`;
   const details = (item) => `${item.label}: ${item.count} asset${item.count === 1 ? '' : 's'} (${(item.count / total * 100).toFixed(1)}%)`;
   const interaction = (item) => ({
     onMouseEnter: () => setActiveLabel(item.label),
@@ -47,7 +51,8 @@ export default function DistributionChart({ items = [], label = 'Asset mix', emp
     <div id={detailId} className="distribution-details" role="status" aria-live="polite">
       {active ? <><strong>{active.label}</strong><span>{active.count} asset{active.count === 1 ? '' : 's'} · {(active.count / total * 100).toFixed(1)}%</span></> : <span>Hover or focus a segment or label for details.</span>}
     </div>
-    <ul className="location-distribution-legend">{values.map((item, index) => <li key={item.label}>
+    <div className="distribution-legend">
+    <ul id={legendId} className="location-distribution-legend">{visibleValues.map((item, index) => <li key={item.label}>
       <button type="button" className={`distribution-legend-button${active?.label === item.label ? ' active' : ''}`}
         aria-label={details(item)} aria-describedby={detailId} {...interaction(item)}>
         <span className="location-distribution-swatch" style={{ background: COLORS[index % COLORS.length] }} aria-hidden="true" />
@@ -55,5 +60,10 @@ export default function DistributionChart({ items = [], label = 'Asset mix', emp
         <strong>{item.count}</strong><small>{(item.count / total * 100).toFixed(1)}%</small>
       </button>
     </li>)}</ul>
+    {canFold && <button type="button" className="text-button distribution-legend-toggle"
+      aria-expanded={expanded} aria-controls={legendId} onClick={() => setExpanded((value) => !value)}>
+      {expanded ? 'Show less' : `Show more (${values.length - collapsedLegendLimit})`}
+    </button>}
+    </div>
   </div>;
 }

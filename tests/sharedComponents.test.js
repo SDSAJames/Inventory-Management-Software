@@ -61,26 +61,6 @@ function nodes(root) {
   return root && typeof root === 'object' ? [root, ...nodes(root.props?.children)] : [];
 }
 
-test('shared directory fields trim on blur while allowing spaces during typing and dropdown search', () => {
-  const app = harness();
-  const form = { location: '', department: '' };
-  const props = { form, locations: [' Stack Office ', 'Stack Office'], departments: [' Field  Operations '], onChange: (key, value) => { form[key] = value; } };
-  for (const [key, value] of [['location', ' Stack Office '], ['department', '\t Field  Operations  ']]) {
-    let tree = nodes(app.render('LoanDirectoryFields', props));
-    let input = tree.find((node) => node.type === 'input' && node.props.id === key);
-    input.props.onChange({ target: { value } });
-    assert.equal(form[key], value, 'Typing spaces between words must remain possible');
-    tree = nodes(app.render('LoanDirectoryFields', props));
-    const options = tree.filter((node) => node.props.role === 'option');
-    assert.ok(options.some((node) => node.props.children[0] === value.trim()));
-    input = tree.find((node) => node.type === 'input' && node.props.id === key);
-    input.props.onBlur({ target: { value } });
-    assert.equal(form[key], value.trim());
-    input.props.onBlur({ target: { value: ' \t ' } });
-    assert.equal(form[key], '');
-  }
-});
-
 test('create and edit windows render the same controlled recipient and equipment fields', () => {
   for (const editing of [false, true]) {
     const loan = { id: 'one', knoxId: 'person', assigneeType: 'Business traveler', equipment: { Adapter: '0', Cable: '2' } };

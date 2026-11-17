@@ -6,6 +6,46 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] — 2026-11-17
+
+### Calendar Pickup Visibility
+
+Add a shared Hide picked up option to both equipment calendars, enabled by default.
+
+#### Highlights
+- Hide completed pickup events by default.
+- Control pickup and return visibility in the calendar and its day details.
+
+#### Calendar Visibility
+
+- Add Hide picked up beside Hide returned in In & Out and Business Travelers calendars and their day-detail dialogs.
+- Reuse shared visibility state and controls so changes immediately update the calendar, open day records and event counts.
+- Hide pickup events while preserving upcoming returns and overdue reminders for equipment still in custody.
+
+---
+
+## [1.20.4] — 2026-11-17
+
+### Compact Location List & Test Cleanup
+
+Fold the Asset locations list by default and remove the completed whitespace test code.
+
+#### Highlights
+- Show five location entries by default, with Show more and Show less controls.
+- Remove the four directory whitespace tests after successful validation.
+
+#### Overview Locations
+
+- Fold the location legend to its first five entries on opening; expand to see all locations and collapse again.
+- Keep every location in the diagram and its totals while reusing the shared chart interactions.
+
+#### Maintenance
+
+- Remove the dedicated directory-field test file and the new whitespace checks in the shared component and API test files.
+- Keep the shared runtime trimming behavior and the existing regression suite.
+
+---
+
 ## [1.20.3] — 2026-11-17
 
 ### Consistent Directory Field Trimming

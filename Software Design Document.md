@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.20.3** |
+| **Document Version** | **v1.21.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 17, 2026 |
@@ -417,7 +417,7 @@ Wide record tables remain inside shrinking panel/grid tracks with local horizont
 
 ### Interactive distributions and independent storage
 
-Overview category and location distributions share one diagram component. Segment and legend hover/focus highlight the same item and expose its count and percentage; keyboard and reduced-motion behavior are supported.
+Overview category and location distributions share one diagram component. Segment and legend hover/focus highlight the same item and expose its count and percentage; keyboard and reduced-motion behavior are supported. The location legend initially shows at most five entries, with Show more and Show less controls when additional locations exist. Folding affects the legend only; every location remains represented in the diagram, counts and percentages.
 
 Custody holder and physical storage are independent. Saving unchanged IT Department custody preserves the selected location, including maintenance states other than the required repair destination. Historical return records do not relocate equipment during reconciliation; actual returns still choose the default destination.
 
@@ -425,6 +425,10 @@ Custody holder and physical storage are independent. Saving unchanged IT Departm
 
 Rental location and Department use a shared outer-whitespace policy across entry, editing, pickup, transfer and import. Inputs retain spaces during typing, then trim when focus leaves; save paths apply the same rule independently. Internal spaces remain meaningful, whitespace-only values become empty, and omitted fields in partial updates remain omitted. Client record normalization and transfer inheritance prevent padded values propagating. Existing blank schedule-location rules remain in force.
 
+### Calendar event visibility
+
+In & Out and Business Travelers calendars share the same visibility controls and initial state: pickup events hidden, returned records visible. Toolbar and open day-dialog controls use one state per calendar, so event rows and totals update together. Pickup visibility affects pickup events only; return schedules and overdue reminders for equipment already picked up remain visible. Returned-record filtering remains independent.
+
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.20.3**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.21.0**.

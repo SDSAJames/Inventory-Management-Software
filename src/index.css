@@ -4764,6 +4764,9 @@ textarea.input-error-red {
 .location-distribution-total { fill: var(--ink); font-size: 16px; font-weight: 700; }
 .location-distribution-caption { fill: var(--muted); font-size: 8px; }
 .location-distribution-legend { list-style: none; margin: 0; padding: 0; width: 100%; }
+.distribution-legend { width: 100%; min-width: 0; }
+.distribution-legend-toggle { display: block; margin-top: 8px; padding: 6px; font-size: 12px; }
+.calendar-visibility-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .location-distribution-legend li { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; }
 .location-distribution-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .location-distribution-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
@@ -4787,7 +4790,7 @@ textarea.input-error-red {
 .overview-dashboard .location-distribution { grid-template-columns: minmax(90px, 130px) minmax(0, 1fr); grid-template-areas: "chart legend" "details legend"; align-items: start; }
 .overview-dashboard .location-distribution-chart { grid-area: chart; width: 130px; }
 .overview-dashboard .distribution-details { grid-area: details; }
-.overview-dashboard .location-distribution-legend { grid-area: legend; }
+.overview-dashboard .distribution-legend { grid-area: legend; }
 .overview-quick-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
 .overview-quick-actions h3 { margin: 0; font-size: 14px; }
 .overview-quick-actions .quick-actions { display: flex; flex-wrap: wrap; gap: 10px; }

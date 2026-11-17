@@ -3,7 +3,8 @@ import CalendarPickupReadiness from './CalendarPickupReadiness';
 import CalendarNavigation from './CalendarNavigation';
 import CalendarWeekdays from './CalendarWeekdays';
 import { indexInOutSchedule, filterCalendarRecords } from '../lib/inOutSchedule.js';
-import CalendarReturnFilter from './CalendarReturnFilter';
+import CalendarVisibilityFilters from './CalendarVisibilityFilters';
+import { useCalendarVisibility } from '../hooks/useCalendarVisibility.js';
 import { canRecordReturn } from '../../shared/loanRules.js';
 import { useState, useMemo } from 'react';
 import { normalizeDateToIso, todayIso, readableLoanDate } from '../lib/utils';
@@ -29,20 +30,21 @@ export default function TravelerCalendar({
   } = useCalendarMonth();
 
   // Filter state
-  const [eventTypeFilter, setEventTypeFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
   const [searchFilter, setSearchFilter] = useState('');
-  const [hideReturned, setHideReturned] = useState(false);
+  const {
+    hideReturned, setHideReturned, hidePickedUp, setHidePickedUp,
+    eventTypeFilter, setEventTypeFilter, dayModalFilter, setDayModalFilter,
+  } = useCalendarVisibility();
 
   // Day detail modal state
   const [selectedDay, setSelectedDayData] = useState(null);
-  const [dayModalFilter, setDayModalFilter] = useState('all'); // 'all' | 'incoming' | 'returning'
 
   /* ── Index travelers by dates ────────────────────────────── */
   const { outgoingByDate: incomingByDate, incomingByDate: returningByDate, pickedUpByDate } = useMemo(() => indexInOutSchedule(filterCalendarRecords(travelers, hideReturned).map((traveler) => ({
     ...traveler,
     outIso: normalizeDateToIso(traveler.startDate || traveler.pickupDate || traveler.loanDate),
     inIso: traveler.isReturned ? normalizeDateToIso(traveler.returnDate || traveler.returnedDate || getLoanEndDate(traveler)) : traveler.hasPickup || traveler.pickupDate ? normalizeDateToIso(getLoanEndDate(traveler)) : '',
-  }))), [travelers, hideReturned]);
+  })), { hidePickedUp }), [travelers, hideReturned, hidePickedUp]);
   const returnType = (traveler) => traveler.isReturned ? 'returned' : traveler.isOverdue ? 'overdue' : 'returning';
   const matchesFilters = (traveler) => {
     if (selectedLocation !== 'ALL' && traveler.location !== selectedLocation) return false;
@@ -119,8 +121,8 @@ export default function TravelerCalendar({
 
         {/* ── Filters & Search ──────────────────────────────── */}
         <div className="calendar-controls-group">
-          <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
-          <button type="button" className={`cal-filter-pill ${eventTypeFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setEventTypeFilter(eventTypeFilter === 'pickedup' ? 'all' : 'pickedup')}>Picked up ({monthStats.pickedUpCount})</button>
+          <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
+          {!hidePickedUp && <button type="button" className={`cal-filter-pill ${eventTypeFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setEventTypeFilter(eventTypeFilter === 'pickedup' ? 'all' : 'pickedup')}>Picked up ({monthStats.pickedUpCount})</button>}
           {/* Search box */}
           <div className="calendar-search-wrap">
             <span className="cal-search-icon">🔍</span>
@@ -380,12 +382,12 @@ export default function TravelerCalendar({
             </div>
 
             <div className="day-modal-stats">{['returned', 'overdue'].map((type) => <span key={type} className="cal-stat-badge">{type === 'returned' ? 'Returned' : 'Overdue'}: {selectedDayData.returning.filter((t) => returnType(t) === type).length}</span>)}</div>
-            <CalendarReturnFilter checked={hideReturned} onChange={setHideReturned} />
+            <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
 
 
             {/* Sub-filter tabs inside modal */}
             <div className="loan-tabs" style={{ marginTop: '14px', marginBottom: '16px' }}>
-              <button type="button" className={`loan-tab ${dayModalFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setDayModalFilter('pickedup')}>Picked up ({selectedDayData.pickedUp.length})</button>
+              {!hidePickedUp && <button type="button" className={`loan-tab ${dayModalFilter === 'pickedup' ? 'active' : ''}`} onClick={() => setDayModalFilter('pickedup')}>Picked up ({selectedDayData.pickedUp.length})</button>}
               <button
                 type="button"
                 className={`loan-tab ${dayModalFilter === 'all' ? 'active' : ''}`}
@@ -410,7 +412,7 @@ export default function TravelerCalendar({
             </div>
 
             <div className="loan-tabs">{['returned', 'overdue'].map((type) => <button type="button" key={type} className={`loan-tab ${dayModalFilter === type ? 'active' : ''}`} onClick={() => setDayModalFilter(type)}>{type === 'returned' ? 'Returned' : 'Overdue'} ({selectedDayData.returning.filter((t) => returnType(t) === type).length})</button>)}</div>
-            {(dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditTraveler ? (id) => { setSelectedDayData(null); onEditTraveler(id); } : undefined} />}
+            {!hidePickedUp && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditTraveler ? (id) => { setSelectedDayData(null); onEditTraveler(id); } : undefined} />}
             {/* Empty state for the selected day */}
             {selectedDayData.incoming.length === 0 && selectedDayData.returning.length === 0 && selectedDayData.pickedUp.length === 0 && (
               <div className="empty" style={{ padding: '36px 12px' }}>
