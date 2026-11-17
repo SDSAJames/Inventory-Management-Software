@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.22.0** |
+| **Document Version** | **v1.23.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 17, 2026 |
@@ -329,7 +329,7 @@ The frontend application provides eight core operational views accessed via the 
    - Scheduled columns start with Action, Pickup readiness, and Borrower type. Return time is hidden from expanded Scheduled details and scheduled full editing. Overdue omits the return-date column and expanded return time; records with a return date cannot be overdue.
    - Transfers can fulfill an existing schedule selected by Knox ID. Traveler recipients require reviewed start and end dates. Pickup timestamps display in local time, and generated notes use readable recipient details.
    - Rental location accepts typed values with Directory suggestions. Full editing and pickup retain the requested PC and monitor checkboxes; pickup assigns actual PC and monitor asset numbers.
-   - Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items.
+   - Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items. Edit full details exposes the shared returned-equipment controls only for records with an actual return. Corrections recalculate Complete/Partial status and refresh Unreturned membership while preserving current asset custody.
    - Expand a picked-up outstanding loan to transfer all items or selected quantities to another owner. A different Knox ID is required; assignee name is optional. Transfers create linked custody records and device ownership history, retain remaining equipment on the source, and archive fully transferred sources as Transferred without a physical return.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Search across loan fields with selectable field and status filters.
@@ -387,6 +387,12 @@ The MES page adds Assets and Location views over the same filtered inventory. Lo
 
 Asset creation and editing reuse the editable Directory department selector, including typing to filter, keyboard selection, retained custom values and the existing add-to-Directory action. The same asset dialog serves both registers.
 
+### Register category navigation
+
+The shared Assets/MES register presents an All menu entry and category entries from the current Directory pool plus categories used by the scoped inventory. Names are trimmed, deduplicated case-insensitively and sorted in natural ascending order. Scope rules keep standard and MES menus relevant to their own registers while retaining used categories and zero-count Directory choices. Counts show each category in the scoped inventory before search or status filtering. Category matching retains distinct saved names, including Laptop variants.
+
+All is the initial selection. Category, search and status filters combine before sorting, pagination, exports and MES location grouping. Choosing a category clears row selection and resets paging. Menu choices and counts refresh from shared inventory and Directory state.
+
 ### Paged asset browsing and selection
 
 Overview, Assets and MES share pagination and multi-row selection. The default is 15 rows, with 10, 15, 20 and 30 available in the top-right selector. Filtering and sorting precede page slicing so every record remains reachable. Overview recent records retain modification-date ordering across pages. MES location groups and their expanded lists are paged while totals remain complete. Selection spans pages, with a top-left count and explicit clear action; header selection and range selection operate on visible rows. Exports continue to use all matching records.
@@ -437,4 +443,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.22.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.23.0**.

@@ -1,10 +1,8 @@
-import EquipmentAccessoryList from './EquipmentAccessoryList';
+import ReturnedEquipmentFields from './ReturnedEquipmentFields';
 import TimestampField from './TimestampField';
 import LoanSummary from './LoanSummary';
-import { buildLoanReturnDetails } from '../lib/loanForms';
 
 export default function LoanReturnForm({ loan, form, onChange, onConfirm, onClose }) {
-  const { missingItems } = buildLoanReturnDetails(loan, form);
   return (
           <div className="return-dialog">
             <div className="modal-header-section">
@@ -50,9 +48,7 @@ export default function LoanReturnForm({ loan, form, onChange, onConfirm, onClos
                 <p className="field-hint" style={{ marginTop: '2px', marginBottom: '10px' }}>
                   Verify that keyboard, mouse, and cables were returned. Adjust quantities if any item is retained or missing.
                 </p>
-                {missingItems.length ? <div className="partial-return-warning"><strong>Partial return</strong><span>Still outstanding: {missingItems.join(', ')}</span></div> : <div className="complete-return-note">All issued accessories are marked returned.</div>}
-
-                <EquipmentAccessoryList pcField="returnedLaptopCode" form={form} onChange={onChange} idPrefix="return-accessory-" returning />
+                <ReturnedEquipmentFields loan={loan} form={form} onChange={onChange} />
               </div>
             </div>
 

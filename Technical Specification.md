@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.22.0** |
+| **Specification Version** | **v1.23.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 17, 2026 |
@@ -498,6 +498,10 @@ AppShell uses useLocation().pathname and useLayoutEffect to reset window and mai
 
 server/lib/savedChangeUndo.js centralizes working-table capture, SHA-256 state fingerprints, checkpoint storage, eligibility and transactional restore. initDatabase creates saved_change_undo as a single-slot persistent table. trackSavedChanges wraps successful JSON responses for POST/PUT/PATCH/DELETE on operational routers; reads, failed responses and unchanged working data do not replace the slot. GET /api/changes/latest returns review metadata and availability; POST /api/changes/undo requires changeId and authentication. BEGIN IMMEDIATE guards the expected ID, author/admin rule and after-state fingerprint; deferred foreign keys support linked-table restoration, and errors roll back both data and slot consumption. The top-bar UndoSavedChange component confirms the action then refreshes export, categories and statuses into the shared cache. Import backup records, security users and audits are excluded. Regression tests cover linked restore, stale IDs, external writes, authorization, failed/no-op writes and failed-restore rollback.
 
+### Returned-quantity corrections
+
+The full-detail custody editor reuses returned-equipment controls from the return workflow, shown only for an actual recorded return rather than a schedule or active loan. Loan PUT accepts the corrected returnedEquipment checklist and persists it with the edited record. Return-status calculation reuses the shared equipment comparison to determine Complete or Partial and refresh the shared Unreturned grouping. Historical return corrections preserve the current inventory holder and location instead of replaying a handover or reclaiming equipment from a later owner.
+
 ### MES equipment format
 
 MES_ASSET_HEADERS in equipmentSchema.js defines the eleven-column order from SPE_MES_Equipments_example.txt. Issued Name has its own header alias and model field; both parseAssetRows and parseEquipmentsText use that mapping. ensureAssetColumns adds issued_name and issued_date without replacing asset records, and saveAssetIssuedFields handles camelCase import or raw snapshot values. formatAssetRow emits issuedName/issuedDate. MES export calls assetsToRows with MES headers and appendOptionalColumns=false before the existing makeXlsx writer; standard exports append Issued Name only when needed to preserve populated values. isMesEquipment recognizes MES categories and MES/MESPC/MESM register prefixes. Tests read the supplied sample, verify exact headers and owner/name/date values, generate and read an actual XLSX, and exercise SQLite import/reload and holder-change invalidation.
@@ -507,6 +511,12 @@ mergeRecordDraft compares draft fields against the previous saved baseline, upda
 ### MES register routing and shared sorting
 
 `/assets` and `/mes` render keyed instances of `AssetsPage`, with a `mes` prop controlling the shared `isMesEquipment` predicate, scoped counts, import validation and Excel headers. MES creation defaults to MES PC. Register navigation resets selection and open dialogs; both operate on the same asset IDs and database APIs. `AssetTable` uses `SortableHeader` and `sortTableRows`, including sorted display order for range selection. `DirectoryCombobox` clears its transient filter on focus/reopening; choosing an option closes the list and preserves editable custom values. Regression tests cover register partitioning, natural sorting/selection and the complete Edit Loan department list after filtering.
+
+### Shared register category menu
+
+AssetsPage owns the selected category and renders one shared category menu for standard and MES registers. Menu data combines db.categories with categories in registerAssets, normalizes outer spaces and case for deduplication/matching, and sorts labels naturally ascending. All is the initial entry. Directory categories are scoped with the MES predicate; categories actually used by scoped assets remain available even when their name alone does not identify the register. Zero-count Directory choices remain visible. Counts derive from registerAssets before search/status filtering, so those controls do not remove menu choices.
+
+The selected category is an exact normalized name filter over registerAssets, combined with the existing search and status predicates. It is included in pagination reset keys for AssetRegisterTable and AssetLocationList; category changes clear selected asset IDs. Export consumes the same filtered collection. Changes to shared categories or assets recalculate menu data without a separate category cache; saved Laptop variants are not merged by this menu.
 
 ### MES location distribution
 
@@ -571,3 +581,5 @@ shared/directoryFields.js supplies trimDirectoryValue and non-mutating trimDirec
 ### Shared calendar visibility
 
 useCalendarVisibility supplies hidePickedUp=true and hideReturned=false to each calendar, owns month/day event-type filters, and resets picked-up-only filters when pickup events are hidden. CalendarVisibilityFilters reuses the existing switch control in toolbars and day dialogs. indexInOutSchedule accepts a hidePickedUp option that suppresses only the pickup-date index; outgoing and incoming return indexing remain intact. Both calendars derive grid events, monthly counts and selected-day data from these indexes, with hideReturned filtering applied independently before indexing.
+
+Returned equipment corrections also participate in loan activity metadata: returned_equipment_json is watched alongside return_status, so quantity changes that remain Partial still record the editor and fixed change time.

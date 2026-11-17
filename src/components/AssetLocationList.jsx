@@ -20,7 +20,7 @@ export default function AssetLocationList({ assets, onEditAsset, onChangeOwner, 
   const pagination = usePagination(locations.size, pageSize, resetKey);
   if (!locations.size) return <div className="empty">No assets match the current filters.</div>;
   return <div className="asset-location-list">
-    <p className="modal-intro">Select a location to view its assets. Counts reflect the current search and status filters.</p>
+    <p className="modal-intro">Select a location to view its assets. Counts reflect the current category, search and status filters.</p>
     {sortDirectoryOptions([...locations.values()]).slice(pagination.start, pagination.end).map((group) => <section key={group.key} className="asset-location-group">
       <button type="button" className="asset-location-heading" aria-expanded={expanded === group.key}
         onClick={() => setExpanded((current) => current === group.key ? null : group.key)}>

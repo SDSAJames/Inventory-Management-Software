@@ -9,6 +9,28 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-17',
+    title: 'Category Browsing & Returned-item Editing',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Browse asset registers by category and correct the item quantities recorded on returned assignments and loans.',
+    highlights: ['Add All, Laptop, Monitor and other current category choices above the asset records.', 'Correct returned items from Edit full details on returned custody records.'],
+    sections: [
+      { heading: 'Category Browsing', badge: 'Feature', items: [
+        'Build naturally sorted category choices from Directory and the current register, with asset counts and an All option.',
+        'Combine category, search and status filters before sorting, pagination, location grouping and export.',
+        'Clear row selection and restart pagination when switching category, while retaining separate Assets and MES scopes.',
+      ] },
+      { heading: 'Returned-item Corrections', badge: 'Feature', items: [
+        'Edit returned quantities and device references separately from issued equipment on returned assignment and loan records.',
+        'Reuse shared return controls, save corrected return details and recalculate Partial or Complete so Unreturned reflects the saved items.',
+        'Keep schedules and active records on the pickup/return workflow and preserve custody of equipment already reassigned.',
+        'Record returned-equipment corrections in Recently updated even when the return remains Partial.',
+      ] },
+    ],
+  },
+  {
+    version: '1.22.0',
+    date: '2026-11-17',
     title: 'Distinct Dashboard Counts & Current Travelers',
     tag: 'Feature Release',
     type: 'minor',

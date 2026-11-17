@@ -14,7 +14,7 @@ import { getDuplicateLoanIds, removeDuplicateLoans } from '../lib/loanDuplicates
 
 
 import { assetLocationForWrite, normalizeStoredLocations } from '../lib/assetLocations.js';
-import { isLoanReturned, custodyStatusForBorrower } from '../../shared/loanRules.js';
+import { custodyStatusForBorrower } from '../../shared/loanRules.js';
 
 // Ensure data directory exists
 const dbDir = path.dirname(config.dbPath);
@@ -443,12 +443,7 @@ export function reconcileAllAssetsInDb() {
       );
 
       // Active loan is one with pickup_date, no return_date or returned_date, and not archived
-      const activeLoan = assetLoans.find((l) => {
-        const isReturned = isLoanReturned(l);
-        const hasPickedUp = Boolean(l.pickup_date || l.status === 'Active');
-        const returnedEquipment = l.returned_equipment_json ? JSON.parse(l.returned_equipment_json) : null;
-        return hasPickedUp && !isReturned && !isAssetReturnedOnRecord({ returnedEquipment }, asset.code);
-      });
+      const activeLoan = findOutstandingAssetCustody(loans, asset);
 
       let newStatus = asset.status;
       let newOwner = asset.owner || '';
@@ -548,5 +543,5 @@ export function createSnapshot(description = 'Pre-import state snapshot') {
 
   return id;
 }
-import { isAssetReturnedOnRecord } from '../../shared/assetReturns.js';
+import { findOutstandingAssetCustody } from '../../shared/assetReturns.js';
 import { ensureAvailableAssetCustody } from '../lib/assetCustody.js';

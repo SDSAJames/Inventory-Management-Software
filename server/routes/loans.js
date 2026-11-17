@@ -18,6 +18,8 @@ import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js'
 import { EQUIPMENT_KEYS } from '../../shared/equipment.js';
 import { transferLoan } from '../lib/loanTransfer.js';
 import { canRecordReturn } from '../../shared/loanRules.js';
+import { getReturnStatus } from '../../shared/returnedEquipment.js';
+import { syncEditedReturnDevices } from '../lib/loanReturnEdits.js';
 
 export const loansRouter = Router();
 loansRouter.post('/:id/transfer', authenticate, (req, res) => {
@@ -393,9 +395,16 @@ loansRouter.put('/:id', authenticate, (req, res) => {
     Laptop: effectiveAssetCode,
   };
 
-  const hasReturn = Boolean(returnDate);
+  const undatedReturn = existing.status === 'Returned' && !existing.return_date && !existing.returned_date;
+  const hasReturn = Boolean(returnDate) || undatedReturn;
   const hasPickup = Boolean(pickupDate);
-  if (hasReturn && (!canRecordReturn(existing) || (!hasPickup && !existing.return_date && !existing.returned_date))) return res.status(400).json({ success: false, error: 'Record pickup before returning equipment.' });
+  if (hasReturn && (!canRecordReturn(existing) || (!hasPickup && !existing.return_date && !existing.returned_date && !undatedReturn))) return res.status(400).json({ success: false, error: 'Record pickup before returning equipment.' });
+  const receivedSupplied = Object.hasOwn(req.body, 'returnedEquipment');
+  const hasRecordedReturn = Boolean(existing.return_date || existing.returned_date || existing.status === 'Returned');
+  if (receivedSupplied && (!hasReturn || !hasRecordedReturn || existing.status === 'Transferred')) return res.status(400).json({ success: false, error: 'Returned quantities can only be edited on a returned record.' });
+  if (receivedSupplied && (!req.body.returnedEquipment || typeof req.body.returnedEquipment !== 'object' || Array.isArray(req.body.returnedEquipment))) return res.status(400).json({ success: false, error: 'Returned quantities must be an equipment object.' });
+  const receivedEquipment = hasReturn ? (receivedSupplied ? req.body.returnedEquipment : existing.returned_equipment_json ? JSON.parse(existing.returned_equipment_json) : null) : null;
+  const receivedStatus = hasReturn ? (receivedEquipment ? getReturnStatus({ ...mergedEquipment, Others: others }, receivedEquipment) : existing.return_status) : null;
   const today = todayIso();
 
   let computedStatus = 'Scheduled';
@@ -422,15 +431,15 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       UPDATE loans
       SET asset_code = ?, assignee = ?, department = ?, knox_id = ?, location = ?, ip = ?,
           start_date = ?, pickup_date = ?, end_date = ?, return_date = ?, returned_date = ?,
-          status = ?, equipment_json = ?, others = ?, note = ?, purpose = ?, assignee_type = ?, is_archived = ?
+          status = ?, equipment_json = ?, returned_equipment_json = ?, return_status = ?, others = ?, note = ?, purpose = ?, assignee_type = ?, is_archived = ?
       WHERE id = ?
     `).run(
       effectiveAssetCode,
-      assignee.trim(),
-      department.trim(),
-      knoxId.trim(),
+      String(assignee ?? '').trim(),
+      String(department ?? '').trim(),
+      String(knoxId ?? '').trim(),
       effectiveLocation,
-      ip.trim(),
+      String(ip ?? '').trim(),
       startDate,
       pickupDate,
       effectiveEndDate,
@@ -438,6 +447,8 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       returnDate,
       computedStatus,
       JSON.stringify(mergedEquipment),
+      receivedEquipment ? JSON.stringify(receivedEquipment) : null,
+      receivedStatus,
       others,
       note,
       purpose,
@@ -461,11 +472,12 @@ loansRouter.put('/:id', authenticate, (req, res) => {
           'hist-' + randomUUID(), removedCode, removedAsset.owner, DEFAULT_OWNER, new Date().toISOString(), 'Loan record corrected', 'Removed an incorrect PC association; no physical return claimed.', new Date().toISOString());
       }
     }
+    const returnAssetCodes = hasReturn && computedStatus !== 'Transferred'
+      ? syncEditedReturnDevices(db, existing, db.prepare('SELECT * FROM loans WHERE id = ?').get(existing.id), today)
+      : [];
     const currentCode = effectiveAssetCode;
-    if (currentCode && computedStatus !== 'Transferred') {
-      if (hasReturn) {
-        returnAssetToIt(db, currentCode, today);
-      } else if (hasPickup) {
+    if (currentCode && !hasReturn && computedStatus !== 'Transferred') {
+      if (hasPickup) {
         const asset = db.prepare('SELECT status FROM assets WHERE code = ?').get(currentCode);
         const targetStatus = getAssetStatusForLoanEdit(asset?.status, existing, {
           assetCode: currentCode, assigneeType, pickupDate, returnDate, status: computedStatus, isArchived: Boolean(isArchived),
@@ -474,7 +486,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
           UPDATE assets
           SET status = ?, owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(targetStatus, assignee.trim(), assetLocationForWrite(db, targetStatus, effectiveLocation), department.trim(), today, currentCode);
+        `).run(targetStatus, String(assignee ?? '').trim(), assetLocationForWrite(db, targetStatus, effectiveLocation), String(department ?? '').trim(), today, currentCode);
       } else if (existing.pickup_date || existing.return_date || existing.returned_date) {
         returnAssetToIt(db, currentCode, today);
       }
@@ -488,7 +500,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
       success: true,
       message: 'Loan record updated successfully.',
       loan: formatLoanRow(updatedLoan),
-      assets: [effectiveAssetCode, existing.asset_code].filter(Boolean).filter((code, index, codes) => codes.indexOf(code) === index).map((code) => db.prepare('SELECT * FROM assets WHERE code = ?').get(code)).filter(Boolean),
+      assets: [effectiveAssetCode, existing.asset_code, ...returnAssetCodes].filter(Boolean).filter((code, index, codes) => codes.indexOf(code) === index).map((code) => db.prepare('SELECT * FROM assets WHERE code = ? COLLATE NOCASE').get(code)).filter(Boolean),
     });
   } catch (err) {
     db.exec('ROLLBACK;');

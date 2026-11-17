@@ -56,17 +56,22 @@ export function buildLoanFormData(form, { equipment = {}, includeReturn = false 
 }
 
 export function createLoanReturnForm(loan, timestamp) {
-  const equipment = loan.equipment || {}, returned = loan.returnedEquipment || equipment;
+  const equipment = loan.equipment || {};
+  const hasSavedReturn = loan.returnedEquipment != null || loan.returnStatus === 'Partial';
+  const returned = loan.returnedEquipment || (hasSavedReturn ? {} : equipment);
+  const fallback = hasSavedReturn ? {} : equipment;
   return {
-    returnDate: timestamp, returnedLaptopCode: returned.Laptop ?? loan.assetCode ?? equipment.Laptop ?? '',
-    ...equipmentQuantitiesToForm(returned, equipment), others: returned.Others ?? loan.others ?? '',
+    returnDate: timestamp, returnedLaptopCode: returned.Laptop ?? (hasSavedReturn ? '' : loan.assetCode ?? equipment.Laptop ?? ''),
+    ...equipmentQuantitiesToForm(returned, fallback),
+    monitor: returned.Monitor ?? (hasSavedReturn ? '' : equipment.Monitor || ''),
+    others: returned.Others ?? (hasSavedReturn ? '' : loan.others ?? ''),
     note: readableTransferNote(loan.note || ''),
   };
 }
 
 export function buildLoanReturnDetails(loan, form) {
   const returnedEquipment = buildReturnedEquipment(form);
-  const issued = { ...loan.equipment, Laptop: loan.assetCode || loan.equipment?.Laptop || '' };
+  const issued = { ...loan.equipment, Laptop: loan.assetCode || loan.equipment?.Laptop || '', Others: loan.others || loan.equipment?.Others || '' };
   const missingItems = getMissingReturnItems(issued, returnedEquipment);
   return {
     missingItems,

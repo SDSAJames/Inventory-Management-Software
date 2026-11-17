@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { updateLoanFormField, tracksEndDate } from '../lib/loanEquipment';
-import { createLoanForm, loanFormErrors, buildLoanFormData } from '../lib/loanForms';
+import { createLoanForm, loanFormErrors, buildLoanFormData, createLoanReturnForm, buildLoanReturnDetails } from '../lib/loanForms';
 import LoanDirectoryFields from './LoanDirectoryFields';
 import LoanEquipmentSection from './LoanEquipmentSection';
 import AssigneeFields from './AssigneeFields';
 import LoanDateFields from './LoanDateFields';
 import LoanNoteFields from './LoanNoteFields';
 import TimestampField from './TimestampField';
+import ReturnedEquipmentFields from './ReturnedEquipmentFields';
 import { canRecordReturn } from '../../shared/loanRules.js';
 
 export default function EditLoanForm({ loanId, onClose }) {
@@ -22,6 +23,10 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
   const equipment = loan.equipment || {};
 
   const [form, setForm] = useState(() => createLoanForm(loan));
+  const hasRecordedReturn = loan.status !== 'Transferred' && Boolean(loan.returnDate || loan.returnedDate || loan.status === 'Returned');
+  const [returnedChanged, setReturnedChanged] = useState(false);
+  const [returnedForm, setReturnedForm] = useState(() => createLoanReturnForm(loan, loan.returnDate || loan.returnedDate || ''));
+  const issuedDraft = { ...loan, ...buildLoanFormData(form, { equipment, includeReturn: true }) };
 
   const updateField = (field, value) => {
     setForm((prev) => updateLoanFormField(prev, field, value));
@@ -37,6 +42,11 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
     if (Object.keys(errors).length) return toast(Object.values(errors)[0]);
     if (form.returnDate && (!canRecordReturn(loan) || (!form.pickupDate && !loan.returnDate && !loan.returnedDate))) return toast('Record pickup before returning equipment');
     const changes = buildLoanFormData(form, { equipment, includeReturn: true });
+    if (hasRecordedReturn && (form.returnDate || (!loan.returnDate && !loan.returnedDate)) && (loan.returnedEquipment != null || returnedChanged)) {
+      const { details } = buildLoanReturnDetails({ ...loan, ...changes }, returnedForm);
+      changes.returnedEquipment = details.returnedEquipment;
+      changes.returnStatus = details.returnStatus;
+    }
 
     const assetUpdates = {
       code: form.assetCode,
@@ -73,6 +83,13 @@ function LoanEditor({ loan, db, updateLoan, onClose }) {
             onChange={(value) => updateField('returnDate', value)} onClear={() => updateField('returnDate', '')} />}
 
           <LoanEquipmentSection form={form} onChange={updateField} locations={db.locations} idPrefix="edit-" />
+
+          {hasRecordedReturn && (form.returnDate || (!loan.returnDate && !loan.returnedDate)) && <section className="field full">
+            <h3>Returned quantities</h3>
+            <p className="field-hint">Correct the PC, monitor and quantities actually received. Use 0 or leave a device blank for missing items. Issued equipment above stays separate.</p>
+            <ReturnedEquipmentFields loan={issuedDraft} form={returnedForm} idPrefix="edit-returned-"
+              onChange={(field, value) => { setReturnedChanged(true); setReturnedForm((previous) => ({ ...previous, [field]: value })); }} />
+          </section>}
 
           <LoanNoteFields form={form} onChange={updateField} />
         </div>

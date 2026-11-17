@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.22.0)
+# StarPlus Energy Asset Management System (v1.23.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -169,6 +169,8 @@ Scheduled due-date segments reserve enough width to display the full current yea
 
 When transferring equipment to a pickup schedule, search by all or part of either the **Knox ID or assignee name**. Search ignores case; the selected schedule remains selected when the search changes.
 
+**Correcting returned quantities:** In Assignments & Pickups, open a returned record and choose **Edit full details** to correct its returned PC/monitor and accessory quantities. This section appears only after a return has been recorded. Saving recalculates Complete or Partial return status and refreshes the Unreturned list; it corrects the historical return without moving equipment from its current holder.
+
 Editing a completed transfer sender preserves **Transferred** status and does not move equipment back from the receiver. Explicitly clearing an incorrect PC reference remains saved. If a correction after partial transfer leaves no equipment outstanding, the sender closes as Transferred. Loan edits wait for database confirmation; failed saves remain open for retry.
 
 Opening or switching menu pages starts at the top. Changing a tab or search within the same page keeps its current scroll position.
@@ -181,7 +183,9 @@ Unsaved asset typing stays in place during background refresh. Untouched fields 
 
 **MES (`/mes`):** Manage MES PCs, monitors and other MES equipment separately from the standard Assets page. Both registers share the same records, editing, ownership and bulk actions. Imports must match the selected register; MES exports use the eleven-column MES Excel format. Editable department and location dropdowns show the full Directory list on focus or reopening, support typing to filter, and scroll through longer lists.
 
-On the MES page, switch between **Assets** and **Location**. Each occupied location shows its total assets and counts by equipment type. Click its row to browse and edit the equipment there. Search and status filters apply to the counts and lists.
+**Category menu:** Assets and MES show **All** and category buttons at the top, populated from the current Directory category pool and categories present in that register. Names are sorted ascending and matched without case or outer-space differences; Laptop variants retain their own categories. Each button shows its register-wide count before search or status filters, including zero for unused Directory categories. Choose a category to combine it with search and status filtering; changing category clears row selection and returns to page one. Category filtering also applies to export and MES Location counts.
+
+On the MES page, switch between **Assets** and **Location**. Each occupied location shows its total assets and counts by equipment type. Click its row to browse and edit the equipment there. Category, search and status filters apply to the counts and lists.
 
 Asset add/edit dialogs, including MES, use a searchable Department dropdown. Type to filter Directory entries, choose with the mouse or arrow keys and Enter, or enter a custom department. Reopen the dropdown to see all choices; + Add still creates a Directory entry.
 

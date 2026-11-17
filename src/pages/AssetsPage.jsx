@@ -10,6 +10,8 @@ import { loadAssetExportHeaders, saveAssetExportHeaders } from '../lib/db';
 import useAssetSelection from '../hooks/useAssetSelection';
 import { RowCountSelect, SelectionCount } from '../components/Pagination';
 import AssetRegisterTable from '../components/AssetRegisterTable';
+import AssetCategoryMenu from '../components/AssetCategoryMenu';
+import { assetCategoryMenu, assetCategoryKey } from '../lib/assetCategoryMenu';
 import AssetLocationList from '../components/AssetLocationList';
 import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
@@ -27,6 +29,7 @@ export default function AssetsPage({ mes = false }) {
   const [searchParams] = useSearchParams();
   const [pageSize, setPageSize] = useState(15);
   const [view, setView] = useState('assets');
+  const [filterCategory, setFilterCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState('All fields');
   const [filterStatus, setFilterStatus] = useState(() => searchParams.get('status') || 'All statuses');
@@ -52,6 +55,19 @@ export default function AssetsPage({ mes = false }) {
 
   const registerAssets = useMemo(() => db.assets.filter((asset) => isMesEquipment(asset) === mes), [db.assets, mes]);
 
+  const categoryOptions = useMemo(() => assetCategoryMenu(db.categories, registerAssets, { mes }), [db.categories, registerAssets, mes]);
+  const selectCategory = (category) => {
+    if (category === filterCategory) return;
+    setFilterCategory(category);
+    setSelectedIds(new Set());
+  };
+  useEffect(() => {
+    if (filterCategory !== null && !categoryOptions.some((category) => category.key === filterCategory)) {
+      setFilterCategory(null);
+      setSelectedIds(new Set());
+    }
+  }, [filterCategory, categoryOptions, setSelectedIds]);
+
   const filtered = useMemo(() => {
     return registerAssets.filter((asset) => {
       const searchable = {
@@ -65,10 +81,11 @@ export default function AssetsPage({ mes = false }) {
       }[searchField] || '';
       return (
         searchable.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (filterStatus === 'All statuses' || asset.status === filterStatus)
+        (filterStatus === 'All statuses' || asset.status === filterStatus) &&
+        (filterCategory === null || assetCategoryKey(asset.category) === filterCategory)
       );
     });
-  }, [registerAssets, searchTerm, searchField, filterStatus]);
+  }, [registerAssets, searchTerm, searchField, filterStatus, filterCategory]);
 
   /* ── Bulk delete handlers ────────────────────── */
 
@@ -209,6 +226,8 @@ export default function AssetsPage({ mes = false }) {
         </div>
       </div>
 
+      <AssetCategoryMenu categories={categoryOptions} total={registerAssets.length} selected={filterCategory} onChange={selectCategory} />
+
       {mes && <div className="loan-tabs" aria-label="MES views">
         {[["assets", "Assets"], ["locations", "Location"]].map(([key, label]) => <button type="button" key={key}
           className={`loan-tab${view === key ? " active" : ""}`} aria-pressed={view === key}
@@ -226,10 +245,10 @@ export default function AssetsPage({ mes = false }) {
           statuses={[...new Set([...STATUSES, ...(db.statuses || []).map((item) => item.name)])]}
           searchFieldOptions={SEARCH_FIELDS}
         />
-        {mes && view === 'locations' ? <AssetLocationList pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus])} assets={filtered} onEditAsset={setEditAssetId}
+        {mes && view === 'locations' ? <AssetLocationList pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus, filterCategory])} assets={filtered} onEditAsset={setEditAssetId}
           onChangeOwner={setOwnerTargetAsset} /> : <AssetRegisterTable
           assets={filtered}
-          pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus, view])}
+          pageSize={pageSize} resetKey={JSON.stringify([searchTerm, searchField, filterStatus, filterCategory, view])}
           onEditAsset={setEditAssetId}
           onChangeOwner={(asset) => setOwnerTargetAsset(asset)}
           selectedIds={selectedIds}

@@ -64,33 +64,12 @@ export function buildLoanEquipment(form, assetCode) {
   });
 }
 
-function itemCount(value) {
-  const text = String(value ?? '').trim();
-  if (!text) return 0;
-  const numeric = Number(text);
-  return Number.isFinite(numeric) ? Math.max(0, numeric) : 1;
-}
-
 export function buildReturnedEquipment(form) {
   return normalizeEquipmentQuantities({
-    Laptop: String(form.returnedLaptopCode || '').trim(),
+    Laptop: pcAssetCode(form.returnedLaptopCode),
     ...Object.fromEntries(EQUIPMENT_FIELDS.map(({ storageKey, key }) => [storageKey, form[key]])),
     Others: form.others || '',
   });
 }
 
-export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {
-  const missing = EQUIPMENT_FIELDS
-    .filter(({ storageKey }) => itemCount(equipment[storageKey]) > itemCount(returnedEquipment[storageKey]))
-    .map(({ returnLabel }) => returnLabel);
-  const expectedLaptop = String(equipment.Laptop || '').trim();
-  const returnedLaptop = String(returnedEquipment.Laptop || '').trim();
-  if (expectedLaptop && expectedLaptop !== returnedLaptop) {
-    missing.unshift(`Laptop (${expectedLaptop})`);
-  }
-  return missing;
-}
-
-export function getReturnStatus(equipment = {}, returnedEquipment = {}) {
-  return getMissingReturnItems(equipment, returnedEquipment).length ? 'Partial' : 'Complete';
-}
+export { getMissingReturnItems, getReturnStatus } from '../../shared/returnedEquipment.js';

@@ -4,7 +4,7 @@ import { getAssetLocationAfterReturn, getAssetLocation, getAssetStatusAfterRetur
  * Core validation and synchronization between Assets, Loans, and Ownership History.
  * Ensures consistent statuses, holder information, and chronological tracking.
  */
-import { readableLoanDate, isLoanReturned } from './utils.js';
+import { readableLoanDate } from './utils.js';
 
 import { custodyStatusForBorrower } from '../../shared/loanRules.js';
 
@@ -103,11 +103,7 @@ export function reconcileAssetWithLoans(asset, loans = []) {
   );
 
   // Find active loans (picked up, not returned, not archived)
-  const activeLoan = assetLoans.find((l) => {
-    const isReturned = isLoanReturned(l);
-    const hasPickedUp = Boolean(l.pickupDate || l.status === 'Active');
-    return hasPickedUp && !isReturned && !isAssetReturnedOnRecord(l, asset.code);
-  });
+  const activeLoan = findOutstandingAssetCustody(loans, asset);
 
   if (activeLoan) {
     const activeStatus = custodyStatusForBorrower(activeLoan.assigneeType);
@@ -398,4 +394,4 @@ export function getAssetEffectiveOwnershipHistory(asset, loans = []) {
   return sortedAsc.sort((a, b) => dateKey(b).localeCompare(dateKey(a)) || Number(Boolean(b.isCurrentCustody)) - Number(Boolean(a.isCurrentCustody)));
 }
 
-import { isAssetReturnedOnRecord } from '../../shared/assetReturns.js';
+import { findOutstandingAssetCustody } from '../../shared/assetReturns.js';

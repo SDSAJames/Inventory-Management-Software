@@ -6,6 +6,31 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] — 2026-11-17
+
+### Category Browsing & Returned-item Editing
+
+Browse asset registers by category and correct the item quantities recorded on returned assignments and loans.
+
+#### Highlights
+- Add All, Laptop, Monitor and other current category choices above the asset records.
+- Correct returned items from Edit full details on returned custody records.
+
+#### Category Browsing
+
+- Build naturally sorted category choices from Directory and the current register, with asset counts and an All option.
+- Combine category, search and status filters before sorting, pagination, location grouping and export.
+- Clear row selection and restart pagination when switching category, while retaining separate Assets and MES scopes.
+
+#### Returned-item Corrections
+
+- Edit returned quantities and device references separately from issued equipment on returned assignment and loan records.
+- Reuse shared return controls, save corrected return details and recalculate Partial or Complete so Unreturned reflects the saved items.
+- Keep schedules and active records on the pickup/return workflow and preserve custody of equipment already reassigned.
+- Record returned-equipment corrections in Recently updated even when the return remains Partial.
+
+---
+
 ## [1.22.0] — 2026-11-17
 
 ### Distinct Dashboard Counts & Current Travelers
