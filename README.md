@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.21.0)
+# StarPlus Energy Asset Management System (v1.22.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -10,7 +10,7 @@
 The **StarPlus Energy Asset Management System (SPE-AMS)** serves as the central operational index for corporate IT hardware, laptops, peripherals, and device loans. The system is engineered to run on a **corporate intranet web server**, binding to all network interfaces (`0.0.0.0:5000`) so staff across the corporate network can access the central portal from their workstations with zero external internet dependencies, remote fonts, or telemetry.
 
 ### Core Highlights
-- **Overview dashboard**: Category and location diagrams appear above the full-width Recently updated table. On wide screens, the charts share a row with a compact two-by-two summary grid on the right. Cards and charts adapt to smaller screens; quick actions remain below the diagrams.
+- **Overview dashboard**: Category and location diagrams appear above the full-width Recently updated table. On wide screens, the charts share a row with a compact three-column summary grid on the right, with two columns on phones. Cards and charts adapt to smaller screens; quick actions remain below the diagrams.
 - **Shared Workflow Components**: Create/edit, transfer, pickup and return windows reuse common controls, equipment metadata and form builders. See the shared-implementation map in [Software Design Document.md](Software%20Design%20Document.md#31-shared-ui-and-workflow-ownership).
 - **Corporate Intranet Multi-Host Network Architecture**: Hosted centrally on the intranet server and accessible from any workstation or host on the corporate network (`http://<server-ip>:5000`). Zero external cloud dependencies, no remote CDN scripts, and zero telemetry. All fonts use the native operating system typography stack.
 - **Centralized SQLite Database**: Uses Node.js's native high-performance SQLite engine (`node:sqlite`) in WAL mode (`server/data/inventory.db`). All client workstations share the exact same synchronized database in real time with client-side offline cache resilience.
@@ -206,6 +206,10 @@ The Assets and MES registers, including expanded MES location asset lists, displ
 Employee custody stays **Assigned** through editing, return reverts and reconciliation; business travelers and contractors use **On loan**. Overview also shows an **Asset locations** diagram with counts and percentages alongside Asset mix. Assignments & Pickups defaults to **Start date ascending**, with undated rows last; headers still allow manual sorting. Restart the backend once after upgrading to enable assignment change tracking and editor capture for subsequent saves.
 
 **Responsive Overview:** Recent-update tables scroll horizontally inside their own panel. Asset mix and the location diagram stay within the page; below 1200px the panels stack. Phone layouts use a compact navigation header, and page/account actions wrap to fit.
+
+**Overview counts:** Separate cards show Total assets, Available now, Assigned assets, Loaned assets, Broken assets and Under repair. Asset cards filter the full-width table. Overdue loans and Unreturned records show separate record counts and open the matching Assignments & Pickups tab, including records containing only accessories. Partial returns remain separate from overdue loans.
+
+**Current business travelers:** Overview, the sidebar badge and Business Travelers use the same count of distinct people currently holding equipment. It includes picked-up active/overdue loans and partial returns with outstanding items, including accessories. Multiple records for one Knox ID count once, ignoring case and outer spaces; a real name is used only when Knox ID is absent. Schedules, full returns, completed transfers, employees and contractors are excluded. This people count is separate from loan and unreturned record totals.
 
 **Interactive asset diagrams:** Overview shows both Asset mix and Asset locations as diagrams. Hover a segment or legend entry to highlight it and see the count and percentage; keyboard focus and Enter/Space offer the same details. Both charts share the same interaction behavior. Asset locations shows up to five legend entries initially; choose **Show more** to see all locations or **Show less** to fold the list again. The diagram and totals always include every location.
 

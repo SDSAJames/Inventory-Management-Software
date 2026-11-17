@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.21.0** |
+| **Specification Version** | **v1.22.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 17, 2026 |
@@ -550,7 +550,13 @@ assetLocationMix aggregates current inventory locations using shared location no
 
 ### Responsive grid and table sizing
 
-Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers set min-width:0 with bounded widths so table intrinsic sizing cannot enlarge the page grid. Overview uses a single-column overview-grid: the dashboard precedes the full-width records panel. The nested overview-dashboard uses two flexible chart tracks plus a summary track of at least 260px. Its scoped overview-stats reuses StatCard in two columns with compact padding. Below 1200px, summary cards span beneath the two charts in four columns; below 620px, charts stack and cards use two columns. Scoped chart areas place 130px diagrams beside their legends on wide screens and stack chart content below 1200px. Table wrappers own horizontal scrolling. Main-content maximum widths adapt at sidebar breakpoints; phone sidebar height/stickiness are reset. Overview heading actions, account controls and long chart labels wrap.
+Shared content-grid tracks use minmax(0, fraction), and panels/table wrappers set min-width:0 with bounded widths so table intrinsic sizing cannot enlarge the page grid. Overview uses a single-column overview-grid: the dashboard precedes the full-width records panel. The nested overview-dashboard uses two flexible chart tracks plus a summary track of at least 350px. Its scoped overview-stats reuses StatCard in a compact three-column grid beside the charts. At narrower widths, summary cards move beneath the charts; phone layouts stack the charts and use two summary columns. Scoped chart areas place 130px diagrams beside their legends on wide screens and stack chart content below 1200px. Table wrappers own horizontal scrolling. Main-content maximum widths adapt at sidebar breakpoints; phone sidebar height/stickiness are reset. Overview heading actions, account controls and long chart labels wrap.
+
+### Overview metrics and current traveler identity
+
+Inventory metrics independently count all assets and the Available, Assigned, On loan, Damaged and Under repair statuses; Damaged is labeled Broken assets in the dashboard, with custom Broken-status assets included in that same card. Asset metric actions set the Overview table filter. Overdue and Unreturned record metrics reuse groupLoans and navigate to /loans?tab=overdue and /loans?tab=unreturned, respectively. They count records rather than matched asset codes, retaining accessory-only records and the existing separation between overdue loans and Partial returns.
+
+The shared currentTravelerCount selector supplies Overview, the sidebar badge and Business Travelers. It selects Business traveler records with actual pickup and active/overdue custody, or Partial returns that still have outstanding items, then deduplicates people by trimmed, case-insensitive Knox ID. A real assignee name is the fallback only for a missing ID; anonymous placeholders are not identities. Scheduled, fully returned or transferred records and Employee/Contractor borrower types are excluded. Counts derive from saved records and existing lifecycle rules, without fabricating identity or date values.
 
 ### Diagram interactions and storage edit persistence
 

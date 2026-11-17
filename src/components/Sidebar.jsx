@@ -1,9 +1,8 @@
 import { isMesEquipment } from '../lib/equipmentSchema';
-import { isLoanReturned } from '../../shared/loanRules.js';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
-import { isBusinessTraveler } from '../lib/loanEquipment';
+import { currentTravelerCount } from '../lib/travelerMetrics';
 import { APP_VERSION, CUSTODY_PAGE_TITLE } from '../lib/constants';
 
 const NAV_ITEMS = [
@@ -95,13 +94,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
   const navigate = useNavigate();
   const { db } = useDb();
 
-  const activeTravelersCount = useMemo(() => {
-    return (db.loans || []).filter((l) => {
-      const isTraveler = isBusinessTraveler(l.assigneeType);
-      const isOngoing = !isLoanReturned(l);
-      return isTraveler && isOngoing;
-    }).length;
-  }, [db.loans]);
+  const activeTravelersCount = useMemo(() => currentTravelerCount(db.loans), [db.loans]);
 
   return (
     <aside className="sidebar">
@@ -146,8 +139,8 @@ export default function Sidebar({ onOpenPatchHistory }) {
             {item.showCount && (
               <span className="nav-count">{db.assets.filter((asset) => isMesEquipment(asset) === (item.path === '/mes')).length}</span>
             )}
-            {item.countKey === 'travelers' && activeTravelersCount > 0 && (
-              <span className="nav-count">{activeTravelersCount}</span>
+            {item.countKey === 'travelers' && (
+              <span className="nav-count" title="Current business travelers">{activeTravelersCount}</span>
             )}
             {item.badgeText && (
               <span className="nav-count nav-version-badge">{item.badgeText}</span>

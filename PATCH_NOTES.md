@@ -6,6 +6,30 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] — 2026-11-17
+
+### Distinct Dashboard Counts & Current Travelers
+
+Separate assignment, loan, overdue, unreturned and maintenance counts, and show unique current business travelers.
+
+#### Highlights
+- Split asset statuses and outstanding custody into individual dashboard cards.
+- Count current business travelers once per Knox ID.
+
+#### Dashboard Breakdown
+
+- Show individual counts for assigned assets, loaned assets, overdue loans, unreturned records, broken assets and assets under repair.
+- Reuse custody tab grouping for overdue and unreturned records, including missing accessories without a registered PC.
+- Open the matching asset subset or custody tab from each card and keep the recent records table full width.
+
+#### Current Business Travelers
+
+- Reuse one current-person counter in Overview, the sidebar and Business Travelers, deduplicating trimmed case-insensitive Knox IDs.
+- Count active, overdue and partial-return custody; exclude scheduled pickups, completed returns, transfers, employees and contractors.
+- Use a real name only when Knox ID is absent and distinguish current people from historical record totals.
+
+---
+
 ## [1.21.0] — 2026-11-17
 
 ### Calendar Pickup Visibility

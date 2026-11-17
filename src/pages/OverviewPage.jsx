@@ -2,7 +2,7 @@ import { assetMix, assetLocationMix, assetsWithCustodyActivity } from '../lib/ov
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
-import { isLoanOverdue } from '../lib/utils';
+import { overviewDashboardMetrics } from '../lib/overviewMetrics';
 import StatCard from '../components/StatCard';
 import DistributionChart from '../components/DistributionChart';
 import LocationDistribution from '../components/LocationDistribution';
@@ -21,68 +21,36 @@ export default function OverviewPage() {
   const { selectedIds, setSelectedIds, handleToggleSelect, handleToggleSelectAll, handleRangeSelect } = useAssetSelection();
   const [modal, setModal] = useState(null); // 'asset' | 'loan' | assetId | null
   const [ownerTargetAsset, setOwnerTargetAsset] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('recent'); // 'recent' | 'all' | 'available' | 'assigned' | 'attention'
-
-  const available = db.assets.filter((a) => a.status === 'Available').length;
-  const assigned = db.assets.filter((a) => ['Assigned', 'On loan'].includes(a.status)).length;
-  const issues = db.assets.filter((a) => ['Damaged', 'Under repair'].includes(a.status)).length;
-  const overdueLoans = db.loans.filter(isLoanOverdue);
-  const overdueCount = overdueLoans.length;
+  const [activeFilter, setActiveFilter] = useState('recent');
 
   const categories = useMemo(() => assetMix(db.assets), [db.assets]);
   const locations = useMemo(() => assetLocationMix(db.assets), [db.assets]);
-
-  const overdueAssetCodes = useMemo(
-    () => new Set(overdueLoans.map((l) => String(l.assetCode || '').toLowerCase())),
-    [overdueLoans]
-  );
-
   const overviewAssets = useMemo(() => assetsWithCustodyActivity(db.assets, db.loans), [db.assets, db.loans]);
-  const displayedAssets = useMemo(() => {
-    switch (activeFilter) {
-      case 'available': return overviewAssets.filter((asset) => asset.status === 'Available');
-      case 'assigned': return overviewAssets.filter((asset) => ['Assigned', 'On loan'].includes(asset.status));
-      case 'attention': return overviewAssets.filter((asset) => ['Damaged', 'Under repair'].includes(asset.status) || overdueAssetCodes.has(String(asset.code || '').toLowerCase()));
-      default: return overviewAssets;
-    }
-  }, [overviewAssets, activeFilter, overdueAssetCodes]);
-
-  const filterMeta = {
-    recent: {
-      title: 'Recently updated',
-      badge: `${db.assets.length} items`,
-      subtitle: 'Latest asset or assignment change, including details, editor and recorded time',
-      linkTarget: '/assets',
-      linkText: 'View full register →',
-    },
-    all: {
-      title: 'Total assets',
-      badge: `${db.assets.length} items`,
-      subtitle: 'All assets in inventory sorted by latest recorded change',
-      linkTarget: '/assets',
-      linkText: 'Open in asset register →',
-    },
-    available: {
-      title: 'Available now',
-      badge: `${available} items`,
-      subtitle: 'Assets ready for deployment or assignment sorted by latest recorded change',
-      linkTarget: '/assets?status=Available',
-      linkText: 'View available in register →',
-    },
-    assigned: {
-      title: 'On loan / assigned',
-      badge: `${assigned} items`,
-      subtitle: 'Assets currently assigned to staff or on loan sorted by latest recorded change',
-      linkTarget: '/assets?status=Assigned',
-      linkText: 'View assigned in register →',
-    },
-    attention: {
-      title: 'Needs attention',
-      badge: `${issues + overdueCount} items`,
-      subtitle: 'Assets damaged, under repair, or linked to overdue loans',
-      linkTarget: '/assets?status=Damaged',
-      linkText: 'View issues in register →',
-    },
+  const { assetGroups, overdue, unreturned, currentTravelers } = useMemo(
+    () => overviewDashboardMetrics(overviewAssets, db.loans), [overviewAssets, db.loans],
+  );
+  const displayedAssets = assetGroups[activeFilter] || overviewAssets;
+  const assetCards = [
+    { key: 'all', label: 'Total assets', note: 'All inventory assets' },
+    { key: 'available', label: 'Available now', note: 'Assets ready to assign' },
+    { key: 'assigned', label: 'Assigned assets', note: 'Permanent assignments' },
+    { key: 'loaned', label: 'Loaned assets', note: 'Equipment on loan', variant: 'warn' },
+    { key: 'broken', label: 'Broken assets', note: 'Damaged equipment', variant: 'alert' },
+    { key: 'repair', label: 'Under repair', note: 'Assets being serviced', variant: 'warn' },
+  ];
+  const selectedCard = assetCards.find((card) => card.key === activeFilter);
+  const filterMeta = selectedCard ? {
+    title: selectedCard.label,
+    badge: `${displayedAssets.length} items`,
+    subtitle: selectedCard.note + ', sorted by latest recorded change',
+    linkTarget: activeFilter === 'all' || activeFilter === 'broken' ? '/assets' : '/assets?status=' + encodeURIComponent({ available: 'Available', assigned: 'Assigned', loaned: 'On loan', repair: 'Under repair' }[activeFilter]),
+    linkText: activeFilter === 'all' || activeFilter === 'broken' ? 'View full register →' : 'Open asset register →',
+  } : {
+    title: 'Recently updated',
+    badge: `${db.assets.length} items`,
+    subtitle: 'Latest asset or assignment change, including details, editor and recorded time',
+    linkTarget: '/assets',
+    linkText: 'View full register →',
   };
 
   return (
@@ -109,36 +77,16 @@ export default function OverviewPage() {
               <LocationDistribution items={locations} />
             </div>
             <div className="stat-grid overview-stats" aria-label="Asset summary">
-              <StatCard
-                label="Total assets"
-                value={db.assets.length}
-                note={`Across ${db.locations.length} locations (click to view)`}
-                onClick={() => setActiveFilter((prev) => (prev === 'all' ? 'recent' : 'all'))}
-                active={activeFilter === 'all'}
-              />
-              <StatCard
-                label="Available now"
-                value={available}
-                note="Ready to assign (click to view)"
-                onClick={() => setActiveFilter((prev) => (prev === 'available' ? 'recent' : 'available'))}
-                active={activeFilter === 'available'}
-              />
-              <StatCard
-                label="On loan / assigned"
-                value={assigned}
-                note="Currently with a holder (click to view)"
-                variant="warn"
-                onClick={() => setActiveFilter((prev) => (prev === 'assigned' ? 'recent' : 'assigned'))}
-                active={activeFilter === 'assigned'}
-              />
-              <StatCard
-                label="Needs attention"
-                value={issues + overdueCount}
-                note={`${issues} issues, ${overdueCount} overdue (click to view)`}
-                variant="alert"
-                onClick={() => setActiveFilter((prev) => (prev === 'attention' ? 'recent' : 'attention'))}
-                active={activeFilter === 'attention'}
-              />
+              {assetCards.map(({ key, label, note, variant }) => <StatCard
+                key={key} label={label} value={assetGroups[key].length} note={note} variant={variant}
+                onClick={() => setActiveFilter((previous) => previous === key ? 'recent' : key)} active={activeFilter === key}
+              />)}
+              <StatCard label="Overdue loans" value={overdue.length} note="Past-due custody records" variant="alert"
+                onClick={() => navigate('/loans?tab=overdue')} />
+              <StatCard label="Unreturned records" value={unreturned.length} note="Partial returns, items missing" variant="alert"
+                onClick={() => navigate('/loans?tab=unreturned')} />
+              <StatCard label="Business travelers" value={currentTravelers} note="Unique people holding equipment"
+                onClick={() => navigate('/business-travelers')} />
             </div>
           </div>
           <div className="overview-quick-actions">
@@ -157,13 +105,13 @@ export default function OverviewPage() {
           <div className="panel-heading" style={{ flexWrap: 'wrap', gap: '8px', alignItems: 'flex-start' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ margin: 0 }}>{filterMeta[activeFilter].title}</h3>
+                <h3 style={{ margin: 0 }}>{filterMeta.title}</h3>
                 <span className="batch-chip" style={{ fontSize: '11px', fontWeight: 'bold' }}>
-                  {filterMeta[activeFilter].badge}
+                  {filterMeta.badge}
                 </span>
               </div>
               <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'var(--muted)' }}>
-                {filterMeta[activeFilter].subtitle}
+                {filterMeta.subtitle}
               </p>
             </div>
             <div className="overview-panel-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -181,9 +129,9 @@ export default function OverviewPage() {
               <button
                 type="button"
                 className="text-button"
-                onClick={() => navigate(filterMeta[activeFilter].linkTarget)}
+                onClick={() => navigate(filterMeta.linkTarget)}
               >
-                {filterMeta[activeFilter].linkText}
+                {filterMeta.linkText}
               </button>
             </div>
           </div>

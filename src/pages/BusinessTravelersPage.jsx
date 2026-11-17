@@ -2,6 +2,7 @@ import SortableHeader from '../components/SortableHeader';
 import { sortTableRows } from '../lib/tableSort';
 import TravelerContactList from '../components/TravelerContactList';
 import { travelerFollowUp, travelerReminders } from '../lib/travelerFollowUp';
+import { currentTravelerCount } from '../lib/travelerMetrics';
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import LoanReturnModal from '../components/LoanReturnModal';
 
@@ -77,11 +78,10 @@ export default function BusinessTravelersPage() {
     const returned = allTravelers.filter((t) => t.tripStatus === 'Returned').length;
     const activeTotal = inField + overdue; // Currently holding equipment outside IT
 
-    // Distinct traveler names
-    const distinctTravelers = new Set(allTravelers.map((t) => t.assignee)).size;
+    const currentTravelers = currentTravelerCount(allTravelers);
 
     return {
-      distinctTravelers,
+      currentTravelers,
       totalAssignments,
       inField,
       overdue,
@@ -167,7 +167,7 @@ export default function BusinessTravelersPage() {
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            Manage mobile staff on field assignments, business trips, and remote sites. Track current equipment custody by location.
+            <strong>{metrics.currentTravelers} current business {metrics.currentTravelers === 1 ? 'traveler' : 'travelers'}</strong> holding equipment, counted once per Knox ID. Track custody by location.
           </p>
         </div>
         <div className="view-header-actions">
@@ -233,7 +233,7 @@ export default function BusinessTravelersPage() {
               onClick={() => setViewMode('overdue')}
               title="Click to view overdue travelers only"
             >
-              <div className="stat-label">Active in Field</div>
+              <div className="stat-label">Active custody records</div>
               <div className="stat-value" style={{ color: 'var(--blue)' }}>
                 {metrics.activeTotal}
               </div>
@@ -260,9 +260,9 @@ export default function BusinessTravelersPage() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-label">Total Travelers</div>
-              <div className="stat-value">{metrics.distinctTravelers}</div>
-              <div className="stat-hint">{metrics.totalAssignments} total assignments</div>
+              <div className="stat-label">Current business travelers</div>
+              <div className="stat-value">{metrics.currentTravelers}</div>
+              <div className="stat-hint">Unique people with active or partially returned equipment</div>
             </div>
           </section>
 

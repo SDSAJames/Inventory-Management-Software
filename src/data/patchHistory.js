@@ -9,6 +9,27 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-17',
+    title: 'Distinct Dashboard Counts & Current Travelers',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Separate assignment, loan, overdue, unreturned and maintenance counts, and show unique current business travelers.',
+    highlights: ['Split asset statuses and outstanding custody into individual dashboard cards.', 'Count current business travelers once per Knox ID.'],
+    sections: [
+      { heading: 'Dashboard Breakdown', badge: 'Feature', items: [
+        'Show individual counts for assigned assets, loaned assets, overdue loans, unreturned records, broken assets and assets under repair.',
+        'Reuse custody tab grouping for overdue and unreturned records, including missing accessories without a registered PC.',
+        'Open the matching asset subset or custody tab from each card and keep the recent records table full width.',
+      ] },
+      { heading: 'Current Business Travelers', badge: 'Fix', items: [
+        'Reuse one current-person counter in Overview, the sidebar and Business Travelers, deduplicating trimmed case-insensitive Knox IDs.',
+        'Count active, overdue and partial-return custody; exclude scheduled pickups, completed returns, transfers, employees and contractors.',
+        'Use a real name only when Knox ID is absent and distinguish current people from historical record totals.',
+      ] },
+    ],
+  },
+  {
+    version: '1.21.0',
+    date: '2026-11-17',
     title: 'Calendar Pickup Visibility',
     tag: 'Feature Release',
     type: 'minor',

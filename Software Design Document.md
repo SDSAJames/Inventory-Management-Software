@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.21.0** |
+| **Document Version** | **v1.22.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 17, 2026 |
@@ -310,9 +310,9 @@ Imports remove exact duplicate records. Startup cleanup creates a restore point 
 The frontend application provides eight core operational views accessed via the left navigation sidebar:
 
 1. **Operations Dashboard (`/`)**:
-   - High-level KPI stat cards (Total Fleet, Available for Deployment, In Active Custody, Under Maintenance/Repair, Overdue Loans).
-   - Category distribution bar chart with count breakdowns.
-   - Interactive quick-filtered asset view (Recently updated, Available, Assigned, Needs Attention).
+   - Separate asset KPI cards for Total assets, Available now, Assigned assets, Loaned assets, Broken assets and Under repair, plus distinct Overdue loans, Unreturned records and Current business travelers counts.
+   - Interactive category and location distribution diagrams with counts and percentages.
+   - Asset cards filter the full-width Recently updated table by the corresponding asset status. Overdue and Unreturned record cards navigate to the matching Assignments & Pickups tab.
 2. **Asset Register (`/assets`)**:
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
    - Click and drag row selection with bulk status updates and bulk deletion.
@@ -344,7 +344,7 @@ The frontend application provides eight core operational views accessed via the 
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
    - Its separate day dialog also uses full-width rows. Pending arrivals exclude completed pickups and refresh while the dialog is open.
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
-   - **"How Many They Are"**: Real-time KPI statistics tracking active in-field deployments, total distinct travelers, scheduled pickups, overdue loans, and active locations.
+   - **"How Many They Are"**: Real-time KPI statistics include Current business travelers using the same distinct-person rule as Overview, alongside record-based scheduled pickups and overdue loans. A person with several records counts once in the current-traveler card.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Office) with one-click filtering.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
@@ -413,7 +413,13 @@ A shared custody policy keeps employee equipment Assigned and business-traveler/
 
 ### Responsive Overview containment
 
-Wide record tables remain inside shrinking panel/grid tracks with local horizontal scrolling. Overview places its category/location dashboard above a full-width records panel. Charts share a row with a compact two-by-two summary grid on the right on wide screens. Below 1200px, summary cards move below the charts; below 620px, charts stack and cards retain two columns. Quick actions sit below this dashboard. Main-content limits follow desktop/tablet sidebar sizes; phone navigation becomes a compact header. Action groups and chart labels wrap within available space.
+Wide record tables remain inside shrinking panel/grid tracks with local horizontal scrolling. Overview places its category/location dashboard above a full-width records panel. Charts share a row with a compact three-column summary grid on the right on wide screens. Below 1200px, summary cards move below the charts; below 620px, charts stack and cards retain two columns. Quick actions sit below this dashboard. Main-content limits follow desktop/tablet sidebar sizes; phone navigation becomes a compact header. Action groups and chart labels wrap within available space.
+
+### Dashboard count semantics
+
+Asset counts are derived from inventory status: Available, Assigned, On loan, Damaged (displayed as Broken assets) and Under repair, alongside Total assets. Overdue loans and Unreturned records are independent record counts using the same lifecycle grouping as Assignments & Pickups; a partial return does not become an overdue loan merely because equipment remains outstanding. Records with no tracked PC or monitor still count when accessories remain. These record cards open the corresponding tab instead of filtering assets.
+
+Current business travelers is a distinct-person count shared by Overview, the sidebar badge and Business Travelers. Only business travelers with actual picked-up active or overdue equipment, or partial returns with outstanding items, qualify. Identity uses a trimmed, case-insensitive Knox ID with a real-name fallback only when ID is absent. Schedules, full returns, transfers, employees and contractors are excluded. Multiple qualifying custody records contribute one person; missing identities and event dates are not invented.
 
 ### Interactive distributions and independent storage
 
@@ -431,4 +437,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.21.0**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.22.0**.
