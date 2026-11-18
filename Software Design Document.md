@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.3** |
+| **Document Version** | **v1.24.4** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 18, 2026 |
@@ -347,6 +347,7 @@ The frontend application provides operational views through the left sidebar, ad
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics include Current business travelers using the same distinct-person rule as Overview, alongside record-based scheduled pickups and overdue loans. A person with several records counts once in the current-traveler card.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Office) with one-click filtering.
+   - **Overdue Only**: Lists the equipment still outstanding on each overdue traveler record and starts with the earliest end date.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT Department, trip editor, and new business traveler dispatch recording.
@@ -430,7 +431,7 @@ Contractor is a third borrower identity. Employees retain indefinite assignment 
 
 Recent updates combine the latest real asset change with activity on linked assignment/pickup records, including borrower type changes that leave asset status unchanged. Each saved activity includes the authenticated editor and fixed timestamp. No-op writes, maintenance and restore preserve earlier activity. Unknown times remain undated and sort after recorded times in the default recent list; editor details are not invented for legacy records.
 
-A shared custody policy keeps employee equipment Assigned and business-traveler/contractor equipment On loan through editing and reconciliation. Overview adds a location distribution diagram with counts and percentages next to its category mix. Assignments & Pickups initializes Assigned and Loans to pickup date descending and other tabs to start date ascending. Entering a tab initializes its shared table with that default while keeping manual sort controls and undated rows last.
+A shared custody policy keeps employee equipment Assigned and business-traveler/contractor equipment On loan through editing and reconciliation. Overview adds a location distribution diagram with counts and percentages next to its category mix. Assignments & Pickups initializes Assigned and Loans to pickup date descending, Overdue to end date ascending, and other tabs to start date ascending. Entering a tab initializes its table with that tab's default while keeping manual sort controls and undated rows last.
 
 ### Responsive Overview containment
 
@@ -458,4 +459,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.3**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.4**.

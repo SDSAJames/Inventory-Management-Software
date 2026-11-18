@@ -9,6 +9,21 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-18',
+    title: 'Outstanding Items and Overdue Sorting',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Overdue lists show which equipment is still out. The Assignments & Pickups Overdue tab starts with the earliest end date.',
+    highlights: ['See equipment not returned in Business Travelers Overdue Only.', 'Keep each loan tab’s default sort, with Overdue ordered by end date.'],
+    sections: [
+      { heading: 'Overdue Lists', badge: 'UI', items: [
+        'Show the outstanding equipment items on each overdue business traveler record.',
+        'Start the Assignments & Pickups Overdue tab with the earliest end date while keeping other tabs on their own defaults.',
+      ] },
+    ],
+  },
+  {
+    version: '1.24.3',
+    date: '2026-11-18',
     title: 'Easier Category Browsing and Page Navigation',
     tag: 'Patch',
     type: 'patch',

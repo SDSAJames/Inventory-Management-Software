@@ -6,6 +6,23 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.4] — 2026-11-18
+
+### Outstanding Items and Overdue Sorting
+
+Overdue lists show which equipment is still out. The Assignments & Pickups Overdue tab starts with the earliest end date.
+
+#### Highlights
+- See equipment not returned in Business Travelers Overdue Only.
+- Keep each loan tab’s default sort, with Overdue ordered by end date.
+
+#### Overdue Lists
+
+- Show the outstanding equipment items on each overdue business traveler record.
+- Start the Assignments & Pickups Overdue tab with the earliest end date while keeping other tabs on their own defaults.
+
+---
+
 ## [1.24.3] — 2026-11-18
 
 ### Easier Category Browsing and Page Navigation

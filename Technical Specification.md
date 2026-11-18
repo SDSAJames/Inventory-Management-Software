@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.24.3** |
+| **Specification Version** | **v1.24.4** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 18, 2026 |
@@ -478,7 +478,7 @@ Both pickup form and pickup API permit RequestedMonitor=true with an empty Monit
 
 The build script remains vite build and has no database or TXT-import hooks. DbProvider no longer invokes exchange.importData during background refresh; all successful exports replace cached collections even when empty. loadDb uses an empty operational database for absent/corrupt cache entries, and cached assets are not supplemented with samples. seedDefaultData initializes reference defaults and calls a one-time account bootstrap, but does not reseed assets, loans or employees. Startup regression tests use a temporary DB_PATH and separate processes to verify edited end_date values and intentionally empty tables survive restarts. Keep DB_PATH and SQLite files separate from frontend deployment artifacts.
 
-`travelerReminders` excludes non-travelers, pending pickups and returned records, normalizes due/end dates and compares UTC calendar-day indices to the supplied local today date. Inclusive daysLeft 0..7 are sorted ascending. TravelerContactList reuses knoxRecipientList and shared clipboard/error handling. Overdue rows use SortableHeader buttons with aria-sort and sortTableRows for natural text and numeric comparisons; due dates sort chronologically, overdue duration numerically, and missing values last. Location distribution is hidden for followup and reminder view modes.
+`travelerReminders` excludes non-travelers, pending pickups and returned records, normalizes due/end dates and compares UTC calendar-day indices to the supplied local today date. Inclusive daysLeft 0..7 are sorted ascending. TravelerContactList reuses knoxRecipientList and shared clipboard/error handling. Business Travelers Overdue Only displays the missing equipment labels computed by getMissingReturnItems and defaults to end date ascending. Overdue rows use SortableHeader buttons with aria-sort and sortTableRows for natural text and numeric comparisons; due dates sort chronologically, overdue duration numerically, and missing values last. Location distribution is hidden for followup and reminder view modes.
 
 QUANTITY_FIELDS excludes asset fields. normalizeEquipmentQuantity strips leading zeros from digit-only strings without numeric conversion; normalizeEquipmentQuantities applies it only to count keys, preserving numeric types and legacy descriptions. The record normalizer handles issued and returned equipment at API/import/serialization boundaries. Shared form adapters and payload builders use the same functions. EquipmentQuantityInput notifies forms with canonical digits, permits empty editing, and is reused by transfer quantities. Tests cover input callbacks, payloads, identifiers, transfers and raw SQLite values for create, edit, pickup and return.
 
@@ -556,7 +556,7 @@ withoutActivityTracking isolates maintenance, snapshot restore and undo from rea
 
 ### Overview location diagram and assignment ordering
 
-assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups keys LoanTable by category, passing pickupDate/desc as initialSort for assigned and loaned, and startDate/asc for other tabs. Missing dates sort last, and the header cycle can reset to the tab-specific initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
+assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups keys LoanTable by category so each tab starts with its own default sort: pickupDate/desc for Assigned and Loans, endDate/asc for Overdue, and startDate/asc for other tabs. Missing dates sort last, and the header cycle can reset to that tab's initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
 
 ### Responsive grid and table sizing
 

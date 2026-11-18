@@ -689,7 +689,11 @@ export default function LoansPage() {
         )}
         <LoanTable
           key={category}
-          initialSort={['assigned', 'loaned'].includes(category) ? { key: 'pickupDate', dir: 'desc' } : { key: 'startDate', dir: 'asc' }}
+          initialSort={category === 'overdue'
+            ? { key: 'endDate', dir: 'asc' }
+            : ['assigned', 'loaned'].includes(category)
+              ? { key: 'pickupDate', dir: 'desc' }
+              : { key: 'startDate', dir: 'asc' }}
           scheduled={category === 'scheduled'}
           showPickupReadiness={category === 'scheduled' || category === 'all'}
           hideReturnDate={category === 'overdue'}

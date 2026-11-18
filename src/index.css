@@ -2448,6 +2448,7 @@ textarea.input-error-red {
 .overdue-row-highlight td {
   border-bottom: 1px solid #fee2e2;
 }
+.overdue-missing-items { min-width: 180px; max-width: 300px; color: var(--muted); font-size: 11px; white-space: normal; overflow-wrap: anywhere; }
 .overdue-toggle-active {
   background: #fee2e2 !important;
   color: #b91c1c !important;

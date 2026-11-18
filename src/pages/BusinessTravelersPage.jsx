@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
 import { readableLoanDate, normalizeDateToIso } from "../lib/utils";
-import { getLoanEndDate, isBusinessTraveler } from '../lib/loanEquipment';
+import { getLoanEndDate, getMissingReturnItems, isBusinessTraveler } from '../lib/loanEquipment';
 import Modal from '../components/Modal';
 import LoanForm from '../components/LoanForm';
 import EditLoanForm from '../components/EditLoanForm';
@@ -58,7 +58,15 @@ export default function BusinessTravelersPage() {
     return allTravelers.filter((t) => t.isOverdue || t.tripStatus === 'Overdue');
   }, [allTravelers]);
 
-  const overdueRows = useMemo(() => sortTableRows(overdueTravelers.map((loan, index) => ({ ...loan, originalIndex: index })), overdueSort, (loan, key) => {
+  const overdueRows = useMemo(() => sortTableRows(overdueTravelers.map((loan, index) => ({
+    ...loan,
+    originalIndex: index,
+    itemsNotReturned: getMissingReturnItems({
+      ...(loan.equipment || {}),
+      Laptop: loan.assetCode || loan.equipment?.Laptop || '',
+      Others: loan.others || loan.equipment?.Others || '',
+    }, loan.returnedEquipment || {}),
+  })), overdueSort, (loan, key) => {
     if (key === 'endDate') return normalizeDateToIso(getLoanEndDate(loan));
     if (key === 'overdueDays') return -Date.parse(normalizeDateToIso(getLoanEndDate(loan)));
     return loan[key];
@@ -393,6 +401,7 @@ export default function BusinessTravelersPage() {
                 <thead>
                   <tr>
                     {[['originalIndex', 'No'], ['assignee', 'Traveler'], ['location', 'Location'], ['assetCode', 'Asset Number'], ['endDate', 'Due Date'], ['overdueDays', 'Overdue By'], ['ip', 'Knox IP']].map(([key, label]) => <SortableHeader key={key} column={{ key, label }} sort={overdueSort} onSort={sortOverdue} />)}
+                    <th style={{ minWidth: '210px' }}>Items not returned</th>
                     <th style={{ width: '170px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -435,6 +444,11 @@ export default function BusinessTravelersPage() {
                         ) : (
                           <span style={{ color: 'var(--muted)' }}>—</span>
                         )}
+                      </td>
+                      <td>
+                        <div className="overdue-missing-items">
+                          {t.itemsNotReturned.length ? t.itemsNotReturned.join(', ') : 'No item details recorded'}
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button

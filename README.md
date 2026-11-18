@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.24.3)
+# StarPlus Energy Asset Management System (v1.24.4)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -162,7 +162,7 @@ Both Business Travelers and In & Out calendars show **Picked up** events on the 
 
 **Build and data preservation:** `npm run build` generates frontend code in `dist`; it does not import TXT files or replace the SQLite database. Keep the existing database and its configured `DB_PATH` when deploying code. Reloads never upload browser cache automatically, and server restarts do not repopulate sample assets, loans or employees. Missing browser caches start empty; a successful server snapshot is authoritative even when it contains no records. Import data explicitly through Data Exchange; admins restore inventory through Backup & Restore.
 
-Business Travelers **Reminder** lists picked-up business-traveler equipment due today through the next **7 calendar days**, nearest due date first. Copy unique recipients as `knoxidA;knoxidB;` with **Copy Knox IDs**, or select the displayed text manually. Follow-up and Reminder share the same contact-list UI and hide Location distribution. In **Overdue Only**, click a data-column header to alternate ascending/descending sorting; the initial order is earliest due date.
+Business Travelers **Reminder** lists picked-up business-traveler equipment due today through the next **7 calendar days**, nearest due date first. Copy unique recipients as `knoxidA;knoxidB;` with **Copy Knox IDs**, or select the displayed text manually. Follow-up and Reminder share the same contact-list UI and hide Location distribution. **Overdue Only** lists which equipment items are still out; click a data-column header to change the sort. It starts with the earliest due date.
 
 Accessory counts use one shared normalization rule across create, edit, pickup, return and transfer: `01` becomes `1`, and `00` becomes `0`. The same rule applies when saving through the API or importing records. PC and monitor asset numbers retain leading zeros; Others / Peripherals stays text. Existing stored records are not bulk-rewritten during upgrades.
 
@@ -212,7 +212,7 @@ The Assets and MES registers, including expanded MES location asset lists, displ
 
 **Recent assignment updates and editors:** Overview shows the newest asset or linked assignment/pickup change, including borrower-type edits such as Business traveler → Contractor, its saved time, and **Changed by** (signed-in name and Knox ID/username). Earlier records without an editor show Not recorded. Changes without a recorded time, including legacy date-only values, display no date and follow dated records in the default recent list. Automatic reconciliation and restore do not stamp today onto old records.
 
-Employee custody stays **Assigned** through editing, return reverts and reconciliation; business travelers and contractors use **On loan**. Overview also shows an **Asset locations** diagram with counts and percentages alongside Asset mix. Assignments & Pickups defaults to **Pickup date descending** in Assigned and Loans, and **Start date ascending** in the other tabs. Undated rows remain last; headers still allow manual sorting. Restart the backend once after upgrading to enable assignment change tracking and editor capture for subsequent saves.
+Employee custody stays **Assigned** through editing, return reverts and reconciliation; business travelers and contractors use **On loan**. Overview also shows an **Asset locations** diagram with counts and percentages alongside Asset mix. Assignments & Pickups defaults to **Pickup date descending** in Assigned and Loans, **End date ascending** in Overdue, and **Start date ascending** in the other tabs. Switching tabs restores that tab's default sort. Undated rows remain last; headers still allow manual sorting. Restart the backend once after upgrading to enable assignment change tracking and editor capture for subsequent saves.
 
 **Responsive Overview:** Recent-update tables scroll horizontally inside their own panel. Asset mix and the location diagram stay within the page; below 1200px the panels stack. Phone layouts use a compact navigation header, and page/account actions wrap to fit.
 
