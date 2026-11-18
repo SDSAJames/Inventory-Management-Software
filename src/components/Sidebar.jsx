@@ -1,3 +1,4 @@
+import { useAuth } from '../hooks/useAuth';
 import { isMesEquipment } from '../lib/equipmentSchema';
 import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -6,6 +7,8 @@ import { currentTravelerCount } from '../lib/travelerMetrics';
 import { APP_VERSION, CUSTODY_PAGE_TITLE } from '../lib/constants';
 
 const NAV_ITEMS = [
+  { path: '/backups', label: 'Backup & Restore', adminOnly: true, icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M2 5h12v9H2zM1 2h14v3H1zM6 8h4" /></svg> },
+  { path: '/users', label: 'User Management', adminOnly: true, icon: <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="6" cy="5" r="2.5" /><path d="M1 14v-1a5 5 0 0 1 10 0v1M11 2.5a2.5 2.5 0 0 1 0 5M12 10a4 4 0 0 1 3 4" /></svg> },
   {
     path: '/',
     label: 'Overview',
@@ -93,6 +96,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { db } = useDb();
+  const { user } = useAuth();
 
   const activeTravelersCount = useMemo(() => currentTravelerCount(db.loans), [db.loans]);
 
@@ -123,7 +127,7 @@ export default function Sidebar({ onOpenPatchHistory }) {
       <div className="workspace-label">WORKSPACE</div>
 
       <nav className="nav-list" aria-label="Main navigation">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !item.adminOnly).concat(user?.role === 'ADMIN' ? NAV_ITEMS.filter((item) => item.adminOnly) : []).map((item) => {
           const isActive =
             pathname === item.path ||
             (item.path === '/business-travelers' && pathname === '/travelers') ||

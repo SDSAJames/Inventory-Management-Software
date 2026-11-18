@@ -231,12 +231,15 @@ export function DbProvider({ children }) {
     return result.asset;
   }, []);
 
-  const deleteAsset = useCallback((id) => {
-    setDb((prev) => ({
-      ...prev,
-      assets: prev.assets.filter((a) => a.id !== id),
-    }));
-    api.assets.delete(id).catch((err) => console.warn('Could not sync asset deletion to server:', err.message));
+  const deleteAsset = useCallback(async (id) => {
+    await api.assets.delete(id);
+    setDb((previous) => ({ ...previous, assets: previous.assets.filter((asset) => asset.id !== id) }));
+  }, []);
+
+  const deleteAssets = useCallback(async (ids) => {
+    await api.assets.batchDelete(ids);
+    const removed = new Set(ids);
+    setDb((previous) => ({ ...previous, assets: previous.assets.filter((asset) => !removed.has(asset.id)) }));
   }, []);
 
   const batchUpdateAssets = useCallback((ids, changes) => {
@@ -870,6 +873,7 @@ export function DbProvider({ children }) {
     updateAsset,
     changeAssetOwner,
     deleteAsset,
+    deleteAssets,
     batchUpdateAssets,
     importAssets,
     verifyAndSyncAssets,
@@ -904,6 +908,7 @@ export function DbProvider({ children }) {
     updateAsset,
     changeAssetOwner,
     deleteAsset,
+    deleteAssets,
     batchUpdateAssets,
     importAssets,
     verifyAndSyncAssets,

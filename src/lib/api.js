@@ -51,6 +51,7 @@ export const api = {
     login: (credentials) => request('/auth/login', { method: 'POST', body: credentials }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     getMe: () => request('/auth/me'),
+    updateMe: (changes) => request('/auth/me', { method: 'PUT', body: changes }),
     changePassword: (data) => request('/auth/change-password', { method: 'POST', body: data }),
     getUsers: () => request('/auth/users'),
     createUser: (userData) => request('/auth/users', { method: 'POST', body: userData }),
@@ -159,5 +160,6 @@ export const api = {
     revertData: (snapshotId) => request('/exchange/revert', { method: 'POST', body: snapshotId ? { snapshotId } : {} }),
     revert: (snapshotId) => request('/exchange/revert', { method: 'POST', body: snapshotId ? { snapshotId } : {} }),
     getBackupStatus: () => request('/exchange/backup-status'),
+    createBackup: (description = '') => request('/exchange/backup', { method: 'POST', body: { description } }),
   },
 };

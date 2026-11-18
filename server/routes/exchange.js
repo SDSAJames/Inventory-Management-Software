@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { normalizePcRecord } from '../../shared/pcReferences.js';
 import { Router } from 'express';
 import { db, logAudit, createSnapshot, reconcileAllAssetsInDb } from '../db/database.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireAdminAccount } from '../middleware/auth.js';
 import { tracksEndDate } from '../loanRules.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import { findLoanMatchIndex } from '../../shared/loanIdentity.js';
@@ -50,7 +50,7 @@ exchangeRouter.get('/export', (req, res) => {
 });
 
 // GET /api/exchange/backup-status
-exchangeRouter.get('/backup-status', (req, res) => {
+exchangeRouter.get('/backup-status', authenticate, requireAdminAccount, (req, res) => {
   const history = db.prepare('SELECT id, description, created_at FROM import_backups ORDER BY created_at DESC LIMIT 50').all();
   const latest = history[0] || null;
   return res.json({
@@ -59,6 +59,21 @@ exchangeRouter.get('/backup-status', (req, res) => {
     latestBackup: latest || null,
     history,
   });
+});
+
+// POST /api/exchange/backup (Admin only: manual restore point)
+exchangeRouter.post('/backup', authenticate, requireAdminAccount, (req, res) => {
+  if (req.body?.description !== undefined && typeof req.body.description !== 'string') return res.status(400).json({ success: false, error: 'Restore point note must be text.' });
+  const description = String(req.body?.description || '').trim() || 'Manual restore point';
+  if (description.length > 200) return res.status(400).json({ success: false, error: 'Restore point note must be 200 characters or fewer.' });
+  try {
+    const snapshotId = createSnapshot(description);
+    const backup = db.prepare('SELECT id, description, created_at FROM import_backups WHERE id = ?').get(snapshotId);
+    logAudit('CREATE_BACKUP', 'exchange', snapshotId, { description }, req.user);
+    return res.status(201).json({ success: true, backup });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Could not create restore point.' });
+  }
 });
 
 // POST /api/exchange/import (Protected: Import with automated rollback point)
@@ -286,7 +301,7 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
 });
 
 // POST /api/exchange/revert (Protected: Rollback to previous snapshot)
-exchangeRouter.post('/revert', authenticate, (req, res) => withoutActivityTracking(() => {
+exchangeRouter.post('/revert', authenticate, requireAdminAccount, (req, res) => withoutActivityTracking(() => {
   const requestedId = String(req.body?.snapshotId || '').trim();
   const latestSnapshot = requestedId
     ? db.prepare('SELECT * FROM import_backups WHERE id = ?').get(requestedId)

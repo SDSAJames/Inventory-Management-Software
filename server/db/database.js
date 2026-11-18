@@ -8,6 +8,8 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
+import { accountKnoxId } from '../../shared/accountIdentity.js';
 import { config } from '../config.js';
 import { seed } from '../../src/data/seed.js';
 import { getDuplicateLoanIds, removeDuplicateLoans } from '../lib/loanDuplicates.js';
@@ -267,87 +269,43 @@ function removeExactDuplicateLoans() {
   }
 }
 
-function seedDefaultData() {
-  const insertUser = db.prepare(`
-    INSERT INTO users (id, username, password_hash, full_name, role, knox_id, title, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const updateUser = db.prepare(`
-    UPDATE users
-    SET password_hash = ?, full_name = ?, role = ?, knox_id = ?, title = ?
-    WHERE id = ?
-  `);
-
-  const salt = bcrypt.genSaltSync(10);
-
-  // 1. Initial admin account sourced from .env
-  const adminCfg = config.initialAdmin;
-  const existingAdmin = db.prepare(`
-    SELECT id FROM users
-    WHERE LOWER(knox_id) = LOWER(?) OR LOWER(username) = LOWER(?) OR LOWER(username) = 'admin'
-  `).get(adminCfg.knoxId, adminCfg.knoxId);
-
-  const adminHash = bcrypt.hashSync(adminCfg.password, salt);
-
-  if (!existingAdmin) {
-    insertUser.run(
-      'usr-admin-01',
-      adminCfg.knoxId.toLowerCase(),
-      adminHash,
-      adminCfg.fullName,
-      'ADMIN',
-      adminCfg.knoxId,
-      'IT Administrator',
-      new Date().toISOString()
-    );
-    console.log(`✓ Seeded admin account: ${adminCfg.fullName} (Knox ID: ${adminCfg.knoxId}) from .env`);
-  } else {
-    updateUser.run(
-      adminHash,
-      adminCfg.fullName,
-      'ADMIN',
-      adminCfg.knoxId,
-      'IT Administrator',
-      existingAdmin.id
-    );
-  }
-
-  // 2. Multiple operator accounts sourced from .env OPERATOR_LIST
-  if (Array.isArray(config.operators)) {
-    for (const op of config.operators) {
-      const existingOp = db.prepare(`
-        SELECT id FROM users
-        WHERE LOWER(username) = LOWER(?) OR LOWER(knox_id) = LOWER(?)
-      `).get(op.username, op.knoxId);
-
-      const opHash = bcrypt.hashSync(op.password, salt);
-
-      if (!existingOp) {
-        const opId = `usr-${op.knoxId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-        insertUser.run(
-          opId,
-          op.username,
-          opHash,
-          op.fullName,
-          op.role || 'OPERATOR',
-          op.knoxId,
-          op.title || 'Operator',
-          new Date().toISOString()
-        );
-        console.log(`✓ Seeded operator: ${op.fullName} (Knox ID: ${op.knoxId}, Title: ${op.title})`);
-      } else {
-        updateUser.run(
-          opHash,
-          op.fullName,
-          op.role || 'OPERATOR',
-          op.knoxId,
-          op.title || 'Operator',
-          existingOp.id
-        );
+/** Environment accounts provision a new installation once, never overwrite managed accounts. */
+function seedInitialAccounts() {
+  db.exec('CREATE TABLE IF NOT EXISTS app_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+  db.exec('SAVEPOINT account_bootstrap');
+  try {
+    const initialized = db.prepare('SELECT value FROM app_metadata WHERE key = ?').get('accounts_initialized');
+    if (!initialized) {
+      // Existing installations retain every saved password, profile, role and deletion.
+      if (db.prepare('SELECT COUNT(*) AS count FROM users').get().count === 0) {
+        const insert = db.prepare(`INSERT INTO users (id, username, password_hash, full_name, role, knox_id, title, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+        const now = new Date().toISOString();
+        const admin = config.initialAdmin;
+        const adminKnox = String(admin.knoxId).trim();
+        insert.run('usr-admin-01', adminKnox, bcrypt.hashSync(admin.password, 10), admin.fullName, 'ADMIN', adminKnox, 'IT Administrator', now);
+        for (const operator of config.operators || []) {
+          const knoxId = accountKnoxId(operator);
+          const username = knoxId;
+          const key = knoxId.toLowerCase();
+          const conflict = db.prepare(`SELECT id FROM users WHERE LOWER(TRIM(username)) IN (?, ?)
+            OR LOWER(TRIM(knox_id)) IN (?, ?)`).get(key, key, key, key);
+          if (conflict) continue;
+          insert.run('usr-' + randomUUID(), username, bcrypt.hashSync(operator.password, 10), operator.fullName || '',
+            operator.role === 'ADMIN' ? 'ADMIN' : 'OPERATOR', knoxId, operator.title || 'Operator', now);
+        }
       }
+      db.prepare('INSERT INTO app_metadata (key, value) VALUES (?, ?)').run('accounts_initialized', new Date().toISOString());
     }
+    db.exec('RELEASE SAVEPOINT account_bootstrap');
+  } catch (error) {
+    db.exec('ROLLBACK TO SAVEPOINT account_bootstrap; RELEASE SAVEPOINT account_bootstrap');
+    throw error;
   }
+}
+
+function seedDefaultData() {
+  seedInitialAccounts();
 
   // Seed initial assets if table is empty
   // Operational records are created only by explicit edits or imports.

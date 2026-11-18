@@ -68,3 +68,12 @@ export function requireRole(...allowedRoles) {
     next();
   };
 }
+
+/** Admin tools are unavailable to anonymous AUTH_OPTIONAL intranet sessions. */
+export function requireAdminAccount(req, res, next) {
+  if (!req.user?.id) return res.status(401).json({ success: false, error: 'Sign in with an admin account.' });
+  const account = db.prepare('SELECT id, role FROM users WHERE id = ?').get(req.user.id);
+  if (!account) return res.status(401).json({ success: false, error: 'Sign in with an admin account.' });
+  if (account.role !== 'ADMIN') return res.status(403).json({ success: false, error: 'Admin access is required.' });
+  next();
+}

@@ -1,5 +1,5 @@
 import UndoSavedChange from './UndoSavedChange';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { CUSTODY_PAGE_TITLE } from '../lib/constants';
 
@@ -41,9 +41,12 @@ const PAGE_META = {
     title: 'Asset & Organization Directory',
   },
   '/exchange': {
-    eyebrow: 'DATA INTEGRATION & BACKUP',
+    eyebrow: 'IMPORT & EXPORT',
     title: 'Data Exchange',
   },
+  '/backups': { eyebrow: 'ADMINISTRATION', title: 'Backup & Restore' },
+  '/users': { eyebrow: 'ADMINISTRATION', title: 'User Management' },
+  '/profile': { eyebrow: 'MY ACCOUNT', title: 'My Account' },
   '/patch-history': {
     eyebrow: 'SYSTEM RELEASES & CHANGELOG',
     title: 'Patch History & Release Notes',
@@ -56,6 +59,7 @@ const PAGE_META = {
 
 export default function TopBar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const current = PAGE_META[pathname] ?? {
     eyebrow: 'ASSET OPERATIONS',
@@ -82,18 +86,14 @@ export default function TopBar() {
       </div>
       <div className="top-actions">
         <UndoSavedChange />
-        <div className="network-pill" title="Connected to StarPlus Energy Corporate Intranet Server">
-          <span className="status-indicator-dot" />
-          <span>Corporate Intranet</span>
-        </div>
         <div className="topbar-user-control">
-          <div className="profile-chip" title={`Authenticated as ${displayName} (${knoxId}) • ${title}`}>
+          <button type="button" className="profile-chip" onClick={() => navigate('/profile')} aria-label="Edit my profile" title={`Edit profile for ${displayName} (${knoxId})`}>
             <span className="profile-chip-name">
               {displayName}
               <span className="profile-chip-role">{title}</span>
             </span>
-            <div className="avatar">{initials}</div>
-          </div>
+            <span className="avatar">{initials}</span>
+          </button>
           <button
             type="button"
             className="topbar-lock-btn"

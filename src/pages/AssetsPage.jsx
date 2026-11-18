@@ -1,3 +1,4 @@
+import { useAuth } from '../hooks/useAuth';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDb } from '../hooks/useDb';
@@ -23,8 +24,10 @@ import { isMesEquipment, MES_ASSET_HEADERS } from '../lib/equipmentSchema';
 const SEARCH_FIELDS = ['All fields', 'Asset number', 'Category', 'Holder', 'Location', 'Department', 'Serial number'];
 
 export default function AssetsPage({ mes = false }) {
-  const { db, deleteAsset, importAssets, verifyAndSyncAssets } = useDb();
+  const { db, deleteAssets, importAssets, verifyAndSyncAssets } = useDb();
   const toast = useToast();
+  const { user } = useAuth();
+  const canDeleteAssets = user?.role === 'ADMIN';
   const fileRef = useRef(null);
   const [searchParams] = useSearchParams();
   const [pageSize, setPageSize] = useState(15);
@@ -49,6 +52,7 @@ export default function AssetsPage({ mes = false }) {
   const [showNew, setShowNew] = useState(false);
   const { selectedIds, setSelectedIds, handleToggleSelect, handleToggleSelectAll, handleRangeSelect } = useAssetSelection();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAssets, setDeletingAssets] = useState(false);
   const [showBatchEdit, setShowBatchEdit] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [ownerTargetAsset, setOwnerTargetAsset] = useState(null);
@@ -93,12 +97,17 @@ export default function AssetsPage({ mes = false }) {
     return db.assets.filter((a) => selectedIds.has(a.id));
   }, [db.assets, selectedIds]);
 
-  const handleConfirmBulkDelete = () => {
-    const count = selectedIds.size;
-    selectedIds.forEach((id) => deleteAsset(id));
-    toast(`${count} asset${count > 1 ? 's' : ''} deleted.`);
-    setSelectedIds(new Set());
-    setShowDeleteConfirm(false);
+  const handleConfirmBulkDelete = async () => {
+    if (!canDeleteAssets || deletingAssets) return;
+    setDeletingAssets(true);
+    try {
+      const ids = [...selectedIds];
+      await deleteAssets(ids);
+      toast(ids.length + (ids.length === 1 ? ' asset deleted.' : ' assets deleted.'));
+      setSelectedIds(new Set());
+      setShowDeleteConfirm(false);
+    } catch (error) { toast(error.message || 'Could not delete assets.'); }
+    finally { setDeletingAssets(false); }
   };
 
   /* ── Excel import / export ───────────────────── */
@@ -186,9 +195,12 @@ export default function AssetsPage({ mes = false }) {
 
   return (
     <>
-      <div className="view-header">
-        <div>
-          <SelectionCount count={selectedIds.size} onClear={() => setSelectedIds(new Set())} />
+      <div className="view-header asset-register-header">
+        <div className="asset-register-summary">
+          <div className="asset-register-selection">
+            <SelectionCount count={selectedIds.size} onClear={() => setSelectedIds(new Set())} />
+            <AssetCategoryMenu categories={categoryOptions} total={registerAssets.length} selected={filterCategory} onChange={selectCategory} />
+          </div>
           <p>{filtered.length} of {registerAssets.length} {mes ? "MES equipment records" : "assets"} shown</p>
         </div>
         <div className="view-header-actions">
@@ -200,12 +212,12 @@ export default function AssetsPage({ mes = false }) {
               >
                 ✎ Batch edit ({selectedIds.size})
               </button>
-              <button
+              {canDeleteAssets && <button
                 className="button danger"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 🗑 Delete ({selectedIds.size})
-              </button>
+              </button>}
             </>
           )}
           <button id="asset-import-btn" className="button ghost" onClick={() => fileRef.current?.click()} title={mes ? "Import MES equipment TXT or XLSX" : "Import equipment TXT or XLSX"}>
@@ -225,8 +237,6 @@ export default function AssetsPage({ mes = false }) {
           <RowCountSelect value={pageSize} onChange={setPageSize} />
         </div>
       </div>
-
-      <AssetCategoryMenu categories={categoryOptions} total={registerAssets.length} selected={filterCategory} onChange={selectCategory} />
 
       {mes && <div className="loan-tabs" aria-label="MES views">
         {[["assets", "Assets"], ["locations", "Location"]].map(([key, label]) => <button type="button" key={key}
@@ -290,7 +300,7 @@ export default function AssetsPage({ mes = false }) {
       </Modal>
 
       {/* Bulk Deletion Confirmation Modal */}
-      <Modal open={showDeleteConfirm} size="sm" onClose={() => setShowDeleteConfirm(false)}>
+      <Modal open={canDeleteAssets && showDeleteConfirm} size="sm" onClose={() => setShowDeleteConfirm(false)}>
         <div className="delete-dialog">
           <h2>Delete {selectedAssets.length} asset{selectedAssets.length > 1 ? 's' : ''}</h2>
           <p className="modal-intro">
@@ -320,9 +330,9 @@ export default function AssetsPage({ mes = false }) {
               type="button"
               className="button danger-btn"
               style={{ background: '#be665a', borderColor: '#be665a', color: 'white' }}
-              onClick={handleConfirmBulkDelete}
+              onClick={handleConfirmBulkDelete} disabled={deletingAssets}
             >
-              Delete permanently
+              {deletingAssets ? 'Deleting…' : 'Delete permanently'}
             </button>
           </div>
         </div>

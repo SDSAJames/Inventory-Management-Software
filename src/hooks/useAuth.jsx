@@ -1,3 +1,4 @@
+import { authUser } from '../lib/authUser.js';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 
@@ -33,13 +34,7 @@ export function AuthProvider({ children }) {
       try {
         const res = await api.auth.getMe();
         if (mounted && res?.success && res.user) {
-          const verifiedUser = {
-            id: res.user.id,
-            knoxId: res.user.knox_id || res.user.knoxId || '',
-            fullName: res.user.full_name || res.user.fullName || 'Staff',
-            role: res.user.role || 'OPERATOR',
-            title: res.user.title || '',
-          };
+          const verifiedUser = authUser(res.user);
           setUser(verifiedUser);
           localStorage.setItem(AUTH_USER_KEY, JSON.stringify(verifiedUser));
         }
@@ -84,13 +79,7 @@ export function AuthProvider({ children }) {
       });
 
       if (res?.success && res.user) {
-        const authenticatedUser = {
-          id: res.user.id,
-          knoxId: res.user.knoxId || res.user.knox_id || cleanKnoxId,
-          fullName: res.user.fullName || res.user.full_name || 'Staff',
-          role: res.user.role || 'OPERATOR',
-          title: res.user.title || '',
-        };
+        const authenticatedUser = authUser({ ...res.user, knoxId: res.user.knoxId ?? res.user.knox_id ?? cleanKnoxId });
 
         setUser(authenticatedUser);
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authenticatedUser));
@@ -126,6 +115,14 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (changes) => {
+    const result = await api.auth.updateMe(changes);
+    const saved = authUser(result.user);
+    setUser(saved);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(saved));
+    return { ...saved, fullName: result.user.full_name ?? result.user.fullName ?? '' };
+  }, []);
+
   const value = {
     user,
     isAuthenticated: Boolean(user),
@@ -133,6 +130,7 @@ export function AuthProvider({ children }) {
     authError,
     login,
     logout,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,6 +6,77 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.2] — 2026-11-18
+
+### Compact Register Category Row
+
+Keep category filters beside the selected-row count with tighter spacing for compact register headers.
+
+#### Highlights
+- Keep the category menu and selected-row count on one compact row.
+- Allow category choices to scroll within the available width on small screens.
+
+#### Register Layout
+
+- Tighten category tab spacing and let the category menu scroll horizontally within the selected-row line.
+- Keep the row count readable while preserving access to every category on compact screens.
+
+---
+
+## [1.24.1] — 2026-11-17
+
+### Knox Identity & Compact Register Header
+
+Use Knox ID as the account identity, restrict operator self-service to passwords and compact the asset category menu.
+
+#### Highlights
+- Use one Knox ID field for account identity.
+- Allow operators to change only their own password.
+- Place category choices beside the selected-row count.
+
+#### Account Permissions
+
+- Remove separate username and Knox ID inputs from account forms and synchronize identity values when an admin changes them.
+- Show operator account details read-only and enforce password-only self-service in the API.
+- Keep current-password verification for self-service password changes and admin management of account details.
+
+#### Register Layout
+
+- Move the shared Assets/MES category menu onto the selected-row count line, keeping filters and record counts available.
+- Let long category pools scroll within the header and wrap action controls on smaller screens.
+
+---
+
+## [1.24.0] — 2026-11-17
+
+### Admin Tools & My Profile
+
+Separate admin backup and account management, add profile editing, and restrict asset deletion to admins.
+
+#### Highlights
+- Add Backup & Restore and User Management menus for admins.
+- Open My Profile from the user name and remove the Corporate Intranet badge.
+- Allow only admins to delete Assets and MES equipment.
+
+#### Backup & Restore
+
+- Move restore history from Data Exchange to a dedicated admin page with manual restore points, refresh and confirmed restore.
+- Keep the newest 50 restore points in a compact contained table, with visible dates, descriptions and error/loading states.
+- Enforce real admin accounts for backup history, creation and restore APIs, including optional-auth deployments.
+
+#### Accounts & Profile
+
+- Let admins create and edit accounts, reset operator passwords and remove accounts while protecting their own access.
+- Let signed-in users edit their own profile and change their password with current-password verification.
+- Preserve saved passwords, profiles and deleted accounts across restarts instead of reapplying environment account settings.
+
+#### Asset Permissions
+
+- Restrict single and bulk asset deletion to admins in the API and shared Assets/MES interface, including undo actions that remove assets.
+- Wait for successful server deletion before removing local records, and display failures without claiming success.
+
+---
+
 ## [1.23.1] — 2026-11-17
 
 ### Newest Pickups First

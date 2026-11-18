@@ -5,12 +5,16 @@ import { DbProvider } from './hooks/useDb';
 import { ToastProvider } from './hooks/useToast';
 import AppShell from './components/AppShell';
 import LockScreen from './components/LockScreen';
+import AdminRoute from './components/AdminRoute';
 const OverviewPage = lazy(() => import('./pages/OverviewPage'));
 const AssetsPage = lazy(() => import('./pages/AssetsPage'));
 const LoansPage = lazy(() => import('./pages/LoansPage'));
 const BusinessTravelersPage = lazy(() => import('./pages/BusinessTravelersPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 const DirectoryPage = lazy(() => import('./pages/DirectoryPage'));
+const BackupsPage = lazy(() => import('./pages/BackupsPage'));
+const UsersPage = lazy(() => import('./pages/UsersPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ExchangePage = lazy(() => import('./pages/ExchangePage'));
 const PatchHistoryPage = lazy(() => import('./pages/PatchHistoryPage'));
 
@@ -64,6 +68,9 @@ function AppContent() {
           <Route path="/travelers" element={<Navigate to="/business-travelers" replace />} />
           <Route path="/directory" element={<DirectoryPage />} />
           <Route path="/exchange" element={<ExchangePage />} />
+          <Route path="/backups" element={<AdminRoute><BackupsPage /></AdminRoute>} />
+          <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/patch-history" element={<PatchHistoryPage />} />
           <Route path="/changelog" element={<Navigate to="/patch-history" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

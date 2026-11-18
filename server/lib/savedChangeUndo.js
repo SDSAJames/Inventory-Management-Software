@@ -20,9 +20,13 @@ export function latestSavedChange(database, user) {
   const row = database.prepare('SELECT * FROM saved_change_undo WHERE slot = 1').get();
   if (!row) return { available: false, reason: 'No saved change is available to undo yet.' };
   const allowed = user.role === 'ADMIN' || user.username === row.username;
-  const unchanged = fingerprint(captureWorkingData(database)) === row.after_hash;
+  const current = captureWorkingData(database);
+  const previousIds = new Set((JSON.parse(row.before_json).assets || []).map((asset) => asset.id));
+  const removesAssets = (current.assets || []).some((asset) => !previousIds.has(asset.id));
+  const deletionAllowed = !removesAssets || Boolean(user.id && database.prepare('SELECT role FROM users WHERE id = ?').get(user.id)?.role === 'ADMIN');
+  const unchanged = fingerprint(current) === row.after_hash;
   return { id: row.id, description: row.description, username: row.username, createdAt: row.created_at,
-    available: allowed && unchanged, reason: !allowed ? 'The latest change was saved by another user.' : !unchanged ? 'Database state has changed since this checkpoint.' : '' };
+    available: allowed && deletionAllowed && unchanged, reason: !deletionAllowed ? 'Only admins can revert a change that removes assets.' : !allowed ? 'The latest change was saved by another user.' : !unchanged ? 'Database state has changed since this checkpoint.' : '' };
 }
 export function undoSavedChange(database, expectedId, user) {
   return withoutActivityTracking(() => {

@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.23.1** |
+| **Specification Version** | **v1.24.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 17, 2026 |
+| **Release Date** | November 18, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -407,10 +407,10 @@ The system implements a centralized data exchange engine backed by transactional
    - Automatically invokes `reconcileAllAssetsInDb()` immediately after commit to validate and enforce all States v1.0.0 rules.
    - Records an `IMPORT_DATA` event in `audit_logs` tracking snapshot ID, imported counts, and actor identity. If an error is encountered, the transaction triggers an automatic `ROLLBACK`.
 
-3. **One-Click Transactional Revert (`POST /api/exchange/revert`)**:
-   - Accepts an optional `snapshotId`; otherwise locates the latest restorable snapshot from `import_backups`. `GET /api/exchange/backup-status` exposes up to 50 history entries.
+3. **Admin Backup & Restore (`/backups`, inventory snapshots)**:
+   - Dedicated admin history replaces the restore section in Data Exchange. The page supports manual snapshot creation, refresh and confirmed restoration; the contained table shows the newest 50 entries first. `GET /api/exchange/backup-status` supplies history, and `POST /api/exchange/revert` accepts a selected `snapshotId` (or the latest snapshot when omitted). These actions require a real persisted admin account.
    - Executes an atomic rollback within `BEGIN TRANSACTION ... COMMIT`: wipes working tables (`ownership_history`, `assets`, `loans`, `employees`, `departments`, `locations`) and re-populates them with the exact snapshot dataset.
-   - Saves the current database before restoration and retains the selected snapshot in history. The client reloads the restored database.
+   - Saves current inventory before restoration and refreshes the shared cache afterward. Security users, passwords, roles and account initialization metadata are outside inventory snapshots and restoration.
 
 4. **Startup Duplicate Repair**:
    - Database initialization saves a restore point when cleanup is needed, clears start dates later than return dates on records without pickup dates, and removes exact duplicates using the shared semantic comparison.
@@ -476,7 +476,7 @@ Both pickup form and pickup API permit RequestedMonitor=true with an empty Monit
 
 ### Build and restart data preservation
 
-The build script remains vite build and has no database or TXT-import hooks. DbProvider no longer invokes exchange.importData during background refresh; all successful exports replace cached collections even when empty. loadDb uses an empty operational database for absent/corrupt cache entries, and cached assets are not supplemented with samples. seedDefaultData initializes accounts and references but does not reseed assets, loans or employees. Startup regression tests use a temporary DB_PATH and separate processes to verify edited end_date values and intentionally empty tables survive restarts. Keep DB_PATH and SQLite files separate from frontend deployment artifacts.
+The build script remains vite build and has no database or TXT-import hooks. DbProvider no longer invokes exchange.importData during background refresh; all successful exports replace cached collections even when empty. loadDb uses an empty operational database for absent/corrupt cache entries, and cached assets are not supplemented with samples. seedDefaultData initializes reference defaults and calls a one-time account bootstrap, but does not reseed assets, loans or employees. Startup regression tests use a temporary DB_PATH and separate processes to verify edited end_date values and intentionally empty tables survive restarts. Keep DB_PATH and SQLite files separate from frontend deployment artifacts.
 
 `travelerReminders` excludes non-travelers, pending pickups and returned records, normalizes due/end dates and compares UTC calendar-day indices to the supplied local today date. Inclusive daysLeft 0..7 are sorted ascending. TravelerContactList reuses knoxRecipientList and shared clipboard/error handling. Overdue rows use SortableHeader buttons with aria-sort and sortTableRows for natural text and numeric comparisons; due dates sort chronologically, overdue duration numerically, and missing values last. Location distribution is hidden for followup and reminder view modes.
 
@@ -514,7 +514,7 @@ mergeRecordDraft compares draft fields against the previous saved baseline, upda
 
 ### Shared register category menu
 
-AssetsPage owns the selected category and renders one shared category menu for standard and MES registers. Menu data combines db.categories with categories in registerAssets, normalizes outer spaces and case for deduplication/matching, and sorts labels naturally ascending. All is the initial entry. Directory categories are scoped with the MES predicate; categories actually used by scoped assets remain available even when their name alone does not identify the register. Zero-count Directory choices remain visible. Counts derive from registerAssets before search/status filtering, so those controls do not remove menu choices.
+AssetsPage owns the selected category and renders one shared category menu for standard and MES registers. The menu shares a compact, non-wrapping row with SelectionCount inside the register header; category tabs use reduced spacing and scroll horizontally within the available width. The action group can wrap at smaller widths. Menu data combines db.categories with categories in registerAssets, normalizes outer spaces and case for deduplication/matching, and sorts labels naturally ascending. All is the initial entry. Directory categories are scoped with the MES predicate; categories actually used by scoped assets remain available even when their name alone does not identify the register. Zero-count Directory choices remain visible. Counts derive from registerAssets before search/status filtering, so those controls do not remove menu choices.
 
 The selected category is an exact normalized name filter over registerAssets, combined with the existing search and status predicates. It is included in pagination reset keys for AssetRegisterTable and AssetLocationList; category changes clear selected asset IDs. Export consumes the same filtered collection. Changes to shared categories or assets recalculate menu data without a separate category cache; saved Laptop variants are not merged by this menu.
 
@@ -578,8 +578,20 @@ getHolderReturnChanges distinguishes unchanged IT custody from a real return and
 
 shared/directoryFields.js supplies trimDirectoryValue and non-mutating trimDirectoryFields for location/department properties. DirectorySelect trims and deduplicates options before sorting, trims the query for matching and commits trimmed input on blur. Shared loan builders and asset payloads also trim on submission, so keyboard submission does not depend on blur. Cache normalization, asset custody normalization, bulk updates, transfer inheritance, exchange imports and loan serialization reuse the rule. Partial updates preserve omitted keys; backup restore and undo continue to preserve stored history. Controlled input behavior, internal spaces, blank schedules, partial updates, API save paths and imports were verified using isolated databases before removing the whitespace-specific test code.
 
+### Account management, profile and destructive permissions
+
+`/users` and `/backups` are wrapped by AdminRoute and their navigation entries are hidden from operators. Server requireAdminAccount resolves req.user.id against the users table and requires its saved ADMIN role, so the synthetic AUTH_OPTIONAL identity is insufficient. DELETE /api/assets/:id and POST /api/assets/batch-delete use this same guard; AssetsPage hides deletion controls for non-admins while retaining selection, batch editing, import and export.
+
+GET/POST /api/auth/users, PUT /api/auth/users/:id and DELETE /api/auth/users/:id provide admin account management. Account forms expose a single Knox ID identity: username is its compatibility alias, not an independently editable user field. Explicit identity writes synchronize username and knox_id. Legacy differing values are preserved unless identity is explicitly changed, including during password-only saves; there is no blanket account-identity migration. Account creation and password reset enforce at least six characters; passwords are bcrypt hashes at rest. Public-user field selection excludes password_hash, and audit payloads record only identity/role metadata and whether a password changed. Existing safeguards prevent deleting the signed-in account or removing the final admin.
+
+`/profile` loads GET /api/auth/me and saves only the authenticated account through PUT /api/auth/me. Admins may edit Knox ID, full name and title, but cannot change role or another account through this endpoint. Operators see profile details read-only; profile-field payloads are rejected with 403 and only currentPassword/newPassword changes are allowed. A password change verifies currentPassword before replacing the hash, enforces the same six-character minimum, and preserves saved identity values when no identity update is requested. The shared authUser mapper and useAuth update the in-memory session/cache after a profile save, and the top-bar account button opens this route. The Corporate Intranet badge is no longer rendered.
+
+seedInitialAccounts uses a savepoint and app_metadata.accounts_initialized marker. A fresh database with no users provisions the configured initial accounts once; an existing users table is adopted and marked without changing records. Once marked, restarts preserve managed account updates and deletions instead of reapplying environment credentials. Inventory restore and last-change undo do not restore users or this marker.
+
 ### Shared calendar visibility
 
 useCalendarVisibility supplies hidePickedUp=true and hideReturned=false to each calendar, owns month/day event-type filters, and resets picked-up-only filters when pickup events are hidden. CalendarVisibilityFilters reuses the existing switch control in toolbars and day dialogs. indexInOutSchedule accepts a hidePickedUp option that suppresses only the pickup-date index; outgoing and incoming return indexing remain intact. Both calendars derive grid events, monthly counts and selected-day data from these indexes, with hideReturned filtering applied independently before indexing.
 
 Returned equipment corrections also participate in loan activity metadata: returned_equipment_json is watched alongside return_status, so quantity changes that remain Partial still record the editor and fixed change time.
+
+The saved-change undo availability check also detects asset IDs that would be removed by rollback and requires a persisted ADMIN account before allowing that undo. This keeps asset-deletion permissions consistent with direct and bulk deletion.

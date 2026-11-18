@@ -5,11 +5,12 @@ import { ensureSavedChangeUndo, captureWorkingData, rememberSavedChange, latestS
 const user = { username: 'operator', role: 'OPERATOR' };
 function fixture() {
   const db = new DatabaseSync(':memory:');
-  db.exec("PRAGMA foreign_keys = ON; CREATE TABLE assets (id TEXT PRIMARY KEY, owner TEXT); CREATE TABLE loans (id TEXT PRIMARY KEY, asset_id TEXT REFERENCES assets(id), end_date TEXT); CREATE TABLE users (id TEXT PRIMARY KEY); INSERT INTO assets VALUES ('pc', 'Original'); INSERT INTO loans VALUES ('loan', 'pc', '2026-12-01'); INSERT INTO users VALUES ('security-user')");
+  db.exec("PRAGMA foreign_keys = ON; CREATE TABLE assets (id TEXT PRIMARY KEY, owner TEXT); CREATE TABLE loans (id TEXT PRIMARY KEY, asset_id TEXT REFERENCES assets(id), end_date TEXT); CREATE TABLE users (id TEXT PRIMARY KEY, role TEXT); INSERT INTO assets VALUES ('pc', 'Original'); INSERT INTO loans VALUES ('loan', 'pc', '2026-12-01'); INSERT INTO users VALUES ('security-user', 'ADMIN')");
   ensureSavedChangeUndo(db);
   return db;
 }
 test('undo restores the latest linked changes exactly, consumes its checkpoint and retains security records', () => {
+  const user = { id: 'security-user', username: 'operator', role: 'ADMIN' };
   const db = fixture();
   try {
     const before = captureWorkingData(db);

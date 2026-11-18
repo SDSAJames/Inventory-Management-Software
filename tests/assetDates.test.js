@@ -75,7 +75,7 @@ test('asset routes persist lifecycle dates through editing and exchange', async 
   const dbUrl = new URL('../server/db/database.js', import.meta.url).href;
   const hook = registerHooks({ load(url, context, next) {
     if (url === dbUrl) return { format: 'module', shortCircuit: true, source: 'export const db = globalThis.__assetDateTestDb; export const logAudit = () => {}; export const reconcileAllAssetsInDb = () => ({}); export const createSnapshot = () => "snapshot";' };
-    if (url === new URL('../server/middleware/auth.js', import.meta.url).href) return { format: 'module', shortCircuit: true, source: 'export const authenticate = (req, res, next) => next();' };
+    if (url === new URL('../server/middleware/auth.js', import.meta.url).href) return { format: 'module', shortCircuit: true, source: 'export const authenticate = (req, res, next) => next(); export const requireAdminAccount = authenticate;' };
     return next(url, context);
   } });
   try {

@@ -8,6 +8,66 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-18',
+    title: 'Compact Register Category Row',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Keep category filters beside the selected-row count with tighter spacing for compact register headers.',
+    highlights: ['Keep the category menu and selected-row count on one compact row.', 'Allow category choices to scroll within the available width on small screens.'],
+    sections: [
+      { heading: 'Register Layout', badge: 'UI', items: [
+        'Tighten category tab spacing and let the category menu scroll horizontally within the selected-row line.',
+        'Keep the row count readable while preserving access to every category on compact screens.',
+      ] },
+    ],
+  },
+  {
+    version: '1.24.1',
+    date: '2026-11-17',
+    title: 'Knox Identity & Compact Register Header',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Use Knox ID as the account identity, restrict operator self-service to passwords and compact the asset category menu.',
+    highlights: ['Use one Knox ID field for account identity.', 'Allow operators to change only their own password.', 'Place category choices beside the selected-row count.'],
+    sections: [
+      { heading: 'Account Permissions', badge: 'Fix', items: [
+        'Remove separate username and Knox ID inputs from account forms and synchronize identity values when an admin changes them.',
+        'Show operator account details read-only and enforce password-only self-service in the API.',
+        'Keep current-password verification for self-service password changes and admin management of account details.',
+      ] },
+      { heading: 'Register Layout', badge: 'UI', items: [
+        'Move the shared Assets/MES category menu onto the selected-row count line, keeping filters and record counts available.',
+        'Let long category pools scroll within the header and wrap action controls on smaller screens.',
+      ] },
+    ],
+  },
+  {
+    version: '1.24.0',
+    date: '2026-11-17',
+    title: 'Admin Tools & My Profile',
+    tag: 'Feature Release',
+    type: 'minor',
+    summary: 'Separate admin backup and account management, add profile editing, and restrict asset deletion to admins.',
+    highlights: ['Add Backup & Restore and User Management menus for admins.', 'Open My Profile from the user name and remove the Corporate Intranet badge.', 'Allow only admins to delete Assets and MES equipment.'],
+    sections: [
+      { heading: 'Backup & Restore', badge: 'Feature', items: [
+        'Move restore history from Data Exchange to a dedicated admin page with manual restore points, refresh and confirmed restore.',
+        'Keep the newest 50 restore points in a compact contained table, with visible dates, descriptions and error/loading states.',
+        'Enforce real admin accounts for backup history, creation and restore APIs, including optional-auth deployments.',
+      ] },
+      { heading: 'Accounts & Profile', badge: 'Feature', items: [
+        'Let admins create and edit accounts, reset operator passwords and remove accounts while protecting their own access.',
+        'Let signed-in users edit their own profile and change their password with current-password verification.',
+        'Preserve saved passwords, profiles and deleted accounts across restarts instead of reapplying environment account settings.',
+      ] },
+      { heading: 'Asset Permissions', badge: 'Fix', items: [
+        'Restrict single and bulk asset deletion to admins in the API and shared Assets/MES interface, including undo actions that remove assets.',
+        'Wait for successful server deletion before removing local records, and display failures without claiming success.',
+      ] },
+    ],
+  },
+  {
+    version: '1.23.1',
     date: '2026-11-17',
     title: 'Newest Pickups First',
     tag: 'Patch',

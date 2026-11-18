@@ -5,7 +5,7 @@ import { DEFAULT_OWNER, DEFAULT_LOCATION } from "../../shared/referenceData.js";
 import { getAssetDateError, normalizeAssetDate } from '../../shared/assetDates.js';
 import { Router } from 'express';
 import { db, logAudit, reconcileAllAssetsInDb } from '../db/database.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireAdminAccount } from '../middleware/auth.js';
 
 import { todayIso } from '../lib/dates.js';
 import { formatAssetRow, formatOwnershipAuditRow } from '../lib/assetRows.js';
@@ -521,7 +521,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
 });
 
 // POST /api/assets/batch-delete (Protected: Batch delete)
-assetsRouter.post('/batch-delete', authenticate, (req, res) => {
+assetsRouter.post('/batch-delete', authenticate, requireAdminAccount, (req, res) => {
   const { ids = [] } = req.body || {};
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ success: false, error: 'Array of asset IDs is required.' });
@@ -551,7 +551,7 @@ assetsRouter.post('/batch-delete', authenticate, (req, res) => {
 });
 
 // DELETE /api/assets/:id (Protected)
-assetsRouter.delete('/:id', authenticate, (req, res) => {
+assetsRouter.delete('/:id', authenticate, requireAdminAccount, (req, res) => {
   const asset = db.prepare('SELECT * FROM assets WHERE id = ?').get(req.params.id);
   if (!asset) {
     return res.status(404).json({ success: false, error: 'Asset not found.' });

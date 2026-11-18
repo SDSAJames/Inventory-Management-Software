@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.23.1** |
+| **Document Version** | **v1.24.2** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 17, 2026 |
+| **Release Date** | November 18, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -292,10 +292,10 @@ To safeguard corporate records against accidental overwrites or malformed text f
    - An audit record is logged to `audit_logs` capturing the snapshot ID, number of imported assets, updated records, and loans.
 2. **Client-Side Snapshot Buffering (`IMPORT_BACKUP_KEY`)**:
    - Concurrently, the frontend client caches a pre-import snapshot to `localStorage` under `IMPORT_BACKUP_KEY` via `saveImportBackup()`.
-3. **One-Click Rollback (`POST /api/exchange/revert`)**:
-   - When the operator clicks **"Revert last import"** on the Data Exchange view, the client calls `api.exchange.revert()`.
-   - Data Exchange displays up to 50 saved restore points. The operator can select a snapshot ID or restore the latest snapshot.
-   - The Express server saves the current state before restoring the selected snapshot transactionally. Saved snapshots remain in history; the client reloads the restored database.
+3. **Admin Backup & Restore (`/backups`)**:
+   - Restore history and restoration actions live in the dedicated admin menu, separate from Data Exchange imports/exports. Admins can create a manual restore point, refresh the history and confirm restoration of a selected snapshot.
+   - A compact contained table lists up to 50 restore points in newest-first order.
+   - The Express server saves current inventory before restoring a selected snapshot transactionally; the client reloads the restored inventory. Accounts, roles and passwords remain unchanged by inventory restoration.
 
 ### 6.4 Loan Identity & Duplicate Repair
 
@@ -307,7 +307,7 @@ Imports remove exact duplicate records. Startup cleanup creates a restore point 
 
 ## 7. User Interface Layout & Views
 
-The frontend application provides eight core operational views accessed via the left navigation sidebar:
+The frontend application provides operational views through the left sidebar, admin tools only for admins, and a personal profile through the top-bar account control:
 
 1. **Operations Dashboard (`/`)**:
    - Separate asset KPI cards for Total assets, Available now, Assigned assets, Loaned assets, Broken assets and Under repair, plus distinct Overdue loans, Unreturned records and Current business travelers counts.
@@ -315,7 +315,8 @@ The frontend application provides eight core operational views accessed via the 
    - Asset cards filter the full-width Recently updated table by the corresponding asset status. Overdue and Unreturned record cards navigate to the matching Assignments & Pickups tab.
 2. **Asset Register (`/assets`)**:
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
-   - Click and drag row selection with bulk status updates and bulk deletion.
+   - Category choices share a compact, horizontally scrollable row with the selected-row count in Assets and MES.
+   - Click and drag row selection with bulk status updates; single and bulk asset deletion in Assets/MES is restricted to admins in both the UI and API. Operators retain editing and import/export.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
    - Purchase and warranty expiration dates apply to every asset type and accept DD-MM-YYYY entry, converted to ISO before submission without changing existing stored dates or import conventions. Date validation and persistence cover asset editing, imports, exports, and restores.
    - Asset-number edits update linked custody and ownership-history references atomically; failed saves remain open with an error.
@@ -359,13 +360,27 @@ The frontend application provides eight core operational views accessed via the 
    - Tab-delimited text (`.txt`) import extracted from Excel (`SPE_Equipments_example.txt` & `SPE_IT_Equipment_Loan_List_Example.txt`).
    - Interactive preview modal with pre-flight record validation and Merge vs Replace options.
    - Reference-format `.xlsx` OpenXML export maintaining 1:1 column parity.
-   - Snapshot restore point management.
+   - Import/export remains separate from the dedicated admin Backup & Restore view.
 8. **Patch History & Release Notes (`PatchHistoryModal.jsx` & `PatchHistoryPage.jsx`)**:
    - In-app release notes viewer accessible via the TopBar version pill, the Sidebar footer, or the dedicated `/patch-history` and `/changelog` routes.
    - Pinned modal header and filter controls with internal single-scroll stream (`.patch-cards-stream`), preventing clipped headers and double scrollbars.
    - Per-version tabbed navigation, real-time keyword search, change type filtering (`All Types`, `Patches`, `Minor`, `Major`), and structured release highlights.
+9. **Backup & Restore (`/backups`, admin only)**:
+   - Manual restore-point creation, refresh and confirmed restoration in a bounded newest-first history table. Inventory restoration does not restore security accounts.
+10. **User Management (`/users`, admin only)**:
+   - Account creation, editing, deletion, role assignment and password reset. Passwords have a six-character minimum; account management requires a real persisted admin account.
+11. **My Profile (`/profile`)**:
+   - The top-bar account name opens the signed-in profile. Admins may edit account details; operators see those details read-only and may change only their own password with the current password. Username is the Knox ID, represented by one identity field. The Corporate Intranet badge is removed.
 
 ---
+
+### Account lifecycle and authorization
+
+Admin-only menus and asset deletion are enforced by server authorization as well as UI visibility. An anonymous optional-auth intranet identity cannot perform these operations: the server resolves a real persisted account and checks its current Admin role. User responses contain public profile fields only, and audits record account actions without passwords or password hashes. Profile-field writes from operators are rejected by the API; their permitted self-service operation is password change with current-password verification.
+
+Account creation, admin editing and admin self-profile use a single Knox ID identity. Explicit identity changes synchronize the stored username and Knox ID. Older records with differing values are not silently migrated, and password-only changes preserve those identifiers.
+
+Initial environment account provisioning runs once for a new installation. Existing accounts are adopted without overwriting managed profiles, roles or passwords. An initialization marker prevents restarts from recreating deleted users or resetting credentials. Inventory backup and restore remain separate from this account lifecycle.
 
 ## 8. Non-Functional Guarantees
 
@@ -389,7 +404,7 @@ Asset creation and editing reuse the editable Directory department selector, inc
 
 ### Register category navigation
 
-The shared Assets/MES register presents an All menu entry and category entries from the current Directory pool plus categories used by the scoped inventory. Names are trimmed, deduplicated case-insensitively and sorted in natural ascending order. Scope rules keep standard and MES menus relevant to their own registers while retaining used categories and zero-count Directory choices. Counts show each category in the scoped inventory before search or status filtering. Category matching retains distinct saved names, including Laptop variants.
+The shared Assets/MES register places its All entry and category entries on the same header row as the selection count. Long menus scroll horizontally and adjacent actions wrap at smaller widths. Entries come from the current Directory pool plus categories used by the scoped inventory. Names are trimmed, deduplicated case-insensitively and sorted in natural ascending order. Scope rules keep standard and MES menus relevant to their own registers while retaining used categories and zero-count Directory choices. Counts show each category in the scoped inventory before search or status filtering. Category matching retains distinct saved names, including Laptop variants.
 
 All is the initial selection. Category, search and status filters combine before sorting, pagination, exports and MES location grouping. Choosing a category clears row selection and resets paging. Menu choices and counts refresh from shared inventory and Directory state.
 
@@ -443,4 +458,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.23.1**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.2**.
