@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.2** |
+| **Document Version** | **v1.24.3** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 18, 2026 |
@@ -315,7 +315,7 @@ The frontend application provides operational views through the left sidebar, ad
    - Asset cards filter the full-width Recently updated table by the corresponding asset status. Overdue and Unreturned record cards navigate to the matching Assignments & Pickups tab.
 2. **Asset Register (`/assets`)**:
    - Complete inventory data grid with multi-column filtering (Status, Category, Location, Search term across all fields).
-   - Category choices share a compact, horizontally scrollable row with the selected-row count in Assets and MES.
+   - Category choices appear beside the selected-row count and wrap onto another line when the menu is too long.
    - Click and drag row selection with bulk status updates; single and bulk asset deletion in Assets/MES is restricted to admins in both the UI and API. Operators retain editing and import/export.
    - Interactive holder badges: clicking an owner opens the **Change Ownership Modal** directly.
    - Purchase and warranty expiration dates apply to every asset type and accept DD-MM-YYYY entry, converted to ISO before submission without changing existing stored dates or import conventions. Date validation and persistence cover asset editing, imports, exports, and restores.
@@ -404,13 +404,13 @@ Asset creation and editing reuse the editable Directory department selector, inc
 
 ### Register category navigation
 
-The shared Assets/MES register places its All entry and category entries on the same header row as the selection count. Long menus scroll horizontally and adjacent actions wrap at smaller widths. Entries come from the current Directory pool plus categories used by the scoped inventory. Names are trimmed, deduplicated case-insensitively and sorted in natural ascending order. Scope rules keep standard and MES menus relevant to their own registers while retaining used categories and zero-count Directory choices. Counts show each category in the scoped inventory before search or status filtering. Category matching retains distinct saved names, including Laptop variants.
+The shared Assets/MES register places its All entry and category entries beside the selection count. When entries do not fit on one line, the menu wraps onto additional lines instead of requiring horizontal scrolling. Adjacent actions wrap at smaller widths. Entries come from the current Directory pool plus categories used by the scoped inventory. Names are trimmed, deduplicated case-insensitively and sorted in natural ascending order. Scope rules keep standard and MES menus relevant to their own registers while retaining used categories and zero-count Directory choices. Counts show each category in the scoped inventory before search or status filtering. Category matching retains distinct saved names, including Laptop variants.
 
 All is the initial selection. Category, search and status filters combine before sorting, pagination, exports and MES location grouping. Choosing a category clears row selection and resets paging. Menu choices and counts refresh from shared inventory and Directory state.
 
 ### Paged asset browsing and selection
 
-Overview, Assets and MES share pagination and multi-row selection. The default is 15 rows, with 10, 15, 20 and 30 available in the top-right selector. Filtering and sorting precede page slicing so every record remains reachable. Overview recent records retain modification-date ordering across pages. MES location groups and their expanded lists are paged while totals remain complete. Selection spans pages, with a top-left count and explicit clear action; header selection and range selection operate on visible rows. Exports continue to use all matching records.
+Overview, Assets and MES share pagination and multi-row selection. The default is 15 rows, with 10, 15, 20 and 30 available in the top-right selector. First and Last buttons jump to the beginning or end; Previous and Next move one page at a time. Filtering and sorting precede page slicing so every record remains reachable. Overview recent records retain modification-date ordering across pages. MES location groups and their expanded lists are paged while totals remain complete. Selection spans pages, with a top-left count and explicit clear action; header selection and range selection operate on visible rows. Exports continue to use all matching records.
 
 Range selection can start from a row checkbox as well as a non-interactive row cell. The starting selection determines whether the dragged range is selected or cleared; the release click is suppressed so the endpoint is not toggled twice.
 
@@ -458,4 +458,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.2**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.3**.

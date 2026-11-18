@@ -9,6 +9,23 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-18',
+    title: 'Easier Category Browsing and Page Navigation',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Long category menus now continue on another line when needed. First and Last buttons let you jump to either end of a paged list.',
+    highlights: ['See more categories without horizontal scrolling.', 'Jump straight to the first or last page.'],
+    sections: [
+      { heading: 'Asset Categories', badge: 'UI', items: [
+        'When category buttons do not fit beside the selected-row count, they wrap onto another line so the full menu stays visible.',
+      ] },
+      { heading: 'Page Navigation', badge: 'UI', items: [
+        'Use First or Last to move directly to the beginning or end of asset and location lists.',
+      ] },
+    ],
+  },
+  {
+    version: '1.24.2',
+    date: '2026-11-18',
     title: 'Compact Register Category Row',
     tag: 'Patch',
     type: 'patch',

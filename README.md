@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.24.2)
+# StarPlus Energy Asset Management System (v1.24.3)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -188,13 +188,13 @@ Unsaved asset typing stays in place during background refresh. Untouched fields 
 
 **MES (`/mes`):** Manage MES PCs, monitors and other MES equipment separately from the standard Assets page. Both registers share the same records, editing, ownership and bulk actions. Imports must match the selected register; MES exports use the eleven-column MES Excel format. Editable department and location dropdowns show the full Directory list on focus or reopening, support typing to filter, and scroll through longer lists.
 
-**Category menu:** Assets and MES show **All** and category buttons on the same compact top row as the selected-row count, populated from the current Directory category pool and categories present in that register. Category tabs use compact spacing and long lists scroll horizontally within the row; action buttons wrap on smaller screens. Names are sorted ascending and matched without case or outer-space differences; Laptop variants retain their own categories. Each button shows its register-wide count before search or status filters, including zero for unused Directory categories. Choose a category to combine it with search and status filtering; changing category clears row selection and returns to page one. Category filtering also applies to export and MES Location counts.
+**Category menu:** Assets and MES show **All** and category buttons beside the selected-row count, populated from the current Directory category pool and categories present in that register. When the menu does not fit on one line, the buttons wrap onto another line. Names are sorted ascending and matched without case or outer-space differences; Laptop variants retain their own categories. Each button shows its register-wide count before search or status filters, including zero for unused Directory categories. Choose a category to combine it with search and status filtering; changing category clears row selection and returns to page one. Category filtering also applies to export and MES Location counts.
 
 On the MES page, switch between **Assets** and **Location**. Each occupied location shows its total assets and counts by equipment type. Click its row to browse and edit the equipment there. Category, search and status filters apply to the counts and lists.
 
 Asset add/edit dialogs, including MES, use a searchable Department dropdown. Type to filter Directory entries, choose with the mouse or arrow keys and Enter, or enter a custom department. Reopen the dropdown to see all choices; + Add still creates a Directory entry.
 
-**Paged asset lists:** Overview, Assets and MES show 15 rows per page by default. Choose 10, 15, 20 or 30 with **Rows per page** at the top right, then use Previous/Next below the records. Search, filters and sorting apply to the full matching list. MES Location rows and expanded asset lists also use the selected page size; location totals include every matching asset. Exports include all matching assets.
+**Paged asset lists:** Overview, Assets and MES show 15 rows per page by default. Choose 10, 15, 20 or 30 with **Rows per page** at the top right, then use First, Previous, Next or Last below the records. Search, filters and sorting apply to the full matching list. MES Location rows and expanded asset lists also use the selected page size; location totals include every matching asset. Exports include all matching assets.
 
 The top left shows the selected-row count. Use checkboxes, drag across rows, or Shift-click a range on the current page. Select-all affects only that page; selections on other pages remain. Use Clear selection to deselect everything.
 

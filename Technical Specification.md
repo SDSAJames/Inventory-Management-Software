@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.24.2** |
+| **Specification Version** | **v1.24.3** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 18, 2026 |
@@ -514,7 +514,7 @@ mergeRecordDraft compares draft fields against the previous saved baseline, upda
 
 ### Shared register category menu
 
-AssetsPage owns the selected category and renders one shared category menu for standard and MES registers. The menu shares a compact, non-wrapping row with SelectionCount inside the register header; category tabs use reduced spacing and scroll horizontally within the available width. The action group can wrap at smaller widths. Menu data combines db.categories with categories in registerAssets, normalizes outer spaces and case for deduplication/matching, and sorts labels naturally ascending. All is the initial entry. Directory categories are scoped with the MES predicate; categories actually used by scoped assets remain available even when their name alone does not identify the register. Zero-count Directory choices remain visible. Counts derive from registerAssets before search/status filtering, so those controls do not remove menu choices.
+AssetsPage owns the selected category and renders one shared category menu for standard and MES registers. The menu appears beside SelectionCount inside the register header and wraps category buttons onto additional lines when they do not fit. The action group can wrap at smaller widths. Menu data combines db.categories with categories in registerAssets, normalizes outer spaces and case for deduplication/matching, and sorts labels naturally ascending. All is the initial entry. Directory categories are scoped with the MES predicate; categories actually used by scoped assets remain available even when their name alone does not identify the register. Zero-count Directory choices remain visible. Counts derive from registerAssets before search/status filtering, so those controls do not remove menu choices.
 
 The selected category is an exact normalized name filter over registerAssets, combined with the existing search and status predicates. It is included in pagination reset keys for AssetRegisterTable and AssetLocationList; category changes clear selected asset IDs. Export consumes the same filtered collection. Changes to shared categories or assets recalculate menu data without a separate category cache; saved Laptop variants are not merged by this menu.
 
@@ -526,7 +526,7 @@ AssetForm renders Department through DirectorySelect with allowCustom and Direct
 
 ### Shared pagination and asset selection
 
-`usePagination` derives a bounded page, record range and navigation from total count, page size and a reset key; filters, sort or size changes begin at page one and deletions clamp the visible page. `AssetTable` memoizes whole-result sorting before slicing and rendering page rows; Overview initializes sorting to modification date descending. `Pagination`, `RowCountSelect` and `SelectionCount` supply shared controls. Page owners default to 15 and allow 10/15/20/30; Directory tables remain unpaged unless opted in. `AssetLocationList` uses the same paginator for location groups and passes size to the expanded table, without slicing assets before counting.
+`usePagination` derives a bounded page, record range and navigation from total count, page size and a reset key; filters, sort or size changes begin at page one and deletions clamp the visible page. Shared Pagination controls include First/Last jumps and Previous/Next steps. `AssetTable` memoizes whole-result sorting before slicing and rendering page rows; Overview initializes sorting to modification date descending. `Pagination`, `RowCountSelect` and `SelectionCount` supply shared controls. Page owners default to 15 and allow 10/15/20/30; Directory tables remain unpaged unless opted in. `AssetLocationList` uses the same paginator for location groups and passes size to the expanded table, without slicing assets before counting.
 
 `useAssetSelection` shares toggle, page-select and range handlers. Page-select merges/removes only visible IDs. AssetTable resolves drag/Shift-click ranges against visible order and suppresses the edit click after selection gestures. Anchor indices reset on page, size, filter or sort changes. Pagination does not change cached data loading or server export behavior. Regression coverage includes ordering before slicing, page reset/clamping, cross-page selection counts, and range gestures.
 

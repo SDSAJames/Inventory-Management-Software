@@ -16,8 +16,10 @@ export function SelectionCount({ count, onClear }) {
 export default function Pagination({ page, pages, total, start, end, setPage }) {
   return <nav className="pagination" aria-label="Record pages">
     <span>{total ? start + 1 : 0}–{end} of {total}</span>
+    <button type="button" className="button ghost" aria-label="First page" disabled={page === 1} onClick={() => setPage(1)}>First</button>
     <button type="button" className="button ghost" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
     <span aria-live="polite">Page {page} of {pages}</span>
     <button type="button" className="button ghost" disabled={page === pages} onClick={() => setPage(page + 1)}>Next</button>
+    <button type="button" className="button ghost" aria-label="Last page" disabled={page === pages} onClick={() => setPage(pages)}>Last</button>
   </nav>;
 }

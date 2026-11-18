@@ -6,6 +6,26 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.3] — 2026-11-18
+
+### Easier Category Browsing and Page Navigation
+
+Long category menus now continue on another line when needed. First and Last buttons let you jump to either end of a paged list.
+
+#### Highlights
+- See more categories without horizontal scrolling.
+- Jump straight to the first or last page.
+
+#### Asset Categories
+
+- When category buttons do not fit beside the selected-row count, they wrap onto another line so the full menu stays visible.
+
+#### Page Navigation
+
+- Use First or Last to move directly to the beginning or end of asset and location lists.
+
+---
+
 ## [1.24.2] — 2026-11-18
 
 ### Compact Register Category Row
