@@ -2,9 +2,11 @@ import { trimDirectoryFields } from '../../shared/directoryFields.js';
 import { randomUUID } from 'node:crypto';
 import { splitLoanEquipment, equipmentForTransferredPickup } from '../../shared/loanTransfer.js';
 import { borrowerType, tracksEndDate, custodyStatusForBorrower, isLoanReturned } from '../../shared/loanRules.js';
+import { normalizeLocation } from '../../shared/assetRules.js';
 import { formatCalendarDateTime } from '../../shared/dateTime.js';
+import { ensureLocation } from './assetLocations.js';
 
-export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', selection = {}, scheduleId, startDate, endDate, transferDate, timeZone = 'UTC' }) {
+export function transferLoan(database, id, { knoxId, assignee = '', assigneeType = 'Employee', location, selection = {}, scheduleId, startDate, endDate, transferDate, timeZone = 'UTC' }) {
   const source = database.prepare('SELECT * FROM loans WHERE id = ?').get(id);
   if (!source || !source.pickup_date || isLoanReturned(source)) throw new Error('Only picked-up, outstanding equipment can be transferred');
   const schedule = scheduleId ? database.prepare('SELECT * FROM loans WHERE id = ?').get(scheduleId) : null;
@@ -21,6 +23,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const transferTime = `${localTimestamp} ${zoneLabel}`;
   const targetAssignee = String(schedule ? schedule.assignee || '' : assignee).trim();
   const targetType = borrowerType(schedule ? schedule.assignee_type : assigneeType);
+  const targetLocation = normalizeLocation(String(location ?? '').trim() || schedule?.location || source.location || '', '');
   const targetStart = startDate ?? schedule?.start_date ?? localTimestamp.slice(0, 10);
   const targetEnd = tracksEndDate(targetType) ? endDate ?? schedule?.end_date ?? '' : '';
   const validDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
@@ -43,6 +46,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
     knox_id: targetKnox,
     assignee: targetAssignee,
     assignee_type: targetType,
+    ...(database.prepare('PRAGMA table_info(loans)').all().some((column) => column.name === 'location') ? { location: targetLocation } : {}),
     end_date: targetEnd,
     pickup_date: now,
     start_date: targetStart,
@@ -60,6 +64,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   };
   database.exec('SAVEPOINT loan_transfer');
   try {
+    if (targetLocation && database.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'locations'").get()) ensureLocation(database, targetLocation);
     const columns = Object.keys(target);
     if (schedule) {
       const updates = columns.filter((key) => key !== 'id');

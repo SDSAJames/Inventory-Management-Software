@@ -8,21 +8,24 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
-    date: '2026-11-18',
-    title: 'Outstanding Items and Overdue Sorting',
+    date: '2026-11-19',
+    title: 'Returned Sorting and Transfer Location',
     tag: 'Patch',
     type: 'patch',
-    summary: 'Overdue lists show which equipment is still out. The Assignments & Pickups Overdue tab starts with the earliest end date.',
-    highlights: ['See equipment not returned in Business Travelers Overdue Only.', 'Keep each loan tab’s default sort, with Overdue ordered by end date.'],
+    summary: 'The Returned tab starts with the latest return, and equipment transfers let you choose the new location.',
+    highlights: ['Sort returned records by return date, newest first.', 'Set a destination location when transferring equipment during pickup.'],
     sections: [
-      { heading: 'Overdue Lists', badge: 'UI', items: [
-        'Show the outstanding equipment items on each overdue business traveler record.',
-        'Start the Assignments & Pickups Overdue tab with the earliest end date while keeping other tabs on their own defaults.',
+      { heading: 'Returned Records', badge: 'UI', items: [
+        'Default the Returned tab to return date descending while preserving each tab’s own initial sorting.',
+      ] },
+      { heading: 'Equipment Transfers', badge: 'UI', items: [
+        'Choose a Directory location or type a new one when transferring equipment from the pickup table.',
+        'Save the destination location to the recipient record and transferred registered assets.',
       ] },
     ],
   },
   {
-    version: '1.24.3',
+    version: '1.24.4',
     date: '2026-11-18',
     title: 'Easier Category Browsing and Page Navigation',
     tag: 'Patch',

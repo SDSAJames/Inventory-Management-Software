@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.4** |
+| **Document Version** | **v1.24.5** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 18, 2026 |
+| **Release Date** | November 19, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -329,6 +329,7 @@ The frontend application provides operational views through the left sidebar, ad
    - Employee and traveler requests without pickup dates remain in Scheduled. Scheduled rows show Assignee and omit pickup date, return date, and status columns.
    - Scheduled columns start with Action, Pickup readiness, and Borrower type. Return time is hidden from expanded Scheduled details and scheduled full editing. Overdue omits the return-date column and expanded return time; records with a return date cannot be overdue.
    - Transfers can fulfill an existing schedule selected by Knox ID. Traveler recipients require reviewed start and end dates. Pickup timestamps display in local time, and generated notes use readable recipient details.
+   - Equipment transfers accept a destination location and apply it to the recipient custody record and registered transferred assets.
    - Rental location accepts typed values with Directory suggestions. Full editing and pickup retain the requested PC and monitor checkboxes; pickup assigns actual PC and monitor asset numbers.
    - Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items. Edit full details exposes the shared returned-equipment controls only for records with an actual return. Corrections recalculate Complete/Partial status and refresh Unreturned membership while preserving current asset custody.
    - Expand a picked-up outstanding loan to transfer all items or selected quantities to another owner. A different Knox ID is required; assignee name is optional. Transfers create linked custody records and device ownership history, retain remaining equipment on the source, and archive fully transferred sources as Transferred without a physical return.
@@ -431,7 +432,7 @@ Contractor is a third borrower identity. Employees retain indefinite assignment 
 
 Recent updates combine the latest real asset change with activity on linked assignment/pickup records, including borrower type changes that leave asset status unchanged. Each saved activity includes the authenticated editor and fixed timestamp. No-op writes, maintenance and restore preserve earlier activity. Unknown times remain undated and sort after recorded times in the default recent list; editor details are not invented for legacy records.
 
-A shared custody policy keeps employee equipment Assigned and business-traveler/contractor equipment On loan through editing and reconciliation. Overview adds a location distribution diagram with counts and percentages next to its category mix. Assignments & Pickups initializes Assigned and Loans to pickup date descending, Overdue to end date ascending, and other tabs to start date ascending. Entering a tab initializes its table with that tab's default while keeping manual sort controls and undated rows last.
+A shared custody policy keeps employee equipment Assigned and business-traveler/contractor equipment On loan through editing and reconciliation. Overview adds a location distribution diagram with counts and percentages next to its category mix. Assignments & Pickups initializes Assigned and Loans to pickup date descending, Overdue to end date ascending, Returned to return date descending, and other tabs to start date ascending. Entering a tab initializes its table with that tab's default while keeping manual sort controls and undated rows last.
 
 ### Responsive Overview containment
 
@@ -459,4 +460,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.4**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.5**.

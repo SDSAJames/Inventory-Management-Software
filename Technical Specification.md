@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.24.4** |
+| **Specification Version** | **v1.24.5** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 18, 2026 |
+| **Release Date** | November 19, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -345,9 +345,9 @@ The Assets table allows instantaneous ownership reassignment by clicking directl
 
 `POST /api/loans/:id/transfer` accepts `knoxId`, optional `assignee`, `assigneeType`, `startDate`, `endDate`, optional `scheduleId`, and a `selection` object keyed by equipment storage names. The source must have a pickup date and remain outstanding. The new Knox ID must differ from the source owner. Business travelers and contractors require valid start and end dates with end on or after start. A selected schedule supplies recipient identity and default dates and must still await pickup. `shared/loanTransfer.js` validates device identities and quantities and splits transferred equipment from remaining custody.
 
-`server/lib/loanTransfer.js` uses a SQLite savepoint to create the destination record or fulfill the selected schedule in place, update the source, and record ownership changes for registered PCs and monitors. Any failure rolls back all those writes. Source and destination notes link the records and retain transferred item values. A fully transferred source uses stored status `Transferred` and `isArchived = 1`; its table label remains Transferred in the archived lifecycle group. The transfer leaves actual return dates blank. The destination records pickup at transfer time with reviewed dates and recipient rental context. Fulfilling a schedule preserves its ID and notes, replaces planned quantities with actual transferred equipment, clears readiness, and sets `equipment.PickupMethod` to `Transfer`. The table displays Pickup by transfer beside its pickup time. Employee destinations have no due date.
+`server/lib/loanTransfer.js` uses a SQLite savepoint to create the destination record or fulfill the selected schedule in place, update the source, and record ownership changes for registered PCs and monitors. Any failure rolls back all those writes. Source and destination notes link the records and retain transferred item values. A supplied destination location is normalized, added to the Directory if needed, and saved on the recipient record and transferred registered assets. A fully transferred source uses stored status `Transferred` and `isArchived = 1`; its table label remains Transferred in the archived lifecycle group. The transfer leaves actual return dates blank. The destination records pickup at transfer time with reviewed dates and recipient rental context. Fulfilling a schedule preserves its ID and notes, replaces planned quantities with actual transferred equipment, clears readiness, and sets `equipment.PickupMethod` to `Transfer`. The table displays Pickup by transfer beside its pickup time. Employee destinations have no due date.
 
-`LoanTransferForm.jsx` provides select-all, individual item selection, and numeric quantities. It requires server success and reloads the shared database before dismissing. `Confirm pickup` persists the selected PC code in both the loan asset reference and equipment checklist. Requested PC and monitor flags are retained across schedule, full edit, and pickup; rental location inputs accept Directory suggestions or manual text.
+`LoanTransferForm.jsx` provides select-all, individual item selection, numeric quantities, and a Directory-backed custom location field. It defaults to the source or selected schedule location, requires server success, and reloads the shared database before dismissing. `Confirm pickup` persists the selected PC code in both the loan asset reference and equipment checklist. Requested PC and monitor flags are retained across schedule, full edit, and pickup; rental location inputs accept Directory suggestions or manual text.
 
 ## 6. Native OpenXML Spreadsheet Engine (`lib/xlsx.js`)
 
@@ -556,7 +556,7 @@ withoutActivityTracking isolates maintenance, snapshot restore and undo from rea
 
 ### Overview location diagram and assignment ordering
 
-assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups keys LoanTable by category so each tab starts with its own default sort: pickupDate/desc for Assigned and Loans, endDate/asc for Overdue, and startDate/asc for other tabs. Missing dates sort last, and the header cycle can reset to that tab's initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
+assetLocationMix aggregates current inventory locations using shared location normalization and repair rules. DistributionChart, reused by Asset mix and LocationDistribution, renders an accessible SVG ring with count/percentage legend; empty locations remain Unspecified. Assignments & Pickups keys LoanTable by category so each tab starts with its own default sort: pickupDate/desc for Assigned and Loans, endDate/asc for Overdue, returnDate/desc for Returned, and startDate/asc for other tabs. Missing dates sort last, and the header cycle can reset to that tab's initial order. Tests cover borrower-type edits with unchanged asset status, isolated editor identity, restore, unknown timestamps, repeated restart/reconciliation, employee full editing and return reverts, location totals and sorting.
 
 ### Responsive grid and table sizing
 

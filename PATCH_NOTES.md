@@ -6,24 +6,28 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.24.4] — 2026-11-18
+## [1.24.5] — 2026-11-19
 
-### Outstanding Items and Overdue Sorting
+### Returned Sorting and Transfer Location
 
-Overdue lists show which equipment is still out. The Assignments & Pickups Overdue tab starts with the earliest end date.
+The Returned tab starts with the latest return, and equipment transfers let you choose the new location.
 
 #### Highlights
-- See equipment not returned in Business Travelers Overdue Only.
-- Keep each loan tab’s default sort, with Overdue ordered by end date.
+- Sort returned records by return date, newest first.
+- Set a destination location when transferring equipment during pickup.
 
-#### Overdue Lists
+#### Returned Records
 
-- Show the outstanding equipment items on each overdue business traveler record.
-- Start the Assignments & Pickups Overdue tab with the earliest end date while keeping other tabs on their own defaults.
+- Default the Returned tab to return date descending while preserving each tab’s own initial sorting.
+
+#### Equipment Transfers
+
+- Choose a Directory location or type a new one when transferring equipment from the pickup table.
+- Save the destination location to the recipient record and transferred registered assets.
 
 ---
 
-## [1.24.3] — 2026-11-18
+## [1.24.4] — 2026-11-18
 
 ### Easier Category Browsing and Page Navigation
 

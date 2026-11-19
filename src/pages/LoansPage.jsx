@@ -691,9 +691,11 @@ export default function LoansPage() {
           key={category}
           initialSort={category === 'overdue'
             ? { key: 'endDate', dir: 'asc' }
-            : ['assigned', 'loaned'].includes(category)
-              ? { key: 'pickupDate', dir: 'desc' }
-              : { key: 'startDate', dir: 'asc' }}
+            : category === 'returned'
+              ? { key: 'returnDate', dir: 'desc' }
+              : ['assigned', 'loaned'].includes(category)
+                ? { key: 'pickupDate', dir: 'desc' }
+                : { key: 'startDate', dir: 'asc' }}
           scheduled={category === 'scheduled'}
           showPickupReadiness={category === 'scheduled' || category === 'all'}
           hideReturnDate={category === 'overdue'}

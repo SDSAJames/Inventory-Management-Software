@@ -7,6 +7,7 @@ import { useDb } from '../hooks/useDb';
 import { TRANSFER_ITEMS } from '../../shared/loanTransfer.js';
 import { isLoanReturned, tracksEndDate } from '../../shared/loanRules.js';
 import { todayIso, nowLocalIso } from '../lib/utils';
+import DirectorySelect from './DirectorySelect';
 export default function LoanTransferForm({ loan, onClose }) {
   const { db, setDb } = useDb();
   const equipment = { ...loan.equipment, Laptop: loan.assetCode || loan.equipment?.Laptop, Others: loan.others };
@@ -15,6 +16,7 @@ export default function LoanTransferForm({ loan, onClose }) {
   const [knoxId, setKnoxId] = useState('');
   const [assignee, setAssignee] = useState('');
   const [assigneeType, setAssigneeType] = useState('Business traveler');
+  const [location, setLocation] = useState(loan.location || '');
   const [scheduleId, setScheduleId] = useState('');
   const [scheduleSearch, setScheduleSearch] = useState('');
   const [startDate, setStartDate] = useState(todayIso);
@@ -31,6 +33,7 @@ export default function LoanTransferForm({ loan, onClose }) {
     const record = schedules.find((item) => item.id === id);
     setKnoxId(record?.knoxId || ''); setAssignee(record?.assignee || '');
     setAssigneeType(record?.assigneeType || 'Business traveler');
+    setLocation(record?.location || loan.location || '');
     setStartDate(record?.startDate?.slice(0, 10) || todayIso());
     setEndDate(record?.endDate?.slice(0, 10) || '');
     setError('');
@@ -40,7 +43,7 @@ export default function LoanTransferForm({ loan, onClose }) {
   const submit = async (event) => {
     event.preventDefault(); setBusy(true); setError('');
     try {
-      await api.loans.transfer(loan.id, { knoxId, assignee, assigneeType, selection, scheduleId: scheduleId || undefined, startDate, endDate, transferDate: new Date(transferDate).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      await api.loans.transfer(loan.id, { knoxId, assignee, assigneeType, location, selection, scheduleId: scheduleId || undefined, startDate, endDate, transferDate: new Date(transferDate).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
       const result = await api.exchange.exportData();
       setDb((previous) => ({ ...previous, ...result.db })); onClose();
     } catch (err) { setError(err.message); } finally { setBusy(false); }
@@ -58,6 +61,8 @@ export default function LoanTransferForm({ loan, onClose }) {
     <div className="form-grid"><AssigneeFields form={{ assigneeType, assignee, knoxId }} includeIp={false} idPrefix="transfer-"
       onChange={(field, value) => ({ assigneeType: setAssigneeType, assignee: setAssignee, knoxId: setKnoxId })[field](value)} /></div>
     </fieldset>
+    <DirectorySelect allowCustom id="transfer-location" label="Location" options={db.locations} value={location}
+      onChange={(event) => setLocation(event.target.value)} />
     <div className="form-grid"><div className="field"><label htmlFor="transfer-start">Start date{tracksEndDate(assigneeType) ? ' *' : ''}</label><DateInput id="transfer-start" type="date" required={tracksEndDate(assigneeType)} value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>{tracksEndDate(assigneeType) && <div className="field"><label htmlFor="transfer-end">End date *</label><DateInput id="transfer-end" type="date" required min={startDate || undefined} value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>}</div>
     <button type="button" className="button ghost" onClick={() => setSelection(Object.fromEntries(items.map((key) => [key, String(equipment[key])])))}>Select all</button>
     <button type="button" className="button ghost" onClick={() => setSelection({})}>Clear all</button>
