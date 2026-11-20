@@ -465,6 +465,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
   db.exec('BEGIN TRANSACTION;');
   try {
     let updatedCount = 0;
+    const affectedLoans = new Map();
     for (const id of ids) {
       const asset = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
       if (asset) {
@@ -491,7 +492,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
         const returnChanges = getHolderReturnChanges(asset, { ...changes, owner: asset.owner });
         if ((status === 'Available' || status === 'Under repair') && returnChanges) {
           const returnedAt = new Date().toISOString();
-          recordHolderReturn(db, asset.code, returnedAt);
+          for (const loan of recordHolderReturn(db, asset.code, returnedAt)) affectedLoans.set(loan.id, loan);
           returnAssetToIt(db, asset.code, todayIso());
           if (String(asset.owner || '').trim().toLowerCase() !== 'it department') {
             db.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
@@ -513,6 +514,7 @@ assetsRouter.post('/batch-update', authenticate, (req, res) => {
       message: `Successfully updated ${updatedCount} assets.`,
       count: updatedCount,
       assetActivity: ids.map((id) => db.prepare('SELECT * FROM assets WHERE id = ?').get(id)).filter(Boolean).map(assetActivityFields),
+      loans: [...affectedLoans.values()],
     });
   } catch (err) {
     db.exec('ROLLBACK;');

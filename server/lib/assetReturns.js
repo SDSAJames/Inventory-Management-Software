@@ -1,5 +1,6 @@
 import { recordAssetReturn } from '../../shared/assetReturns.js';
 import { formatLoanRow } from './loanRows.js';
+import { splitPartialReturn } from './loanReturnSplit.js';
 
 export function recordHolderReturn(database, assetCode, timestamp) {
   const updated = [];
@@ -7,6 +8,14 @@ export function recordHolderReturn(database, assetCode, timestamp) {
     const record = formatLoanRow(row);
     const next = recordAssetReturn(record, assetCode, timestamp);
     if (next === record) continue;
+    if (next.returnStatus === 'Partial') {
+      const issued = { ...record.equipment, Laptop: record.assetCode || record.equipment?.Laptop || '', Others: record.others || record.equipment?.Others || '' };
+      const remaining = splitPartialReturn(database, row, issued, next.returnedEquipment, timestamp, record.note || '');
+      if (remaining) {
+        updated.push(formatLoanRow(database.prepare('SELECT * FROM loans WHERE id = ?').get(row.id)), remaining);
+        continue;
+      }
+    }
     database.prepare('UPDATE loans SET returned_equipment_json = ?, return_status = ?, return_date = ?, returned_date = ?, status = ?, is_archived = ?, ready_for_pickup = ? WHERE id = ?').run(
       JSON.stringify(next.returnedEquipment), next.returnStatus, next.returnDate || '', next.returnedDate || '', next.status, next.isArchived ? 1 : 0, next.readyForPickup ? 1 : 0, row.id,
     );

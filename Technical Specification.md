@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.24.11** |
+| **Specification Version** | **v1.24.12** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 20, 2026 |
@@ -500,7 +500,7 @@ server/lib/savedChangeUndo.js centralizes working-table capture, SHA-256 state f
 
 ### Returned-quantity corrections
 
-Return forms show checkboxes for returned devices alongside their labels and asset inputs on the same row. Accessory names use a wider column beside compact quantity inputs. Missing registered devices are identified by asset number in outstanding-item labels. The full-detail custody editor reuses these controls, shown only for an actual recorded return rather than a schedule or active loan. Loan PUT accepts the corrected returnedEquipment checklist and persists it with the edited record. Return-status calculation reuses the shared equipment comparison to determine Complete or Partial and refresh the shared Unreturned grouping. Historical return corrections preserve the current inventory holder and location instead of replaying a handover or reclaiming equipment from a later owner.
+Return forms show checkboxes for returned devices alongside their labels and asset inputs on the same row. Accessory names use a wider column beside compact quantity inputs. Missing registered devices are identified by asset number in outstanding-item labels. When a return is partial, `splitReturnedEquipment` divides issued quantities and device references: the original row becomes a completed Returned record containing received items, and a new active or overdue row contains only outstanding items. `return_group_id`, `return_parent_id`, and `return_remaining_id` link both rows and are included in API, export, and restore data. Asset-holder check-ins use the same split operation. The full-detail custody editor reuses these controls, shown only for an actual recorded return rather than a schedule or active loan. Loan PUT accepts corrected returnedEquipment checklists and persists them with the edited record. Historical return corrections preserve current inventory custody instead of replaying a handover or reclaiming equipment from a later owner.
 
 ### MES equipment format
 

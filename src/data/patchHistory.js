@@ -9,6 +9,20 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-20',
+    title: 'Split Partial Return Records',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Separate checked-in equipment from outstanding equipment after partial returns, with links between the records.',
+    highlights: ['Show received items on a completed Returned record.', 'Keep outstanding items on a linked active or overdue record.'],
+    sections: [{ heading: 'Partial Returns', badge: 'Fix', items: [
+      'Split partial loan returns into a completed record for received equipment and a follow-up record for items still held.',
+      'Preserve return links through API responses, exports, and database restores.',
+      'Apply the same split when a registered device is checked into IT custody from asset ownership actions.',
+    ] }],
+  },
+  {
+    version: '1.24.11',
+    date: '2026-11-20',
     title: 'Linked Partial Transfer Records',
     tag: 'Patch',
     type: 'patch',

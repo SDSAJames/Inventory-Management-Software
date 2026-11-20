@@ -181,11 +181,13 @@ export function DbProvider({ children }) {
       const previousAsset = prev.assets.find((asset) => asset.id === id);
       const savedChanges = { ...changes, ...result.asset };
       const affectedLoans = new Map((result.loans || []).map((loan) => [loan.id, loan]));
+      const updatedLoans = (previousAsset && savedChanges.code && previousAsset.code !== savedChanges.code
+        ? prev.loans.map((loan) => renameLoanAssetReferences(loan, previousAsset.code, savedChanges.code))
+        : prev.loans).map((loan) => affectedLoans.get(loan.id) || loan);
+      for (const loan of result.loans || []) if (!updatedLoans.some((existing) => existing.id === loan.id)) updatedLoans.push(loan);
       return {
         ...prev,
-        loans: (previousAsset && savedChanges.code && previousAsset.code !== savedChanges.code
-          ? prev.loans.map((loan) => renameLoanAssetReferences(loan, previousAsset.code, savedChanges.code))
-          : prev.loans).map((loan) => affectedLoans.get(loan.id) || loan),
+        loans: updatedLoans,
         assets: prev.assets.map((a) => {
           if (a.id !== id) return a;
           let ownershipHistory = result.asset.ownershipHistory || a.ownershipHistory || [];
@@ -218,11 +220,13 @@ export function DbProvider({ children }) {
     const result = await api.assets.transfer(assetId, transfer);
     setDb((previous) => {
       const returned = new Map((result.loans || []).map((loan) => [loan.id, loan]));
+      const loans = previous.loans.map((loan) => returned.get(loan.id) || loan);
+      for (const loan of result.loans || []) if (!loans.some((existing) => existing.id === loan.id)) loans.push(loan);
       const location = result.asset.location;
       return {
         ...previous,
         assets: previous.assets.map((asset) => asset.id === assetId ? { ...asset, ...result.asset } : asset),
-        loans: previous.loans.map((loan) => returned.get(loan.id) || loan),
+        loans,
         locations: location && !previous.locations.includes(location) ? [...previous.locations, location] : previous.locations,
         employees: result.asset.owner && result.asset.owner !== DEFAULT_OWNER && !previous.employees.some((employee) => employee.name.toLowerCase() === result.asset.owner.toLowerCase())
           ? [...previous.employees, { name: result.asset.owner, department: result.asset.department || '', position: 'Staff' }] : previous.employees,
@@ -250,7 +254,12 @@ export function DbProvider({ children }) {
         idSet.has(a.id) ? validateAssetStatus({ ...a, ...changes, updated: todayIso() }) : a,
       ),
     }));
-    api.assets.batchUpdate([...idSet], changes).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity) }))).catch((err) => console.warn('Could not sync batch asset update to server:', err.message));
+    api.assets.batchUpdate([...idSet], changes).then((result) => setDb((previous) => {
+      const affected = new Map((result.loans || []).map((loan) => [loan.id, loan]));
+      const loans = previous.loans.map((loan) => affected.get(loan.id) || loan);
+      for (const loan of result.loans || []) if (!loans.some((existing) => existing.id === loan.id)) loans.push(loan);
+      return { ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity), loans };
+    })).catch((err) => console.warn('Could not sync batch asset update to server:', err.message));
   }, []);
 
   /** Append assets or update existing ones if overwriteAssets is true. Saves a restore point. */
@@ -593,7 +602,15 @@ export function DbProvider({ children }) {
       return { ...prev, loans: nextLoans, assets: nextAssets };
     });
 
-    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).then((result) => setDb((previous) => ({ ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity), loans: previous.loans.map((loan) => loan.id === id ? { ...loan, ...result.loan } : loan) }))).catch((err) => console.warn('Could not sync loan return to server:', err.message));
+    api.loans.returnLoan(id, { returnDate: timestamp, ...details }).then((result) => setDb((previous) => {
+      const loans = previous.loans.map((loan) => loan.id === id ? { ...loan, ...result.loan } : loan);
+      if (result.remainingLoan && !loans.some((loan) => loan.id === result.remainingLoan.id)) loans.push(result.remainingLoan);
+      else if (result.remainingLoan) {
+        const index = loans.findIndex((loan) => loan.id === result.remainingLoan.id);
+        loans[index] = { ...loans[index], ...result.remainingLoan };
+      }
+      return { ...previous, assets: applyAssetActivity(previous.assets, result.assetActivity), loans };
+    })).catch((err) => console.warn('Could not sync loan return to server:', err.message));
   }, []);
 
   const unarchiveLoan = useCallback((id) => {

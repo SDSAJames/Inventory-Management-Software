@@ -194,8 +194,8 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
     // 2. Process Loans
     if (loans.length > 0) {
       const insertLoanStmt = db.prepare(`
-        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, returned_equipment_json, return_status, ready_for_pickup, others, note, purpose, assignee_type, is_archived, created_at, transfer_group_id, transfer_parent_id, transfer_recipient_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, returned_equipment_json, return_status, ready_for_pickup, others, note, purpose, assignee_type, is_archived, created_at, transfer_group_id, transfer_parent_id, transfer_recipient_id, return_group_id, return_parent_id, return_remaining_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           asset_code = excluded.asset_code,
           assignee = excluded.assignee,
@@ -220,7 +220,10 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           is_archived = excluded.is_archived,
           transfer_group_id = excluded.transfer_group_id,
           transfer_parent_id = excluded.transfer_parent_id,
-          transfer_recipient_id = excluded.transfer_recipient_id
+          transfer_recipient_id = excluded.transfer_recipient_id,
+          return_group_id = excluded.return_group_id,
+          return_parent_id = excluded.return_parent_id,
+          return_remaining_id = excluded.return_remaining_id
       `);
       const existingLoans = db.prepare('SELECT * FROM loans').all();
 
@@ -257,7 +260,10 @@ exchangeRouter.post('/import', authenticate, (req, res) => {
           now,
           l.transferGroupId || '',
           l.transferParentId || '',
-          l.transferRecipientId || ''
+          l.transferRecipientId || '',
+          l.returnGroupId || '',
+          l.returnParentId || '',
+          l.returnRemainingId || ''
         );
         const savedLoan = db.prepare('SELECT * FROM loans WHERE id = ?').get(newLoanId);
         if (matchingLoan) {
@@ -394,8 +400,8 @@ exchangeRouter.post('/revert', authenticate, requireAdminAccount, (req, res) => 
     // 3. Restore Loans
     if (Array.isArray(snapshot.loans)) {
       const insertLoan = db.prepare(`
-        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, returned_equipment_json, return_status, ready_for_pickup, others, note, purpose, assignee_type, is_archived, created_at, transfer_group_id, transfer_parent_id, transfer_recipient_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO loans (id, asset_code, assignee, department, knox_id, location, ip, start_date, pickup_date, end_date, return_date, returned_date, status, equipment_json, returned_equipment_json, return_status, ready_for_pickup, others, note, purpose, assignee_type, is_archived, created_at, transfer_group_id, transfer_parent_id, transfer_recipient_id, return_group_id, return_parent_id, return_remaining_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const l of snapshot.loans) {
         const assigneeType = l.assignee_type || l.assigneeType || 'Business traveler';
@@ -425,7 +431,10 @@ exchangeRouter.post('/revert', authenticate, requireAdminAccount, (req, res) => 
           l.created_at || new Date().toISOString(),
           l.transfer_group_id || l.transferGroupId || '',
           l.transfer_parent_id || l.transferParentId || '',
-          l.transfer_recipient_id || l.transferRecipientId || ''
+          l.transfer_recipient_id || l.transferRecipientId || '',
+          l.return_group_id || l.returnGroupId || '',
+          l.return_parent_id || l.returnParentId || '',
+          l.return_remaining_id || l.returnRemainingId || ''
         );
         restoreRecordActivity(db, 'loans', l.id, l);
       }

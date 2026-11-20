@@ -44,7 +44,7 @@ export function ensureAssetActivity(database) {
 }
 
 export function ensureLoanActivity(database) {
-  ensureRecordActivity(database, 'loans', ['assignee_type', 'assignee', 'knox_id', 'department', 'location', 'ip', 'start_date', 'pickup_date', 'end_date', 'return_date', 'return_status', 'equipment_json', 'returned_equipment_json', 'others', 'note', 'purpose', 'ready_for_pickup', 'transfer_group_id', 'transfer_parent_id', 'transfer_recipient_id']);
+  ensureRecordActivity(database, 'loans', ['assignee_type', 'assignee', 'knox_id', 'department', 'location', 'ip', 'start_date', 'pickup_date', 'end_date', 'return_date', 'return_status', 'equipment_json', 'returned_equipment_json', 'others', 'note', 'purpose', 'ready_for_pickup', 'transfer_group_id', 'transfer_parent_id', 'transfer_recipient_id', 'return_group_id', 'return_parent_id', 'return_remaining_id']);
 }
 
 export function restoreRecordActivity(database, table, id, record) {

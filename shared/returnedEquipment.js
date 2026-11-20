@@ -1,4 +1,4 @@
-import { EQUIPMENT_FIELDS, DEVICE_KEYS } from './equipment.js';
+import { EQUIPMENT_FIELDS, DEVICE_KEYS, EQUIPMENT_KEYS } from './equipment.js';
 
 export function equipmentCodeMatches(left, right) {
   const expected = String(left ?? '').trim();
@@ -34,4 +34,38 @@ export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {
 
 export function getReturnStatus(equipment = {}, returnedEquipment = {}) {
   return getMissingReturnItems(equipment, returnedEquipment).length ? 'Partial' : 'Complete';
+}
+
+/** Separate a checked-in portion from the still-out portion of a custody record. */
+export function splitReturnedEquipment(equipment = {}, returnedEquipment = {}) {
+  const itemKeys = new Set(EQUIPMENT_KEYS);
+  const returned = Object.fromEntries(Object.entries(equipment).filter(([key]) => !itemKeys.has(key)));
+  const remaining = Object.fromEntries(Object.entries(equipment).filter(([key]) => !itemKeys.has(key)));
+  const issuedItems = { ...equipment, Laptop: equipment.Laptop || '' };
+  for (const key of EQUIPMENT_KEYS) {
+    const issued = String(issuedItems[key] ?? '').trim();
+    const received = String(returnedEquipment[key] ?? '').trim();
+    if (!issued || issued === '0') {
+      if (received && received !== '0') returned[key] = received;
+      continue;
+    }
+    if (DEVICE_KEYS.includes(key)) {
+      if (received && received !== '0') returned[key] = received;
+      if (!equipmentCodeMatches(issued, received)) remaining[key] = issued;
+      continue;
+    }
+    if (key === 'Others') {
+      if (received && received !== '0') returned[key] = received;
+      if (!equipmentCodeMatches(issued, received)) remaining[key] = issued;
+      continue;
+    }
+    const issuedCount = itemCount(issued), receivedCount = itemCount(received);
+    if (receivedCount > 0) returned[key] = String(Math.min(issuedCount, receivedCount));
+    if (issuedCount > receivedCount) remaining[key] = String(issuedCount - receivedCount);
+  }
+  const hasRemaining = EQUIPMENT_KEYS.some((key) => {
+    const value = String(remaining[key] ?? '').trim();
+    return value && value !== '0';
+  });
+  return { returned, remaining, hasRemaining };
 }

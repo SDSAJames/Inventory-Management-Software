@@ -6,6 +6,24 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.12] — 2026-11-20
+
+### Split Partial Return Records
+
+Separate checked-in equipment from outstanding equipment after partial returns, with links between the records.
+
+#### Highlights
+- Show received items on a completed Returned record.
+- Keep outstanding items on a linked active or overdue record.
+
+#### Partial Returns
+
+- Split partial loan returns into a completed record for received equipment and a follow-up record for items still held.
+- Preserve return links through API responses, exports, and database restores.
+- Apply the same split when a registered device is checked into IT custody from asset ownership actions.
+
+---
+
 ## [1.24.11] — 2026-11-20
 
 ### Linked Partial Transfer Records

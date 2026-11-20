@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.11** |
+| **Document Version** | **v1.24.12** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 20, 2026 |
@@ -331,7 +331,7 @@ The frontend application provides operational views through the left sidebar, ad
    - Transfers can fulfill an existing schedule selected by Knox ID. Traveler recipients require reviewed start and end dates. Pickup timestamps display in local time, and generated notes use readable recipient details.
    - Equipment transfers accept a destination location and apply it to the recipient custody record and registered transferred assets.
    - Rental location accepts typed values with Directory suggestions. Full editing and pickup retain the requested PC and monitor checkboxes; pickup assigns actual PC and monitor asset numbers.
-   - Return forms use checkboxes to select returned devices and accessories, with asset fields aligned on the device row and accessory counts in compact fields beside wider item labels. Missing registered laptops and monitors display their asset numbers. Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items. Edit full details exposes the shared returned-equipment controls only for records with an actual return. Corrections recalculate Complete/Partial status and refresh Unreturned membership while preserving current asset custody.
+   - Return forms use checkboxes to select returned devices and accessories, with asset fields aligned on the device row and accessory counts in compact fields beside wider item labels. A partial return splits received equipment into a completed Returned record and remaining items into a linked active or overdue record. Missing registered laptops and monitors display their asset numbers. Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items. Edit full details exposes the shared returned-equipment controls only for records with an actual return. Corrections recalculate Complete/Partial status and refresh Unreturned membership while preserving current asset custody.
    - Expand a picked-up outstanding loan to transfer all items or selected quantities to another owner. A different Knox ID is required; assignee name is optional. A partial transfer creates an archived Transferred record for moved items, preserves the original active loan for remaining items, and links both records to the recipient custody record and device ownership history. Fully transferred sources are archived as Transferred without a physical return.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Search across loan fields with selectable field and status filters.
@@ -460,4 +460,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.11**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.12**.

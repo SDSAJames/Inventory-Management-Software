@@ -123,6 +123,9 @@ export function initDatabase() {
     ['transfer_group_id', 'TEXT'],
     ['transfer_parent_id', 'TEXT'],
     ['transfer_recipient_id', 'TEXT'],
+    ['return_group_id', 'TEXT'],
+    ['return_parent_id', 'TEXT'],
+    ['return_remaining_id', 'TEXT'],
   ]) {
     try { db.exec(`ALTER TABLE loans ADD COLUMN ${column} ${definition};`); } catch { /* Column already exists. */ }
   }

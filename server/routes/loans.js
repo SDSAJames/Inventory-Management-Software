@@ -18,8 +18,9 @@ import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js'
 import { EQUIPMENT_KEYS } from '../../shared/equipment.js';
 import { transferLoan } from '../lib/loanTransfer.js';
 import { canRecordReturn } from '../../shared/loanRules.js';
-import { getReturnStatus } from '../../shared/returnedEquipment.js';
+import { getReturnStatus, splitReturnedEquipment } from '../../shared/returnedEquipment.js';
 import { syncEditedReturnDevices } from '../lib/loanReturnEdits.js';
+import { splitPartialReturn } from '../lib/loanReturnSplit.js';
 
 export const loansRouter = Router();
 loansRouter.post('/:id/transfer', authenticate, (req, res) => {
@@ -689,29 +690,29 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     nextEquipmentJson = JSON.stringify({ ...prevEq, ...equipment });
   }
   const nextReturnedEquipmentJson = returnedEquipment ? JSON.stringify(returnedEquipment) : loan.returned_equipment_json;
+  const issuedEquipment = { ...JSON.parse(loan.equipment_json || '{}'), Laptop: loan.asset_code || '', Others: loan.others || '' };
+  const shouldSplitReturn = Boolean(returnedEquipment && getReturnStatus(issuedEquipment, returnedEquipment) === 'Partial');
+  const splitReturn = shouldSplitReturn ? splitReturnedEquipment(issuedEquipment, returnedEquipment) : null;
+  if (shouldSplitReturn && !EQUIPMENT_KEYS.some((key) => String(splitReturn.returned[key] ?? '').trim() && String(splitReturn.returned[key]).trim() !== '0')) return res.status(400).json({ success: false, error: 'Select at least one returned item.' });
 
   const nextNote = note !== undefined ? note : loan.note;
   const nextOthers = others !== undefined ? others : loan.others;
 
   db.exec('BEGIN TRANSACTION;');
   try {
-    // 1. Mark loan as Returned and archived
-    db.prepare(`
-      UPDATE loans
-      SET status = 'Returned', return_date = ?, returned_date = ?,
-          equipment_json = ?, returned_equipment_json = ?, return_status = ?,
-          ready_for_pickup = 0, note = ?, others = ?, is_archived = 1
-      WHERE id = ?
-    `).run(
-      returnDate,
-      returnDate,
-      nextEquipmentJson,
-      nextReturnedEquipmentJson,
-      returnStatus,
-      nextNote,
-      nextOthers,
-      loan.id
-    );
+    let remainingLoan = null;
+    if (splitReturn?.hasRemaining) {
+      remainingLoan = splitPartialReturn(db, loan, issuedEquipment, returnedEquipment, returnDate, nextNote);
+    } else {
+      // 1. Mark a complete return as a single Returned record.
+      db.prepare(`
+        UPDATE loans
+        SET status = 'Returned', return_date = ?, returned_date = ?,
+            equipment_json = ?, returned_equipment_json = ?, return_status = ?,
+            ready_for_pickup = 0, note = ?, others = ?, is_archived = 1
+        WHERE id = ?
+      `).run(returnDate, returnDate, nextEquipmentJson, nextReturnedEquipmentJson, returnStatus, nextNote, nextOthers, loan.id);
+    }
 
     // 2. Return the devices actually checked in, not necessarily the original laptop.
     const hasLaptopReturnDetail = Boolean(returnedEquipment && Object.hasOwn(returnedEquipment, 'Laptop'));
@@ -749,8 +750,9 @@ loansRouter.post('/:id/return', authenticate, (req, res) => {
     const updated = db.prepare('SELECT * FROM loans WHERE id = ?').get(loan.id);
     return res.json({
       success: true,
-      message: `Asset ${loan.asset_code} successfully returned to IT Department.`,
+      message: remainingLoan ? 'Returned items were saved, and outstanding items remain on the linked loan.' : `Asset ${loan.asset_code} successfully returned to IT Department.`,
       loan: formatLoanRow(updated),
+      ...(remainingLoan ? { remainingLoan: formatLoanRow(remainingLoan) } : {}),
       assetActivity: loanAssetActivity(db, updated),
     });
   } catch (err) {
