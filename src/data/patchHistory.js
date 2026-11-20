@@ -8,6 +8,20 @@ import { APP_VERSION } from '../lib/constants.js';
 export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
+    date: '2026-11-20',
+    title: 'Linked Partial Transfer Records',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Split partial equipment transfers into a closed transfer record and a remaining source loan, linked to the recipient record.',
+    highlights: ['Keep remaining equipment on the original owner’s active loan.', 'Track transferred items through linked source, transfer, and recipient records.'],
+    sections: [{ heading: 'Equipment Transfers', badge: 'Fix', items: [
+      'Create an archived Transferred record for the selected equipment when only part of a loan is transferred.',
+      'Keep the source loan active with its remaining equipment and link the transfer record to the recipient custody record.',
+      'Expose transfer lineage in loan records so each device can be traced through successive owners.',
+    ] }],
+  },
+  {
+    version: '1.24.10',
     date: '2026-11-19',
     title: 'Aligned Return Controls',
     tag: 'Patch',
@@ -20,7 +34,7 @@ export const PATCH_HISTORY = [
     ] }],
   },
   {
-    version: APP_VERSION,
+    version: '1.24.9',
     date: '2026-11-19',
     title: 'Compact Return Item Layout',
     tag: 'Patch',
@@ -32,7 +46,7 @@ export const PATCH_HISTORY = [
     ] }],
   },
   {
-    version: APP_VERSION,
+    version: '1.24.8',
     date: '2026-11-19',
     title: 'Reliable Knox Clipboard and Return Selection',
     tag: 'Patch',

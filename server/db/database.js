@@ -120,6 +120,9 @@ export function initDatabase() {
     ['ready_for_pickup', 'INTEGER DEFAULT 0'],
     ['returned_equipment_json', 'TEXT'],
     ['return_status', 'TEXT'],
+    ['transfer_group_id', 'TEXT'],
+    ['transfer_parent_id', 'TEXT'],
+    ['transfer_recipient_id', 'TEXT'],
   ]) {
     try { db.exec(`ALTER TABLE loans ADD COLUMN ${column} ${definition};`); } catch { /* Column already exists. */ }
   }

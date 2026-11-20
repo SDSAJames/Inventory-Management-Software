@@ -6,6 +6,24 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.11] — 2026-11-20
+
+### Linked Partial Transfer Records
+
+Split partial equipment transfers into a closed transfer record and a remaining source loan, linked to the recipient record.
+
+#### Highlights
+- Keep remaining equipment on the original owner’s active loan.
+- Track transferred items through linked source, transfer, and recipient records.
+
+#### Equipment Transfers
+
+- Create an archived Transferred record for the selected equipment when only part of a loan is transferred.
+- Keep the source loan active with its remaining equipment and link the transfer record to the recipient custody record.
+- Expose transfer lineage in loan records so each device can be traced through successive owners.
+
+---
+
 ## [1.24.10] — 2026-11-19
 
 ### Aligned Return Controls
@@ -23,7 +41,7 @@ Keep returned asset number inputs on the same row as their selection controls an
 
 ---
 
-## [1.24.10] — 2026-11-19
+## [1.24.9] — 2026-11-19
 
 ### Compact Return Item Layout
 
@@ -39,7 +57,7 @@ Return devices and accessories use full-width rows in a more compact, easy-to-sc
 
 ---
 
-## [1.24.10] — 2026-11-19
+## [1.24.8] — 2026-11-19
 
 ### Reliable Knox Clipboard and Return Selection
 

@@ -37,11 +37,20 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
   const sourceLabel = source.assignee && source.assignee !== source.knox_id ? `${source.assignee} (${source.knox_id})` : source.knox_id;
   const sourceTransferNote = `Transferred ${transferredSummary} to ${recipientLabel} on ${transferTime}`;
   const targetTransferNote = `Pickup by transfer: received ${transferredSummary} from ${sourceLabel} on ${transferTime}`;
+  const transferGroupId = `transfer-${randomUUID()}`;
+  const transferRecordId = complete ? source.id : `loan-${randomUUID()}`;
+  const loanColumns = new Set(database.prepare('PRAGMA table_info(loans)').all().map((column) => column.name));
+  const lineage = loanColumns.has('transfer_group_id') ? {
+    transfer_group_id: transferGroupId,
+    transfer_parent_id: complete ? source.id : transferRecordId,
+    transfer_recipient_id: '',
+  } : {};
   const target = {
     ...trimDirectoryFields(source),
     ...(trimDirectoryFields(schedule) || {}),
     ...(Object.hasOwn(source, 'latest_change') ? { latest_change: null, changed_at: null, changed_by: null } : {}),
     id: schedule?.id || `loan-${randomUUID()}`,
+    ...lineage,
     asset_code: transferred.Laptop || '',
     knox_id: targetKnox,
     assignee: targetAssignee,
@@ -72,6 +81,25 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
     } else {
       database.prepare(`INSERT INTO loans (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`).run(...columns.map((key) => target[key]));
     }
+    if (!complete) {
+      const transferRecord = {
+        ...source,
+        id: transferRecordId,
+        asset_code: transferred.Laptop || '',
+        equipment_json: JSON.stringify(transferred),
+        others: transferred.Others || '',
+        note: [source.note, sourceTransferNote].filter(Boolean).join('\n'),
+        status: 'Transferred',
+        is_archived: 1,
+        ...(loanColumns.has('transfer_group_id') ? {
+          transfer_group_id: transferGroupId,
+          transfer_parent_id: source.id,
+          transfer_recipient_id: target.id,
+        } : {}),
+      };
+      const splitColumns = Object.keys(transferRecord);
+      database.prepare(`INSERT INTO loans (${splitColumns.join(',')}) VALUES (${splitColumns.map(() => '?').join(',')})`).run(...splitColumns.map((key) => transferRecord[key]));
+    }
     database.prepare('UPDATE loans SET asset_code = ?, equipment_json = ?, others = ?, note = ?, status = ?, is_archived = ? WHERE id = ?').run(
       complete ? source.asset_code : remaining.Laptop || '',
       complete ? source.equipment_json || JSON.stringify(equipment) : JSON.stringify(remaining),
@@ -81,6 +109,7 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
       complete ? 1 : 0,
       source.id,
     );
+    if (complete && loanColumns.has('transfer_group_id')) database.prepare('UPDATE loans SET transfer_group_id = ?, transfer_recipient_id = ? WHERE id = ?').run(transferGroupId, target.id, source.id);
     for (const key of ['Laptop', 'Monitor']) {
       if (!transferred[key]) continue;
       const asset = database.prepare('SELECT * FROM assets WHERE code = ? COLLATE NOCASE').get(transferred[key]);
