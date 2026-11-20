@@ -34,7 +34,7 @@ export default function TravelerCalendar({
   const {
     hideReturned, setHideReturned, hidePickedUp, setHidePickedUp,
     eventTypeFilter, setEventTypeFilter, dayModalFilter, setDayModalFilter,
-  } = useCalendarVisibility();
+  } = useCalendarVisibility('business-travelers-calendar-visibility-v1');
 
   // Day detail modal state
   const [selectedDay, setSelectedDayData] = useState(null);

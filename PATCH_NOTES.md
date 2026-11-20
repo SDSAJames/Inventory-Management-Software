@@ -6,6 +6,56 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.14] — 2026-11-20
+
+### Remember In & Out Calendar Filters
+
+The In & Out Calendar remembers its visibility toggles in the browser.
+
+#### Highlights
+- Keep Hide returned and Hide picked up choices after reload.
+- Store In & Out preferences separately from Business Travelers.
+
+#### In & Out Calendar
+
+- Persist Hide returned and Hide picked up choices in local browser storage for the In & Out Calendar.
+
+---
+
+## [1.24.13] — 2026-11-20
+
+### Compact Calendar Details and Saved Filters
+
+Calendar day details use less space, and Business Travelers visibility toggles persist in the browser.
+
+#### Highlights
+- Reduce repeated labels in calendar day details.
+- Remember Hide returned and Hide picked up choices on Business Travelers.
+
+#### Calendar
+
+- Tighten calendar day detail rows and remove repeated field labels for a more compact view.
+- Persist Business Travelers Hide returned and Hide picked up settings in local browser storage.
+
+---
+
+## [1.24.12] — 2026-11-20
+
+### Compact Calendar Details and Saved Filters
+
+Calendar day details use less space, and Business Travelers visibility toggles persist in the browser.
+
+#### Highlights
+- Reduce repeated labels in calendar day details.
+- Remember Hide returned and Hide picked up choices on Business Travelers.
+
+#### Calendar
+
+- Tighten calendar day detail rows and remove repeated field labels for a more compact view.
+- Persist Business Travelers Hide returned and Hide picked up settings in local browser storage.
+
+---
+
 ## [1.24.12] — 2026-11-20
 
 ### Split Partial Return Records

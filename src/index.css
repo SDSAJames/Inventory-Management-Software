@@ -1038,6 +1038,12 @@ tbody tr:hover { background: #f8fafc; }
 .knox-id-clipboard textarea { width: 100%; min-width: 0; min-height: 42px; resize: vertical; font: inherit; font-size: 12px; }
 .partial-return-detail { display: flex; flex-direction: column; gap: 3px; margin-top: 10px; padding: 10px; border-radius: 7px; background: #fff3e3; color: #754511; font-size: 12px; }
 .return-equipment-details { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 11px; color: var(--muted); }
+.in-out-day-modal .day-detail-card, .day-schedule-modal .schedule-card { gap: 6px 10px; padding: 7px 9px; }
+.in-out-day-modal .day-card-header, .day-schedule-modal .card-top-row { flex-basis: 190px; }
+.in-out-day-modal .day-card-body, .day-schedule-modal .card-detail-grid { gap: 3px 10px; }
+.in-out-day-modal .day-card-info-item, .day-schedule-modal .card-detail-grid > div { flex-direction: row; align-items: baseline; gap: 4px; }
+.in-out-day-modal .day-card-info-item .detail-label, .day-schedule-modal .detail-label { font-size: 10px; }
+.day-schedule-modal .detail-label { display: none; }
 .category-directory-actions { display: flex; gap: 12px; }
 .category-directory-actions .text-button:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
 .directory-location-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

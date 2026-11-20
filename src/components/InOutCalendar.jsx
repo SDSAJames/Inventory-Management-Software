@@ -39,7 +39,7 @@ export default function InOutCalendar({
   const {
     hideReturned, setHideReturned, hidePickedUp, setHidePickedUp,
     eventTypeFilter, setEventTypeFilter, dayModalFilter, setDayModalFilter,
-  } = useCalendarVisibility();
+  } = useCalendarVisibility('in-out-calendar-visibility-v1');
 
   // Day detail modal state
   const [selectedDay, setSelectedDayData] = useState(null);

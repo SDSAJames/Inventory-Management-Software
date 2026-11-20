@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.12** |
+| **Document Version** | **v1.24.14** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 20, 2026 |
@@ -340,7 +340,7 @@ The frontend application provides operational views through the left sidebar, ad
 4. **In & Out Calendar (`/calendar`)**:
    - Universal schedule calendar tracking hardware checkouts (Out / Departure) and returns (In / Return) across all enterprise personnel.
    - Encompasses all requester types, displaying both standard SPE Employees and mobile Business Travelers.
-   - Multi-tier filtering: filter by Requester Type (`Business traveler` vs `SPE employee`), select an individual requester from a categorized dropdown, filter by flow direction (`Out` vs `In`), or search by keyword.
+   - Multi-tier filtering: filter by Requester Type (`Business traveler` vs `SPE employee`), select an individual requester from a categorized dropdown, filter by flow direction (`Out` vs `In`), or search by keyword. Hide-returned and hide-picked-up preferences persist separately from Business Travelers.
    - Interactive day detail modal with full-width schedule rows, accessory checklists, and direct custody action buttons. Picked-up and completed records leave outgoing schedules; return actions require pickup.
 5. **Business Travelers (`/business-travelers`)**:
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
@@ -348,7 +348,7 @@ The frontend application provides operational views through the left sidebar, ad
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics include Current business travelers using the same distinct-person rule as Overview, alongside record-based scheduled pickups and overdue loans. A person with several records counts once in the current-traveler card.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Office) with one-click filtering.
-   - **Overdue Only**: Lists the equipment still outstanding on each overdue traveler record, includes registered asset numbers when available, and starts with the earliest end date. Copy its Knox IDs as `knox_a;knox_b;knox_c;` using the clipboard control.
+   - **Overdue Only**: Lists the equipment still outstanding on each overdue traveler record, includes registered asset numbers when available, and starts with the earliest end date. Copy its Knox IDs as `knox_a;knox_b;knox_c;` using the clipboard control. Calendar hide-returned and hide-picked-up preferences persist in the browser; day details use compact rows.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT Department, trip editor, and new business traveler dispatch recording.
@@ -460,4 +460,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.12**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.14**.

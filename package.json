@@ -1,7 +1,7 @@
 {
   "name": "starplusenergy-asset-index",
   "private": true,
-  "version": "1.24.12",
+  "version": "1.24.14",
   "type": "module",
   "scripts": {
     "dev": "vite",
