@@ -9,6 +9,50 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-19',
+    title: 'Aligned Return Controls',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Keep returned asset number inputs on the same row as their selection controls and give accessory names more room.',
+    highlights: ['Align the device checkbox, label, and asset input in one row.', 'Use a compact count field for accessory quantities.'],
+    sections: [{ heading: 'Return Forms', badge: 'UI', items: [
+      'Keep the laptop and monitor checkboxes, labels, and asset number inputs aligned on a single row.',
+      'Give accessory names more width and size quantity inputs for the usual one-digit counts.',
+    ] }],
+  },
+  {
+    version: APP_VERSION,
+    date: '2026-11-19',
+    title: 'Compact Return Item Layout',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Return devices and accessories use full-width rows in a more compact, easy-to-scan layout.',
+    highlights: ['Give each return item its own full-width row.', 'Keep the returned checkbox and quantity field aligned for quick review.'],
+    sections: [{ heading: 'Return Forms', badge: 'UI', items: [
+      'Display device and accessory return controls as compact full-width rows, with a responsive stacked layout on narrow screens.',
+    ] }],
+  },
+  {
+    version: APP_VERSION,
+    date: '2026-11-19',
+    title: 'Reliable Knox Clipboard and Return Selection',
+    tag: 'Patch',
+    type: 'patch',
+    summary: 'Copy Knox ID lists reliably, review overdue traveler equipment, and mark each returned item clearly.',
+    highlights: ['Copy Knox IDs in the requested semicolon list format from Overdue Only.', 'Select returned items and identify outstanding registered devices by asset number.'],
+    sections: [
+      { heading: 'Knox ID Clipboard', badge: 'Fix', items: [
+        'Use the Clipboard API when available and a selected-text fallback when it is not.',
+        'Copy a semicolon-separated Knox ID list from the Business Travelers Overdue Only view.',
+      ] },
+      { heading: 'Return Tracking', badge: 'UI', items: [
+        'Select returned devices and accessories with checkboxes; adjust returned accessory quantities as needed.',
+        'Show registered asset numbers alongside missing laptop and monitor labels.',
+      ] },
+    ],
+  },
+  {
+    version: '1.24.5',
+    date: '2026-11-19',
     title: 'Returned Sorting and Transfer Location',
     tag: 'Patch',
     type: 'patch',

@@ -21,7 +21,10 @@ export function getMissingReturnItems(equipment = {}, returnedEquipment = {}) {
     return DEVICE_KEYS.includes(storageKey)
       ? !equipmentCodeMatches(issued, returnedEquipment[storageKey])
       : itemCount(issued) > itemCount(returnedEquipment[storageKey]);
-  }).map(({ returnLabel }) => returnLabel);
+  }).map(({ returnLabel, storageKey }) => {
+    const value = String(equipment[storageKey] ?? '').trim();
+    return DEVICE_KEYS.includes(storageKey) && value ? `${returnLabel} (${value})` : returnLabel;
+  });
   const laptop = String(equipment.Laptop ?? '').trim();
   if (laptop && laptop !== '0' && laptop !== '1' && !equipmentCodeMatches(laptop, returnedEquipment.Laptop)) missing.unshift(`Laptop (${laptop})`);
   const others = String(equipment.Others ?? '').trim();

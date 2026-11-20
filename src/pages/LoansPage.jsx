@@ -866,7 +866,12 @@ export default function LoansPage() {
                       {' '}— {l.assignee || 'Unknown'}, picked up {readableLoanDate(l.pickupDate) || '—'}
                     </span>
                     <div className="field" style={{ marginTop: '8px' }}>
-                      <label htmlFor={`bulk-return-laptop-${l.id}`}>Laptop returned (asset number)</label>
+                      <label className="return-item-checkbox"><input type="checkbox" checked={Boolean(returnForm.bulkLaptopCodes?.[l.id])}
+                        onChange={(event) => setReturnForm((prev) => ({
+                          ...prev,
+                          bulkLaptopCodes: { ...(prev.bulkLaptopCodes || {}), [l.id]: event.target.checked ? prev.bulkLaptopCodes?.[l.id] || l.assetCode || l.equipment?.Laptop || '' : '' },
+                        }))} /> Laptop returned</label>
+                      <label htmlFor={`bulk-return-laptop-${l.id}`}>Returned laptop asset number</label>
                       <AssetAutocomplete
                         id={`bulk-return-laptop-${l.id}`}
                         categoryFilter={PC_CATEGORIES}

@@ -69,7 +69,7 @@ test('equipment mapping preserves zeros, monitor asset codes and request metadat
   assert.equal(equipment.Laptop, 'PC-123');
   assert.equal(equipment.RequestedPC, true);
   const returned = buildReturnedEquipment({ ...form, returnedLaptopCode: 'PC-123', monitor: '', others: 'Headset' });
-  assert.deepEqual(getMissingReturnItems(equipment, returned), ['Monitor']);
+  assert.deepEqual(getMissingReturnItems(equipment, returned), ['Monitor (MON-123)']);
   assert.deepEqual(getMissingReturnItems({ Laptop: 'PC-123' }, buildReturnedEquipment({ returnedLaptopCode: '' })), ['Laptop (PC-123)']);
   assert.deepEqual(getMissingReturnItems({ Laptop: 'PC-123' }, buildReturnedEquipment({ returnedLaptopCode: 'PC-456' })), ['Laptop (PC-123)']);
   assert.deepEqual(getMissingReturnItems({ RequestedPC: true, RequestedMonitor: true }, {}), []);

@@ -5,6 +5,7 @@ import { travelerFollowUp, travelerReminders } from '../lib/travelerFollowUp';
 import { currentTravelerCount } from '../lib/travelerMetrics';
 import { enrichCustodyRecords } from '../lib/custodyRecords';
 import LoanReturnModal from '../components/LoanReturnModal';
+import KnoxIdClipboard from '../components/KnoxIdClipboard';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -384,6 +385,8 @@ export default function BusinessTravelersPage() {
               </span>
             )}
           </div>
+
+          <KnoxIdClipboard records={overdueTravelers} label="Overdue Only Knox IDs" />
 
           {overdueTravelers.length === 0 ? (
             <div className="overdue-empty-card">

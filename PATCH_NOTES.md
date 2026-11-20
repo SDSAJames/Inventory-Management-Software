@@ -6,6 +6,61 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.10] — 2026-11-19
+
+### Aligned Return Controls
+
+Keep returned asset number inputs on the same row as their selection controls and give accessory names more room.
+
+#### Highlights
+- Align the device checkbox, label, and asset input in one row.
+- Use a compact count field for accessory quantities.
+
+#### Return Forms
+
+- Keep the laptop and monitor checkboxes, labels, and asset number inputs aligned on a single row.
+- Give accessory names more width and size quantity inputs for the usual one-digit counts.
+
+---
+
+## [1.24.10] — 2026-11-19
+
+### Compact Return Item Layout
+
+Return devices and accessories use full-width rows in a more compact, easy-to-scan layout.
+
+#### Highlights
+- Give each return item its own full-width row.
+- Keep the returned checkbox and quantity field aligned for quick review.
+
+#### Return Forms
+
+- Display device and accessory return controls as compact full-width rows, with a responsive stacked layout on narrow screens.
+
+---
+
+## [1.24.10] — 2026-11-19
+
+### Reliable Knox Clipboard and Return Selection
+
+Copy Knox ID lists reliably, review overdue traveler equipment, and mark each returned item clearly.
+
+#### Highlights
+- Copy Knox IDs in the requested semicolon list format from Overdue Only.
+- Select returned items and identify outstanding registered devices by asset number.
+
+#### Knox ID Clipboard
+
+- Use the Clipboard API when available and a selected-text fallback when it is not.
+- Copy a semicolon-separated Knox ID list from the Business Travelers Overdue Only view.
+
+#### Return Tracking
+
+- Select returned devices and accessories with checkboxes; adjust returned accessory quantities as needed.
+- Show registered asset numbers alongside missing laptop and monitor labels.
+
+---
+
 ## [1.24.5] — 2026-11-19
 
 ### Returned Sorting and Transfer Location

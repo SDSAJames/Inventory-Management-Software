@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.5** |
+| **Document Version** | **v1.24.10** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
 | **Release Date** | November 19, 2026 |
@@ -331,7 +331,7 @@ The frontend application provides operational views through the left sidebar, ad
    - Transfers can fulfill an existing schedule selected by Knox ID. Traveler recipients require reviewed start and end dates. Pickup timestamps display in local time, and generated notes use readable recipient details.
    - Equipment transfers accept a destination location and apply it to the recipient custody record and registered transferred assets.
    - Rental location accepts typed values with Directory suggestions. Full editing and pickup retain the requested PC and monitor checkboxes; pickup assigns actual PC and monitor asset numbers.
-   - Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items. Edit full details exposes the shared returned-equipment controls only for records with an actual return. Corrections recalculate Complete/Partial status and refresh Unreturned membership while preserving current asset custody.
+   - Return forms use checkboxes to select returned devices and accessories, with asset fields aligned on the device row and accessory counts in compact fields beside wider item labels. Missing registered laptops and monitors display their asset numbers. Returned quantities display all recorded equipment, including USB Dongle, monitor, Ethernet cable, and other items. Edit full details exposes the shared returned-equipment controls only for records with an actual return. Corrections recalculate Complete/Partial status and refresh Unreturned membership while preserving current asset custody.
    - Expand a picked-up outstanding loan to transfer all items or selected quantities to another owner. A different Knox ID is required; assignee name is optional. Transfers create linked custody records and device ownership history, retain remaining equipment on the source, and archive fully transferred sources as Transferred without a physical return.
    - One-click **"Confirm Pickup"** and **"Return Asset"** workflows.
    - Search across loan fields with selectable field and status filters.
@@ -348,7 +348,7 @@ The frontend application provides operational views through the left sidebar, ad
    - **Exclusive Calendar View Mode**: Operators selecting **"Calendar View"** see solely the monthly schedule calendar (`TravelerCalendar.jsx`), omitting KPI stat cards and location panels for an uncluttered planning experience.
    - **"How Many They Are"**: Real-time KPI statistics include Current business travelers using the same distinct-person rule as Overview, alongside record-based scheduled pickups and overdue loans. A person with several records counts once in the current-traveler card.
    - **"Where They Are"**: Interactive location distribution grid grouping travelers by deployment facility (Kokomo Plant, Regional Office, Detroit Center, IT Office) with one-click filtering.
-   - **Overdue Only**: Lists the equipment still outstanding on each overdue traveler record and starts with the earliest end date.
+   - **Overdue Only**: Lists the equipment still outstanding on each overdue traveler record, includes registered asset numbers when available, and starts with the earliest end date. Copy its Knox IDs as `knox_a;knox_b;knox_c;` using the clipboard control.
    - **Full-Screen Full-Body Roster Mode**: 1-click toggle expanding the complete mobile workforce roster across the viewport with sticky column headers and Escape key exit.
    - **Mobile Workforce Roster**: Searchable, filterable table detailing traveler names, Knox IDs, deployed hardware/IP, assignment duration, and countdown badges.
    - **Integrated Workflows**: Direct Return confirmation returning hardware to IT Department, trip editor, and new business traveler dispatch recording.
@@ -460,4 +460,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.5**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.10**.

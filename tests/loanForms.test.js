@@ -50,7 +50,7 @@ test('all return entry points preserve partial returns and exact device identifi
   const partial = { ...form, keyboard: '1', dongle: '0', monitor: '' };
   const { details, missingItems } = buildLoanReturnDetails(loan, partial);
   assert.equal(details.returnedEquipment.Laptop, 'PC-1');
-  assert.deepEqual(missingItems, ['Dongle / hub', 'Keyboard', 'Monitor']);
+  assert.deepEqual(missingItems, ['Dongle / hub', 'Keyboard', 'Monitor (MON-1)']);
   assert.equal(details.returnStatus, 'Partial');
   assert.equal(details.others, 'Headset');
   const reopened = createLoanReturnForm({ ...loan, returnedEquipment: details.returnedEquipment }, '2026-11-07T11:00');
