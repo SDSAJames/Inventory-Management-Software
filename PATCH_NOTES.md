@@ -6,6 +6,39 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.16] — 2026-11-20
+
+### Show Calendar Schedule Action in Day Details
+
+Place Add Schedule in the In & Out selected-day details where it is easy to find.
+
+#### Highlights
+- Show the action inside the open day dialog.
+- Keep it visible when the selected date already has schedules.
+
+#### In & Out Calendar
+
+- Move Add Schedule from the calendar toolbar into selected-day details so it is visible alongside that date’s schedule contents.
+
+---
+
+## [1.24.15] — 2026-11-20
+
+### Add Schedules from Calendar Days
+
+Start a traveler or In & Out schedule directly from any selected calendar day.
+
+#### Highlights
+- Add schedule actions to calendar day details.
+- Open schedule creation without leaving the calendar.
+
+#### Calendar Scheduling
+
+- Make the Schedule Traveler action available on populated and empty Business Travelers dates.
+- Add an Add Schedule action to In & Out calendar day details.
+
+---
+
 ## [1.24.14] — 2026-11-20
 
 ### Remember In & Out Calendar Filters

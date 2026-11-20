@@ -619,6 +619,7 @@ export default function InOutCalendar({
           </div>
 
           <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
+          {onRecordLoan && <div className="calendar-day-add-action"><button type="button" className="button small-btn" onClick={() => { const date = selectedDayData.dateStr; setSelectedDayData(null); onRecordLoan(date); }}>+ Add Schedule</button></div>}
 
           <div className="day-modal-content-stream">
             {!hidePickedUp && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditLoan ? (id) => { setSelectedDayData(null); onEditLoan(id); } : undefined} />}

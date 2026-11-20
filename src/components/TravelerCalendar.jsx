@@ -413,23 +413,11 @@ export default function TravelerCalendar({
 
             <div className="loan-tabs">{['returned', 'overdue'].map((type) => <button type="button" key={type} className={`loan-tab ${dayModalFilter === type ? 'active' : ''}`} onClick={() => setDayModalFilter(type)}>{type === 'returned' ? 'Returned' : 'Overdue'} ({selectedDayData.returning.filter((t) => returnType(t) === type).length})</button>)}</div>
             {!hidePickedUp && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditTraveler ? (id) => { setSelectedDayData(null); onEditTraveler(id); } : undefined} />}
+            {onRecordTraveler && <div className="calendar-day-add-action"><button type="button" className="button small-btn" onClick={() => { setSelectedDayData(null); onRecordTraveler(selectedDayData.dateStr); }}>+ Schedule Traveler</button></div>}
             {/* Empty state for the selected day */}
             {selectedDayData.incoming.length === 0 && selectedDayData.returning.length === 0 && selectedDayData.pickedUp.length === 0 && (
               <div className="empty" style={{ padding: '36px 12px' }}>
                 <p>No business traveler arrivals or returns recorded on {selectedDayData.dateStr}.</p>
-                {onRecordTraveler && (
-                  <button
-                    type="button"
-                    className="button small-btn"
-                    style={{ marginTop: '10px' }}
-                    onClick={() => {
-                      setSelectedDayData(null);
-                      onRecordTraveler();
-                    }}
-                  >
-                    + Schedule Traveler for this Date
-                  </button>
-                )}
               </div>
             )}
 
