@@ -73,6 +73,7 @@ export default function LoanTable({
   hideReturnDate = false,
   showLocation = false,
   onTransferLoan,
+  onSwapLoan,
   initialSort = { key: null, dir: 'asc' },
 }) {
   const [editingId, setEditingId] = useState(null);
@@ -462,6 +463,7 @@ export default function LoanTable({
                           </div>
                           <div className="loan-detail-actions">
                             {loan.pickupDate && !isReturned && onTransferLoan && <button className="button secondary small-btn" onClick={() => onTransferLoan(loan)}>Transfer equipment</button>}
+                            {loan.pickupDate && !isReturned && onSwapLoan && <button className="button secondary small-btn" onClick={() => onSwapLoan(loan)}>Swap equipment</button>}
                             {/* Revert / Pickup / Return actions */}
                             {!loan.pickupDate && !isReturned && (
                               <>

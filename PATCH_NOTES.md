@@ -6,6 +6,40 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] — 2026-11-24
+
+### Search Swap Users and Refine Custody Actions
+
+Find active swap partners quickly and improve the expanded custody action layout.
+
+#### Highlights
+- Search active users by name, Knox ID, or type.
+- Keep action buttons aligned and readable in expanded records.
+
+#### Assignments & Pickups
+
+- Replace the long active-user dropdown in equipment swaps with a searchable, selectable result list.
+- Place expanded custody actions on a dedicated wrapping row so labels remain readable.
+
+---
+
+## [1.25.0] — 2026-11-24
+
+### Add Two-Way Equipment Swap
+
+Swap selected equipment between two active users while each keeps unselected items.
+
+#### Highlights
+- Choose items independently for each user.
+- Update both custody records and ownership history together.
+
+#### Assignments & Pickups
+
+- Add a Swap equipment action for active custody records, supporting selected devices and accessory quantities in both directions.
+- Keep unselected equipment with its current user and record a shared swap reference in both custody notes.
+
+---
+
 ## [1.24.29] — 2026-11-24
 
 ### Restore Day Details and Follow Owner Location

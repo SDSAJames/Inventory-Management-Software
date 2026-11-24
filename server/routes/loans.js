@@ -16,7 +16,7 @@ import { getAssetStatusForLoanEdit, normalizeLocation } from '../../shared/asset
 import { returnAssetToIt } from '../lib/assetLoans.js';
 import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js';
 import { EQUIPMENT_KEYS } from '../../shared/equipment.js';
-import { transferLoan } from '../lib/loanTransfer.js';
+import { transferLoan, swapLoanEquipment } from '../lib/loanTransfer.js';
 import { canRecordReturn } from '../../shared/loanRules.js';
 import { getReturnStatus, splitReturnedEquipment } from '../../shared/returnedEquipment.js';
 import { syncEditedReturnDevices } from '../lib/loanReturnEdits.js';
@@ -28,6 +28,13 @@ loansRouter.post('/:id/transfer', authenticate, (req, res) => {
     const targetId = transferLoan(db, req.params.id, req.body || {});
     logAudit('TRANSFER_LOAN', 'loans', req.params.id, { targetId }, req.user);
     return res.json({ success: true, targetId });
+  } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
+});
+loansRouter.post('/:id/swap', authenticate, (req, res) => {
+  try {
+    const result = swapLoanEquipment(db, req.params.id, req.body || {});
+    logAudit('SWAP_LOAN_EQUIPMENT', 'loans', req.params.id, result, req.user);
+    return res.json({ success: true, ...result });
   } catch (error) { return res.status(400).json({ success: false, error: error.message }); }
 });
 

@@ -26,6 +26,7 @@ import { readableTransferNote } from '../lib/transferNotes';
 import AssetAutocomplete from '../components/AssetAutocomplete';
 import { PC_CATEGORIES } from '../lib/assetCategories';
 import LoanTransferForm from '../components/LoanTransferForm';
+import LoanSwapForm from '../components/LoanSwapForm';
 import LoanDirectoryFields from '../components/LoanDirectoryFields';
 import EquipmentAccessoryList from '../components/EquipmentAccessoryList';
 
@@ -45,6 +46,7 @@ export default function LoansPage() {
   const [searchField, setSearchField] = useState('All fields');
   const [showCreate, setShowCreate] = useState(false);
   const [transferTarget, setTransferTarget] = useState(null);
+  const [swapTarget, setSwapTarget] = useState(null);
   const [editLoanId, setEditLoanId] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
@@ -394,6 +396,7 @@ export default function LoansPage() {
   return (
     <>
       {transferTarget && <Modal open onClose={() => setTransferTarget(null)}><LoanTransferForm loan={transferTarget} onClose={() => setTransferTarget(null)} /></Modal>}
+      {swapTarget && <Modal open onClose={() => setSwapTarget(null)}><LoanSwapForm loan={swapTarget} onClose={() => setSwapTarget(null)} /></Modal>}
       <div className="view-header">
         <div>
           <p className="view-subtitle">
@@ -701,6 +704,7 @@ export default function LoansPage() {
           hideReturnDate={category === 'overdue'}
           showLocation
           onTransferLoan={setTransferTarget}
+          onSwapLoan={setSwapTarget}
           loans={displayedLoans}
           assets={db.assets}
           editMode={editMode}

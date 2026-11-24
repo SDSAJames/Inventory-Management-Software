@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.24.29** |
+| **Specification Version** | **v1.26.0** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
 | **Release Date** | November 24, 2026 |
@@ -595,3 +595,7 @@ useCalendarVisibility supplies hidePickedUp=true and hideReturned=false to each 
 Returned equipment corrections also participate in loan activity metadata: returned_equipment_json is watched alongside return_status, so quantity changes that remain Partial still record the editor and fixed change time.
 
 The saved-change undo availability check also detects asset IDs that would be removed by rollback and requires a persisted ADMIN account before allowing that undo. This keeps asset-deletion permissions consistent with direct and bulk deletion.
+
+POST /api/loans/:id/swap accepts a counterpart record ID and separate equipment selections for both users. It updates both custody records, asset owners and ownership history within one SQLite savepoint.
+
+The equipment swap UI filters active counterpart records by assignee, Knox ID, and borrower type; expanded detail actions wrap in a separate responsive row.

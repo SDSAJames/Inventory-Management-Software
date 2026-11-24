@@ -9,6 +9,32 @@ export const PATCH_HISTORY = [
   {
     version: APP_VERSION,
     date: '2026-11-24',
+    title: 'Search Swap Users and Refine Custody Actions',
+    tag: 'Minor',
+    type: 'minor',
+    summary: 'Find active swap partners quickly and improve the expanded custody action layout.',
+    highlights: ['Search active users by name, Knox ID, or type.', 'Keep action buttons aligned and readable in expanded records.'],
+    sections: [{ heading: 'Assignments & Pickups', badge: 'UI', items: [
+      'Replace the long active-user dropdown in equipment swaps with a searchable, selectable result list.',
+      'Place expanded custody actions on a dedicated wrapping row so labels remain readable.',
+    ] }],
+  },
+  {
+    version: '1.25.0',
+    date: '2026-11-24',
+    title: 'Add Two-Way Equipment Swap',
+    tag: 'Minor',
+    type: 'minor',
+    summary: 'Swap selected equipment between two active users while each keeps unselected items.',
+    highlights: ['Choose items independently for each user.', 'Update both custody records and ownership history together.'],
+    sections: [{ heading: 'Assignments & Pickups', badge: 'Feature', items: [
+      'Add a Swap equipment action for active custody records, supporting selected devices and accessory quantities in both directions.',
+      'Keep unselected equipment with its current user and record a shared swap reference in both custody notes.',
+    ] }],
+  },
+  {
+    version: '1.24.29',
+    date: '2026-11-24',
     title: 'Restore Day Details and Follow Owner Location',
     tag: 'Patch',
     type: 'patch',

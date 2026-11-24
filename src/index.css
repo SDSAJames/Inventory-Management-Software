@@ -1519,9 +1519,9 @@ tbody tr:hover { background: #f8fafc; }
   box-shadow: 0 4px 14px rgba(10, 37, 71, .06);
 }
 .loan-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 12px;
   margin-bottom: 14px;
@@ -1530,6 +1530,7 @@ tbody tr:hover { background: #f8fafc; }
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .loan-detail-title h4 {
   margin: 0;
@@ -1548,7 +1549,45 @@ tbody tr:hover { background: #f8fafc; }
 }
 .loan-detail-actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.loan-detail-actions .small-btn {
+  flex: 0 0 auto;
+  min-height: 34px;
+  white-space: nowrap;
+}
+.swap-user-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 6px;
+  max-height: 210px;
+  overflow: auto;
+  margin-top: 7px;
+  padding: 2px;
+}
+.swap-user-option {
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.swap-user-option:hover,
+.swap-user-option.selected {
+  border-color: var(--blue);
+  background: #eff6ff;
+  color: var(--blue-dark);
+}
+.swap-user-empty {
+  padding: 10px;
+  color: var(--muted);
+  font-size: 13px;
 }
 .small-btn {
   padding: 6px 10px !important;

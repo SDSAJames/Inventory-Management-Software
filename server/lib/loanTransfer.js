@@ -128,3 +128,53 @@ export function transferLoan(database, id, { knoxId, assignee = '', assigneeType
     return target.id;
   } catch (error) { database.exec('ROLLBACK TO SAVEPOINT loan_transfer'); database.exec('RELEASE SAVEPOINT loan_transfer'); throw error; }
 }
+
+export function swapLoanEquipment(database, firstId, { secondId, firstSelection = {}, secondSelection = {}, swapDate = new Date().toISOString() }) {
+  const first = database.prepare('SELECT * FROM loans WHERE id = ?').get(firstId);
+  const second = database.prepare('SELECT * FROM loans WHERE id = ?').get(secondId);
+  if (!first || !second || first.id === second.id) throw new Error('Choose two different custody records');
+  if (!first.pickup_date || !second.pickup_date || isLoanReturned(first) || isLoanReturned(second)) throw new Error('Both users must have active, picked-up equipment');
+  const equipmentFor = (loan) => ({ ...JSON.parse(loan.equipment_json || '{}'), Laptop: loan.asset_code || '', Others: loan.others || '' });
+  const firstItems = equipmentFor(first), secondItems = equipmentFor(second);
+  const firstSplit = splitLoanEquipment(firstItems, firstSelection);
+  const secondSplit = splitLoanEquipment(secondItems, secondSelection);
+  const combine = (remaining, received) => {
+    const next = { ...remaining };
+    for (const [key, value] of Object.entries(received)) {
+      if (!DEVICE_KEYS.includes(key) && Number.isFinite(Number(value)) && Number.isFinite(Number(next[key] || 0))) {
+        next[key] = String(Number(next[key] || 0) + Number(value));
+      } else {
+        if (next[key] && String(next[key]) !== '0') throw new Error(`Cannot swap ${key}: the recipient must select their current ${key} too`);
+        next[key] = value;
+      }
+    }
+    return next;
+  };
+  const firstNext = combine(firstSplit.remaining, secondSplit.transferred);
+  const secondNext = combine(secondSplit.remaining, firstSplit.transferred);
+  const groupId = `swap-${randomUUID()}`;
+  const time = new Date(swapDate).toISOString();
+  const label = (loan) => loan.assignee || loan.knox_id;
+  database.exec('SAVEPOINT equipment_swap');
+  try {
+    for (const [loan, updated] of [[first, firstNext], [second, secondNext]]) {
+      const note = `${loan.note || ''}${loan.note ? '\n' : ''}Equipment swap ${groupId} with ${label(loan.id === first.id ? second : first)} on ${time}`;
+      database.prepare('UPDATE loans SET asset_code = ?, equipment_json = ?, others = ?, note = ? WHERE id = ?').run(updated.Laptop || '', JSON.stringify(updated), updated.Others || '', note, loan.id);
+    }
+    const owners = new Map([[first.id, second], [second.id, first]]);
+    const swaps = [[first, firstSplit.transferred], [second, secondSplit.transferred]];
+    for (const [fromLoan, items] of swaps) for (const key of ['Laptop', 'Monitor']) {
+      const code = String(items[key] || '').trim();
+      if (!code || code === '0') continue;
+      const asset = database.prepare('SELECT * FROM assets WHERE code = ? COLLATE NOCASE').get(code);
+      if (!asset) continue;
+      const toLoan = owners.get(fromLoan.id);
+      const owner = toLoan.assignee || toLoan.knox_id;
+      const location = toLoan.department || toLoan.location || asset.location || '';
+      database.prepare('UPDATE assets SET owner = ?, status = ?, location = ?, department = ?, updated = ? WHERE id = ?').run(owner, custodyStatusForBorrower(toLoan.assignee_type), location, toLoan.department || '', time.slice(0, 10), asset.id);
+      database.prepare('INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(randomUUID(), asset.code, asset.owner || label(fromLoan), owner, time, 'Equipment swap', `Swap ${groupId}: ${label(fromLoan)} to ${label(toLoan)}`, time);
+    }
+    database.exec('RELEASE SAVEPOINT equipment_swap');
+    return { groupId, firstId: first.id, secondId: second.id };
+  } catch (error) { database.exec('ROLLBACK TO SAVEPOINT equipment_swap'); database.exec('RELEASE SAVEPOINT equipment_swap'); throw error; }
+}

@@ -1,4 +1,4 @@
-# StarPlus Energy Asset Management System (v1.24.29)
+# StarPlus Energy Asset Management System (v1.26.0)
 
 > **High-reliability IT equipment asset index and custody management portal.**  
 > Built for StarPlus Energy operations deployed on a corporate intranet server, accessible by workstations across the company network with centralized SQLite database persistence, tab-delimited TXT data import (extracted from Excel), 1:1 Excel XLSX export interoperability, and real-time state synchronization.
@@ -225,3 +225,7 @@ Employee custody stays **Assigned** through editing, return reverts and reconcil
 **Interactive asset diagrams:** Overview shows both Asset mix and Asset locations as diagrams. Hover a segment or legend entry to highlight it and see the count and percentage; keyboard focus and Enter/Space offer the same details. Both charts share the same interaction behavior. Asset locations shows up to five legend entries initially; choose **Show more** to see all locations or **Show less** to fold the list again. The diagram and totals always include every location.
 
 **IT custody and storage:** An asset can be held by IT Department while located in IT Storage room or another Directory location. Changing that location persists through saving, synchronization and restart, including Damaged and Retired equipment. A real return still defaults to IT Office; Under repair still requires service center.
+
+Active custody details include a separate Swap equipment action. Select items in both directions; unselected equipment stays with its user, and registered device ownership history is updated.
+
+Equipment swap partner selection is searchable by assignee name, Knox ID, or borrower type. Expanded custody actions wrap beneath the borrower header for better alignment.
