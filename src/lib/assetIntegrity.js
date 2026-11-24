@@ -110,14 +110,14 @@ export function reconcileAssetWithLoans(asset, loans = []) {
     const needsUpdate =
       asset.status !== activeStatus ||
       asset.owner !== (activeLoan.assignee || '') ||
-      (!asset.location && Boolean(activeLoan.location));
+      (!asset.location && Boolean(activeLoan.department || activeLoan.location));
 
     if (needsUpdate) {
       return {
         ...asset,
         status: activeStatus,
         owner: activeLoan.assignee || asset.owner || '',
-        location: asset.location || activeLoan.location,
+        location: asset.location || activeLoan.department || activeLoan.location,
         department: activeLoan.department || asset.department,
       };
     }

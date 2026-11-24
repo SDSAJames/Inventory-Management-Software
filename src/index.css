@@ -1044,7 +1044,20 @@ tbody tr:hover { background: #f8fafc; }
 .in-out-day-modal .day-card-info-item, .day-schedule-modal .card-detail-grid > div { flex-direction: row; align-items: baseline; gap: 4px; }
 .in-out-day-modal .day-card-info-item .detail-label, .day-schedule-modal .detail-label { font-size: 10px; }
 .day-schedule-modal .detail-label { display: none; }
-.calendar-day-add-action { display: flex; justify-content: flex-end; margin: 8px 0; }
+.in-out-day-modal .day-modal-cards-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.in-out-day-modal .day-detail-card { display: grid; grid-template-columns: minmax(190px, 1.2fr) minmax(110px, .7fr) minmax(120px, .8fr) minmax(125px, .8fr) minmax(175px, 1fr) auto; align-items: center; gap: 8px 12px; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+.in-out-day-modal .day-detail-card:last-child { border-bottom: 0; }
+.in-out-day-modal .day-card-header, .in-out-day-modal .day-card-body, .in-out-day-modal .day-card-footer { display: contents; }
+.in-out-day-modal .day-card-header > div { grid-column: 1; }
+.in-out-day-modal .day-card-info-item { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.in-out-day-modal .day-card-info-item:nth-child(1) { grid-column: 2; }
+.in-out-day-modal .day-card-info-item:nth-child(2) { grid-column: 3; }
+.in-out-day-modal .day-card-info-item:nth-child(3) { grid-column: 4; }
+.in-out-day-modal .day-card-info-item:nth-child(4) { grid-column: 5; }
+.in-out-day-modal .day-card-accessories { grid-column: 2 / 6; display: flex; flex-wrap: wrap; gap: 4px; }
+.in-out-day-modal .day-card-footer { grid-column: 6; display: flex; flex-direction: column; gap: 4px; }
+.in-out-day-modal .day-card-footer button { white-space: nowrap; }
+@media (max-width: 900px) { .in-out-day-modal .day-detail-card { grid-template-columns: minmax(150px, 1fr) minmax(0, 2fr) auto; } .in-out-day-modal .day-card-info-item:nth-child(n) { grid-column: auto; } .in-out-day-modal .day-card-accessories { grid-column: 1 / 3; } .in-out-day-modal .day-card-footer { grid-column: 3; } }
 .category-directory-actions { display: flex; gap: 12px; }
 .category-directory-actions .text-button:disabled { opacity: .45; cursor: not-allowed; text-decoration: none; }
 .directory-location-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -4879,3 +4892,76 @@ button.profile-chip:focus-visible { outline: 2px solid var(--blue); outline-offs
 .profile-account-details { display: grid; grid-template-columns: minmax(80px, .6fr) minmax(0, 1fr); gap: 10px 16px; margin: 0; }
 .profile-account-details dt { color: var(--muted); font-size: 12px; }
 .profile-account-details dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Compact spreadsheet-like rows in the In & Out day details. */
+.in-out-day-modal .day-modal-cards-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+.in-out-day-modal .day-modal-table-head, .in-out-day-modal .day-detail-card { display: grid; grid-template-columns: minmax(190px, 1.3fr) minmax(78px, .55fr) minmax(120px, .8fr) minmax(110px, .8fr) minmax(145px, .9fr) minmax(180px, 1.4fr) minmax(118px, auto); align-items: center; gap: 8px; min-width: 980px; }
+.in-out-day-modal .day-modal-table-head { padding: 6px 10px; background: var(--surface-subtle, #f4f7fb); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.in-out-day-modal .day-detail-card { padding: 7px 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+.in-out-day-modal .day-detail-card:last-child { border-bottom: 0; }
+.in-out-day-modal .day-card-header, .in-out-day-modal .day-card-body, .in-out-day-modal .day-card-footer { display: contents; }
+.in-out-day-modal .day-card-header > div:first-child { grid-column: 1; }
+.in-out-day-modal .day-row-state { grid-column: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.in-out-day-modal .requester-type-pill-badge { display: none; }
+.in-out-day-modal .info-lbl { display: none; }
+.in-out-day-modal .day-card-info-item { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.in-out-day-modal .day-card-info-item:nth-child(1) { grid-column: 3; }
+.in-out-day-modal .day-card-info-item:nth-child(2) { grid-column: 4; }
+.in-out-day-modal .day-card-info-item:nth-child(3), .in-out-day-modal .day-card-info-item:nth-child(4) { grid-column: 5; }
+.in-out-day-modal .day-card-accessories { grid-column: 6; display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.in-out-day-modal .day-card-accessories > .info-lbl { display: none; }
+.in-out-day-modal .day-card-accessories .acc-tag { padding: 2px 5px; font-size: 10px; white-space: nowrap; }
+.in-out-day-modal .day-card-footer { grid-column: 7; display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 4px; min-width: 118px; padding-left: 8px; border-left: 1px solid var(--line); }
+.in-out-day-modal .day-card-footer button { width: 100%; min-height: 28px; padding: 4px 6px; font-size: 11px; white-space: nowrap; }
+.patch-version-select { min-width: 220px; max-width: 100%; padding: 8px 34px 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; }
+.modal.in-out-day-modal { width: min(1600px, 98vw); max-width: 98vw; }
+.in-out-day-modal .is-editable-row { cursor: pointer; }
+.in-out-day-modal .is-editable-row:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.in-out-day-modal .day-modal-table-head, .in-out-day-modal .day-detail-card { grid-template-columns: minmax(135px, 1.1fr) minmax(100px, .85fr) minmax(90px, .75fr) minmax(105px, .8fr) minmax(95px, .7fr) minmax(110px, .85fr) minmax(100px, .8fr) minmax(120px, .9fr) minmax(220px, 1.6fr) minmax(130px, auto); min-width: 1280px; }
+.in-out-day-modal .day-row-name { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+.in-out-day-modal .day-row-knox { grid-column: 2; min-width: 0; overflow-wrap: anywhere; }
+.in-out-day-modal .day-row-borrower { grid-column: 3; min-width: 0; overflow-wrap: anywhere; }
+.in-out-day-modal .day-row-department { grid-column: 4; min-width: 0; overflow-wrap: anywhere; }
+.in-out-day-modal .day-row-state { grid-column: 5; }
+.in-out-day-modal .day-row-name,
+.in-out-day-modal .day-row-knox,
+.in-out-day-modal .day-row-borrower,
+.in-out-day-modal .day-row-department,
+.in-out-day-modal .day-row-state,
+.in-out-day-modal .day-card-info-item,
+.in-out-day-modal .day-card-accessories,
+.in-out-day-modal .day-card-footer { grid-row: 1; }
+.in-out-day-modal .day-card-info-item:nth-child(1) { grid-column: 6; }
+.in-out-day-modal .day-card-info-item:nth-child(2) { grid-column: 7; }
+.in-out-day-modal .day-card-info-item:nth-child(3), .in-out-day-modal .day-card-info-item:nth-child(4) { grid-column: 8; }
+.in-out-day-modal .day-card-accessories { grid-column: 9; }
+.in-out-day-modal .day-card-footer { grid-column: 10; align-items: stretch; margin: 0; padding: 0; border-left: 0; }
+.in-out-day-modal .day-card-footer button { text-align: left; }
+.in-out-day-modal .day-modal-table-head.outgoing-table-head,
+.in-out-day-modal .day-detail-card.outgoing-card { grid-template-columns: minmax(130px, 1.1fr) minmax(95px, .8fr) minmax(90px, .75fr) minmax(100px, .8fr) minmax(110px, .9fr) minmax(100px, .8fr) minmax(130px, 1fr) minmax(250px, 1.8fr) minmax(130px, auto); min-width: 1220px; }
+.in-out-day-modal .day-modal-table-head.incoming-table-head,
+.in-out-day-modal .day-detail-card.incoming-card { grid-template-columns: minmax(140px, 1.15fr) minmax(105px, .85fr) minmax(100px, .8fr) minmax(105px, .85fr) minmax(110px, .85fr) minmax(155px, 1.1fr) minmax(260px, 1.8fr) minmax(140px, auto); min-width: 1160px; }
+.in-out-day-modal .day-detail-card.outgoing-card .day-card-info-item:nth-child(1) { grid-column: 6; }
+.in-out-day-modal .day-detail-card.outgoing-card .day-card-info-item:nth-child(2) { grid-column: 7; }
+.in-out-day-modal .day-detail-card.outgoing-card .day-card-accessories { grid-column: 8; }
+.in-out-day-modal .day-detail-card.outgoing-card .day-card-footer { grid-column: 9; }
+.in-out-day-modal .day-detail-card.incoming-card .day-card-info-item:nth-child(1) { grid-column: 5; }
+.in-out-day-modal .day-detail-card.incoming-card .day-card-info-item:nth-child(2) { grid-column: 6; }
+.in-out-day-modal .day-detail-card.incoming-card .day-card-accessories { grid-column: 7; }
+.in-out-day-modal .day-detail-card.incoming-card .day-card-footer { grid-column: 8; }
+.in-out-day-modal .day-modal-table-head { gap: 6px; padding: 5px 8px; font-size: 10px; }
+.in-out-day-modal .day-detail-card { gap: 6px; padding: 5px 8px; font-size: 12px; }
+.in-out-day-modal .day-detail-card .day-row-knox { font-size: 12px; }
+.in-out-day-modal .day-card-info-item, .in-out-day-modal .day-card-info-item .info-val { font-size: 12px; }
+.in-out-day-modal .day-card-accessories .acc-tag { padding: 1px 4px; font-size: 12px; }
+.in-out-day-modal .day-row-state .status, .in-out-day-modal .calendar-due-value .status { font-size: 11px; }
+.in-out-day-modal .calendar-due-value { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.in-out-day-modal .calendar-edit-action { min-height: 28px; text-align: left; font-size: 12px; }
+.in-out-day-modal .day-modal-header { padding-right: 42px; }
+.in-out-day-modal .modal-close { top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 7px; border-color: var(--line); background: #fff; color: var(--muted); font-size: 20px; box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
+.in-out-day-modal .modal-close:hover { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.in-out-day-modal .day-modal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 12px; flex-wrap: wrap; }
+.in-out-day-modal .day-modal-toolbar .calendar-visibility-filters { flex: 1 1 320px; min-width: 0; }
+.in-out-day-modal .day-modal-toolbar-actions { display: flex; flex: 1 1 420px; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.in-out-day-modal .day-modal-toolbar-actions .calendar-edit-action { padding: 4px 8px; white-space: nowrap; }
+@media (max-width: 720px) { .in-out-day-modal .day-modal-toolbar-actions { justify-content: flex-start; } }

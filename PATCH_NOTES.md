@@ -6,6 +6,231 @@ This file is generated from [`src/data/patchHistory.js`](src/data/patchHistory.j
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.29] — 2026-11-24
+
+### Restore Day Details and Follow Owner Location
+
+Return to the selected day after editing a schedule and place handed-over assets with their owner.
+
+#### Highlights
+- Keep the daily schedule open behind its edit form.
+- Set assigned and loaned asset locations to the owner’s department at handover.
+
+#### In & Out Calendar
+
+- Preserve the selected day while opening a schedule editor, then restore its daily details when the editor closes.
+
+#### Asset Custody
+
+- Update laptop, monitor, and directly assigned asset locations to the owner’s department when available, using the rental or selected location as a fallback.
+- Keep rental location on the schedule record while assets move to their owner’s department location at handover.
+
+---
+
+## [1.24.28] — 2026-11-20
+
+### Move Schedule Editing to Day Toolbar
+
+Place per-schedule edit controls beside the day visibility toggles for easier access.
+
+#### Highlights
+- Identify each edit button by its schedule owner.
+- Keep Add Schedule in the same toolbar row.
+
+#### In & Out Calendar
+
+- Move the visible schedule edit actions out of the horizontally scrolling table and into the toolbar beside Hide picked up and Hide returned.
+- Label each edit action with the associated person or Knox ID and keep Add Schedule with the toolbar actions.
+
+---
+
+## [1.24.27] — 2026-11-20
+
+### Fix Blank Calendar Details
+
+Fix the Equipment row renderer so opening a calendar day no longer crashes.
+
+#### Highlights
+- Keep asset and accessory entries renderable in the combined Equipment cell.
+
+#### In & Out Calendar
+
+- Return Equipment entries in the key/value pair shape consumed by schedule rows.
+
+---
+
+## [1.24.26] — 2026-11-20
+
+### Compact Calendar Equipment Columns
+
+Move asset details into Equipment, reduce table width, and standardize row typography.
+
+#### Highlights
+- Show asset number and model alongside equipment details.
+- Use consistent compact text across the schedule rows.
+
+#### In & Out Calendar
+
+- Remove the separate Asset column and include its number and model as an Asset tag in Equipment.
+- Reduce table minimum widths and cell spacing after consolidating columns.
+- Use consistent 12px typography for table row data and equipment tags.
+
+---
+
+## [1.24.25] — 2026-11-20
+
+### Simplify Calendar Schedule Details
+
+Hide empty schedule sections, remove redundant incoming status and asset tags, and make edit actions easier to see.
+
+#### Highlights
+- Keep the Incoming table focused on useful fields.
+- Use a clear outlined Edit Schedule button.
+
+#### In & Out Calendar
+
+- Do not render empty Outgoing, Incoming, or Picked up sections.
+- Remove the blank Status column from incoming rows and show only Overdue or Returned badges beside the due date.
+- Omit equipment tags that duplicate the asset number already displayed in its own column.
+- Style Edit Schedule as a compact outlined button aligned in its action cell.
+
+---
+
+## [1.24.24] — 2026-11-20
+
+### Align Calendar Actions and Close Control
+
+Align row actions with the Actions column and refine the day-detail close button.
+
+#### Highlights
+- Position row actions at the start of their table cell.
+- Use a compact square close control with clear hover feedback.
+
+#### In & Out Calendar
+
+- Align schedule action buttons with the Actions column instead of shifting them to the right.
+- Restyle the selected-day close control and reserve header space so it does not overlap filters.
+
+---
+
+## [1.24.23] — 2026-11-20
+
+### Align Compact Calendar Details
+
+Keep every incoming schedule field aligned in one table row and remove the descriptive calendar subtitle.
+
+#### Highlights
+- Align asset, location, due date, equipment, and actions with their headers.
+- Reduce vertical space above the calendar.
+
+#### In & Out Calendar
+
+- Keep all schedule fields on one aligned grid row, including returned-date details.
+- Remove the explanatory subtitle beneath the calendar page title for a more compact layout.
+
+---
+
+## [1.24.22] — 2026-11-20
+
+### Streamline In & Out Calendar
+
+Remove summary cards, make schedule rows open their edit form, and omit the redundant Due Today status.
+
+#### Highlights
+- Give the calendar more room by removing top KPI cards.
+- Open schedules from the row while preserving the Edit Schedule action.
+
+#### In & Out Calendar
+
+- Remove the top summary cards from the calendar page.
+- Open a schedule’s edit form when its table row is clicked or keyboard activated; keep row action buttons independent.
+- Omit Due Today from incoming rows because the selected date already shows that context.
+
+---
+
+## [1.24.21] — 2026-11-20
+
+### Remove Redundant Due-Today Status
+
+Avoid repeating the selected day as a Due Today status in In & Out calendar rows.
+
+#### Highlights
+- Keep Overdue and Returned statuses visible.
+- Use the day heading to convey that equipment is due today.
+
+#### In & Out Calendar
+
+- Omit the Due Today status from incoming calendar rows because the selected date already provides that context.
+
+---
+
+## [1.24.20] — 2026-11-20
+
+### Expanded Calendar Table Columns
+
+Show borrower identity and due dates in dedicated calendar columns and widen the detail window.
+
+#### Highlights
+- Separate name, Knox ID, borrower type, and department.
+- Give the day-detail modal more room for the expanded table.
+
+#### In & Out Calendar
+
+- Display Name, Knox ID, Borrower, Department, Status, Asset, Location, and Due date as separate columns.
+- Widen the selected-day dialog and allow horizontal scrolling when the viewport cannot fit every table column.
+
+---
+
+## [1.24.19] — 2026-11-20
+
+### Remove Repeated Calendar Row Labels
+
+Make calendar details read like a compact table by removing repeated labels and aligning row actions.
+
+#### Highlights
+- Use column headers instead of repeating labels in every row.
+- Align Edit and Return actions in a fixed column.
+
+#### In & Out Calendar
+
+- Remove repeated asset, location, date, and equipment labels and hide redundant requester-type badges in day rows.
+- Align row actions and remove the overdue explanatory text already conveyed by the status column.
+
+---
+
+## [1.24.18] — 2026-11-20
+
+### Version Dropdown and Calendar Table Rows
+
+Choose patch-history versions from a compact dropdown and scan calendar day schedules in aligned table rows.
+
+#### Highlights
+- Replace crowded version chips with one dropdown.
+- Add shared column headings and aligned schedule fields in calendar day details.
+
+#### Release History and Calendar
+
+- Show unique release versions in dropdowns on the Patch History page and release notes modal.
+- Display In & Out day schedule contents under Person, Status, Asset, Location, Dates, Equipment, and Actions columns.
+
+---
+
+## [1.24.17] — 2026-11-20
+
+### Spreadsheet-Style Calendar Details
+
+Align calendar schedule details into compact table-like rows.
+
+#### Highlights
+- Line up person, asset, location, and date information.
+- Reduce card padding and repeated visual framing.
+
+#### In & Out Calendar
+
+- Display selected-day schedule contents as compact, aligned rows for spreadsheet-like scanning.
+
+---
+
 ## [1.24.16] — 2026-11-20
 
 ### Show Calendar Schedule Action in Day Details
@@ -56,23 +281,6 @@ The In & Out Calendar remembers its visibility toggles in the browser.
 ---
 
 ## [1.24.13] — 2026-11-20
-
-### Compact Calendar Details and Saved Filters
-
-Calendar day details use less space, and Business Travelers visibility toggles persist in the browser.
-
-#### Highlights
-- Reduce repeated labels in calendar day details.
-- Remember Hide returned and Hide picked up choices on Business Travelers.
-
-#### Calendar
-
-- Tighten calendar day detail rows and remove repeated field labels for a more compact view.
-- Persist Business Travelers Hide returned and Hide picked up settings in local browser storage.
-
----
-
-## [1.24.12] — 2026-11-20
 
 ### Compact Calendar Details and Saved Filters
 

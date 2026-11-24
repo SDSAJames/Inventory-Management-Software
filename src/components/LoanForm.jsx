@@ -62,7 +62,7 @@ export default function LoanForm({ onClose, defaultAssigneeType = 'Business trav
     const assetUpdates = assetCode && form.pickupDate
       ? {
           code: assetCode,
-          location: form.location || DEFAULT_LOCATION,
+          location: form.department || form.location || DEFAULT_LOCATION,
           ...(form.pickupDate ? { owner: assignee, status: custodyStatusForBorrower(form.assigneeType) } : {}),
         }
       : null;

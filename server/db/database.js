@@ -421,7 +421,7 @@ export function reconcileAllAssetsInDb() {
         newStatus = custodyStatusForBorrower(activeLoan.assignee_type);
         newOwner = activeLoan.assignee || asset.owner || '';
         newDept = activeLoan.department || asset.department || '';
-        newLoc = asset.location || activeLoan.location || '';
+        newLoc = asset.location || activeLoan.department || activeLoan.location || '';
       } else if (asset.status === 'On loan') {
         // Asset marked 'On loan' but has no active picked-up loan
         const hasOtherHolder = Boolean(asset.owner && asset.owner !== DEFAULT_OWNER && asset.owner !== 'None');

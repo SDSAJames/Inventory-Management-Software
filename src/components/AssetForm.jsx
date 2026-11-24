@@ -181,7 +181,7 @@ export default function AssetForm({ assetId, onClose, onOpenChangeOwner, default
       owner: form.owner ? form.owner.trim() : '',
       department: trimDirectoryValue(form.department),
       status: validatedStatus,
-      location: getAssetLocation(validatedStatus, form.location),
+      location: getAssetLocation(validatedStatus, hasEmployeeHolder ? form.department || form.location : form.location),
     };
     Object.assign(payload, getHolderReturnChanges(existing, payload) || {});
 

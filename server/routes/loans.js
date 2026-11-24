@@ -210,6 +210,7 @@ loansRouter.post('/', authenticate, (req, res) => {
 
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const effectiveLocation = getLoanLocation({ location, pickupDate });
+  const ownerLocation = String(department || '').trim() || effectiveLocation;
   const id = req.body.id || `loan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const now = new Date().toISOString();
   const initialStatus = pickupDate ? (effectiveEndDate && effectiveEndDate < todayIso() ? 'Overdue' : 'Active') : 'Scheduled';
@@ -218,6 +219,7 @@ loansRouter.post('/', authenticate, (req, res) => {
   db.exec('BEGIN TRANSACTION;');
   try {
     ensureLocation(db, effectiveLocation);
+    if (pickupDate) ensureLocation(db, ownerLocation);
 
     // 1. Insert loan
     db.prepare(`
@@ -256,7 +258,7 @@ loansRouter.post('/', authenticate, (req, res) => {
           UPDATE assets
           SET status = ?, owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(assetStatus, effectiveAssignee, normalizeLocation(location), department.trim(), todayIso(), effectiveAssetCode);
+        `).run(assetStatus, effectiveAssignee, normalizeLocation(ownerLocation), department.trim(), todayIso(), effectiveAssetCode);
 
         db.prepare(`
           INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
@@ -283,7 +285,7 @@ loansRouter.post('/', authenticate, (req, res) => {
         effectiveAssetCode,
         effectiveAssetCode,
         pickupDate ? assetStatus : 'Available',
-        normalizeLocation(location),
+        normalizeLocation(ownerLocation),
         pickupDate ? effectiveAssignee : DEFAULT_OWNER,
         department.trim(),
         todayIso(),
@@ -315,7 +317,7 @@ loansRouter.post('/', authenticate, (req, res) => {
           UPDATE assets
           SET status = ?, owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(assetStatus, effectiveAssignee, normalizeLocation(location), department.trim(), todayIso(), monitorCode);
+        `).run(assetStatus, effectiveAssignee, normalizeLocation(ownerLocation), department.trim(), todayIso(), monitorCode);
 
         db.prepare(`
           INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)
@@ -390,6 +392,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
 
   const effectiveAssetCode = loanAssetCodeForUpdate(req.body, existing);
   const effectiveLocation = getLoanLocation({ location, pickupDate });
+  const ownerLocation = String(department || '').trim() || effectiveLocation;
   const effectiveEndDate = tracksEndDate(assigneeType) ? endDate : '';
   const mergedEquipment = {
     ...equipment,
@@ -427,6 +430,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
   db.exec('BEGIN TRANSACTION;');
   try {
     ensureLocation(db, effectiveLocation);
+    if (hasPickup) ensureLocation(db, ownerLocation);
 
     db.prepare(`
       UPDATE loans
@@ -487,7 +491,7 @@ loansRouter.put('/:id', authenticate, (req, res) => {
           UPDATE assets
           SET status = ?, owner = ?, location = ?, department = ?, updated = ?
           WHERE code = ?
-        `).run(targetStatus, String(assignee ?? '').trim(), assetLocationForWrite(db, targetStatus, effectiveLocation), String(department ?? '').trim(), today, currentCode);
+        `).run(targetStatus, String(assignee ?? '').trim(), assetLocationForWrite(db, targetStatus, String(department ?? '').trim() || effectiveLocation), String(department ?? '').trim(), today, currentCode);
       } else if (existing.pickup_date || existing.return_date || existing.returned_date) {
         returnAssetToIt(db, currentCode, today);
       }
@@ -547,10 +551,12 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
   const nextOthers = others !== undefined ? others : loan.others;
   const nextLocation = normalizeLocation(location !== undefined ? location : loan.location);
   const nextDepartment = String(req.body?.department ?? loan.department ?? '').trim();
+  const nextOwnerLocation = nextDepartment || nextLocation;
 
   db.exec('BEGIN TRANSACTION;');
   try {
     ensureLocation(db, nextLocation);
+    ensureLocation(db, nextOwnerLocation);
 
     db.prepare(`
       UPDATE loans
@@ -587,7 +593,7 @@ loansRouter.post('/:id/pickup', authenticate, (req, res) => {
         UPDATE assets
         SET status = ?, owner = ?, location = ?, department = ?, updated = ?
         WHERE code = ?
-      `).run(assetStatus, loan.assignee, nextLocation, nextDepartment, todayIso(), assetCode);
+      `).run(assetStatus, loan.assignee, nextOwnerLocation, nextDepartment, todayIso(), assetCode);
 
       db.prepare(`
         INSERT INTO ownership_history (id, asset_code, previous_owner, new_owner, date, reason, notes, created_at)

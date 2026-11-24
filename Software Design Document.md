@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Document Version** | **v1.24.16** |
+| **Document Version** | **v1.24.29** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Document Status** | Approved / Production Specification |
-| **Release Date** | November 20, 2026 |
+| **Release Date** | November 24, 2026 |
 | **Target Environment** | Corporate Intranet Server (Multi-Host Network Deployment) |
 | **Tech Stack** | Node.js 22+, Express 5, SQLite (`node:sqlite`), React 19, Vite 6, React Router 7, Vanilla CSS |
 | **Related Documents** | [Technical Specification.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Technical%20Specification.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -203,6 +203,7 @@ stateDiagram-v2
 
 1. **Active Holder Invariant**:
    - If an asset has an assigned employee or department holder (`owner != ''` and `owner != 'IT Department'`), its status **cannot** be `Available`. The system automatically normalizes the status to `Assigned` (or `On loan` if tied to an active checkout).
+   - At direct assignment or equipment handover, the asset location follows the holder's department when present. Loan schedules retain their checkout/rental location independently.
    - If an asset is marked `Available`, its holder is normalized to `IT Department` (or empty).
 2. **Return to IT Department Workflow**:
    - When any asset is returned from an assignment or loan checkout:
@@ -214,7 +215,7 @@ stateDiagram-v2
      - **Frontend Client (`src/lib/assetIntegrity.js` via `useDb.jsx`)**: `reconcileAllAssets()` continuously reconciles local state upon initialization, loan pickup/return, periodic polling (every 15s), and window focus.
      - **Shared Backend Server (`server/db/database.js`)**: `reconcileAllAssetsInDb()` runs directly against the SQLite database during server boot, loan checkout/pickup, return processing, and data exchange imports (`/api/exchange/import`), committing synchronized state updates across all connected intranet hosts.
    - It continuously reconciles loan records against the asset register:
-     - If an active loan is picked up and unreturned, the asset status is enforced as `On loan`, and its location and holder reflect the loan record.
+     - If an active loan is picked up and unreturned, the asset status is enforced as `On loan`, its holder reflects the loan record, and its location follows the borrower's department (falling back to the rental location). The loan record continues to retain the rental location.
      - When all loans for an asset are returned, the asset is automatically freed from `On loan` status and restored to `Available` held by `IT Department`.
      - Normalizes legacy references (e.g. `"pool"`, `"returned to pool"`) directly to `"IT Department"`.
 4. **Direct Ownership Transfer**:
@@ -322,7 +323,7 @@ The frontend application provides operational views through the left sidebar, ad
    - Asset-number edits update linked custody and ownership-history references atomically; failed saves remain open with an error.
    - Clearing Current holder or selecting Available records IT custody and ownership history. Existing missing history is reconciled once with an explicit observation-time note when the original return date is unknown.
 3. **Assignments & Pickups (`/loans`)**:
-   - Employee laptop handovers are assignments; business traveler handovers are loans. Both share the Scheduled pickup list; picked-up employees appear under Assigned and business travelers under Loans. Return records capture the laptop asset number actually received. Navigation and page headings use Assignments & Pickups; the `/loans` address is retained.
+   - Employee laptop handovers are assignments; business traveler handovers are loans. Both share the Scheduled pickup list; picked-up employees appear under Assigned and business travelers under Loans. At pickup, laptop and monitor locations follow the borrower's department, while the custody record retains the rental location. Return records capture the laptop asset number actually received. Navigation and page headings use Assignments & Pickups; the `/loans` address is retained.
    - Knox ID is the only required field in the add form; full name and PC assignment are optional. A Picked up checkbox beside Due date reveals the pickup-date field for an existing handover.
    - PC search includes Laptop, MES PC, and PC categories; monitor search accepts registered Monitor/Monitors assets. The main table displays PC asset numbers instead of sequence numbers.
    - Active, Scheduled, Overdue, Returned, and Unreturned (partial return) custody management.
@@ -341,7 +342,7 @@ The frontend application provides operational views through the left sidebar, ad
    - Universal schedule calendar tracking hardware checkouts (Out / Departure) and returns (In / Return) across all enterprise personnel.
    - Encompasses all requester types, displaying both standard SPE Employees and mobile Business Travelers.
    - Multi-tier filtering: filter by Requester Type (`Business traveler` vs `SPE employee`), select an individual requester from a categorized dropdown, filter by flow direction (`Out` vs `In`), or search by keyword. Hide-returned and hide-picked-up preferences persist separately from Business Travelers.
-   - Interactive day detail modal with full-width schedule rows, accessory checklists, and direct custody action buttons. Picked-up and completed records leave outgoing schedules; return actions require pickup.
+   - The page opens directly on the calendar without summary cards or a descriptive subtitle. Its day-detail table keeps Name, Knox ID, Borrower, Department, outgoing Status, Location, Due date, Equipment, and Actions aligned in one compact row. Asset number and model are included in Equipment. Empty schedule sections are hidden; incoming rows show only meaningful Overdue or Returned badges beside the due date. Row text uses consistent compact typography. Per-schedule Edit actions share a toolbar row with visibility toggles and Add Schedule, while clicking a schedule row also opens its edit form; closing the editor restores the selected day's details. Incoming rows do not repeat Due Today. Picked-up and completed records leave outgoing schedules; return actions require pickup.
 5. **Business Travelers (`/business-travelers`)**:
    - Dedicated mobile workforce custody and field deployment management (accessible via `/business-travelers` with automatic `/travelers` redirection).
    - Its separate day dialog also uses full-width rows. Pending arrivals exclude completed pickups and refresh while the dialog is open.
@@ -460,4 +461,4 @@ In & Out and Business Travelers calendars share the same visibility controls and
 
 ## 9. Version Control & History
 
-Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.16**.
+Release notes are maintained in the structured history at [src/data/patchHistory.js](src/data/patchHistory.js). Run `npm run docs:sync` to regenerate the in-app history, patch notes, and document version metadata. The current release is **v1.24.29**.

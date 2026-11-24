@@ -2,10 +2,10 @@
 
 | Metadata | Details |
 | :--- | :--- |
-| **Specification Version** | **v1.24.16** |
+| **Specification Version** | **v1.24.29** |
 | **System Name** | StarPlus Energy Asset Management System (SPE-AMS) |
 | **Specification Status** | Approved / Production Architecture |
-| **Release Date** | November 20, 2026 |
+| **Release Date** | November 24, 2026 |
 | **Target Runtime** | Corporate Intranet Server & Modern Browsers (Chromium 100+, Firefox 100+, Safari 16+) |
 | **Source Repository** | [Inventory-Management-Software](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software) |
 | **Related Documents** | [Software Design Document.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/Software%20Design%20Document.md), [PATCH_NOTES.md](file:///c:/Users/Developer/Documents/workspace/Inventory-Management-Software/PATCH_NOTES.md) |
@@ -143,7 +143,7 @@ Update the shared module for a rule or field mapping, then import it at each cal
 | `server/lib/assetLocations.js`, `assetLoans.js`, `loanDuplicates.js` | Transactional location migration, custody resets, and exact duplicate loan cleanup. |
 | `server/lib/assetCustody.js`, `assetReferences.js`, `assetReturns.js`, `assetDates.js` | Idempotent IT-custody history repair, transactional reference updates, linked device returns, and additive date-column migration. |
 
-The default location is **IT Office**, distinct from the **IT Department** owner. Legacy **Head Office** and **IT Department** location labels normalize to IT Office on startup, import, and restore. Assets with status **Under repair** always use **service center**, which is registered in the location directory automatically. Single and batch asset forms display this destination without allowing it to be overridden while the repair status is selected. Editing an ongoing loan or returning custody preserves a repair recorded on its asset; an explicit new pickup follows the normal handover transition. Rental locations remain independent of an asset's repair destination.
+The default location is **IT Office**, distinct from the **IT Department** owner. Legacy **Head Office** and **IT Department** location labels normalize to IT Office on startup, import, and restore. Assets with status **Under repair** always use **service center**, which is registered in the location directory automatically. Single and batch asset forms display this destination without allowing it to be overridden while the repair status is selected. Editing an ongoing loan or returning custody preserves a repair recorded on its asset; an explicit new pickup follows the normal handover transition. At direct assignment or handover, an assigned asset's location follows its owner's department when present. A loan's rental location remains on the custody record and is used as the asset-location fallback when no department is recorded.
 
 Run `npm test` for the built-in Node.js regression suite. Tests cover shared rules, import mappings, calendar dates, loan identities and grouping, serializers, and database migration rollback using in-memory SQLite. Run `npm run build` to check the complete frontend. Browser-local date formatting and server UTC dates retain their separate purposes.
 
@@ -200,8 +200,8 @@ interface Loan {
   assetCode: string;               // Asset.code reference; may be empty when scheduling
   assignee: string;                // Optional borrower name, stored as an empty string if skipped
   knoxId: string;                  // Only required field in the add form and create API
-  department: string;              // Borrower's department
-  location: string;                // Checkout facility / rental location
+  department: string;              // Borrower's department; asset destination at handover when available
+  location: string;                // Checkout facility / rental location retained on this record
   ip: string;                      // Assigned static or leased IP ("105.101.x.x")
   startDate: string;               // Agreement start date ("YYYY-MM-DD")
   pickupDate?: string;             // May be supplied on creation to record handover directly
@@ -316,7 +316,7 @@ The Scheduled table and expanded details omit return information. Overdue omits 
 
 ### 4.4 Pending Schedule Presentation
 
-Both `InOutCalendar.jsx` and `TravelerCalendar.jsx` use the pending pickup index in `src/lib/inOutSchedule.js`. Their open-day dialogs derive lists from current records instead of keeping copied event arrays. Pickup, return, or transfer removes the pending pickup event and updates counts. Both calendar templates use one-column, full-width rows with responsive inner details. Scheduled entries cannot offer return actions.
+Both `InOutCalendar.jsx` and `TravelerCalendar.jsx` use the pending pickup index in `src/lib/inOutSchedule.js`. Their open-day dialogs derive lists from current records instead of keeping copied event arrays. Pickup, return, or transfer removes the pending pickup event and updates counts. In & Out day details use a compact scrollable table with aligned identity, outgoing status, location, due-date, equipment, and action columns. Asset number and model are included in the Equipment cell. Incoming rows omit the mostly blank Status column and show Overdue or Returned beside the due date. Zero-result sections are not rendered. Grid placement keeps every cell in one row, with returned-date details grouped in the due-date cell; row typography is standardized. Per-schedule edit actions appear in the visibility toolbar, labeled with their associated person or Knox ID, while row activation also opens the edit form. The day-detail close control is compact and reserved from the filter header. The calendar page omits summary cards and the explanatory subtitle, while incoming rows omit the redundant Due Today label. Both calendar templates use full-width rows with responsive inner details. Scheduled entries cannot offer return actions.
 
 ---
 
@@ -418,7 +418,7 @@ The system implements a centralized data exchange engine backed by transactional
 
 5. **Loan Entry & Equipment Search**:
    - `POST /api/loans` requires Knox ID; empty asset and assignee strings are accepted. Empty asset and employee records are not created.
-   - The add form can record pickup immediately. PC suggestions are filtered to Laptop, MES PC, and PC; monitor suggestions and submitted monitor codes must refer to Monitor/Monitors inventory records.
+   - The add form can record pickup immediately. On handover, the laptop and monitor asset locations follow the borrower's department; the rental location remains on the loan record and is used as a fallback when no department is recorded. PC suggestions are filtered to Laptop, MES PC, and PC; monitor suggestions and submitted monitor codes must refer to Monitor/Monitors inventory records.
    - The Loans table displays and sorts PC asset numbers, replacing the sequence-number column.
 
 ---

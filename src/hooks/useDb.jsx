@@ -350,6 +350,7 @@ export function DbProvider({ children }) {
 
     setDb((prev) => {
       const owner = effectiveLoan.assignee || '';
+      const ownerLocation = effectiveLoan.department || assetUpdates?.location || effectiveLoan.location || '';
       const handoverAssetCodes = new Set(
         effectiveLoan.pickupDate
           ? [assetUpdates?.code, effectiveLoan.equipment?.Monitor]
@@ -365,14 +366,14 @@ export function DbProvider({ children }) {
           date: effectiveLoan.pickupDate.replace('T', ' '),
           reason: 'Device Handover',
           notes: `Device handed over to ${owner}`,
-          location: effectiveLoan.location || a.location,
+          location: ownerLocation || a.location,
         });
         return {
           ...a,
           ...(a.code === assetUpdates?.code ? assetUpdates : {}),
           status: custodyStatusForBorrower(effectiveLoan.assigneeType),
           owner,
-          location: effectiveLoan.location || a.location,
+          location: ownerLocation || a.location,
           ownershipHistory: [history, ...(a.ownershipHistory || [])],
           updated: todayIso(),
         };
@@ -389,7 +390,7 @@ export function DbProvider({ children }) {
           status: effectiveLoan.pickupDate
             ? (custodyStatusForBorrower(effectiveLoan.assigneeType))
             : 'Available',
-          location: assetUpdates.location || '',
+          location: ownerLocation || '',
           owner: assetUpdates.owner || (effectiveLoan.pickupDate ? effectiveLoan.assignee || '' : DEFAULT_OWNER),
           ownershipHistory: effectiveLoan.pickupDate
             ? [createOwnershipEntry({
@@ -465,6 +466,7 @@ export function DbProvider({ children }) {
       );
       const effectiveAssetCode = details.assetCode || loan.assetCode;
       const owner = details.assignee || loan.assignee || '';
+      const ownerLocation = details.department || loan.department || details.location || loan.location || '';
       const handoverAssetCodes = new Set(
         [effectiveAssetCode, details.equipment?.Monitor]
           .map((code) => String(code || '').trim())
@@ -478,13 +480,13 @@ export function DbProvider({ children }) {
           date: timestamp.replace('T', ' '),
           reason: 'Device Handover',
           notes: `Device handed over to ${owner}`,
-          location: details.location || loan.location || a.location,
+          location: ownerLocation || a.location,
         });
         return {
           ...a,
           status: custodyStatusForBorrower(merged.assigneeType),
           owner,
-          location: details.location || loan.location || a.location,
+          location: ownerLocation || a.location,
           department: merged.department ?? a.department,
           ownershipHistory: [history, ...(a.ownershipHistory || [])],
           updated: todayIso(),

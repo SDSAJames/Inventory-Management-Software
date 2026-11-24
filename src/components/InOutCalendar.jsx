@@ -14,6 +14,27 @@ import Modal from './Modal';
 import { calendarMonthPrefix, formatCalendarDayTitle as formatDayTitle } from '../lib/calendarDates.js';
 import { useCalendarMonth } from '../hooks/useCalendarMonth.js';
 
+const getCalendarEquipmentEntries = (loan) => {
+  const assetCode = String(loan.assetCode || '').trim();
+  const assetModel = String(loan.assetModel || '').trim();
+  const normalizedAssetCode = assetCode.toLowerCase();
+  const assetLabel = [assetCode, assetModel].filter(Boolean).join(' — ');
+  const equipmentEntries = Object.entries(loan.equipment || {}).filter(([key, value]) => {
+    if (!value || ['requestedpc', 'requestedmonitor', 'pickupmethod'].includes(String(key).trim().toLowerCase())) return false;
+    const normalizedValue = String(value).trim().toLowerCase();
+    const repeatsAsset = normalizedAssetCode && (
+      normalizedValue === normalizedAssetCode ||
+      normalizedValue.startsWith(`${normalizedAssetCode} `) ||
+      normalizedValue.startsWith(`${normalizedAssetCode}(`)
+    );
+    return !repeatsAsset;
+  });
+  return [
+    ...(assetLabel ? [['Asset', assetLabel]] : []),
+    ...equipmentEntries,
+  ];
+};
+
 export default function InOutCalendar({
   loans = [],
   assets = [],
@@ -22,6 +43,7 @@ export default function InOutCalendar({
   onReturnLoan,
   onRecordLoan,
   onPickupLoan,
+  editingLoanId = null,
   initialRequesterType = 'ALL',
   initialRequester = 'ALL',
 }) {
@@ -124,6 +146,11 @@ export default function InOutCalendar({
   const scheduleIndex = useMemo(() => indexInOutSchedule(filterCalendarRecords(enrichedLoans, hideReturned), { hidePickedUp }), [enrichedLoans, hideReturned, hidePickedUp]);
   const { outgoingByDate, incomingByDate, pickedUpByDate } = scheduleIndex;
   const selectedDayData = selectedDay ? scheduleForDay(scheduleIndex, selectedDay.dateStr, matchesFilters) : null;
+  const dayModalEditItems = selectedDayData && onEditLoan ? [
+    ...(dayModalFilter === 'all' || dayModalFilter === 'outgoing' ? selectedDayData.outgoing : []),
+    ...(dayModalFilter === 'all' || dayModalFilter === 'incoming' ? selectedDayData.incoming : []),
+    ...(!hidePickedUp && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') ? selectedDayData.pickedUp : []),
+  ] : [];
 
 
   /* ── 7. Monthly Summary Metrics ─────────────────────────────── */
@@ -577,7 +604,7 @@ export default function InOutCalendar({
       {/* ── Day Detail Modal Dialog ─────────────────────────── */}
       {selectedDayData && (
         <Modal
-          open={Boolean(selectedDayData)}
+          open={Boolean(selectedDayData) && !editingLoanId}
           size="wide"
           className="in-out-day-modal"
           onClose={() => setSelectedDayData(null)}
@@ -618,99 +645,84 @@ export default function InOutCalendar({
             </div>
           </div>
 
-          <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
-          {onRecordLoan && <div className="calendar-day-add-action"><button type="button" className="button small-btn" onClick={() => { const date = selectedDayData.dateStr; setSelectedDayData(null); onRecordLoan(date); }}>+ Add Schedule</button></div>}
+          <div className="day-modal-toolbar">
+            <CalendarVisibilityFilters hideReturned={hideReturned} setHideReturned={setHideReturned} hidePickedUp={hidePickedUp} setHidePickedUp={setHidePickedUp} />
+            <div className="day-modal-toolbar-actions">
+              {dayModalEditItems.map((loan, index) => {
+                const person = loan.assignee && loan.assignee !== 'Unknown Staff' ? loan.assignee : loan.knoxId || `Schedule ${index + 1}`;
+                return (
+                  <button
+                    key={`day-edit-${loan.id}`}
+                    type="button"
+                    className="button small-btn ghost calendar-edit-action"
+                    title={`Edit schedule for ${person}${loan.knoxId ? ` (${loan.knoxId})` : ''}`}
+                    aria-label={`Edit schedule for ${person}${loan.knoxId ? ` (${loan.knoxId})` : ''}`}
+                    onClick={() => onEditLoan(loan.id)}
+                  >
+                    ✎ Edit {person}
+                  </button>
+                );
+              })}
+              {onRecordLoan && <button type="button" className="button small-btn" onClick={() => { const date = selectedDayData.dateStr; setSelectedDayData(null); onRecordLoan(date); }}>+ Add Schedule</button>}
+            </div>
+          </div>
 
           <div className="day-modal-content-stream">
-            {!hidePickedUp && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} onEdit={onEditLoan ? (id) => { setSelectedDayData(null); onEditLoan(id); } : undefined} />}
+            {!hidePickedUp && selectedDayData.pickedUp.length > 0 && (dayModalFilter === 'all' || dayModalFilter === 'pickedup') && <CalendarPickedUpSection records={selectedDayData.pickedUp} />}
             {/* 1. Outgoing Section (Checkouts & Departures) */}
-            {(dayModalFilter === 'all' || dayModalFilter === 'outgoing') && (
+            {selectedDayData.outgoing.length > 0 && (dayModalFilter === 'all' || dayModalFilter === 'outgoing') && (
               <div className="day-modal-section">
                 <div className="day-modal-section-title incoming-title">
                   <span>📥 Outgoing: Checkouts & Departures ({selectedDayData.outgoing.length})</span>
                 </div>
 
-                {selectedDayData.outgoing.length === 0 ? (
-                  <div className="day-modal-empty-note">No equipment checkouts or departures scheduled for this day.</div>
-                ) : (
-                  <div className="day-modal-cards-grid">
+                <div className="day-modal-cards-grid">
+                    <div className="day-modal-table-head outgoing-table-head"><span>Name</span><span>Knox ID</span><span>Borrower</span><span>Department</span><span>Status</span><span>Location</span><span>Expected return</span><span>Equipment</span><span>Actions</span></div>
                     {selectedDayData.outgoing.map((loan) => (
-                      <div key={`out-card-${loan.id}`} className="day-detail-card outgoing-card">
+                      <div key={`out-card-${loan.id}`} className="day-detail-card outgoing-card is-editable-row" onClick={(event) => { if (!event.target.closest('button') && onEditLoan) onEditLoan(loan.id); }} onKeyDown={(event) => { if (!event.target.closest('button') && onEditLoan && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onEditLoan(loan.id); } }} tabIndex={onEditLoan ? 0 : undefined} role={onEditLoan ? 'group' : undefined} aria-label={onEditLoan ? `Edit schedule for ${loan.assignee || loan.knoxId}` : undefined}>
                         <div className="day-card-header">
-                          <div>
-                            <div className="day-card-user-row">
-                              <strong className="day-card-name">{loan.assignee}</strong>
-                              <span className={`requester-type-pill-badge ${loan.isTraveler ? 'traveler' : 'employee'}`}>
-                                {loan.userTypeLabel}
-                              </span>
-                            </div>
-                            <span className="day-card-sub">
-                              Knox ID: <code>{loan.knoxId || 'N/A'}</code> • Dept: {loan.department || 'Operations'}
-                            </span>
-                          </div>
-                          {loan.computedStatus !== 'Scheduled' && (<span className={`status ${
+                          <strong className="day-row-name">{loan.assignee || 'Unknown Staff'}</strong>
+                          <code className="day-row-knox">{loan.knoxId || 'N/A'}</code>
+                          <span className="day-row-borrower">{loan.userTypeLabel}</span>
+                          <span className="day-row-department">{loan.department || 'Operations'}</span>
+                          <div className="day-row-state">
+                          <span className={`status ${
                             loan.computedStatus === 'In Field'
                               ? 'status-warning'
                               : loan.computedStatus === 'Overdue'
                               ? 'status-danger'
-                              : loan.computedStatus === 'Scheduled'
-                              ? 'status-available'
                               : 'status-archived'
                           }`}>
-                            {loan.computedStatus}
-                          </span>)}
-                        </div>
-
-                        <CalendarPickupReadiness loan={loan} />
-                        <div className="day-card-body">
-                          <div className="day-card-info-item">
-                            <span className="info-lbl">Asset Number:</span>
-                            <span className="info-val">
-                              <strong>{loan.assetCode}</strong>{loan.assetModel ? ` (${loan.assetModel})` : ''}
-                            </span>
+                            {loan.computedStatus || 'Scheduled'}
+                          </span>
+                          <CalendarPickupReadiness loan={loan} />
                           </div>
+                        </div>
+                        <div className="day-card-body">
                           <div className="day-card-info-item">
                             <span className="info-lbl">Rental Location:</span>
                             <span className="info-val">📍 {loan.location}</span>
-                          </div>
-                          <div className="day-card-info-item">
-                            <span className="info-lbl">Checkout / Start:</span>
-                            <span className="info-val">{readableLoanDate(loan.startDate || loan.pickupDate)}</span>
                           </div>
                           <div className="day-card-info-item">
                             <span className="info-lbl">Expected Return:</span>
                             <span className="info-val">{readableLoanDate(getLoanEndDate(loan)) || 'Indefinite'}</span>
                           </div>
 
-                          {loan.accessoryCount > 0 && (
+                          {getCalendarEquipmentEntries(loan).length > 0 && (
                             <div className="day-card-accessories">
                               <span className="info-lbl">Accessories:</span>
                               <div className="accessory-tags-wrap">
-                                {Object.entries(loan.equipment || {})
-                                  .filter(([, val]) => Boolean(val))
-                                  .map(([key, val]) => (
+                                {getCalendarEquipmentEntries(loan).map(([key, val]) => (
                                     <span key={key} className="acc-tag">
                                       {key}: {val}
                                     </span>
-                                  ))}
+                                ))}
                               </div>
                             </div>
                           )}
                         </div>
 
                         <div className="day-card-footer">
-                          {onEditLoan && (
-                            <button
-                              type="button"
-                              className="text-button"
-                              onClick={() => {
-                                setSelectedDayData(null);
-                                onEditLoan(loan.id);
-                              }}
-                            >
-                              Edit Schedule
-                            </button>
-                          )}
                           {!loan.hasPickup && onPickupLoan && (
                             <button
                               type="button"
@@ -738,113 +750,71 @@ export default function InOutCalendar({
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
+                </div>
               </div>
             )}
 
             {/* 2. Incoming Section (Returns & Check-ins) */}
-            {(dayModalFilter === 'all' || dayModalFilter === 'incoming') && (
+            {selectedDayData.incoming.length > 0 && (dayModalFilter === 'all' || dayModalFilter === 'incoming') && (
               <div className="day-modal-section" style={{ marginTop: '20px' }}>
                 <div className="day-modal-section-title returning-title">
                   <span>📤 Incoming: Returns & Check-ins ({selectedDayData.incoming.length})</span>
                 </div>
 
-                {selectedDayData.incoming.length === 0 ? (
-                  <div className="day-modal-empty-note">No equipment returns scheduled for this day.</div>
-                ) : (
-                  <div className="day-modal-cards-grid">
+                <div className="day-modal-cards-grid">
+                    <div className="day-modal-table-head incoming-table-head"><span>Name</span><span>Knox ID</span><span>Borrower</span><span>Department</span><span>Location</span><span>Due date</span><span>Equipment</span><span>Actions</span></div>
                     {selectedDayData.incoming.map((loan) => (
                       <div
                         key={`in-card-${loan.id}`}
-                        className={`day-detail-card incoming-card ${
+                        className={`day-detail-card incoming-card is-editable-row ${
                           loan.isOverdue ? 'overdue-card' : loan.isReturned ? 'returned-card' : ''
                         }`}
+                        onClick={(event) => { if (!event.target.closest('button') && onEditLoan) onEditLoan(loan.id); }}
+                        onKeyDown={(event) => { if (!event.target.closest('button') && onEditLoan && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onEditLoan(loan.id); } }}
+                        tabIndex={onEditLoan ? 0 : undefined}
+                        role={onEditLoan ? 'group' : undefined}
+                        aria-label={onEditLoan ? `Edit schedule for ${loan.assignee || loan.knoxId}` : undefined}
                       >
                         <div className="day-card-header">
-                          <div>
-                            <div className="day-card-user-row">
-                              <strong className="day-card-name">{loan.assignee}</strong>
-                              <span className={`requester-type-pill-badge ${loan.isTraveler ? 'traveler' : 'employee'}`}>
-                                {loan.userTypeLabel}
-                              </span>
-                            </div>
-                            <span className="day-card-sub">
-                              Knox ID: <code>{loan.knoxId || 'N/A'}</code> • Dept: {loan.department || 'Operations'}
-                            </span>
-                          </div>
-                          <span className={`status ${
-                            loan.isReturned
-                              ? 'status-archived'
-                              : loan.isOverdue
-                              ? 'status-danger'
-                              : 'status-warning'
-                          }`}>
-                            {loan.isReturned ? 'Returned' : loan.isOverdue ? 'Overdue' : 'Due Today'}
-                          </span>
+                          <strong className="day-row-name">{loan.assignee || 'Unknown Staff'}</strong>
+                          <code className="day-row-knox">{loan.knoxId || 'N/A'}</code>
+                          <span className="day-row-borrower">{loan.userTypeLabel}</span>
+                          <span className="day-row-department">{loan.department || 'Operations'}</span>
                         </div>
 
                         <div className="day-card-body">
-                          <div className="day-card-info-item">
-                            <span className="info-lbl">Asset Number:</span>
-                            <span className="info-val">
-                              <strong>{loan.assetCode}</strong>{loan.assetModel ? ` (${loan.assetModel})` : ''}
-                            </span>
-                          </div>
                           <div className="day-card-info-item">
                             <span className="info-lbl">Rental Location:</span>
                             <span className="info-val">📍 {loan.location}</span>
                           </div>
                           <div className="day-card-info-item">
                             <span className="info-lbl">Scheduled Due Date:</span>
-                            <span className="info-val">{readableLoanDate(getLoanEndDate(loan))}</span>
-                          </div>
-                          {loan.isReturned && (
-                            <div className="day-card-info-item">
-                              <span className="info-lbl">Actual Return Date:</span>
+                            <span className="info-val calendar-due-value">
+                              <span>{readableLoanDate(getLoanEndDate(loan))}</span>
+                              {loan.isOverdue && <span className="status status-danger">Overdue</span>}
+                              {loan.isReturned && <span className="status status-archived">Returned</span>}
+                            </span>
+                            {loan.isReturned && (
                               <span className="info-val" style={{ color: '#059669', fontWeight: 600 }}>
                                 ✓ {readableLoanDate(loan.returnDate || loan.returnedDate)}
                               </span>
-                            </div>
-                          )}
-                          {loan.isOverdue && (
-                            <div className="day-card-info-item overdue-alert-text">
-                              <span className="info-lbl">Alert:</span>
-                              <span className="info-val" style={{ color: '#dc2626', fontWeight: 700 }}>
-                                ⚠️ Equipment custody past scheduled return date.
-                              </span>
-                            </div>
-                          )}
-
-                          {loan.accessoryCount > 0 && (
+                            )}
+                          </div>
+                          {getCalendarEquipmentEntries(loan).length > 0 && (
                             <div className="day-card-accessories">
                               <span className="info-lbl">Accessories:</span>
                               <div className="accessory-tags-wrap">
-                                {Object.entries(loan.equipment || {})
-                                  .filter(([, val]) => Boolean(val))
-                                  .map(([key, val]) => (
+                                {getCalendarEquipmentEntries(loan).map(([key, val]) => (
                                     <span key={key} className="acc-tag">
                                       {key}: {val}
                                     </span>
-                                  ))}
+                                ))}
                               </div>
                             </div>
                           )}
                         </div>
 
                         <div className="day-card-footer">
-                          {onEditLoan && (
-                            <button
-                              type="button"
-                              className="text-button"
-                              onClick={() => {
-                                setSelectedDayData(null);
-                                onEditLoan(loan.id);
-                              }}
-                            >
-                              Edit Schedule
-                            </button>
-                          )}
                           {!loan.isReturned && canRecordReturn(loan) && onReturnLoan && (
                             <button
                               type="button"
@@ -860,8 +830,7 @@ export default function InOutCalendar({
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
+                </div>
               </div>
             )}
           </div>

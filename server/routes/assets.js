@@ -11,7 +11,7 @@ import { todayIso } from '../lib/dates.js';
 import { formatAssetRow, formatOwnershipAuditRow } from '../lib/assetRows.js';
 
 import { normalizeLocation, getHolderReturnChanges, normalizeAvailableAsset } from "../../shared/assetRules.js";
-import { assetLocationForWrite } from '../lib/assetLocations.js';
+import { assetLocationForWrite, ensureLocation } from '../lib/assetLocations.js';
 import { renameStoredAssetReferences } from '../lib/assetReferences.js';
 
 import { recordHolderReturn } from '../lib/assetReturns.js';
@@ -187,9 +187,12 @@ assetsRouter.post('/', authenticate, (req, res) => {
   const effectiveStatus = initialCustody.status;
   const effectiveOwner = initialCustody.owner;
   const effectiveDepartment = initialCustody.department;
+  const effectiveLocation = effectiveOwner !== DEFAULT_OWNER && effectiveDepartment ? effectiveDepartment : location;
 
   db.exec('BEGIN TRANSACTION;');
   try {
+    const writeLocation = assetLocationForWrite(db, effectiveStatus, effectiveLocation);
+    ensureLocation(db, writeLocation);
     const insert = db.prepare(`
       INSERT INTO assets (id, code, name, category, model, serial, status, location, owner, department, purchase_date, warranty_expiration_date, condition, notes, updated, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -203,7 +206,7 @@ assetsRouter.post('/', authenticate, (req, res) => {
       model,
       serial,
       effectiveStatus,
-      assetLocationForWrite(db, effectiveStatus, location),
+      writeLocation,
       effectiveOwner,
       effectiveDepartment,
       normalizeAssetDate(purchaseDate),
@@ -286,8 +289,8 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
   const custody = normalizeAvailableAsset({ status, owner, department, ...returnChanges });
   const effectiveOwner = custody.owner;
   const effectiveStatus = custody.status;
-  const effectiveLocation = returnChanges?.location ?? location;
   const effectiveDepartment = custody.department;
+  const effectiveLocation = returnChanges?.location ?? (effectiveOwner !== DEFAULT_OWNER && effectiveDepartment ? effectiveDepartment : location);
   const effectiveOwnerChanged = effectiveOwner !== asset.owner;
   let affectedLoans = [];
   const dateError = getAssetDateError({ purchaseDate, warrantyExpirationDate });
@@ -295,6 +298,8 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
 
   db.exec('BEGIN TRANSACTION;');
   try {
+    const writeLocation = assetLocationForWrite(db, effectiveStatus, effectiveLocation);
+    ensureLocation(db, writeLocation);
     db.prepare(`
       UPDATE assets
       SET code = ?, name = ?, category = ?, model = ?, serial = ?, status = ?, location = ?, owner = ?, department = ?, purchase_date = ?, warranty_expiration_date = ?, condition = ?, notes = ?, updated = ?
@@ -306,7 +311,7 @@ assetsRouter.put('/:id', authenticate, (req, res) => {
       model,
       serial,
       effectiveStatus,
-      assetLocationForWrite(db, effectiveStatus, effectiveLocation),
+      writeLocation,
       effectiveOwner,
       effectiveDepartment,
       normalizeAssetDate(purchaseDate),

@@ -11,6 +11,7 @@ export default function PatchHistoryModal({ open, onClose }) {
     // Expand the latest versions by default
     return new Set([APP_VERSION, '1.3.0']);
   });
+  const versions = [...new Set(PATCH_HISTORY.map((item) => item.version))];
 
   const toggleExpand = (ver) => {
     setExpandedVersions((prev) => {
@@ -99,34 +100,14 @@ export default function PatchHistoryModal({ open, onClose }) {
           {/* Version Pills Navigation */}
           <div className="patch-version-pills-row">
             <span className="pills-label">Version:</span>
-            <div className="patch-version-pills" role="tablist" aria-label="Version selector">
-              <button
-                type="button"
-                className={`patch-ver-pill-btn ${selectedVersion === 'ALL' ? 'active' : ''}`}
-                onClick={() => setSelectedVersion('ALL')}
-              >
-                All Versions ({PATCH_HISTORY.length})
-              </button>
-              {PATCH_HISTORY.map((p) => {
-                const isCurrent = p.version === APP_VERSION;
-                const isSelected = selectedVersion === p.version;
-                return (
-                  <button
-                    key={p.version}
-                    type="button"
-                    className={`patch-ver-pill-btn ${isSelected ? 'active' : ''} ${isCurrent ? 'is-current' : ''}`}
-                    onClick={() => {
-                      setSelectedVersion(p.version);
-                      setExpandedVersions((prev) => new Set(prev).add(p.version));
-                    }}
-                    title={`View v${p.version} details`}
-                  >
-                    v{p.version}
-                    {isCurrent && <span className="current-dot" title="Active Version" />}
-                  </button>
-                );
-              })}
-            </div>
+            <select className="patch-version-select" aria-label="Filter patch history by version" value={selectedVersion} onChange={(event) => {
+              const version = event.target.value;
+              setSelectedVersion(version);
+              if (version !== 'ALL') setExpandedVersions((previous) => new Set(previous).add(version));
+            }}>
+              <option value="ALL">All Versions ({PATCH_HISTORY.length})</option>
+              {versions.map((version) => <option key={version} value={version}>{`v${version}${version === APP_VERSION ? ' (Current)' : ''}`}</option>)}
+            </select>
           </div>
 
           {/* Search & Type Filter Row */}
